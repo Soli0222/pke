@@ -1,5 +1,5 @@
 resource "proxmox_virtual_environment_vm" "pke-oky-m2" {
-  name      = "pke-oky-m2"
+  name      = "pke-oky-p2"
   node_name = "oky-pve-2"
 
   agent {
@@ -33,7 +33,7 @@ resource "proxmox_virtual_environment_vm" "pke-oky-m2" {
   initialization {
     ip_config {
       ipv4 {
-        address = "192.168.20.12/24"
+        address = "192.168.20.102/24"
         gateway = "192.168.20.1"
       }
     }
