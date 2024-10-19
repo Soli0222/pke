@@ -1,4 +1,4 @@
-resource "proxmox_virtual_environment_vm" "pke-oky-m1" {
+resource "proxmox_virtual_environment_vm" "pke-oky-p1" {
   name      = "pke-oky-p1"
   node_name = "oky-pve-1"
 
