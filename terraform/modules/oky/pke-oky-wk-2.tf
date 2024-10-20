@@ -1,5 +1,5 @@
-resource "proxmox_virtual_environment_vm" "pke-oky-w3" {
-  name      = "pke-oky-w3"
+resource "proxmox_virtual_environment_vm" "pke-oky-wk-2" {
+  name      = "pke-oky-wk-2"
   node_name = "oky-pve-2"
 
   agent {
@@ -18,7 +18,7 @@ resource "proxmox_virtual_environment_vm" "pke-oky-w3" {
   }
 
   memory {
-    dedicated = 4096
+    dedicated = 6144
   }
 
   disk {
@@ -33,7 +33,7 @@ resource "proxmox_virtual_environment_vm" "pke-oky-w3" {
   initialization {
     ip_config {
       ipv4 {
-        address = "192.168.20.15/24"
+        address = "192.168.20.102/24"
         gateway = "192.168.20.1"
       }
     }

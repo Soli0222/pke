@@ -1,6 +1,6 @@
-resource "proxmox_virtual_environment_vm" "pke-oky-w1" {
-  name      = "pke-oky-w1"
-  node_name = "oky-pve-1"
+resource "proxmox_virtual_environment_vm" "pke-oky-cp-2" {
+  name      = "pke-oky-cp-2"
+  node_name = "oky-pve-2"
 
   agent {
     enabled = false
@@ -23,7 +23,7 @@ resource "proxmox_virtual_environment_vm" "pke-oky-w1" {
 
   disk {
     datastore_id = "local-lvm"
-    file_id = proxmox_virtual_environment_download_file.oky-pve-1-image.id
+    file_id = proxmox_virtual_environment_download_file.oky-pve-2-image.id
     interface    = "virtio0"
     iothread     = true
     discard      = "on"
@@ -33,7 +33,7 @@ resource "proxmox_virtual_environment_vm" "pke-oky-w1" {
   initialization {
     ip_config {
       ipv4 {
-        address = "192.168.20.13/24"
+        address = "192.168.20.52/24"
         gateway = "192.168.20.1"
       }
     }
