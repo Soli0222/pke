@@ -1,25 +1,30 @@
 ---
+- name: All VM Config
+  hosts: pke-oky-vm
+  roles:
+    - 01-all-vm-config
+
 - name: Install HAProxy
   hosts: pke-oky-lb
   roles:
-    - 01-install-haproxy
+    - 02-install-haproxy
 
 - name: Install Keepalived
   hosts: pke-oky-lb
   roles:
-    - 02-install-keepalived
+    - 03-install-keepalived
 
 - name: Set Config
   hosts: pke-oky-k8s
   roles:
-    - 03-set-config
+    - 04-set-config
 
 - name: Install Containerd
   hosts: pke-oky-k8s
   roles:
-    - 04-install-containerd
+    - 05-install-containerd
 
 - name: Install Kubernetes
   hosts: pke-oky-k8s
   roles:
-    - 05-install-kubernetes
+    - 06-install-kubernetes

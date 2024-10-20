@@ -22,3 +22,10 @@
     name=keepalived
     state=started
     enabled=yes
+
+- name: Restart Keepalived
+  become: yes 
+  ansible.builtin.service:
+    name: keepalived
+    state: restarted
+    enabled: yes

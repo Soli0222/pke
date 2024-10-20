@@ -22,3 +22,10 @@
     name: haproxy
     state: started
     enabled: yes
+
+- name: Restart HAProxy
+  become: yes 
+  ansible.builtin.service:
+      name: haproxy
+      state: restarted
+      enabled: yes
