@@ -1,0 +1,5 @@
+---
+- name: test
+  hosts: pke-oky-lb
+  roles:
+    - 00-test

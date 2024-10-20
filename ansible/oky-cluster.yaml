@@ -1,0 +1,25 @@
+---
+- name: Install HAProxy
+  hosts: pke-oky-lb
+  roles:
+    - 01-install-haproxy
+
+- name: Install Keepalived
+  hosts: pke-oky-lb
+  roles:
+    - 02-install-keepalived
+
+- name: Set Config
+  hosts: pke-oky-k8s
+  roles:
+    - 03-set-config
+
+- name: Install Containerd
+  hosts: pke-oky-k8s
+  roles:
+    - 04-install-containerd
+
+- name: Install Kubernetes
+  hosts: pke-oky-k8s
+  roles:
+    - 05-install-kubernetes

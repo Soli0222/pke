@@ -1,0 +1,53 @@
+---
+- name: Update apt cache
+  become: yes  
+  apt:
+    update_cache: yes
+
+- name: Install required packages
+  become: yes  
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gpg
+    state: present
+
+- name: Create keyrings directory if it does not exist
+  become: yes  
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Kubernetes apt key and save as gpg file
+  become: yes  
+  shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes repository to Apt sources
+  become: yes  
+  shell: echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+  args:
+    executable: /bin/bash
+
+- name: Update apt cache after adding Kubernetes repository
+  become: yes  
+  apt:
+    update_cache: yes
+
+- name: Install Kubernetes components
+  become: yes  
+  apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+
+- name: Mark Kubernetes components to hold
+  become: yes
+  shell: |
+    apt-mark hold kubelet kubeadm kubectl

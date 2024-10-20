@@ -1,0 +1,9 @@
+- name: test lb-1
+  become: yes
+  shell: "touch lb-1"
+  when: inventory_hostname == 'pke-oky-lb-1'
+
+- name: test lb-2
+  become: yes
+  shell: "touch lb-2"
+  when: inventory_hostname == 'pke-oky-lb-2'

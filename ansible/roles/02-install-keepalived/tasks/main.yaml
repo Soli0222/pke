@@ -1,0 +1,24 @@
+- name: Install Keepalived
+  become: yes
+  shell: "sudo apt install keepalived -y"
+
+- name: Ensure keepalived conf is set 
+  become: yes  
+  template: >
+    src=templates/keepalived-lb-1.conf.j2
+    dest=/etc/keepalived/keepalived.conf
+  when: inventory_hostname == 'pke-oky-lb-1'
+
+- name: Ensure keepalived conf is set
+  become: yes  
+  template: >
+    src=templates/keepalived-lb-2.conf.j2
+    dest=/etc/keepalived/keepalived.conf
+  when: inventory_hostname == 'pke-oky-lb-2'
+
+- name: Ensure keepalived is started
+  become: yes  
+  service: > 
+    name=keepalived
+    state=started
+    enabled=yes

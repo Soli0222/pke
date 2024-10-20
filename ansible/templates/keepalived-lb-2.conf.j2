@@ -1,0 +1,17 @@
+global_defs {
+}
+
+vrrp_instance Instance1 {
+    state BACKUP
+    interface eth0
+    virtual_router_id 10
+    priority 100
+    advert_int 1
+    unicast_src_ip 192.168.20.32
+    unicast_peer {
+       192.168.20.31
+    }
+    virtual_ipaddress {
+       192.168.20.30
+    }
+}
