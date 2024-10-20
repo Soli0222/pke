@@ -14,17 +14,12 @@
   roles:
     - 03-install-keepalived
 
-- name: Set Config
-  hosts: pke-oky-k8s
-  roles:
-    - 04-set-config
-
 - name: Install Containerd
   hosts: pke-oky-k8s
   roles:
-    - 05-install-containerd
+    - 04-install-containerd
 
 - name: Install Kubernetes
   hosts: pke-oky-k8s
   roles:
-    - 06-install-kubernetes
+    - 05-install-kubernetes

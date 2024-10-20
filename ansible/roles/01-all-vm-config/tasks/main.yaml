@@ -1,3 +1,29 @@
 - name: Run 'dpkg --configure -a' to fix interrupted package installation
   become: yes
   ansible.builtin.command: dpkg --configure -a
+  
+- name: Load kernel module
+  become: yes  
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - br_netfilter
+    - overlay
+
+- name: Add sysctl conf
+  become: yes  
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/kubernetes.conf
+    state: present
+  with_items:
+    - name: net.ipv4.ip_nonlocal_bind
+      value: "1"
+    - name: net.ipv4.ip_forward
+      value: "1"
+
+- name: Reload sysctl settings
+  become: yes  
+  command: sysctl --system
