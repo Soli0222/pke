@@ -16,6 +16,12 @@
     dest=/etc/keepalived/keepalived.conf
   when: inventory_hostname == 'pke-oky-lb-2'
 
+- name: Ensure keepalived sh is set
+  become: yes  
+  template: >
+    src=templates/check_apiserver.sh.j2
+    dest=/etc/keepalived/check_apiserver.sh  
+
 - name: Ensure keepalived is started
   become: yes  
   service: > 
