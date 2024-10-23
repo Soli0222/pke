@@ -27,3 +27,23 @@
 - name: Reload sysctl settings
   become: yes  
   command: sysctl --system
+
+- name: Update apt cache
+  become: yes 
+  apt:
+    update_cache: yes
+
+- name: Full upgrade the system
+  become: yes  
+  apt:
+    upgrade: full
+    autoremove: yes
+
+- name: Reboot the server after upgrade
+  become: yes  
+  ansible.builtin.reboot:
+    msg: "Reboot initiated by Ansible after full upgrade"
+    connect_timeout: 5
+    reboot_timeout: 600
+    pre_reboot_delay: 10
+    post_reboot_delay: 30
