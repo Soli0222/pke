@@ -1,25 +1,35 @@
 ---
 - name: All VM Config
   hosts: pke-oky-vm
+  become: true
   roles:
     - 01-all-vm-config
 
 - name: Install HAProxy
   hosts: pke-oky-lb
+  become: true
   roles:
     - 02-install-haproxy
 
 - name: Install Keepalived
   hosts: pke-oky-lb
+  become: true
   roles:
     - 03-install-keepalived
 
-- name: Install Containerd
+- name: Install CRI-O
   hosts: pke-oky-k8s
+  become: true
   roles:
-    - 04-install-containerd
+    - 04-install-cri-o
+  vars:
+    crio_version: "v1.31"
 
 - name: Install Kubernetes
   hosts: pke-oky-k8s
+  become: true
   roles:
     - 05-install-kubernetes
+  vars:
+    kubernetes_version: "v1.31"
+    

@@ -1,9 +1,4 @@
-- name: Run 'dpkg --configure -a' to fix interrupted package installation
-  become: yes
-  ansible.builtin.command: dpkg --configure -a
-  
-- name: Load kernel module
-  become: yes  
+- name: Load kernel module 
   modprobe:
     name: "{{ item }}"
     state: present
@@ -12,35 +7,37 @@
     - overlay
 
 - name: Add sysctl conf
-  become: yes  
   sysctl:
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     sysctl_file: /etc/sysctl.d/kubernetes.conf
     state: present
   with_items:
-    - name: net.ipv4.ip_nonlocal_bind
+    - name: net.bridge.bridge-nf-call-iptables
+      value: "1"
+    - name: net.bridge.bridge-nf-call-ip6tables
       value: "1"
     - name: net.ipv4.ip_forward
       value: "1"
 
 - name: Reload sysctl settings
-  become: yes  
   command: sysctl --system
 
-- name: Update apt cache
-  become: yes 
-  apt:
-    update_cache: yes
+- name: Remove apt lists lock
+  command: rm /var/lib/apt/lists/lock
+  ignore_errors: true 
+
+- name: Remove apt archives lock
+  command: rm /var/cache/apt/archives/lock
+  ignore_errors: true 
 
 - name: Full upgrade the system
-  become: yes  
   apt:
     upgrade: full
+    update_cache: yes
     autoremove: yes
 
 - name: Reboot the server after upgrade
-  become: yes  
   ansible.builtin.reboot:
     msg: "Reboot initiated by Ansible after full upgrade"
     connect_timeout: 5

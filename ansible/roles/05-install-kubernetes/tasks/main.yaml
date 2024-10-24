@@ -1,12 +1,10 @@
 ---
-- name: Update apt cache
-  become: yes  
-  apt:
+- name: Update apt cache (equivalent to apt-get update)
+  ansible.builtin.apt:
     update_cache: yes
 
 - name: Install required packages
-  become: yes  
-  apt:
+  ansible.builtin.apt:
     name:
       - apt-transport-https
       - ca-certificates
@@ -14,40 +12,33 @@
       - gpg
     state: present
 
-- name: Create keyrings directory if it does not exist
-  become: yes  
-  file:
+- name: Create directory for apt keyrings
+  ansible.builtin.file:
     path: /etc/apt/keyrings
     state: directory
-    mode: '0755'
+    mode: "0755"
 
-- name: Download Kubernetes apt key and save as gpg file
-  become: yes  
-  shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-  args:
-    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+- name: Add Kubernetes repository key
+  ansible.builtin.shell:
+    cmd: > 
+      curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/Release.key |
+      gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-- name: Add Kubernetes repository to Apt sources
-  become: yes  
-  shell: echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
-  args:
-    executable: /bin/bash
+- name: Add Kubernetes repository
+  ansible.builtin.shell:
+    cmd: > 
+      echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/ /' |
+      tee /etc/apt/sources.list.d/kubernetes.list
 
-- name: Update apt cache after adding Kubernetes repository
-  become: yes  
-  apt:
+- name: Update apt cache (equivalent to apt-get update)
+  ansible.builtin.apt:
     update_cache: yes
 
-- name: Install Kubernetes components
-  become: yes  
-  apt:
+- name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
+  ansible.builtin.apt:
     name:
       - kubelet
       - kubeadm
       - kubectl
     state: present
-
-- name: Mark Kubernetes components to hold
-  become: yes
-  shell: |
-    apt-mark hold kubelet kubeadm kubectl
+    update_cache: yes
