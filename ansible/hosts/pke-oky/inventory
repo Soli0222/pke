@@ -7,7 +7,6 @@ pke-oky-cp-3 ansible_host=192.168.20.53
 pke-oky-wk-1 ansible_host=192.168.20.101
 pke-oky-wk-2 ansible_host=192.168.20.102
 pke-oky-wk-3 ansible_host=192.168.20.103
-pke-oky-wk-4 ansible_host=192.168.20.104
 
 [pke-oky-vm:vars]
 ansible_port=22
@@ -28,7 +27,6 @@ pke-oky-cp-3 ansible_host=192.168.20.53
 pke-oky-wk-1 ansible_host=192.168.20.101
 pke-oky-wk-2 ansible_host=192.168.20.102
 pke-oky-wk-3 ansible_host=192.168.20.103
-pke-oky-wk-4 ansible_host=192.168.20.104
 
 [pke-oky-cp]
 pke-oky-cp-1 ansible_host=192.168.20.51
@@ -42,4 +40,3 @@ pke-oky-cp-1 ansible_host=192.168.20.51
 pke-oky-wk-1 ansible_host=192.168.20.101
 pke-oky-wk-2 ansible_host=192.168.20.102
 pke-oky-wk-3 ansible_host=192.168.20.103
-pke-oky-wk-4 ansible_host=192.168.20.104

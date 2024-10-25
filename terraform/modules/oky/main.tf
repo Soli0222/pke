@@ -33,3 +33,11 @@ resource "proxmox_virtual_environment_download_file" "oky-pve-2-image" {
 
   url = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
 }
+
+resource "proxmox_virtual_environment_download_file" "oky-pve-3-image" {
+  content_type = "iso"
+  datastore_id = "local"
+  node_name    = "oky-pve-3"
+
+  url = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+}
