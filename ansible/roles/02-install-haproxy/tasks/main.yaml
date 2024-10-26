@@ -1,15 +1,15 @@
 - name: Install HAProxy
-  become: yes
-  shell: "apt install haproxy -y"
+  ansible.builtin.apt:
+    name:
+      - haproxy
+    state: present
 
 - name: Copy configuration file
-  become: yes  
   copy:
     src: templates/haproxy.cfg.j2
     dest: /etc/haproxy/haproxy.cfg
 
 - name: Ensure nonlocal bind kernel parameter is set
-  become: yes  
   sysctl:
     name: net.ipv4.ip_nonlocal_bind
     value: 1
@@ -17,14 +17,12 @@
     ignoreerrors: yes
 
 - name: Ensure HAProxy is started and enabled
-  become: yes 
   service:
     name: haproxy
     state: started
     enabled: yes
 
 - name: Restart HAProxy
-  become: yes 
   ansible.builtin.service:
       name: haproxy
       state: restarted
