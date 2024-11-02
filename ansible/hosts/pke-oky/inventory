@@ -36,7 +36,11 @@ pke-oky-cp-3 ansible_host=192.168.20.53
 [pke-oky-cp-leader]
 pke-oky-cp-1 ansible_host=192.168.20.51
 
-[pke-oky-worker]
+[pke-oky-cp-follower]
+pke-oky-cp-2 ansible_host=192.168.20.52
+pke-oky-cp-3 ansible_host=192.168.20.53
+
+[pke-oky-wk]
 pke-oky-wk-1 ansible_host=192.168.20.101
 pke-oky-wk-2 ansible_host=192.168.20.102
 pke-oky-wk-3 ansible_host=192.168.20.103
