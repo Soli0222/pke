@@ -31,11 +31,35 @@
   command: rm /var/cache/apt/archives/lock
   ignore_errors: true 
 
+- name: Remove dpkg lock if it exists
+  command: rm -f /var/lib/dpkg/lock-frontend
+  ignore_errors: true
+
+- name: Remove dpkg lock file (legacy)
+  command: rm -f /var/lib/dpkg/lock
+  ignore_errors: true
+
+- name: Remove broken dpkg update file
+  command: rm -f /var/lib/dpkg/updates/0000
+  ignore_errors: true
+
+- name: Ensure dpkg is configured
+  command: dpkg --configure -a
+  ignore_errors: true
+
+- name: Check if dpkg is configured successfully
+  command: dpkg --configure -a
+  register: dpkg_status
+  until: dpkg_status.rc == 0
+  retries: 5
+  delay: 10
+
 - name: Full upgrade the system
   apt:
     upgrade: full
     update_cache: yes
     autoremove: yes
+  when: dpkg_status.rc == 0
 
 - name: Reboot the server after upgrade
   ansible.builtin.reboot:
