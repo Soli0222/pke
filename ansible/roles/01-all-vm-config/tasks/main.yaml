@@ -42,7 +42,7 @@
     autoremove: yes
     
 - name: Reboot the server after upgrade
-  ansible.builtin.reboot:
+  reboot:
     msg: "Reboot initiated by Ansible after full upgrade"
     connect_timeout: 5
     reboot_timeout: 600

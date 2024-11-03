@@ -1,10 +1,10 @@
 ---
 - name: Update apt cache (equivalent to apt-get update)
-  ansible.builtin.apt:
+  apt:
     update_cache: yes
 
 - name: Install required packages
-  ansible.builtin.apt:
+  apt:
     name:
       - apt-transport-https
       - ca-certificates
@@ -13,29 +13,29 @@
     state: present
 
 - name: Create directory for apt keyrings
-  ansible.builtin.file:
+  file:
     path: /etc/apt/keyrings
     state: directory
     mode: "0755"
 
 - name: Add Kubernetes repository key
-  ansible.builtin.shell:
+  shell:
     cmd: > 
       curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/Release.key |
       gpg --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
 - name: Add Kubernetes repository
-  ansible.builtin.shell:
+  shell:
     cmd: > 
       echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/ /' |
       tee /etc/apt/sources.list.d/kubernetes.list
 
 - name: Update apt cache (equivalent to apt-get update)
-  ansible.builtin.apt:
+  apt:
     update_cache: yes
 
 - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
-  ansible.builtin.apt:
+  apt:
     name:
       - kubelet
       - kubeadm

@@ -1,10 +1,10 @@
 ---
 - name: Update apt cache (equivalent to apt-get update)
-  ansible.builtin.apt:
+  apt:
     update_cache: yes
 
 - name: Install Keepalived
-  ansible.builtin.apt:
+  apt:
     name:
       - keepalived
     state: present
@@ -33,7 +33,7 @@
     enabled=yes
 
 - name: Restart Keepalived
-  ansible.builtin.service:
+  service:
     name: keepalived
     state: restarted
     enabled: yes

@@ -1,10 +1,10 @@
 ---
 - name: Update apt cache (equivalent to apt-get update)
-  ansible.builtin.apt:
+  apt:
     update_cache: yes
 
 - name: Install required packages
-  ansible.builtin.apt:
+  apt:
     name:
       - apt-transport-https
       - ca-certificates
@@ -13,37 +13,37 @@
     state: present
 
 - name: Create directory for apt keyrings
-  ansible.builtin.file:
+  file:
     path: /etc/apt/keyrings
     state: directory
     mode: "0755"
 
 - name: Add CRI-O repository key
-  ansible.builtin.shell:
+  shell:
     cmd: > 
       curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ crio_version }}/deb/Release.key |
       gpg --yes --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg
 
 - name: Add CRI-O repository
-  ansible.builtin.shell:
+  shell:
     cmd: > 
       echo 'deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ crio_version }}/deb/ /' |
       tee /etc/apt/sources.list.d/cri-o.list
 
 - name: Install CRI-O
-  ansible.builtin.apt:
+  apt:
     name: "cri-o"
     state: present
     update_cache: yes
 
 - name: Start and enable CRI-O service
-  ansible.builtin.systemd:
+  systemd:
     name: crio
     enabled: yes
     state: started
     
 - name: Configure CRI-O runtime settings in /etc/crio/crio.conf
-  ansible.builtin.blockinfile:
+  blockinfile:
     path: /etc/crio/crio.conf
     block: |
       [crio.runtime]
@@ -56,7 +56,7 @@
     marker: ""
 
 - name: Restart CRI-O service
-  ansible.builtin.systemd:
+  systemd:
     name: crio
     state: restarted
     enabled: yes

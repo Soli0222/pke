@@ -1,5 +1,5 @@
 - name: Install HAProxy
-  ansible.builtin.apt:
+  apt:
     name:
       - haproxy
     state: present
@@ -23,7 +23,7 @@
     enabled: yes
 
 - name: Restart HAProxy
-  ansible.builtin.service:
+  service:
       name: haproxy
       state: restarted
       enabled: yes
