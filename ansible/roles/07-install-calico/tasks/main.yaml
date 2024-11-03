@@ -1,0 +1,15 @@
+- name: create tigera-operator manifest
+  template:
+    src: templates/tigera-operator.yaml.j2
+    dest: /home/{{ username }}/tigera-operator.yaml
+
+- name: create custom-resources manifest
+  template:
+    src: templates/custom-resources.yaml.j2
+    dest: /home/{{ username }}/custom-resources.yaml
+
+- name: apply tigera-operator
+  shell: kubectl create -f /home/{{ username }}/tigera-operator.yaml
+
+- name: apply custom-resources
+  shell: kubectl create -f /home/{{ username }}/custom-resources.yaml
