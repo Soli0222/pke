@@ -22,7 +22,7 @@
   ansible.builtin.shell:
     cmd: > 
       curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ crio_version }}/deb/Release.key |
-      gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg
+      gpg --yes --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg
 
 - name: Add CRI-O repository
   ansible.builtin.shell:

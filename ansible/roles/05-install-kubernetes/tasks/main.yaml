@@ -22,7 +22,7 @@
   ansible.builtin.shell:
     cmd: > 
       curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/Release.key |
-      gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      gpg --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
 - name: Add Kubernetes repository
   ansible.builtin.shell:
