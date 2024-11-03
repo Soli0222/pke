@@ -34,9 +34,3 @@
   become: true
   roles:
     - 06-init-kubernetes
-
-- name: Install Calico
-  hosts: pke-oky-cp-leader
-  become: true
-  roles:
-    - 07-install-calico
