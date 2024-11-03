@@ -80,3 +80,10 @@
   command: >
     {{ kubernetes_join }}
   when: "'pke-oky-wk' in group_names"
+
+- name: fetch kubeconfig
+  fetch:
+    src: /home/{{ username }}/.kube/config
+    dest: "{{ lookup('env', 'HOME') }}/.kube/config"
+    flat: yes
+  when: "'pke-oky-cp-leader' in group_names"
