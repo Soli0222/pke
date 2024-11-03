@@ -1,0 +1,82 @@
+---
+- name: create kubeadm-configure YAML file
+  template:
+    src: templates/kubeadm-config.yaml.j2
+    dest: /home/{{ username }}/kubeadm-config.yaml
+  when: "'pke-oky-cp-leader' in group_names"
+
+- name: execute kubeadm init
+  shell: kubeadm init --config "/home/{{ username }}/kubeadm-config.yaml" --upload-certs
+  when: "'pke-oky-cp-leader' in group_names"
+
+- name: create $HOME/.kube directory
+  file:
+    path: "/home/{{ username }}/.kube/"
+    state: directory
+    mode: '0755'
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  when: "'pke-oky-cp-leader' in group_names"
+
+- name: create /root/.kube directory
+  file:
+    path: "/root/.kube/"
+    state: directory
+    mode: '0755'
+    owner: "root"
+    group: "root"
+  when: "'pke-oky-cp-leader' in group_names"
+
+- name: copy admin.conf to $HOME/.kube/config
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/home/{{ username }}/.kube/config"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: '0600'
+    remote_src: true
+  when: "'pke-oky-cp-leader' in group_names"
+
+- name: copy admin.conf to /root/.kube/config
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/root/.kube/config"
+    owner: "root"
+    group: "root"
+    mode: '0600'
+    remote_src: true
+  when: "'pke-oky-cp-leader' in group_names"
+
+- name: create kubeadm token
+  shell: kubeadm token create --print-join-command
+  register: create_token_result
+  when: "'pke-oky-cp-leader' in group_names"
+
+- name: set kubeadm token globally
+  set_fact:
+    kubernetes_join: "{{ create_token_result.stdout }}"
+  run_once: true
+  delegate_to: localhost
+
+- name: get kubernetes ca key
+  shell: kubeadm init phase upload-certs --upload-certs
+  register: get_cert_key
+  when: "'pke-oky-cp-leader' in group_names"
+
+- name: set kubernetes ca key
+  set_fact:
+    cert_key: "{{ get_cert_key.stdout.split('\n')[-1] }}"
+  run_once: true
+  delegate_to: localhost
+
+- name: Join kubeadm control plane
+  command: >
+    {{ kubernetes_join }}
+    --control-plane
+    --certificate-key {{ cert_key }}
+  when: "'pke-oky-cp-follower' in group_names"
+
+- name: join kubeadm worker
+  command: >
+    {{ kubernetes_join }}
+  when: "'pke-oky-wk' in group_names"
