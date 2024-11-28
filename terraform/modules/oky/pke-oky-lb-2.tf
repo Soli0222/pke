@@ -18,7 +18,7 @@ resource "proxmox_virtual_environment_vm" "pke-oky-lb-2" {
   }
 
   memory {
-    dedicated = 3072
+    dedicated = 4096
   }
 
   disk {

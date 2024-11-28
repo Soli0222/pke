@@ -35,16 +35,16 @@ pke-${クラスタ名}-${ノードロール}${番号}
 okyクラスタ向けには以下のVMが作成される  
 lbノードはHAProxy用
 
-| VM名          | CPU コア数  | メモリ  | ディスク容量   | IPアドレス       | ホストマシン   | 
-| ------------- | ---------- | ------ | ------------ | --------------- | ------------ | 
-| pke-oky-lb-1  | 4          | 3GB    | 50GB         | 192.168.20.31   | oky-pve-1    | 
-| pke-oky-lb-2  | 4          | 3GB    | 50GB         | 192.168.20.32   | oky-pve-2    |
-| pke-oky-cp-1  | 4          | 5GB    | 50GB         | 192.168.20.51   | oky-pve-1    | 
-| pke-oky-cp-2  | 4          | 5GB    | 50GB         | 192.168.20.52   | oky-pve-2    |  
-| pke-oky-cp-3  | 4          | 6GB    | 50GB         | 192.168.20.53   | oky-pve-3    |  
-| pke-oky-wk-1  | 4          | 6GB    | 50GB         | 192.168.20.101  | oky-pve-1    | 
-| pke-oky-wk-2  | 4          | 6GB    | 50GB         | 192.168.20.102  | oky-pve-2    |
-| pke-oky-wk-3  | 4          | 8GB    | 50GB         | 192.168.20.103  | oky-pve-3    | 
+| VM名          | CPU コア数  | メモリ   | ディスク容量   | IPアドレス       | ホストマシン   | 
+| ------------- | ---------- | ------- | ------------ | --------------- | ------------ | 
+| pke-oky-lb-1  | 4          | 4GB     | 50GB         | 192.168.20.31   | oky-pve-1    | 
+| pke-oky-lb-2  | 4          | 4GB     | 50GB         | 192.168.20.32   | oky-pve-2    |
+| pke-oky-cp-1  | 4          | 4GB     | 50GB         | 192.168.20.51   | oky-pve-1    | 
+| pke-oky-cp-2  | 4          | 4GB     | 50GB         | 192.168.20.52   | oky-pve-2    |  
+| pke-oky-cp-3  | 4          | 4GB     | 50GB         | 192.168.20.53   | oky-pve-3    |  
+| pke-oky-wk-1  | 4          | 6GB     | 50GB         | 192.168.20.101  | oky-pve-1    | 
+| pke-oky-wk-2  | 4          | 6GB     | 50GB         | 192.168.20.102  | oky-pve-2    |
+| pke-oky-wk-3  | 4          | 10GB    | 50GB         | 192.168.20.103  | oky-pve-3    | 
 
 ![構成図](https://media.soli0222.com/polestar/d356e077-effe-416f-bc35-fec01c91cf0c.png)
 
