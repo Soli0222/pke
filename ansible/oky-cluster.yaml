@@ -29,14 +29,26 @@
   roles:
     - 05-install-kubernetes
     
-- name: Init Kubernetes
-  hosts: pke-oky-cp-leader:pke-oky-cp-follower:pke-oky-wk
+- name: Init Control Plane Kubernetes
+  hosts: pke-oky-k8s
   become: true
   roles:
-    - 06-init-kubernetes
+    - 06-init-cp-kubernetes
+
+- name: Join Control Plane Kubernetes
+  hosts: pke-oky-k8s
+  become: true
+  roles:
+    - 07-join-cp-kubernetes
+
+- name: Join Worker Kubernetes
+  hosts: pke-oky-k8s
+  become: true
+  roles:
+    - 08-join-wk-kubernetes
 
 - name: Install Calico
   hosts: pke-oky-cp-leader
   become: true
   roles:
-    - 07-install-calico
+    - 09-install-calico
