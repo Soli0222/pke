@@ -1,9 +1,12 @@
-- name: test lb-1
-  become: yes
-  shell: "touch lb-1"
-  when: inventory_hostname == 'pke-oky-lb-1'
+- name: Update apt cache (equivalent to apt-get update)
+  apt:
+    update_cache: yes
 
-- name: test lb-2
-  become: yes
-  shell: "touch lb-2"
-  when: inventory_hostname == 'pke-oky-lb-2'
+- name: Install required packages
+  apt:
+    name:
+      - nfs-common
+      - language-pack-ja-base
+      - language-pack-ja
+      - ibus-mozc
+    state: present

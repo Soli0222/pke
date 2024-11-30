@@ -1,5 +1,6 @@
 ---
 - name: test
-  hosts: pke-oky-lb
+  hosts: pke-oky-k8s
+  become: true
   roles:
     - 00-test
