@@ -1,0 +1,15 @@
+music:
+  storage:
+    size: 500Gi
+  nfs:
+    server: 192.168.20.250
+    path: /volume1/music
+  
+data:
+  storage:
+    size: 10Gi
+  storageClassName: oky-synology-01
+
+image:
+  image: deluan/navidrome
+  tag: 0.53.3
