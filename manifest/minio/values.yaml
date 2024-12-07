@@ -1,0 +1,21 @@
+secret:
+  user:
+    accessKey: # base64 encoded
+    secretKey: # base64 encoded
+
+  configuration:
+    user: 
+    password: 
+    storageClassStandard: EC:1
+    browser: on
+
+tenant:
+  name: minio-oky
+  image: 
+    image: quay.io/minio/minio
+    tag: RELEASE.2024-11-07T00-52-20Z-cpuv1
+  pools:
+    name: pool-0
+    storageClassName: oky-synology-01
+    servers: 1
+    volumesPerServer: 2
