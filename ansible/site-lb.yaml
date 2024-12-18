@@ -1,0 +1,11 @@
+- name: Install HAProxy
+  hosts: lb
+  become: true
+  roles:
+    - install-haproxy
+
+- name: Install Keepalived
+  hosts: lb
+  become: true
+  roles:
+    - install-keepalived

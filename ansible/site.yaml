@@ -1,3 +1,4 @@
 ---
-- import_playbook: oky-cluster.yaml
-#- import_playbook: test.yaml
+- import_playbook: site-all.yaml
+- import_playbook: site-lb.yaml
+- import_playbook: site-k8s.yaml

@@ -1,0 +1,29 @@
+- name: Install CRI-O
+  hosts: k8s
+  become: true
+  roles:
+    - install-cri-o
+
+- name: Install Kubernetes
+  hosts: k8s
+  become: true
+  roles:
+    - install-kubernetes
+    
+- name: Init Control Plane Kubernetes
+  hosts: k8s
+  become: true
+  roles:
+    - init-cp-kubernetes
+
+- name: Join Control Plane Kubernetes
+  hosts: k8s
+  become: true
+  roles:
+    - join-cp-kubernetes
+
+- name: Join Worker Kubernetes
+  hosts: k8s
+  become: true
+  roles:
+    - join-wk-kubernetes

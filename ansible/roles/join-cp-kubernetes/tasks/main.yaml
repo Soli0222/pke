@@ -1,7 +1,7 @@
 - name: create kubeadm token
   shell: kubeadm token create --print-join-command
   register: create_token_result
-  when: "'pke-oky-cp-leader' in group_names"
+  when: "'k8s-cp-leader' in group_names"
 
 - name: set kubeadm token globally
   set_fact:
@@ -12,7 +12,7 @@
 - name: get kubernetes ca key
   shell: kubeadm init phase upload-certs --upload-certs
   register: get_cert_key
-  when: "'pke-oky-cp-leader' in group_names"
+  when: "'k8s-cp-leader' in group_names"
 
 - name: set kubernetes ca key
   set_fact:
@@ -25,4 +25,4 @@
     {{ kubernetes_join }}
     --control-plane
     --certificate-key {{ cert_key }}
-  when: "'pke-oky-cp-follower' in group_names"
+  when: "'k8s-cp-follower' in group_names"
