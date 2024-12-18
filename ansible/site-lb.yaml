@@ -1,11 +1,6 @@
-- name: Install HAProxy
+- name: Load Balancer Setup
   hosts: lb
   become: true
   roles:
     - install-haproxy
-
-- name: Install Keepalived
-  hosts: lb
-  become: true
-  roles:
     - install-keepalived
