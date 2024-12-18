@@ -43,14 +43,9 @@
     state: started
     
 - name: Configure CRI-O runtime settings in /etc/crio/crio.conf
-  blockinfile:
-    path: /etc/crio/crio.conf
-    block: |
-      [crio.runtime]
-      conmon_cgroup = "pod"
-      cgroup_manager = "cgroupfs"
-    create: yes
-    marker: ""
+  template:
+    src: crio.conf.j2
+    dest: /etc/crio/crio.conf
 
 - name: Restart CRI-O service
   systemd:
