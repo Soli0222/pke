@@ -1,6 +1,0 @@
----
-- name: test
-  hosts: pke-oky-k8s
-  become: true
-  roles:
-    - 00-test
