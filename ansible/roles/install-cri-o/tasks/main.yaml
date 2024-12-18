@@ -49,9 +49,6 @@
       [crio.runtime]
       conmon_cgroup = "pod"
       cgroup_manager = "cgroupfs"
-
-      [crio.image]
-      pause_image = "registry.k8s.io/pause:3.6"
     create: yes
     marker: ""
 
