@@ -1,0 +1,7 @@
+persistence:
+  type: pvc
+  enabled: true
+  storageClassName: oky-synology-01-nfs
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
