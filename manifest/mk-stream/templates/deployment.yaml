@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mk-stream-deployment
+  labels:
+    app: mk-stream
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mk-stream
+  template:
+    metadata:
+      labels:
+        app: mk-stream
+    spec:
+      containers:
+        - name: app
+          image: soli0222/mk-stream:{{ .Values.image.tag }}
+          env:
+            - name: HOST
+              value: "{{ .Values.env.HOST }}"
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mk-stream-secret
+                  key: TOKEN
