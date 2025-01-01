@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spotify-nowplaying-deployment
+  labels:
+    app: spotify-nowplaying
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spotify-nowplaying
+  template:
+    metadata:
+      labels:
+        app: spotify-nowplaying
+    spec:
+      containers:
+        - name: app
+          image: soli0222/spotify-nowplaying:{{ .Values.image.tag }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "{{ .Values.env.PORT }}"
+            - name: SERVER_URI
+              value: "{{ .Values.env.SERVER_URI }}"
+            - name: SPOTIFY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: spotify-nowplaying-secret
+                  key: SPOTIFY_CLIENT_ID
+            - name: SPOTIFY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: spotify-nowplaying-secret
+                  key: SPOTIFY_CLIENT_SECRET
+            - name: SPOTIFY_REDIRECT_URI_NOTE
+              value: "{{ .Values.env.SPOTIFY_REDIRECT_URI_NOTE }}"
+            - name: SPOTIFY_REDIRECT_URI_TWEET
+              value: "{{ .Values.env.SPOTIFY_REDIRECT_URI_TWEET }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spotify-nowplaying-service
+spec:
+  selector:
+    app: spotify-nowplaying
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
