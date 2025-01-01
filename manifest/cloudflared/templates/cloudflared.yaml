@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: cloudflared
-        image: cloudflare/cloudflared:2024.11.1
+        image: cloudflare/cloudflared:{{ .Values.imageTag }}
         args:
         - tunnel
         - --config
