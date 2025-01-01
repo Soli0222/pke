@@ -1,0 +1,17 @@
+- name: Set Hostname
+  set_fact:
+    hostname: "{{ ansible_hostname }}"
+
+- name: Drain node
+  shell: kubectl drain {{ hostname }} --ignore-daemonsets --delete-emptydir-data
+  delegate_to: localhost
+
+- name: Restart kubelet
+  become: true
+  shell: |
+    systemctl daemon-reload
+    systemctl restart kubelet
+
+- name: Uncordon node
+  shell: kubectl uncordon {{ hostname }}
+  delegate_to: localhost

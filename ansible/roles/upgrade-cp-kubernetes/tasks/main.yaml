@@ -1,0 +1,11 @@
+- name: Kubeadm upgrade apply for Control Plane
+  shell:
+    cmd: > 
+      kubeadm upgrade apply v{{ kubernetes_upgrade_version }} --yes --ignore-preflight-errors=CreateJob
+  when: "'k8s-cp-leader' in group_names"
+
+- name: Kubeadm upgrade node for Control Plane Follower
+  shell:
+    cmd: > 
+      kubeadm upgrade node
+  when: "'k8s-cp-follower' in group_names"

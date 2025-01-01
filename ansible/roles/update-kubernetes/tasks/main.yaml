@@ -1,0 +1,21 @@
+---
+- name: Add Kubernetes repository key
+  shell:
+    cmd: > 
+      curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/Release.key |
+      gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes repository
+  shell:
+    cmd: > 
+      echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/ /' |
+      tee /etc/apt/sources.list.d/kubernetes.list
+
+- name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
+  apt:
+    name:
+      - kubelet={{ kubernetes_upgrade_version }}-1.1
+      - kubeadm={{ kubernetes_upgrade_version }}-1.1
+      - kubectl={{ kubernetes_upgrade_version }}-1.1
+    state: present
+    update_cache: yes

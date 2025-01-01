@@ -1,0 +1,24 @@
+---
+- name: Add CRI-O repository key
+  shell:
+    cmd: > 
+      curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ crio_version }}/deb/Release.key |
+      gpg --batch --yes --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg
+
+- name: Add CRI-O repository
+  shell:
+    cmd: > 
+      echo 'deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ crio_version }}/deb/ /' |
+      tee /etc/apt/sources.list.d/cri-o.list
+
+- name: Upgrade CRI-O
+  apt:
+    name: "cri-o"
+    state: latest
+    update_cache: yes
+
+- name: Restart CRI-O service
+  systemd:
+    name: crio
+    state: restarted
+    enabled: yes

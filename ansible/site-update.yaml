@@ -1,0 +1,18 @@
+- name: Update CRI-O and Kubernetes
+  hosts: k8s
+  become: true
+  roles:
+    - update-cri-o
+    - update-kubernetes
+
+- name: Upgrade Control Plane
+  hosts: k8s-cp
+  become: true
+  roles:
+    - upgrade-cp-kubernetes
+
+- name: Upgrade Worker Nodes
+  hosts: k8s-wk
+  serial: 1
+  roles:
+    - upgrade-wk-kubernetes
