@@ -16,3 +16,15 @@
           url = "https://vminsert.oky.pke.pstr.space/insert/0/prometheus/"
         }
       }
+
+- name: Disable Alloy data collection
+  ansible.builtin.lineinfile:
+    path: /etc/default/alloy
+    regexp: "^CUSTOM_ARGS="
+    line: 'CUSTOM_ARGS="--disable-reporting"'
+
+- name: Restart Alloy
+  ansible.builtin.systemd:
+    name: alloy
+    state: restarted
+    enabled: yes
