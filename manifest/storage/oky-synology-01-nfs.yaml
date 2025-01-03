@@ -7,7 +7,7 @@ parameters:
   protocol: "nfs"
   dsm: '192.168.20.250'
   location: '/volume1'
-  mountPermissions: '0755'
+  mountPermissions: '777'
 mountOptions:
   - nfsvers=4.1
 reclaimPolicy: Delete
