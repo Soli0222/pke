@@ -42,8 +42,5 @@ terraform.rc
 # proxmox secret variables
 terraform/modules/oky/variables.tf
 
-# minio secret variables
-manifest/minio/values.minio-oky.yaml
-
 # k8s secret variables
 secret.yaml
