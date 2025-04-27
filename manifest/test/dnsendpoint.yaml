@@ -1,0 +1,11 @@
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: nginx-endpoint
+spec:
+  endpoints:
+  - dnsName: nginx.oky.pke.pstr.space
+    recordType: A
+    recordTTL: 180
+    targets:
+    - 192.168.21.1
