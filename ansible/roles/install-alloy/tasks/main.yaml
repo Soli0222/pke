@@ -1,4 +1,13 @@
 ---
+# - name: Copy mTLS certificates
+#   ansible.builtin.copy:
+#     src: "{{ item }}"
+#     dest: /etc/alloy/certs/
+#     mode: 0600
+#   with_items:
+#     - files/pstr.space.pem
+#     - files/pstr.space.key
+
 - name: Install Alloy
   ansible.builtin.include_role:
     name: grafana.grafana.alloy
@@ -17,11 +26,11 @@
         }
       }
 
-- name: Disable Alloy data collection
-  ansible.builtin.lineinfile:
-    path: /etc/default/alloy
-    regexp: "^CUSTOM_ARGS="
-    line: 'CUSTOM_ARGS="--disable-reporting"'
+# - name: Disable Alloy data collection
+#   ansible.builtin.lineinfile:
+#     path: /etc/default/alloy
+#     regexp: "^CUSTOM_ARGS="
+#     line: 'CUSTOM_ARGS="--disable-reporting"'
 
 - name: Restart Alloy
   ansible.builtin.systemd:
