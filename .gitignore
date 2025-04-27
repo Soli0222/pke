@@ -44,3 +44,7 @@ terraform/modules/oky/variables.tf
 
 # k8s secret variables
 secret.yaml
+
+# mTLS files
+*.pem
+*.key
