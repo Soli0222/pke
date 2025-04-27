@@ -119,16 +119,11 @@ external-dns:
 
   # -- [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container.
   env:
-    - name: CF_API_KEY
+    - name: CF_API_TOKEN
       valueFrom:
         secretKeyRef:
-          name: cloudflare-api-key
-          key: apiKey
-    - name: CF_API_EMAIL
-      valueFrom:
-        secretKeyRef:
-          name: cloudflare-api-key
-          key: email
+          name: cloudflare-api-token
+          key: apiToken
 
   # -- [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.
   # @default -- See _values.yaml_
@@ -309,7 +304,8 @@ external-dns:
         relabelings: []
 
   # -- Extra arguments to provide to _ExternalDNS_.
-  extraArgs: []  # @schema type: [array, null]; item: string; uniqueItems: true;
+  extraArgs: 
+   - --traefik-disable-legacy
 
   secretConfiguration:
     # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
