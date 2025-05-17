@@ -234,7 +234,8 @@ external-dns:
   txtSuffix:  # @schema type:[string, null]; default: null
 
   # -- Limit possible target zones by domain suffixes.
-  domainFilters: []
+  domainFilters: 
+    - str08.net
 
   # -- Intentionally exclude domains from being managed.
   excludeDomains: []
