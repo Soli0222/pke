@@ -194,7 +194,7 @@ ingressRoute:
     # -- Additional ingressRoute labels (e.g. for filtering IngressRoute by custom labels)
     labels: {}
     # -- The router match rule used for the dashboard ingressRoute
-    matchRule: Host(`traefik.oky.pke.pstr.space`) && PathPrefix(`/dashboard`) || Host(`traefik.oky.pke.pstr.space`) && PathPrefix(`/api`)
+    matchRule: Host(`traefik.oky.pke.str08.net`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
     # -- The internal service used for the dashboard ingressRoute
     services:
       - name: api@internal
@@ -215,7 +215,7 @@ ingressRoute:
     # -- Additional ingressRoute labels (e.g. for filtering IngressRoute by custom labels)
     labels: {}
     # -- The router match rule used for the healthcheck ingressRoute
-    matchRule: PathPrefix(`/ping`)
+    matchRule: Host(`traefik.oky.pke.str08.net`) && PathPrefix(`/ping`)
     # -- The internal service used for the healthcheck ingressRoute
     services:
       - name: ping@internal
@@ -765,7 +765,7 @@ service:
   ## -- Single service is using `MixedProtocolLBService` feature gate.
   ## -- When set to false, it will create two Service, one for TCP and one for UDP.
   single: true
-  type: ClusterIP
+  type: LoadBalancer
   # -- Additional annotations applied to both TCP and UDP services (e.g. for cloud provider specific config)
   annotations: {}
   # -- Additional annotations for TCP service only
