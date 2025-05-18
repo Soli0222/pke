@@ -1,3 +1,7 @@
+logs:
+  access:
+    enabled: true
+
 ingressRoute:
   dashboard:
     enabled: true
