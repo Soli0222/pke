@@ -1,44 +1,18 @@
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: nginx-soli0222
+  name: nginx
 spec:
   entryPoints:
+    - web
     - websecure
   routes:
-    - match: Host(`nginx.oky.pke.soli0222.com`) && PathPrefix(`/`)
+    - match: Host(`nginx.oky.pke.str08.net`) && PathPrefix(`/`)
       kind: Rule
       services:
         - name: nginx
           port: 80
+      observability:
+        accessLogs: false
   tls:
-    secretName: nginx.oky.pke.soli0222.com-http01
-
----
-apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: nginx.oky.pke.soli0222.com-issuer
-spec:
-  acme:
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
-    privateKeySecretRef:
-      name: nginx.oky.pke.soli0222.com
-    solvers:
-      - http01:
-          ingress:
-            ingressClassName: traefik
-
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: nginx.oky.pke.soli0222.com
-  namespace: traefik
-spec:
-  secretName: nginx.oky.pke.soli0222.com-http01
-  dnsNames:
-    - "nginx.oky.pke.soli0222.com"
-  issuerRef:
-    name: nginx.oky.pke.soli0222.com-issuer
-    kind: Issuer
+    secretName: "nginx.oky.pke.str08.net-dns01"

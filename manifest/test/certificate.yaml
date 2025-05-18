@@ -1,0 +1,11 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: nginx.oky.pke.str08.net
+spec:
+  secretName: nginx.oky.pke.str08.net-dns01
+  dnsNames:
+    - "nginx.oky.pke.str08.net"
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer
