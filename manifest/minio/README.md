@@ -9,7 +9,7 @@
    MinIO Operator の Helm リポジトリを追加します。
 
    ```sh
-   helm repo add minio-operator https://operator.min.io
+   helm repo add minio https://operator.min.io
    ```
 
 2. **MinIO Operator のインストール**
@@ -20,12 +20,13 @@
    helm install \
    --namespace minio-operator \
    --create-namespace \
-   operator minio-operator/operator
+   operator minio/operator
    ```
 
 3. **MinIO Tenant のインストール**
    
    ```sh
-   helm install -n minio-tenant minio-tenant . -f values.yaml
+   kubectl apply -f onepassworditem.yaml -n minio-tenant
+   helm upgrade --install -n minio-tenant tenant minio/tenant -f values.yaml
    ```
 

@@ -1,21 +1,61 @@
-secret:
-  user:
-    accessKey: # base64 encoded
-    secretKey: # base64 encoded
-
-  configuration:
-    user: 
-    password: 
-    storageClassStandard: EC:1
-    browser: on
-
 tenant:
   name: minio-oky
-  image: 
-    image: quay.io/minio/minio
-    tag: RELEASE.2024-11-07T00-52-20Z-cpuv1
+
+  image:
+    repository: quay.io/minio/minio
+    tag: RELEASE.2025-04-22T22-12-26Z-cpuv1
+    pullPolicy: IfNotPresent
+
+  configSecret:
+    name: storage-configuration
+    existingSecret: true
+
   pools:
-    name: pool-0
-    storageClassName: oky-synology-01
-    servers: 1
-    volumesPerServer: 2
+    - servers: 1
+      name: pool-0
+      volumesPerServer: 2
+      size: 250Gi
+      storageClassName: "oky-synology-02-nfs"
+
+  metrics:
+    enabled: true
+    port: 9000
+    protocol: http
+
+  certificate:
+    requestAutoCert: false
+
+  users:
+    - name: storage-user
+  
+ingress:
+  api:
+    enabled: true
+    ingressClassName: "traefik"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt"
+    tls:
+      - secretName: minio.oky.pke.str08.net-dns01
+        hosts:
+          - minio.oky.pke.str08.net
+      - secretName: minio-oky-tls
+        hosts:
+          - minio
+    host: minio.oky.pke.str08.net
+    path: /
+    pathType: Prefix
+  console:
+    enabled: true
+    ingressClassName: "traefik"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt"
+    tls:
+      - secretName: minio-console.oky.pke.str08.net-dns01
+        hosts:
+          - minio-console.oky.pke.str08.net
+      - secretName: minio-oky-tls
+        hosts:
+          - minio-console
+    host: minio-console.oky.pke.str08.net
+    path: /
+    pathType: Prefix
