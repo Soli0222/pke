@@ -202,11 +202,12 @@ ingressRoute:
     # -- Specify the allowed entrypoints to use for the dashboard ingress route, (e.g. traefik, web, websecure).
     # By default, it's using traefik entrypoint, which is not exposed.
     # /!\ Do not expose your dashboard without any protection over the internet /!\
-    entryPoints: ["web"]
+    entryPoints: ["web", "websecure"]
     # -- Additional ingressRoute middlewares (e.g. for authentication)
     middlewares: []
     # -- TLS options (e.g. secret containing certificate)
-    tls: {}
+    tls: 
+      secretName: "traefik.oky.pke.str08.net-dns01"
   healthcheck:
     # -- Create an IngressRoute for the healthcheck probe
     enabled: false
