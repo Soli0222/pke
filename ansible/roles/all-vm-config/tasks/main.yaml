@@ -19,6 +19,10 @@
       value: "1"
     - name: net.ipv4.ip_forward
       value: "1"
+    - name: fs.inotify.max_user_instances
+      value: "8192"
+    - name: fs.inotify.max_user_watches
+      value: "524288"
 
 - name: Reload sysctl settings
   command: sysctl --system
