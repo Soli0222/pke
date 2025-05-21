@@ -38,9 +38,6 @@ ingress:
       - secretName: minio.oky.pke.str08.net-dns01
         hosts:
           - minio.oky.pke.str08.net
-      - secretName: minio-oky-tls
-        hosts:
-          - minio
     host: minio.oky.pke.str08.net
     path: /
     pathType: Prefix
@@ -53,9 +50,6 @@ ingress:
       - secretName: minio-console.oky.pke.str08.net-dns01
         hosts:
           - minio-console.oky.pke.str08.net
-      - secretName: minio-oky-tls
-        hosts:
-          - minio-console
     host: minio-console.oky.pke.str08.net
     path: /
     pathType: Prefix
