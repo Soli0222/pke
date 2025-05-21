@@ -1,3 +1,16 @@
+ingress:
+  enabled: true
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt"
+  hosts:
+    - alloy.oky.pke.str08.net
+  tls:
+    - hosts:
+        - alloy.oky.pke.str08.net
+      secretName: alloy.oky.pke.str08.net-dns01
+  ingressClassName: traefik
+  faroPort: 12345
+
 alloy:
   configMap:
     content: |-
