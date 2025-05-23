@@ -5,6 +5,8 @@ env:
         name: cloudflare-api-token
         key: apiToken
 
+managedRecordTypes: ["A", "AAAA"]
+
 sources:
   - service
   - ingress
