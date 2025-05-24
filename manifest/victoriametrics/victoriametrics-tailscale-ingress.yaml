@@ -1,0 +1,70 @@
+apiVersion: v1
+items:
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+      meta.helm.sh/release-name: vmcluster
+      meta.helm.sh/release-namespace: victoria-metrics
+    labels:
+      app: vminsert
+      app.kubernetes.io/instance: vmcluster
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: victoria-metrics-cluster
+      app.kubernetes.io/version: v1.117.1-cluster
+      helm.sh/chart: victoria-metrics-cluster-0.22.1
+    name: vmcluster-victoria-metrics-cluster-vminsert-tailscale
+    namespace: victoria-metrics
+  spec:
+    ingressClassName: traefik-tailscale
+    rules:
+    - host: vminsert.tailscale.oky.pke.str08.net
+      http:
+        paths:
+        - backend:
+            service:
+              name: vmcluster-victoria-metrics-cluster-vminsert
+              port:
+                name: http
+          path: /insert
+          pathType: Prefix
+    tls:
+    - hosts:
+      - vminsert.tailscale.oky.pke.str08.net
+      secretName: vminsert.tailscale.oky.pke.str08.net-dns01
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+      meta.helm.sh/release-name: vmcluster
+      meta.helm.sh/release-namespace: victoria-metrics
+    labels:
+      app: vmselect
+      app.kubernetes.io/instance: vmcluster
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: victoria-metrics-cluster
+      app.kubernetes.io/version: v1.117.1-cluster
+      helm.sh/chart: victoria-metrics-cluster-0.22.1
+    name: vmcluster-victoria-metrics-cluster-vmselect-tailscale
+    namespace: victoria-metrics
+  spec:
+    ingressClassName: traefik-tailscale
+    rules:
+    - host: vmselect.tailscale.oky.pke.str08.net
+      http:
+        paths:
+        - backend:
+            service:
+              name: vmcluster-victoria-metrics-cluster-vmselect
+              port:
+                name: http
+          path: /select
+          pathType: Prefix
+    tls:
+    - hosts:
+      - vmselect.tailscale.oky.pke.str08.net
+      secretName: vmselect.tailscale.oky.pke.str08.net-dns01
+kind: List
+metadata: {}
