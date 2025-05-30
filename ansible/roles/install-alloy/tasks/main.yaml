@@ -1,13 +1,4 @@
 ---
-# - name: Copy mTLS certificates
-#   ansible.builtin.copy:
-#     src: "{{ item }}"
-#     dest: /etc/alloy/certs/
-#     mode: 0600
-#   with_items:
-#     - files/pstr.space.pem
-#     - files/pstr.space.key
-
 - name: Install Alloy
   ansible.builtin.include_role:
     name: grafana.grafana.alloy
@@ -22,7 +13,43 @@
 
       prometheus.remote_write "victoriametrics" {
         endpoint {
-          url = "https://vminsert.oky.pke.pstr.space/insert/0/prometheus/"
+          url = "https://vminsert.oky.pke.str08.net/insert/0/prometheus/"
+        }
+      }
+
+      loki.relabel "journal" {
+        forward_to = []
+
+        rule {
+          source_labels = ["__journal__systemd_unit"]
+          target_label  = "unit"
+        }
+        rule {
+          source_labels = ["__journal__runtime_scope"]
+          target_label  = "runtime_scope"
+        }
+        rule {
+          source_labels = ["_journal_syslog_identifier"]
+          target_label  = "syslog_identifier"
+        }
+        rule {
+          source_labels = ["_journal_priority_keyword"]
+          target_label  = "detected_level"
+        }
+      }
+
+      loki.source.journal "read"  {
+        forward_to    = [loki.write.endpoint.receiver]
+        relabel_rules = loki.relabel.journal.rules
+        labels        = {
+          component = "loki.source.journal",
+          host = env("HOSTNAME"),
+        }
+      }
+
+      loki.write "endpoint" {
+        endpoint {
+          url ="https://loki-gateway.oky.pke.str08.net/loki/api/v1/push"
         }
       }
 
