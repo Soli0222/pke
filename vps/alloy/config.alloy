@@ -1,0 +1,88 @@
+prometheus.exporter.unix "nodeexporter" {}
+
+prometheus.scrape "nodeexporter" {
+  targets = prometheus.exporter.unix.nodeexporter.targets
+  forward_to = [prometheus.remote_write.victoriametrics.receiver]
+}
+
+
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+  rule {
+    source_labels = ["__journal__runtime_scope"]
+    target_label  = "runtime_scope"
+  }
+  rule {
+    source_labels = ["_journal_syslog_identifier"]
+    target_label  = "syslog_identifier"
+  }
+  rule {
+    source_labels = ["_journal_priority_keyword"]
+    target_label  = "detected_level"
+  }
+  rule {
+    target_label = "origin"
+    replacement  = "journal"
+  }
+}
+
+loki.source.journal "read"  {
+  forward_to    = [loki.relabel.add_host_label.receiver]
+  relabel_rules = loki.relabel.journal.rules
+}
+
+
+local.file_match "local_files" {
+  path_targets = [{"__path__" = "/var/log/*.log"}]
+  sync_period = "5s"
+}
+
+loki.relabel "add_origin_file_label" {
+  forward_to = [loki.process.filter_logs.receiver]
+  rule {
+    target_label = "origin"
+    replacement  = "file"
+  }
+}
+
+loki.source.file "log_scrape" {
+  targets    = local.file_match.local_files.targets
+  forward_to = [loki.relabel.add_origin_file_label.receiver]
+  tail_from_end = true
+}
+
+loki.process "filter_logs" {
+  stage.drop {
+    source = ""
+    expression  = ".*Connection closed by authenticating user root"
+    drop_counter_reason = "noisy"
+  }
+  forward_to = [loki.relabel.add_host_label.receiver]
+}
+
+loki.relabel "add_host_label" {
+  forward_to = [loki.write.endpoint.receiver]
+
+  rule {
+    target_label = "host"
+    replacement  = env("HOSTNAME")
+  }
+}
+
+
+prometheus.remote_write "victoriametrics" {
+  endpoint {
+    url = "https://vminsert.tailscale.oky.pke.str08.net/insert/0/prometheus/"
+  }
+}
+
+loki.write "endpoint" {
+  endpoint {
+    url ="https://loki-gateway.tailscale.oky.pke.str08.net/loki/api/v1/push"
+  }
+}
