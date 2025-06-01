@@ -140,3 +140,62 @@ alloy:
           url = "http://loki-gateway.loki.svc.cluster.local/loki/api/v1/push"
         }
       }
+
+
+
+# discovery.relabel "pod_metrics_relabeled" {
+#   targets = discovery.kubernetes.pod.targets
+
+#   rule {
+#     source_labels = ["__meta_kubernetes_namespace"]
+#     action        = "replace"
+#     target_label  = "namespace"
+#   }
+#   rule {
+#     source_labels = ["__meta_kubernetes_pod_name"]
+#     action        = "replace"
+#     target_label  = "pod"
+#   }
+#   rule {
+#     source_labels = ["__meta_kubernetes_pod_container_name"]
+#     action        = "replace"
+#     target_label  = "container"
+#   }
+# }
+
+# prometheus.scrape "pod" {
+#   targets    = discovery.relabel.pod_metrics_relabeled.output
+#   forward_to = [prometheus.remote_write.default.receiver]
+#   // relabel_config blocks removed from here
+# }
+
+# discovery.kubernetes "service_metrics_source" {
+#   role = "service"
+# }
+
+# discovery.relabel "service_metrics_relabeled" {
+#   targets = discovery.kubernetes.service_metrics_source.targets
+
+#   rule {
+#     source_labels = ["__meta_kubernetes_namespace"]
+#     action        = "replace"
+#     target_label  = "namespace"
+#   }
+#   rule {
+#     source_labels = ["__meta_kubernetes_service_name"]
+#     action        = "replace"
+#     target_label  = "service"
+#   }
+# }
+
+# prometheus.scrape "services" {
+#   targets    = discovery.relabel.service_metrics_relabeled.output
+#   forward_to = [prometheus.remote_write.default.receiver]
+#   // relabel_config blocks removed from here
+# }
+
+# prometheus.remote_write "default" {
+#   endpoint {
+#     url = "http://vmcluster-victoria-metrics-cluster-vminsert.victoria-metrics:8480/insert/0/prometheus/"
+#   }
+# }

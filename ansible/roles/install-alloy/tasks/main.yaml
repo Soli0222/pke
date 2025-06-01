@@ -36,14 +36,52 @@
           source_labels = ["_journal_priority_keyword"]
           target_label  = "detected_level"
         }
+        rule {
+          target_label = "origin"
+          replacement  = "journal"
+        }
       }
 
       loki.source.journal "read"  {
-        forward_to    = [loki.write.endpoint.receiver]
+        forward_to    = [loki.relabel.add_host_label.receiver]
         relabel_rules = loki.relabel.journal.rules
-        labels        = {
-          component = "loki.source.journal",
-          host = env("HOSTNAME"),
+      }
+
+
+      local.file_match "local_files" {
+        path_targets = [{"__path__" = "/var/log/*.log"}]
+        sync_period = "5s"
+      }
+
+      loki.relabel "add_origin_file_label" {
+        forward_to = [loki.process.filter_logs.receiver]
+        rule {
+          target_label = "origin"
+          replacement  = "file"
+        }
+      }
+
+      loki.source.file "log_scrape" {
+        targets    = local.file_match.local_files.targets
+        forward_to = [loki.relabel.add_origin_file_label.receiver]
+        tail_from_end = true
+      }
+
+      loki.process "filter_logs" {
+        stage.drop {
+          source = ""
+          expression  = ".*Connection closed by authenticating user root"
+          drop_counter_reason = "noisy"
+        }
+        forward_to = [loki.relabel.add_host_label.receiver]
+      }
+
+      loki.relabel "add_host_label" {
+        forward_to = [loki.write.endpoint.receiver]
+
+        rule {
+          target_label = "host"
+          replacement  = env("HOSTNAME")
         }
       }
 
