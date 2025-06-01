@@ -5,6 +5,31 @@ prometheus.scrape "nodeexporter" {
   forward_to = [prometheus.remote_write.victoriametrics.receiver]
 }
 
+prometheus.exporter.postgres "misskey_db" {
+  data_source_names = ["postgresql://username:password@localhost:5432/misskey?sslmode=disable"]
+}
+
+prometheus.scrape "misskey_db" {
+  targets    = prometheus.exporter.postgres.misskey_db.targets
+  forward_to = [prometheus.remote_write.victoriametrics.receiver]
+}
+
+prometheus.exporter.process "processexporter" {
+}
+
+prometheus.scrape "processexporter" {
+  targets    = prometheus.exporter.process.processexporter.targets
+  forward_to = [prometheus.remote_write.victoriametrics.receiver]
+}
+
+prometheus.exporter.redis "redisexporter" {
+  redis_addr = "localhost:6379"
+}
+
+prometheus.scrape "redisexporter" {
+  targets    = prometheus.exporter.redis.redisexporter.targets
+  forward_to = [prometheus.remote_write.victoriametrics.receiver]
+}
 
 loki.relabel "journal" {
   forward_to = []
