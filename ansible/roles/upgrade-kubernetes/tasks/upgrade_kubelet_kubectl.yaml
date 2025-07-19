@@ -1,0 +1,58 @@
+- name: Wait for dpkg/apt locks to be released
+  shell: |
+    timeout=300
+    elapsed=0
+    while [ $elapsed -lt $timeout ]; do
+      if ! fuser /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/cache/apt/archives/lock >/dev/null 2>&1; then
+        echo "All locks are free"
+        exit 0
+      fi
+      echo "Waiting for package management locks to be released... ($elapsed/$timeout seconds)"
+      sleep 10
+      elapsed=$((elapsed + 10))
+    done
+    echo "Timeout waiting for locks to be released"
+    exit 1
+  changed_when: false
+
+- name: Unhold kubelet and kubectl packages
+  dpkg_selections:
+    name: "{{ item }}"
+    selection: install
+  loop:
+    - kubelet
+    - kubectl
+  retries: 10
+  delay: 15
+  register: unhold_result
+  until: unhold_result is succeeded
+
+- name: Upgrade kubelet and kubectl
+  apt:
+    name: 
+      - "kubelet={{ kubernetes_version }}-1.1"
+      - "kubectl={{ kubernetes_version }}-1.1"
+    state: present
+    update_cache: yes
+  retries: 5
+  delay: 20
+  register: upgrade_result
+  until: upgrade_result is succeeded
+
+- name: Hold kubelet and kubectl packages
+  dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubectl
+  retries: 5
+  delay: 10
+  register: hold_result
+  until: hold_result is succeeded
+
+- name: Restart kubelet
+  systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: yes

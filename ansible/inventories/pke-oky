@@ -13,8 +13,8 @@ ansible_port=22
 ansible_user=ubuntu
 ansible_ssh_private_key_file=/Users/soli/.ssh/id_ed25519.pub
 username=ubuntu
-crio_version=v1.31
-kubernetes_version=v1.31
+crio_version=1.32.1
+kubernetes_version=1.33.3
 controlplane_endpoint=192.168.20.30:6443
 pod_network_cidr=10.244.0.0/16
 

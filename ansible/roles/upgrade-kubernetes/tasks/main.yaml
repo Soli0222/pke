@@ -1,0 +1,75 @@
+- name: Extract major.minor version from kubernetes_version
+  set_fact:
+    k8s_major_minor: "{{ kubernetes_version | regex_replace('^v?([0-9]+\\.[0-9]+).*', '\\1') }}"
+
+- name: Add Kubernetes repository key
+  shell:
+    cmd: > 
+      curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ k8s_major_minor }}/deb/Release.key |
+      gpg --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes repository
+  shell:
+    cmd: > 
+      echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_major_minor }}/deb/ /' |
+      tee /etc/apt/sources.list.d/kubernetes.list
+
+- name: Update package cache
+  apt:
+    update_cache: yes
+
+- name: Hold kubelet and kubectl packages
+  dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubectl
+    - kubeadm
+
+- name: Unhold kubeadm package for upgrade
+  dpkg_selections:
+    name: kubeadm
+    selection: install
+
+- name: Upgrade kubeadm
+  apt:
+    name: kubeadm={{ kubernetes_version }}-1.1
+    state: present
+    update_cache: yes
+
+- name: Hold kubeadm package after upgrade
+  dpkg_selections:
+    name: kubeadm
+    selection: hold
+
+- name: Check kubeadm version
+  command: kubeadm version -o short
+  register: kubeadm_version
+  changed_when: false
+
+- name: Display kubeadm version
+  debug:
+    msg: "kubeadm version: {{ kubeadm_version.stdout }}"
+
+# Control plane leader upgrade
+- name: Upgrade control plane leader
+  block:
+    - name: Apply upgrade on control plane leader
+      command: "kubeadm upgrade apply {{ kubernetes_version }} -y"
+
+    - name: Upgrade kubelet and kubectl on leader
+      include_tasks: upgrade_kubelet_kubectl.yaml
+
+  when: inventory_hostname in groups['k8s-cp-leader']
+
+# Non-leader nodes upgrade (control plane followers and workers)
+- name: Upgrade non-leader nodes
+  block:
+    - name: Upgrade node configuration
+      command: kubeadm upgrade node
+
+    - name: Upgrade kubelet and kubectl
+      include_tasks: upgrade_kubelet_kubectl.yaml
+
+  when: inventory_hostname not in groups['k8s-cp-leader']
