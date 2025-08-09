@@ -1,5 +1,6 @@
 image:
-  tag: 2.2.0
+  repository: ghcr.io/soli0222/spotify-nowplaying
+  tag: 2.3.0
 
 env:
   PORT: 8080
