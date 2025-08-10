@@ -1,0 +1,85 @@
+---
+# Install containerd, runc, and CNI plugins for Kubernetes (linux/amd64)
+# Versions are configurable via group_vars (see defaults for variable names)
+
+- name: Ensure required directories exist
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /opt/cni/bin
+    - /etc/containerd
+    - /usr/local/lib/systemd/system
+
+- name: Download containerd archive
+  become: true
+  ansible.builtin.get_url:
+    url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+    dest: "/tmp/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+    mode: "0644"
+    checksum: "{{ containerd_checksum | default(omit) }}"
+
+- name: Extract containerd to /usr/local
+  become: true
+  ansible.builtin.unarchive:
+    src: "/tmp/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+    dest: "/usr/local"
+    remote_src: true
+
+- name: Install runc binary
+  become: true
+  ansible.builtin.get_url:
+    url: "https://github.com/opencontainers/runc/releases/download/v{{ runc_version }}/runc.amd64"
+    dest: "/usr/local/sbin/runc"
+    mode: "0755"
+    checksum: "{{ runc_checksum | default(omit) }}"
+
+- name: Download CNI plugins archive
+  become: true
+  ansible.builtin.get_url:
+    url: "https://github.com/containernetworking/plugins/releases/download/v{{ cni_plugins_version }}/cni-plugins-linux-amd64-v{{ cni_plugins_version }}.tgz"
+    dest: "/tmp/cni-plugins-linux-amd64-v{{ cni_plugins_version }}.tgz"
+    mode: "0644"
+    checksum: "{{ cni_plugins_checksum | default(omit) }}"
+
+- name: Extract CNI plugins to /opt/cni/bin
+  become: true
+  ansible.builtin.unarchive:
+    src: "/tmp/cni-plugins-linux-amd64-v{{ cni_plugins_version }}.tgz"
+    dest: "/opt/cni/bin"
+    remote_src: true
+
+- name: Install systemd unit for containerd
+  become: true
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/containerd/containerd/main/containerd.service"
+    dest: "/usr/local/lib/systemd/system/containerd.service"
+    mode: "0644"
+  when: containerd_setup_systemd_unit | bool
+  notify: Reload systemd
+
+- name: Generate default containerd config if missing
+  become: true
+  ansible.builtin.shell: |
+    PATH=/usr/local/bin:$PATH containerd config default > {{ containerd_config_path }}
+  args:
+    creates: "{{ containerd_config_path }}"
+
+- name: Ensure SystemdCgroup = true for Kubernetes
+  become: true
+  ansible.builtin.replace:
+    path: "{{ containerd_config_path }}"
+    regexp: '^(\\s*)SystemdCgroup\\s*=\\s*false'
+    replace: '\\1SystemdCgroup = true'
+  when: containerd_configure_systemd_cgroup | bool
+  notify: Restart containerd
+
+- name: Enable and start containerd
+  become: true
+  ansible.builtin.systemd:
+    name: containerd
+    enabled: true
+    state: started
+    daemon_reload: true

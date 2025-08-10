@@ -1,4 +1,8 @@
 ---
+- name: Extract major.minor version from kubernetes_version
+  set_fact:
+    k8s_major_minor: "{{ kubernetes_version | regex_replace('^v?([0-9]+\\.[0-9]+).*', '\\1') }}"
+    
 - name: Update apt cache (equivalent to apt-get update)
   apt:
     update_cache: yes
@@ -21,13 +25,13 @@
 - name: Add Kubernetes repository key
   shell:
     cmd: > 
-      curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/Release.key |
+      curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ k8s_major_minor }}/deb/Release.key |
       gpg --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
 - name: Add Kubernetes repository
   shell:
     cmd: > 
-      echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/ /' |
+      echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_major_minor }}/deb/ /' |
       tee /etc/apt/sources.list.d/kubernetes.list
 
 - name: Update apt cache (equivalent to apt-get update)

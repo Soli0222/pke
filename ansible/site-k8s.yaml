@@ -2,7 +2,7 @@
   hosts: k8s
   become: true
   roles:
-    - install-cri-o
+    - install-containerd
     - install-kubernetes
     - init-cp-kubernetes
     - join-cp-kubernetes
