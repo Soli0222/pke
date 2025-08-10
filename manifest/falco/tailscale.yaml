@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  name: falcosidekick-ui-tailscale
+  namespace: falco
+spec:
+  ingressClassName: traefik-tailscale
+  rules:
+  - host: falco.tailscale.oky.pke.str08.net
+    http:
+      paths:
+      - backend:
+          service:
+            name: falcosidekick-ui
+            port:
+              name: http
+        path: /
+        pathType: ImplementationSpecific
+  tls:
+  - hosts:
+    - falco.tailscale.oky.pke.str08.net
+    secretName: falco.tailscale.oky.pke.str08.net-dns01
