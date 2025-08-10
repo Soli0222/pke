@@ -49,6 +49,6 @@ backend apiserverbackend
     mode tcp
     balance     roundrobin
     
-    server pke-oky-cp-1 192.168.20.51:6443 check verify none
-    server pke-oky-cp-2 192.168.20.52:6443 check verify none
-    server pke-oky-cp-3 192.168.20.53:6443 check verify none
+{% for host in groups['k8s-cp'] %}
+    server {{ host }} {{ hostvars[host]['ansible_host'] }}:{{ haproxy_backend_port }} check verify none
+{% endfor %}

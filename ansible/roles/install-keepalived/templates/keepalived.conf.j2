@@ -1,0 +1,32 @@
+global_defs {
+    router_id LVS_DEVEL
+}
+vrrp_script check_apiserver {
+  script "/etc/keepalived/check_apiserver.sh"
+  interval 3
+  weight -2
+  fall 10
+  rise 2
+}
+
+vrrp_instance Instance1 {
+    state {{ keepalived_state }}
+    interface {{ lb_interface }}
+    virtual_router_id {{ lb_virtual_router_id }}
+    priority {{ keepalived_priority }}
+    advert_int 1
+    unicast_src_ip {{ ansible_host }}
+    unicast_peer {
+{% for host in groups['lb'] %}
+{% if host != inventory_hostname %}
+       {{ hostvars[host]['ansible_host'] }}
+{% endif %}
+{% endfor %}
+    }
+    virtual_ipaddress {
+       {{ lb_virtual_ip }}
+    }
+    track_script {
+        check_apiserver
+    }
+}

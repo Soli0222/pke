@@ -1,0 +1,7 @@
+# Load Balancer Configuration
+lb_interface: eth0
+lb_virtual_router_id: 10
+
+# HAProxy Backend Configuration (Dynamic from k8s-cp group)
+# This will be auto-generated from the k8s-cp group hosts
+haproxy_backend_port: 6443

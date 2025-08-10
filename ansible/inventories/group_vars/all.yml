@@ -1,0 +1,26 @@
+# Global Ansible Configuration
+ansible_port: 22
+ansible_user: ubuntu
+ansible_ssh_private_key_file: /Users/soli/.ssh/id_ed25519
+username: ubuntu
+
+# Software Versions
+crio_version: 1.32.1
+kubernetes_version: 1.33.3
+
+# Network Configuration
+pod_network_cidr: 10.244.0.0/16
+
+# Infrastructure Configuration
+cluster_name: kkg
+base_network: 192.168.20
+
+# Network Addressing Scheme
+# .10 = Load Balancer VIP
+# .11-.12 = Load Balancers  
+# .13-.15 = Control Plane Nodes
+# .16-.18 = Worker Nodes
+
+# Derived Variables  
+lb_virtual_ip: "192.168.20.10"
+controlplane_endpoint: "192.168.20.10:6443"
