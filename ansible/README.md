@@ -7,7 +7,7 @@
 PKE Ansibleは以下のコンポーネントを自動化します：
 
 - **ロードバランサー**: HAProxy + Keepalived による高可用性LB
-- **Kubernetesクラスター**: CRI-O ランタイムを使用したマルチマスター構成
+- **Kubernetesクラスター**: containerd ランタイムを使用したマルチマスター構成
 - **ベースシステム**: セキュリティ設定、システム最適化、必要パッケージのインストール
 - **監視**: Alloy エージェントの配布
 
@@ -21,7 +21,8 @@ ansible/
 ├── site-lb.yaml               # ロードバランサー設定
 ├── site-k8s.yaml              # Kubernetesクラスター設定
 ├── site-monitoring.yaml       # 監視エージェント設定
-├── upgrade-k8s-cri-o.yaml     # アップグレード用プレイブック
+├── upgrade-k8s.yaml           # Kubernetesアップグレード
+├── upgrade-containerd.yaml    # containerdアップグレード
 │
 ├── inventories/
 │   ├── kkg                     # メインインベントリファイル
@@ -37,7 +38,7 @@ ansible/
     ├── all-vm-config/          # 全VM共通設定
     ├── init-cp-kubernetes/     # Kubernetesクラスター初期化
     ├── install-alloy/          # Alloy監視エージェント
-    ├── install-cri-o/          # CRI-Oコンテナランタイム
+    ├── install-containerd/     # containerdコンテナランタイム
     ├── install-haproxy/        # HAProxyロードバランサー
     ├── install-keepalived/     # Keepalived高可用性
     ├── install-kubernetes/     # Kubernetesコンポーネント
@@ -58,14 +59,15 @@ ansible/
 ### 専用プレイブック
 
 - **`site-monitoring.yaml`**: 監視エージェント（Alloy）の配布
-- **`upgrade-k8s-cri-o.yaml`**: Kubernetesとコンテナランタイムのアップグレード
+- **`upgrade-k8s.yaml`**: Kubernetesのアップグレード
+- **`upgrade-containerd.yaml`**: containerd（必要に応じてrunc/CNI含む）のアップグレード
 
 ## ロール詳細
 
 | ロール | 説明 | 対象ホスト |
 |--------|------|------------|
 | `all-vm-config` | カーネルモジュール、sysctl、パッケージ更新 | all |
-| `install-cri-o` | CRI-Oコンテナランタイムのインストール | k8s |
+| `install-containerd` | containerdコンテナランタイムのインストール | k8s |
 | `install-kubernetes` | kubelet、kubeadm、kubectlのインストール | k8s |
 | `init-cp-kubernetes` | Kubernetesクラスターの初期化 | k8s-cp-leader |
 | `join-cp-kubernetes` | 追加コントロールプレーンノードの参加 | k8s-cp-follower |
@@ -119,18 +121,28 @@ kkg-wk3 ansible_host=192.168.20.18
 ### グローバル変数 (group_vars/all.yml)
 
 ```yaml
+# Global Ansible Configuration
+ansible_port: 22
+ansible_user: ubuntu
+ansible_ssh_private_key_file: /Users/soli/.ssh/id_ed25519
+username: ubuntu
+
 # Software Versions
-crio_version: 1.32.1
+containerd_version: "2.1.4"
+runc_version: "1.3.0"
+cni_plugins_version: "1.7.1"
 kubernetes_version: 1.33.3
 
 # Network Configuration
-base_network: 192.168.20
 pod_network_cidr: 10.244.0.0/16
-lb_virtual_ip: "192.168.20.10"
-controlplane_endpoint: "192.168.20.10:6443"
 
 # Infrastructure Configuration
 cluster_name: kkg
+base_network: 192.168.20
+
+# Derived Variables
+lb_virtual_ip: "192.168.20.10"
+controlplane_endpoint: "192.168.20.10:6443"
 ```
 
 ### ロードバランサー変数 (group_vars/lb.yml)
@@ -205,8 +217,11 @@ ansible-playbook -i inventories/kkg site-monitoring.yaml
 #### 3. アップグレード
 
 ```bash
-# Kubernetesとコンテナランタイムのアップグレード
-ansible-playbook -i inventories/kkg upgrade-k8s-cri-o.yaml
+# Kubernetesのアップグレード
+ansible-playbook -i inventories/kkg upgrade-k8s.yaml
+
+# コンテナランタイム（containerd）のアップグレード
+ansible-playbook -i inventories/kkg upgrade-containerd.yaml
 ```
 
 #### 4. 特定ロールの実行
@@ -278,8 +293,10 @@ ansible-playbook -i inventories/kkg site.yaml --start-at-task="タスク名"
 `group_vars/all.yml`で以下のバージョンを管理：
 
 ```yaml
-crio_version: 1.32.1        # CRI-Oバージョン
-kubernetes_version: 1.33.3  # Kubernetesバージョン
+containerd_version: "2.1.4"      # containerdバージョン
+runc_version: "1.3.0"            # runcバージョン
+cni_plugins_version: "1.7.1"     # CNI Pluginsバージョン
+kubernetes_version: 1.33.3        # Kubernetesバージョン
 ```
 
 ## セキュリティ考慮事項
