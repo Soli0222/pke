@@ -1,0 +1,93 @@
+network:
+  bridge: vmbr0
+  gateway: 192.168.20.1
+  nameserver: 192.168.20.1
+  search_domain: local
+
+defaults:
+  vm_user: ubuntu
+  template: ubuntu-2404-cloudinit
+
+hosts:
+  kkg-pve1:
+    node_name: kkg-pve1
+    storage: local-lvm
+  kkg-pve2:
+    node_name: kkg-pve2
+    storage: local-lvm
+  kkg-pve3:
+    node_name: kkg-pve3
+    storage: local-lvm
+
+vms:
+  - name: kkg-cp1
+    host: kkg-pve1
+    vmid: 2013
+    role: control-plane
+    ip: 192.168.20.13/24
+    cpu: 4
+    memory_mb: 4096
+    disk_gb: 50
+
+  - name: kkg-cp2
+    host: kkg-pve2
+    vmid: 2014
+    role: control-plane
+    ip: 192.168.20.14/24
+    cpu: 4
+    memory_mb: 4096
+    disk_gb: 50
+
+  - name: kkg-cp3
+    host: kkg-pve3
+    vmid: 2015
+    role: control-plane
+    ip: 192.168.20.15/24
+    cpu: 8
+    memory_mb: 4096
+    disk_gb: 50
+
+  - name: kkg-wk1
+    host: kkg-pve1
+    vmid: 2016
+    role: worker
+    ip: 192.168.20.16/24
+    cpu: 4
+    memory_mb: 8192
+    disk_gb: 50
+
+  - name: kkg-wk2
+    host: kkg-pve2
+    vmid: 2017
+    role: worker
+    ip: 192.168.20.17/24
+    cpu: 4
+    memory_mb: 8192
+    disk_gb: 50
+
+  - name: kkg-wk3
+    host: kkg-pve3
+    vmid: 2018
+    role: worker
+    ip: 192.168.20.18/24
+    cpu: 8
+    memory_mb: 24576
+    disk_gb: 100
+
+  - name: kkg-lb1
+    host: kkg-pve1
+    vmid: 2011
+    role: lb
+    ip: 192.168.20.11/24
+    cpu: 4
+    memory_mb: 2048
+    disk_gb: 20
+
+  - name: kkg-lb2
+    host: kkg-pve2
+    vmid: 2012
+    role: lb
+    ip: 192.168.20.12/24
+    cpu: 4
+    memory_mb: 2048
+    disk_gb: 20
