@@ -1,4 +1,4 @@
-# KKG Kubernetes Cluster - Terraform (Multi-Stack)
+# PKE Kubernetes Cluster - Terraform (Multi-Stack)
 
 この構成は、Proxmox のホスト単位で独立した state を持つ「マルチスタック方式」です。
 トポロジは YAML で一元管理し、認証や SSH 公開鍵は環境変数から供給します。

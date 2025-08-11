@@ -1,4 +1,4 @@
-# PKE (Private Kubernetes Environment) Ansible Automation
+# PKE Ansible Automation
 
 このディレクトリには、高可用性Kubernetesクラスターのセットアップと管理を自動化するAnsibleプレイブックとロールが含まれています。
 
