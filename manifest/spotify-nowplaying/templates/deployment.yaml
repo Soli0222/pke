@@ -50,3 +50,21 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spotify-nowplaying-ingress
+spec:
+  ingressClassName: cloudflare-tunnel
+  rules:
+  - host: spn.soli0222.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: spotify-nowplaying-service
+            port:
+              number: 8080
+        path: /
+        pathType: ImplementationSpecific
