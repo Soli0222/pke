@@ -6,7 +6,7 @@ network:
 
 defaults:
   vm_user: ubuntu
-  template: ubuntu-2404-cloudinit
+  template: ubuntu-24.04-minimal-cloudimg
 
 hosts:
   kkg-pve1:
