@@ -12,7 +12,7 @@ loki:
           period: 24h
   storage_config:
     aws:
-      region: minio-oky-1
+      region: minio-kkg-1
       bucketnames: loki-chunk
       s3forcepathstyle: true
   pattern_ingester:
@@ -20,7 +20,7 @@ loki:
   limits_config:
     allow_structured_metadata: true
     volume_enabled: true
-    retention_period: 72h # 28 days retention
+    retention_period: 72h # 3 days retention
   auth_enabled: false
 
   storage:
@@ -31,13 +31,13 @@ loki:
         admin: loki-admin
     s3:
       # AWS endpoint URL
-      endpoint: minio-oky-hl.minio-tenant:9000
+      endpoint: minio-kkg-hl.minio-tenant:9000
       # AWS region where the S3 bucket is located
-      region: minio-oky-1
+      region: minio-kkg-1
       # AWS secret access key
-      secretAccessKey: 
+      secretAccessKey: ${S3_SECRET_ACCESS_KEY}
       # AWS access key ID
-      accessKeyId: 
+      accessKeyId: ${S3_ACCESS_KEY_ID}
       # # AWS signature version (e.g., v2 or v4)
       # signatureVersion: <your-signature-version>
       # Forces the path style for S3 (true/false)
@@ -52,7 +52,7 @@ minio:
   enabled: false
 
 chunksCache:
-  allocatedMemory: 1024
+  allocatedMemory: 2048
 
 deploymentMode: SingleBinary
 
@@ -63,22 +63,25 @@ gateway:
       cert-manager.io/cluster-issuer: "letsencrypt"
     ingressClassName: traefik
     hosts:
-      - host: "loki-gateway.oky.pke.str08.net"
+      - host: "loki-gateway.str08.net"
         paths:
           - path: /
             pathType: Prefix
     tls:
-      - secretName: loki-gateway.oky.pke.str08.net-dns01
+      - secretName: loki-gateway.str08.net-dns01
         hosts:
-          - loki-gateway.oky.pke.str08.net
+          - loki-gateway.str08.net
 
 singleBinary:
   replicas: 3
   persistence:
-    storageClass: oky-synology-02-nfs
+    storageClass: oky-synology-01
     accessModes:
       - ReadWriteOnce
     size: 30Gi
+  extraEnvFrom:
+    - secretRef:
+        name: loki-minio
 
 # Zero out replica counts of other deployment modes
 backend:
