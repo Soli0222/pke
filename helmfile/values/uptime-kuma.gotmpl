@@ -3,5 +3,15 @@ volume:
   accessMode: ReadWriteMany
   size: 4Gi
 
+ingress:
+  enabled: true
+  className: cloudflare-tunnel
+  annotations: ""
+  hosts:
+    - host: status.pstr.space
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
 serviceMonitor:
   enabled: false
