@@ -9,14 +9,14 @@ vmselect:
       cert-manager.io/cluster-issuer: "letsencrypt"
     ingressClassName: "traefik"
     hosts:
-      - name: vmselect.oky.pke.str08.net
+      - name: vmselect.str08.net
         path:
           - /select
         port: http
     tls:
-      - secretName: vmselect.oky.pke.str08.net-dns01
+      - secretName: vmselect.str08.net-dns01
         hosts:
-          - vmselect.oky.pke.str08.net
+          - vmselect.str08.net
 
 vminsert:
   podAnnotations:
@@ -29,14 +29,14 @@ vminsert:
       cert-manager.io/cluster-issuer: "letsencrypt"
     ingressClassName: "traefik"
     hosts:
-      - name: vminsert.oky.pke.str08.net
+      - name: vminsert.str08.net
         path:
           - /insert
         port: http
     tls:
-      - secretName: vminsert.oky.pke.str08.net-dns01
+      - secretName: vminsert.str08.net-dns01
         hosts:
-          - vminsert.oky.pke.str08.net
+          - vminsert.str08.net
 
 vmstorage:
   persistentVolume:

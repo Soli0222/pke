@@ -1,9 +1,9 @@
 persistence:
   type: pvc
   enabled: true
-  storageClassName: oky-synology-01-nfs
+  storageClassName: oky-synology-01
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   size: 10Gi
 
 ingress:
@@ -12,8 +12,8 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt"
   hosts:
-    - grafana.oky.pke.str08.net
+    - grafana.str08.net
   tls:
-   - secretName: grafana.oky.pke.str08.net-dns01
+   - secretName: grafana.str08.net-dns01
      hosts:
-       - grafana.oky.pke.str08.net
+       - grafana.str08.net

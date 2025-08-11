@@ -1,9 +1,9 @@
 tenant:
-  name: minio-oky
+  name: minio-kkg
 
   image:
     repository: quay.io/minio/minio
-    tag: RELEASE.2025-04-22T22-12-26Z-cpuv1
+    tag: RELEASE.2025-07-23T15-54-02Z
     pullPolicy: IfNotPresent
 
   configSecret:
@@ -15,7 +15,7 @@ tenant:
       name: pool-0
       volumesPerServer: 2
       size: 250Gi
-      storageClassName: "oky-synology-02-nfs"
+      storageClassName: "oky-synology-01"
 
   metrics:
     enabled: true
@@ -35,10 +35,10 @@ ingress:
     annotations:
       cert-manager.io/cluster-issuer: "letsencrypt"
     tls:
-      - secretName: minio.oky.pke.str08.net-dns01
+      - secretName: minio.str08.net-dns01
         hosts:
-          - minio.oky.pke.str08.net
-    host: minio.oky.pke.str08.net
+          - minio.str08.net
+    host: minio.str08.net
     path: /
     pathType: Prefix
   console:
@@ -47,9 +47,9 @@ ingress:
     annotations:
       cert-manager.io/cluster-issuer: "letsencrypt"
     tls:
-      - secretName: minio-console.oky.pke.str08.net-dns01
+      - secretName: minio-console.str08.net-dns01
         hosts:
-          - minio-console.oky.pke.str08.net
-    host: minio-console.oky.pke.str08.net
+          - minio-console.str08.net
+    host: minio-console.str08.net
     path: /
     pathType: Prefix

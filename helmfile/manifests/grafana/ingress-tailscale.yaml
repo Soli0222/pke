@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  labels:
+    app: grafana
+  name: grafana-tailscale
+  namespace: grafana
+spec:
+  ingressClassName: traefik-tailscale
+  rules:
+  - host: grafana.tailscale.str08.net
+    http:
+      paths:
+      - backend:
+          service:
+            name: grafana
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - grafana.tailscale.str08.net
+    secretName: grafana.tailscale.str08.net-dns01

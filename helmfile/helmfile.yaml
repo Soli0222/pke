@@ -12,6 +12,18 @@ repositories:
     url: https://kubernetes-sigs.github.io/external-dns/
   - name: tailscale
     url: https://pkgs.tailscale.com/helmcharts
+  - name: traefik
+    url: https://traefik.github.io/charts
+  - name: cloudflare
+    url: https://cloudflare.github.io/helm-charts
+  - name: uptime-kuma
+    url: https://helm.irsigler.cloud
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+  - name: vm
+    url: https://victoriametrics.github.io/helm-charts/
+  - name: minio
+    url: https://operator.min.io
 
 releases:
   - name: cilium
@@ -26,6 +38,8 @@ releases:
         command: "kubectl"
         args:
           - "apply"
+          - "-n"
+          - "kube-system"
           - "-f"
           - "manifests/cilium/default-pool.yaml"
       - events: ["preuninstall"]
@@ -33,6 +47,8 @@ releases:
         command: "kubectl"
         args:
           - "delete"
+          - "-n"
+          - "kube-system"
           - "-f"
           - "manifests/cilium/default-pool.yaml"
           - "--ignore-not-found=true"
@@ -71,6 +87,8 @@ releases:
         command: "kubectl"
         args:
           - "apply"
+          - "-n"
+          - "cert-manager"
           - "-f"
           - "manifests/cert-manager/clusterissuer.yaml"
       - events: [preuninstall]
@@ -78,6 +96,8 @@ releases:
         command: "kubectl"
         args:
           - "delete"
+          - "-n"
+          - "cert-manager"
           - "-f"
           - "manifests/cert-manager/clusterissuer.yaml"
           - "--ignore-not-found=true"
@@ -97,6 +117,8 @@ releases:
         command: "kubectl"
         args:
           - "apply"
+          - "-n"
+          - "external-dns"
           - "-f"
           - "manifests/external-dns/onepassworditem.yaml"
       - events: [preuninstall]
@@ -104,6 +126,8 @@ releases:
         command: "kubectl"
         args:
           - "delete"
+          - "-n"
+          - "external-dns"
           - "-f"
           - "manifests/external-dns/onepassworditem.yaml"
           - "--ignore-not-found=true"
@@ -121,6 +145,8 @@ releases:
         command: "kubectl"
         args:
           - "apply"
+          - "-n"
+          - "tailscale"
           - "-f"
           - "manifests/tailscale-operator/onepassworditem.yaml"
       - events: [preuninstall]
@@ -128,6 +154,211 @@ releases:
         command: "kubectl"
         args:
           - "delete"
+          - "-n"
+          - "tailscale"
           - "-f"
           - "manifests/tailscale-operator/onepassworditem.yaml"
+          - "--ignore-not-found=true"
+
+  - name: traefik
+    namespace: traefik
+    chart: traefik/traefik
+    version: 37.0.0
+    createNamespace: true
+    needs:
+      - cert-manager/cert-manager
+      - external-dns/external-dns
+    values:
+      - values/traefik.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "traefik"
+          - "-f"
+          - "manifests/traefik/certificate.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "traefik"
+          - "-f"
+          - "manifests/traefik/certificate.yaml"
+          - "--ignore-not-found=true"
+
+  - name: traefik-tailscale
+    namespace: traefik-tailscale
+    chart: traefik/traefik
+    version: 37.0.0
+    createNamespace: true
+    needs:
+      - cert-manager/cert-manager
+      - external-dns/external-dns
+    values:
+      - values/traefik-tailscale.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "traefik-tailscale"
+          - "-f"
+          - "manifests/traefik-tailscale/certificate.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "traefik-tailscale"
+          - "-f"
+          - "manifests/traefik-tailscale/certificate.yaml"
+          - "--ignore-not-found=true"
+
+  - name: cloudflare-tunnel
+    namespace: cloudflare
+    chart: cloudflare/cloudflare-tunnel
+    version: 0.3.2
+    createNamespace: true
+    needs:
+      - 1password/connect
+    values:
+      - values/cloudflare-tunnel.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "cloudflare"
+          - "-f"
+          - "manifests/cloudflare-tunnel/onepassworditem.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "cloudflare"
+          - "-f"
+          - "manifests/cloudflare-tunnel/onepassworditem.yaml"
+          - "--ignore-not-found=true"
+
+  - name: uptime-kuma
+    namespace: uptime-kuma
+    chart: uptime-kuma/uptime-kuma
+    version: 2.22.0
+    createNamespace: true
+    values:
+      - values/uptime-kuma.gotmpl
+
+  - name: grafana
+    namespace: grafana
+    chart: grafana/grafana
+    version: 9.3.1
+    createNamespace: true
+    needs:
+      - traefik/traefik
+      - traefik-tailscale/traefik-tailscale
+      - cert-manager/cert-manager
+      - external-dns/external-dns
+    values:
+      - values/grafana.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "grafana"
+          - "-f"
+          - "manifests/grafana/ingress-tailscale.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "grafana"
+          - "-f"
+          - "manifests/grafana/ingress-tailscale.yaml"
+          - "--ignore-not-found=true"
+
+  - name: vmcluster
+    namespace: victoria-metrics
+    chart: vm/victoria-metrics-cluster
+    version: 0.27.1
+    createNamespace: true
+    needs:
+      - traefik/traefik
+      - traefik-tailscale/traefik-tailscale
+      - cert-manager/cert-manager
+      - external-dns/external-dns
+    values:
+      - values/victoria-metrics-cluster.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "victoria-metrics"
+          - "-f"
+          - "manifests/victoriametrics/ingress-tailscale.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "victoria-metrics"
+          - "-f"
+          - "manifests/victoriametrics/ingress-tailscale.yaml"
+          - "--ignore-not-found=true"
+
+  - name: minio-operator
+    namespace: minio-operator
+    chart: minio/operator
+    version: 7.1.1
+    createNamespace: true
+
+  - name: minio-tenant
+    namespace: minio-tenant
+    chart: minio/tenant
+    version: 7.1.1
+    createNamespace: true
+    needs:
+      - minio-operator/minio-operator
+      - 1password/connect
+    values:
+      - values/minio-tenant.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "minio-tenant"
+          - "-f"
+          - "manifests/minio-tenant/onepassworditem.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "minio-tenant"
+          - "-f"
+          - "manifests/minio-tenant/onepassworditem.yaml"
           - "--ignore-not-found=true"

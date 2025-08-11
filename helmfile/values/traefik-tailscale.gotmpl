@@ -4,7 +4,7 @@ logs:
 
 service:
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: "traefik.tailscale.oky.pke.str08.net"
+    external-dns.alpha.kubernetes.io/hostname: "traefik.tailscale.str08.net"
   spec:
     loadBalancerClass: "tailscale"
 
@@ -23,7 +23,7 @@ providers:
 ingressRoute:
   dashboard:
     enabled: true
-    matchRule: Host(`traefik.tailscale.oky.pke.str08.net`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+    matchRule: Host(`traefik.tailscale.str08.net`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
     entryPoints: ["web", "websecure"]
     tls: 
-      secretName: "traefik.tailscale.oky.pke.str08.net-dns01"
+      secretName: "traefik.tailscale.str08.net-dns01"

@@ -4,7 +4,7 @@ logs:
 
 service:
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: "traefik.oky.pke.str08.net"
+    external-dns.alpha.kubernetes.io/hostname: "traefik.str08.net"
 
 ingressClass:
   enabled: true
@@ -21,7 +21,7 @@ providers:
 ingressRoute:
   dashboard:
     enabled: true
-    matchRule: Host(`traefik.oky.pke.str08.net`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+    matchRule: Host(`traefik.str08.net`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
     entryPoints: ["web", "websecure"]
     tls: 
-      secretName: "traefik.oky.pke.str08.net-dns01"
+      secretName: "traefik.str08.net-dns01"
