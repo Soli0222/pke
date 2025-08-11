@@ -24,6 +24,8 @@ repositories:
     url: https://victoriametrics.github.io/helm-charts/
   - name: minio
     url: https://operator.min.io
+  - name: strrl
+    url: https://helm.strrl.dev
 
 releases:
   - name: cilium
@@ -60,24 +62,22 @@ releases:
     values:
       - values/nfs-subdir-external-provisioner.gotmpl
 
-  - name: connect
-    namespace: 1password
-    chart: 1password/connect
-    version: 2.0.2
-    createNamespace: true
-    values:
-      - values/1password-connect.gotmpl
-    set:
-      - name: connect.credentials
-        file: 1password-credentials.json
+  # - name: connect
+  #   namespace: 1password
+  #   chart: 1password/connect
+  #   version: 2.0.2
+  #   createNamespace: true
+  #   values:
+  #     - values/1password-connect.gotmpl
+  #   set:
+  #     - name: connect.credentials
+  #       file: 1password-credentials.json
 
   - name: cert-manager
     namespace: cert-manager
     chart: jetstack/cert-manager
     version: v1.18.2
     createNamespace: true
-    needs:
-      - 1password/connect
     set:
       - name: crds.enabled
         value: true
@@ -107,8 +107,6 @@ releases:
     chart: external-dns/external-dns
     version: 1.17.0
     createNamespace: true
-    needs:
-      - 1password/connect
     values:
       - values/external-dns.gotmpl
     hooks:
@@ -137,8 +135,6 @@ releases:
     chart: tailscale/tailscale-operator
     version: 1.86.2
     createNamespace: true
-    needs:
-      - 1password/connect
     hooks:
       - events: [postsync]
         showlogs: true
@@ -222,15 +218,41 @@ releases:
           - "manifests/traefik-tailscale/certificate.yaml"
           - "--ignore-not-found=true"
 
-  - name: cloudflare-tunnel
-    namespace: cloudflare
-    chart: cloudflare/cloudflare-tunnel
-    version: 0.3.2
+  # - name: cloudflare-tunnel
+  #   namespace: cloudflare
+  #   chart: cloudflare/cloudflare-tunnel
+  #   version: 0.3.2
+  #   createNamespace: true
+  #   values:
+  #     - values/cloudflare-tunnel.gotmpl
+  #   hooks:
+  #     - events: [postsync]
+  #       showlogs: true
+  #       command: "kubectl"
+  #       args:
+  #         - "apply"
+  #         - "-n"
+  #         - "cloudflare"
+  #         - "-f"
+  #         - "manifests/cloudflare-tunnel/onepassworditem.yaml"
+  #     - events: [preuninstall]
+  #       showlogs: true
+  #       command: "kubectl"
+  #       args:
+  #         - "delete"
+  #         - "-n"
+  #         - "cloudflare"
+  #         - "-f"
+  #         - "manifests/cloudflare-tunnel/onepassworditem.yaml"
+  #         - "--ignore-not-found=true"
+
+  - name: cloudflare-tunnel-ingress-controller
+    namespace: cloudflare-tunnel-ingress-controller
+    chart: strrl/cloudflare-tunnel-ingress-controller
+    version: 0.0.18
     createNamespace: true
-    needs:
-      - 1password/connect
     values:
-      - values/cloudflare-tunnel.gotmpl
+      - values/cloudflare-tunnel-ingress-controller.gotmpl
     hooks:
       - events: [postsync]
         showlogs: true
@@ -238,18 +260,18 @@ releases:
         args:
           - "apply"
           - "-n"
-          - "cloudflare"
+          - "cloudflare-tunnel-ingress-controller"
           - "-f"
-          - "manifests/cloudflare-tunnel/onepassworditem.yaml"
+          - "manifests/cloudflare-tunnel-ingress-controller/onepassworditem.yaml"
       - events: [preuninstall]
         showlogs: true
         command: "kubectl"
         args:
           - "delete"
           - "-n"
-          - "cloudflare"
+          - "cloudflare-tunnel-ingress-controller"
           - "-f"
-          - "manifests/cloudflare-tunnel/onepassworditem.yaml"
+          - "manifests/cloudflare-tunnel-ingress-controller/onepassworditem.yaml"
           - "--ignore-not-found=true"
 
   - name: uptime-kuma
@@ -339,7 +361,6 @@ releases:
     createNamespace: true
     needs:
       - minio-operator/minio-operator
-      - 1password/connect
     values:
       - values/minio-tenant.gotmpl
     hooks:
