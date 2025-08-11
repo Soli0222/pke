@@ -26,3 +26,9 @@ base_network: 192.168.20
 # Derived Variables  
 lb_virtual_ip: "192.168.20.10"
 controlplane_endpoint: "192.168.20.10:6443"
+
+# Mimir Configuration
+mimir_endpoint: "https://mimir.str08.net/api/v1/push"
+
+# Alloy Configuration
+alloy_disable_reporting: true
