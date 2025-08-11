@@ -38,7 +38,7 @@ items:
   spec:
     ingressClassName: traefik-tailscale
     rules:
-    - host: vmselect.tailscale..str08.net
+    - host: vmselect.tailscale.str08.net
       http:
         paths:
         - backend:
