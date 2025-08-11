@@ -12,4 +12,4 @@ data:
 
 image:
   image: deluan/navidrome
-  tag: 0.53.3
+  tag: 0.58.0

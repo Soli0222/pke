@@ -59,3 +59,21 @@ spec:
       port: 4533
       targetPort: 4533
   type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: navidrome-ingress
+spec:
+  ingressClassName: cloudflare-tunnel
+  rules:
+  - host: navidrome.pstr.space
+    http:
+      paths:
+      - backend:
+          service:
+            name: navidrome
+            port:
+              number: 4533
+        path: /
+        pathType: ImplementationSpecific
