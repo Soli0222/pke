@@ -1,0 +1,10 @@
+---
+# Optional checksums (sha256) for supply-chain security. Example format:
+# containerd_checksum: "sha256:..."
+# runc_checksum: "sha256:..."
+# cni_plugins_checksum: "sha256:..."
+
+# Paths and toggles
+containerd_config_path: "/etc/containerd/config.toml"
+containerd_setup_systemd_unit: true
+containerd_configure_systemd_cgroup: true

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# This script sets up the environment for the Terraform configuration
+
+# Set up environment variables for Proxmox API
+export PM_API_URL="https://192.168.20.2:8006/api2/json"
+export PM_API_TOKEN_ID="root@pam!terraform-token"
+export PM_API_TOKEN_SECRET=""
+export PM_TLS_INSECURE="1"
+export TF_VAR_ssh_public_key=""

@@ -1,7 +1,0 @@
-- name: Kubernetes Cluster Setup
-  hosts: k8s
-  become: true
-  serial: 1
-  roles:
-    - upgrade-kubernetes
-    - install-cri-o

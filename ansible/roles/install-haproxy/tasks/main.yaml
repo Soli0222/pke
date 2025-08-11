@@ -5,9 +5,10 @@
     state: present
 
 - name: Copy configuration file
-  copy:
-    src: templates/haproxy.cfg.j2
+  template:
+    src: haproxy.cfg.j2
     dest: /etc/haproxy/haproxy.cfg
+  notify: restart haproxy
 
 - name: Ensure nonlocal bind kernel parameter is set
   sysctl:
@@ -21,9 +22,3 @@
     name: haproxy
     state: started
     enabled: yes
-
-- name: Restart HAProxy
-  service:
-      name: haproxy
-      state: restarted
-      enabled: yes

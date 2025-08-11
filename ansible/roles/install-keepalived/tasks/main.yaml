@@ -10,30 +10,20 @@
     state: present
 
 - name: Ensure keepalived conf is set  
-  template: >
-    src=templates/keepalived-lb-1.conf.j2
-    dest=/etc/keepalived/keepalived.conf
-  when: inventory_hostname == 'pke-oky-lb-1'
-
-- name: Ensure keepalived conf is set
-  template: >
-    src=templates/keepalived-lb-2.conf.j2
-    dest=/etc/keepalived/keepalived.conf
-  when: inventory_hostname == 'pke-oky-lb-2'
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+  notify: restart keepalived
 
 - name: Ensure keepalived sh is set
-  template: >
-    src=templates/check_apiserver.sh.j2
-    dest=/etc/keepalived/check_apiserver.sh  
+  template:
+    src: check_apiserver.sh.j2
+    dest: /etc/keepalived/check_apiserver.sh
+    mode: '0755'
+  notify: restart keepalived  
 
 - name: Ensure keepalived is started
-  service: > 
-    name=keepalived
-    state=started
-    enabled=yes
-
-- name: Restart Keepalived
-  service:
+  service: 
     name: keepalived
-    state: restarted
+    state: started
     enabled: yes

@@ -1,0 +1,26 @@
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token
+        key: apiToken
+
+managedRecordTypes: ["A", "AAAA"]
+
+sources:
+  - service
+  - ingress
+  - crd
+  - traefik-proxy
+
+domainFilters: 
+  - str08.net
+
+policy: sync
+
+provider:
+  name: cloudflare
+
+extraArgs: 
+  - --traefik-disable-legacy
+  - --txt-new-format-only

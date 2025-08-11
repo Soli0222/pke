@@ -1,0 +1,48 @@
+vmselect:
+  podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8481"
+
+  ingress:
+    enabled: true
+    annotations: 
+      cert-manager.io/cluster-issuer: "letsencrypt"
+    ingressClassName: "traefik"
+    hosts:
+      - name: vmselect.str08.net
+        path:
+          - /select
+        port: http
+    tls:
+      - secretName: vmselect.str08.net-dns01
+        hosts:
+          - vmselect.str08.net
+
+vminsert:
+  podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8480"
+
+  ingress:
+    enabled: true
+    annotations: 
+      cert-manager.io/cluster-issuer: "letsencrypt"
+    ingressClassName: "traefik"
+    hosts:
+      - name: vminsert.str08.net
+        path:
+          - /insert
+        port: http
+    tls:
+      - secretName: vminsert.str08.net-dns01
+        hosts:
+          - vminsert.str08.net
+
+vmstorage:
+  persistentVolume:
+    enabled: true
+    size: 50Gi
+    storageClassName: "oky-synology-01"
+  podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8482"

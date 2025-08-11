@@ -1,0 +1,55 @@
+tenant:
+  name: minio-kkg
+
+  image:
+    repository: quay.io/minio/minio
+    tag: RELEASE.2025-07-23T15-54-02Z
+    pullPolicy: IfNotPresent
+
+  configSecret:
+    name: storage-configuration
+    existingSecret: true
+
+  pools:
+    - servers: 1
+      name: pool-0
+      volumesPerServer: 2
+      size: 250Gi
+      storageClassName: "oky-synology-01"
+
+  metrics:
+    enabled: true
+    port: 9000
+    protocol: http
+
+  certificate:
+    requestAutoCert: false
+
+  users:
+    - name: storage-user
+  
+ingress:
+  api:
+    enabled: true
+    ingressClassName: "traefik"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt"
+    tls:
+      - secretName: minio.str08.net-dns01
+        hosts:
+          - minio.str08.net
+    host: minio.str08.net
+    path: /
+    pathType: Prefix
+  console:
+    enabled: true
+    ingressClassName: "traefik"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt"
+    tls:
+      - secretName: minio-console.str08.net-dns01
+        hosts:
+          - minio-console.str08.net
+    host: minio-console.str08.net
+    path: /
+    pathType: Prefix

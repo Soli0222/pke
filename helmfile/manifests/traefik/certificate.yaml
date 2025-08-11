@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: traefik.str08.net
+  namespace: traefik
+spec:
+  secretName: traefik.str08.net-dns01
+  dnsNames:
+    - "traefik.str08.net"
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer

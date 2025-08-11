@@ -1,0 +1,19 @@
+persistence:
+  type: pvc
+  enabled: true
+  storageClassName: oky-synology-01
+  accessModes:
+    - ReadWriteMany
+  size: 10Gi
+
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt"
+  hosts:
+    - grafana.str08.net
+  tls:
+   - secretName: grafana.str08.net-dns01
+     hosts:
+       - grafana.str08.net

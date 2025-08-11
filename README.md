@@ -1,55 +1,80 @@
-# Polestar Kubernetes Engine
+# Polestar Kubernetes Engine (PKE)
 
-Soliが開発・運用・保守を行っているサービス群のオンプレ環境用リポジトリ
+オンプレミスのKubernetesプラットフォーム Polestar Kubernetes Engine (PKE) をコードで構築・運用するためのリポジトリです。
 
-クラスタの命名規則は以下の規則に則ったものとする。
+## アーキテクチャ概要
 
-```
-${クラスタ名}-${仮想化基盤名}-${番号}
-```
+### kkgクラスタ（Proxmox VE × HA Kubernetes）
 
-運用中のクラスタは以下の通りである
+物理ノード3台のProxmox VEクラスタ上に、HA構成のKubernetesクラスターを運用しています。
 
-### okyクラスタ
+#### ハードウェア構成
 
-物理ノード3台によって構成されるクラスタ  
-仮想化基盤はProxmoxを採用 
+| ホスト名  | CPU             | メモリ | ストレージ | IPアドレス    |
+|-----------|-----------------|--------|-----------|---------------|
+| kkg-pve1  | Intel N100      | 16GB   | 512GB SSD | 192.168.20.2  |
+| kkg-pve2  | Intel N100      | 16GB   | 512GB SSD | 192.168.20.3  |
+| kkg-pve3  | Ryzen 5 3400G   | 32GB   | 512GB SSD | 192.168.20.4  |
 
-- oky-pve-1 192.168.20.2
-- oky-pve-2 192.168.20.3
-- oky-pve-3 192.168.20.3
+#### 仮想マシン構成
 
-## Terraform
+##### ロードバランサ（HAProxy + Keepalived）
+| VM名     | CPU | メモリ | ディスク | IPアドレス     | ホストマシン |
+|----------|-----|--------|----------|---------------|-------------|
+| kkg-lb1  | 4   | 2GB    | 20GB     | 192.168.20.11 | kkg-pve1    |
+| kkg-lb2  | 4   | 2GB    | 20GB     | 192.168.20.12 | kkg-pve2    |
 
-VMの作成はTerraformを用いて行う  
-命名規則は以下の通りである
+##### Kubernetesコントロールプレーン
+| VM名     | CPU | メモリ | ディスク | IPアドレス     | ホストマシン |
+|----------|-----|--------|----------|---------------|-------------|
+| kkg-cp1  | 4   | 4GB    | 50GB     | 192.168.20.13 | kkg-pve1    |
+| kkg-cp2  | 4   | 4GB    | 50GB     | 192.168.20.14 | kkg-pve2    |
+| kkg-cp3  | 4   | 4GB    | 50GB     | 192.168.20.15 | kkg-pve3    |
 
-### Kubernetes向けVM
+##### Kubernetesワーカーノード
+| VM名     | CPU | メモリ | ディスク | IPアドレス     | ホストマシン |
+|----------|-----|--------|----------|---------------|-------------|
+| kkg-wk1  | 4   | 8GB    | 50GB     | 192.168.20.16 | kkg-pve1    |
+| kkg-wk2  | 4   | 8GB    | 50GB     | 192.168.20.17 | kkg-pve2    |
+| kkg-wk3  | 8   | 24GB   | 100GB    | 192.168.20.18 | kkg-pve3    |
 
-```
-pke-${クラスタ名}-${ノードロール}${番号}
-```
+## リポジトリ構成と役割
 
-### oky
+- `terraform/` Proxmox 上に VM 群をプロビジョニング（マルチスタック方式）。詳細は `terraform/README.md`。
+- `ansible/` VM の OS 設定、containerd、Kubernetes、LB（HAProxy/Keepalived）、監視エージェントなどを自動化。詳細は `ansible/README.md`。
+- `helmfile/` クラスター上のプラットフォーム/アプリ群を Helmfile でデプロイ（Cilium, cert-manager, Traefik, 1Password Connect, external-dns, Tailscale, VictoriaMetrics, Grafana, MinIO ほか）。詳細は `helmfile/README.md`。
+- `manifest/` 一部の自作/個別アプリ用の Helm チャートや追加マニフェスト（例: loki, navidrome, spotify-nowplaying など）。
 
-okyクラスタ向けには以下のVMが作成される  
-lbノードはHAProxy用
+## エンドツーエンド手順（概要）
 
-| VM名          | CPU コア数  | メモリ   | ディスク容量   | IPアドレス       | ホストマシン   | 
-| ------------- | ---------- | ------- | ------------ | --------------- | ------------ | 
-| pke-oky-lb-1  | 4          | 4GB     | 50GB         | 192.168.20.31   | oky-pve-1    | 
-| pke-oky-lb-2  | 4          | 4GB     | 50GB         | 192.168.20.32   | oky-pve-2    |
-| pke-oky-cp-1  | 4          | 4GB     | 50GB         | 192.168.20.51   | oky-pve-1    | 
-| pke-oky-cp-2  | 4          | 4GB     | 50GB         | 192.168.20.52   | oky-pve-2    |  
-| pke-oky-cp-3  | 4          | 4GB     | 50GB         | 192.168.20.53   | oky-pve-3    |  
-| pke-oky-wk-1  | 4          | 6GB     | 50GB         | 192.168.20.101  | oky-pve-1    | 
-| pke-oky-wk-2  | 4          | 6GB     | 50GB         | 192.168.20.102  | oky-pve-2    |
-| pke-oky-wk-3  | 4          | 10GB    | 50GB         | 192.168.20.103  | oky-pve-3    | 
+1. インフラ作成（Proxmox 上に VM を作成）
+   - `terraform/stacks/kkg-pve{1,2,3}` を各ホストで適用
+   - トポロジは `terraform/cluster_topology.yaml` で集中管理
+2. 基本セットアップ（OS・Kubernetes・LB 構築）
+   - `ansible/site.yaml` で全自動、または `site-all.yaml` → `site-lb.yaml` → `site-k8s.yaml` の順に実行
+   - バージョンやネットワークは `ansible/inventories/kkg/group_vars/*.yml` で管理
+3. プラットフォーム/アプリのデプロイ
+   - `helmfile/helmfile.yaml` を適用
+   - 1Password Connect、Cloudflare、Tailscale、DNS などの事前準備は `helmfile/README.md` を参照
+4. 追加アプリ
+   - `manifest/` 配下の各チャート/マニフェストを用途に応じて適用
 
-![構成図](https://media.soli0222.com/polestar/d356e077-effe-416f-bc35-fec01c91cf0c.png)
+## 主要コンポーネント（抜粋）
 
-#### 今後
+- ネットワーク/CNI: Cilium
+- Ingress/Proxy: Traefik（Public/Tailscale）
+- 証明書/DNS: cert-manager, external-dns（Cloudflare）
+- シークレット: 1Password Connect（OnePasswordItem CRD）
+- 監視: VictoriaMetrics, Grafana, Alloy（エージェント）
+- ストレージ: NFS Subdir External Provisioner, MinIO（Operator/Tenant）
 
-今後は1ノードあたり2VMを上限とし(メモリ16GBの場合)、合計4ノードでの構成を検討。
+## 参照
 
-![構成図_計画](https://media.soli0222.com/polestar/6ee80145-3491-4748-ae84-ce8d51c20b48.png)
+- Terraform: `terraform/README.md`
+- Ansible: `ansible/README.md`
+- Helmfile: `helmfile/README.md`
+
+## 注意事項
+
+- 構築・運用に必要なシークレット（Cloudflare/Tailscale/1Password など）は 1Password Vault に保管し、`helmfile/` の手順に従って参照してください。
+- バージョンアップは Ansible の `upgrade-*.yaml` を使用できます（Kubernetes / containerd）。

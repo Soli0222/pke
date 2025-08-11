@@ -1,0 +1,14 @@
+nfs:
+  server: 192.168.20.250
+  path: /volume1/oky-synology-01
+  reclaimPolicy: Delete
+
+# For creating the StorageClass automatically:
+storageClass:
+  create: true
+  defaultClass: true
+  name: oky-synology-01
+  allowVolumeExpansion: true
+  reclaimPolicy: Delete
+  accessModes: ReadWriteMany
+

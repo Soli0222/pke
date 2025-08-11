@@ -1,0 +1,29 @@
+logs:
+  access:
+    enabled: true
+
+service:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "traefik.tailscale.str08.net"
+  spec:
+    loadBalancerClass: "tailscale"
+
+ingressClass:
+  enabled: true
+  isDefaultClass: false
+  name: "traefik-tailscale"
+
+providers:
+  kubernetesCRD:
+    ingressClass: "traefik-tailscale"
+
+  kubernetesIngress:
+    ingressClass:  "traefik-tailscale"
+
+ingressRoute:
+  dashboard:
+    enabled: true
+    matchRule: Host(`traefik.tailscale.str08.net`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+    entryPoints: ["web", "websecure"]
+    tls: 
+      secretName: "traefik.tailscale.str08.net-dns01"
