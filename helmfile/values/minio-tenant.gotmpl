@@ -17,6 +17,20 @@ tenant:
       size: 250Gi
       storageClassName: "oky-synology-01"
 
+  buckets:
+    - name: loki-chunk
+      region: minio-kkg-1
+    - name: loki-ruler
+      region: minio-kkg-1
+    - name: loki-admin
+      region: minio-kkg-1
+    - name: mimir-blocks
+      region: minio-kkg-1
+    - name: mimir-alertmanager
+      region: minio-kkg-1
+    - name: mimir-ruler
+      region: minio-kkg-1
+
   metrics:
     enabled: true
     port: 9000
