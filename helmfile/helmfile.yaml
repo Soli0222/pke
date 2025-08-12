@@ -282,3 +282,33 @@ releases:
           - "-f"
           - "manifests/mimir/onepassworditem.yaml"
           - "--ignore-not-found=true"
+
+  - name: loki
+    namespace: loki
+    chart: grafana/loki
+    version: 6.35.1
+    createNamespace: true
+    needs:
+      - minio-tenant/minio-tenant
+    values:
+      - values/loki.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "loki"
+          - "-f"
+          - "manifests/loki/onepassworditem.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "loki"
+          - "-f"
+          - "manifests/loki/onepassworditem.yaml"
+          - "--ignore-not-found=true"
