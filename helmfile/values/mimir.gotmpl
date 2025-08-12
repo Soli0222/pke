@@ -1,0 +1,53 @@
+global:
+  extraEnvFrom:
+    - secretRef:
+        name: minio-secrets
+
+minio:
+  enabled: false
+
+mimir:
+  structuredConfig:
+    common:
+      storage:
+        backend: s3
+        s3:
+          endpoint: "minio.str08.net"
+          region: "minio-kkg-1"
+          secret_access_key: "${S3_SECRET_ACCESS_KEY}"
+          access_key_id: "${S3_ACCESS_KEY_ID}"
+
+    blocks_storage:
+      s3:
+        bucket_name: mimir-blocks
+
+    alertmanager_storage:
+      s3:
+        bucket_name: mimir-alertmanager
+
+    ruler_storage:
+      s3:
+        bucket_name: mimir-ruler
+
+nginx:
+  replicas: 1
+  resources:
+    limits:
+      memory: 731Mi
+    requests:
+      cpu: 1
+      memory: 512Mi
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+    ingressClassName: traefik
+    hosts:
+      - host: mimir.str08.net
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+        - mimir.str08.net
+        secretName: mimir.str08.net-dns01

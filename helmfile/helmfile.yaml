@@ -252,3 +252,33 @@ releases:
           - "-f"
           - "manifests/minio-tenant/onepassworditem.yaml"
           - "--ignore-not-found=true"
+
+  - name: mimir
+    namespace: mimir
+    chart: grafana/mimir-distributed
+    version: 5.7.0
+    createNamespace: true
+    needs:
+      - minio-tenant/minio-tenant
+    values:
+      - values/mimir.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "mimir"
+          - "-f"
+          - "manifests/mimir/onepassworditem.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "mimir"
+          - "-f"
+          - "manifests/mimir/onepassworditem.yaml"
+          - "--ignore-not-found=true"
