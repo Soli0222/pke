@@ -1,13 +1,30 @@
 image:
   pullPolicy: IfNotPresent
+
+ipam:
+  mode: "cluster-pool"
+  operator:
+    clusterPoolIPv4PodCIDRList: ["10.26.0.0/16"]
+
+tunnelProtocol: "" 
+routingMode: ""
+ipv4NativeRoutingCIDR: "10.26.0.0/16"
+enableIPv4Masquerade: true
+enableIPv4: true
+enableIPv6: false
+
 kubeProxyReplacement: true
-k8sServiceHost: 192.168.20.10
+k8sServiceHost: "192.168.20.10" 
 k8sServicePort: 6443
+
+socketLB:
+  hostNamespaceOnly: false
+
+enableIPMasqAgent: false
+
 l2announcements:
   enabled: true
-ipam:
-  operator:
-    clusterPoolIPv4PodCIDRList: 10.26.0.0/16
+
 hubble:
   relay:
     enabled: true
