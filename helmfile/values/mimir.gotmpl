@@ -29,6 +29,19 @@ mimir:
       s3:
         bucket_name: mimir-ruler
 
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  ingressClassName: traefik
+  hosts:
+    - mimir.str08.net
+  tls:
+    - hosts:
+        - mimir.str08.net
+      secretName: mimir.str08.net-dns01
+
 nginx:
   replicas: 1
   resources:
@@ -39,15 +52,10 @@ nginx:
       memory: 512Mi
   ingress:
     enabled: true
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt
-    ingressClassName: traefik
+    ingressClassName: cloudflare-tunnel
     hosts:
-      - host: mimir.str08.net
+      - host: mimir.pstr.space
         paths:
           - path: /
             pathType: Prefix
-    tls:
-      - hosts:
-        - mimir.str08.net
-        secretName: mimir.str08.net-dns01
+    tls: {}
