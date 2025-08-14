@@ -1,16 +1,37 @@
 ---
-- name: Install Alloy
-  ansible.builtin.include_role:
-    name: grafana.grafana.alloy
-  vars:
-    alloy_config: "{{ lookup('template', 'alloy.alloy.j2') }}"
+- name: Add Grafana repository key
+  shell:
+    cmd: > 
+      curl -fsSL https://apt.grafana.com/gpg.key |
+      gpg --yes --dearmor -o /etc/apt/keyrings/grafana.gpg 
 
-- name: Disable Alloy data collection
-  ansible.builtin.lineinfile:
-    path: /etc/default/alloy
-    regexp: "^CUSTOM_ARGS="
-    line: 'CUSTOM_ARGS="--disable-reporting"'
-  when: alloy_disable_reporting | default(false)
+- name: Add Grafana repository
+  shell:
+    cmd: > 
+      echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" |
+      tee /etc/apt/sources.list.d/grafana.list
+
+- name: Install Alloy
+  apt:
+    name:
+      - alloy
+    state: present
+    update_cache: yes
+
+- name: Configure Alloy Env
+  ansible.builtin.template:
+    src: alloy.env.j2
+    dest: /etc/default/alloy
+
+- name: Configure Alloy
+  ansible.builtin.template:
+    src: config.alloy.j2
+    dest: /etc/alloy/config.alloy
+    mode: '0644'
+
+- name: Systemd Daemon Reload
+  ansible.builtin.systemd:
+    daemon_reload: yes
 
 - name: Restart Alloy
   ansible.builtin.systemd:

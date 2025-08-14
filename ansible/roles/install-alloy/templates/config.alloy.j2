@@ -8,5 +8,9 @@ prometheus.scrape "nodeexporter" {
 prometheus.remote_write "mimir" {
   endpoint {
     url = "{{ mimir_endpoint }}"
+
+    headers = {
+      "X-Scope-OrgID" = "{{ mimir_org_id }}",
+    }
   }
 }
