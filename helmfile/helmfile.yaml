@@ -114,7 +114,6 @@ releases:
     chart: external-dns/external-dns
     version: 1.17.0
     needs:
-      - kube-system/cilium
       - 1password/connect
     createNamespace: true
     values:
@@ -145,7 +144,6 @@ releases:
     chart: strrl/cloudflare-tunnel-ingress-controller
     version: 0.0.18
     needs:
-      - kube-system/cilium
       - 1password/connect
     createNamespace: true
     values:
@@ -177,7 +175,6 @@ releases:
     version: 37.0.0
     createNamespace: true
     needs:
-      - 1password/connect
       - cert-manager/cert-manager
       - external-dns/external-dns
     values:
@@ -210,7 +207,6 @@ releases:
     createNamespace: true
     needs:
       - kube-system/nfs-subdir-external-provisioner
-      - 1password/connect
       - traefik/traefik
       - minio-operator/minio-operator
     values:

@@ -79,88 +79,116 @@ helmfile/
 
 ```mermaid
 graph TD
-    %% 基盤レイヤー（第1層）
-    H[Cilium CNI]
-    
-    %% 基盤サービス（第2層）- Ciliumに依存
-    H --> A[1Password Connect]
-    H --> B[cert-manager]
-    H --> I[NFS Subdir External Provisioner]
-    H --> L[MinIO Operator]
-    H --> C[external-dns - Cilium依存]
-    H --> D[Cloudflare Tunnel Ingress Controller - Cilium依存]
-    
-    %% シークレット・認証管理（第3層）
-    A --> C2[external-dns - 1Password依存]
-    A --> D2[Cloudflare Tunnel - 1Password依存]
-    A --> E[MinIO Tenant - 1Password依存]
-    
-    %% ロードバランサー・Ingress（第4層）
-    A --> J[Traefik]
-    B --> J
-    C --> J
-    C2 --> J
-    
-    %% MinIOストレージ（第4層）
-    I --> E
-    L --> E
-    J --> E
-    
-    %% アプリケーション・監視（第5層）
-    E --> F[Mimir]
-    E --> G[Loki]
-    D --> F
-    D2 --> F
-    D --> G
-    D2 --> G
-    
-    I --> K[Uptime Kuma]
-    B --> K
-    C --> K
-    C2 --> K
-    D --> K
-    D2 --> K
-    
-    I --> M[Grafana]
-    J --> M
-    D --> M
-    D2 --> M
-    
+    %% レイヤー1: 基盤ネットワーク
+    subgraph "Layer 1: 基盤ネットワーク"
+        Cilium[Cilium CNI<br/>v1.18.0]
+    end
+
+    %% レイヤー2: コア基盤サービス
+    subgraph "Layer 2: コア基盤サービス"
+        Connect[1Password Connect<br/>v2.0.2]
+        CertManager[cert-manager<br/>v1.18.2]
+        NFSProvisioner[NFS Subdir External<br/>Provisioner v4.0.18]
+        MinIOOperator[MinIO Operator<br/>v7.1.1]
+    end
+
+    %% レイヤー3: DNS・外部接続
+    subgraph "Layer 3: DNS・外部接続"
+        ExternalDNS[external-dns<br/>v1.17.0]
+        CFTunnel[Cloudflare Tunnel<br/>Ingress Controller v0.0.18]
+    end
+
+    %% レイヤー4: Ingress・ロードバランシング
+    subgraph "Layer 4: Ingress・ロードバランシング"
+        Traefik[Traefik<br/>v37.0.0]
+    end
+
+    %% レイヤー5: ストレージ・初期アプリケーション
+    subgraph "Layer 5: ストレージ・初期アプリケーション"
+        MinIOTenant[MinIO Tenant<br/>v7.1.1]
+        UptimeKuma[Uptime Kuma<br/>v2.22.0]
+    end
+
+    %% レイヤー6: 監視・ダッシュボード
+    subgraph "Layer 6: 監視・ダッシュボード"
+        Grafana[Grafana<br/>v9.3.1]
+    end
+
+    %% レイヤー7: 高度監視・オブザーバビリティ
+    subgraph "Layer 7: 高度監視・オブザーバビリティ"
+        Mimir[Mimir Distributed<br/>v5.7.0]
+        Loki[Loki<br/>v6.35.1]
+    end
+
+    %% 基本依存関係
+    Cilium --> Connect
+    Cilium --> CertManager
+    Cilium --> NFSProvisioner
+    Cilium --> MinIOOperator
+
+    %% DNS・外部接続の依存関係
+    Connect --> ExternalDNS
+    Connect --> CFTunnel
+
+    %% Traefik依存関係
+    CertManager --> Traefik
+    ExternalDNS --> Traefik
+
+    %% MinIO Tenant依存関係
+    NFSProvisioner --> MinIOTenant
+    Traefik --> MinIOTenant
+    MinIOOperator --> MinIOTenant
+
+    %% Uptime Kuma依存関係
+    NFSProvisioner --> UptimeKuma
+    CertManager --> UptimeKuma
+    ExternalDNS --> UptimeKuma
+    CFTunnel --> UptimeKuma
+
+    %% Grafana依存関係
+    NFSProvisioner --> Grafana
+    Traefik --> Grafana
+    CFTunnel --> Grafana
+
+    %% 高度監視スタック依存関係
+    MinIOTenant --> Mimir
+    CFTunnel --> Mimir
+    MinIOTenant --> Loki
+    CFTunnel --> Loki
+
     %% スタイリング
-    style H fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
-    style A fill:#e1f5fe,stroke:#2196f3,stroke-width:2px
-    style B fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
-    style C fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
-    style C2 fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
-    style J fill:#fff3e0,stroke:#ff9800,stroke-width:2px
-    style D fill:#fff8e1,stroke:#ffc107,stroke-width:2px
-    style D2 fill:#fff8e1,stroke:#ffc107,stroke-width:2px
-    style K fill:#fce4ec,stroke:#e91e63,stroke-width:2px
-    style M fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
-    style F fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
-    style G fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
-    style I fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
-    style L fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
-    style E fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    style Cilium fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
+    style Connect fill:#e1f5fe,stroke:#2196f3,stroke-width:2px
+    style CertManager fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style NFSProvisioner fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    style MinIOOperator fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    style ExternalDNS fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style CFTunnel fill:#fff8e1,stroke:#ffc107,stroke-width:2px
+    style Traefik fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    style MinIOTenant fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    style UptimeKuma fill:#fce4ec,stroke:#e91e63,stroke-width:2px
+    style Grafana fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    style Mimir fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
+    style Loki fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
 ```
 
 ### 詳細依存関係マトリクス
 
-| コンポーネント | 直接依存 | 間接依存 | デプロイ順序 |
-|---------------|----------|----------|------------|
-| **Cilium** | なし | なし | 1 |
-| **1Password Connect** | Cilium | なし | 2 |
-| **cert-manager** | Cilium | なし | 2 |
-| **NFS Subdir External Provisioner** | Cilium | なし | 2 |
-| **MinIO Operator** | Cilium | なし | 2 |
-| **external-dns** | Cilium, 1Password Connect | なし | 3 |
-| **Cloudflare Tunnel Ingress Controller** | Cilium, 1Password Connect | なし | 3 |
-| **Traefik** | 1Password Connect, cert-manager, external-dns | Cilium | 4 |
-| **MinIO Tenant** | NFS Provisioner, 1Password Connect, Traefik, MinIO Operator | Cilium, cert-manager, external-dns | 5 |
-| **Uptime Kuma** | NFS Provisioner, cert-manager, external-dns, Cloudflare Tunnel | Cilium, 1Password Connect | 5 |
-| **Grafana** | NFS Provisioner, Traefik, Cloudflare Tunnel | すべての基盤コンポーネント | 6 |
-| **Mimir** | MinIO Tenant, Cloudflare Tunnel | すべての基盤・ストレージコンポーネント | 7 |
-| **Loki** | MinIO Tenant, Cloudflare Tunnel | すべての基盤・ストレージコンポーネント | 7 |
+| コンポーネント | 直接依存 | デプロイ順序 |
+|---------------|----------|------------|
+| **Cilium** | なし | 1 |
+| **1Password Connect** | Cilium | 2 |
+| **cert-manager** | Cilium | 2 |
+| **NFS Subdir External Provisioner** | Cilium | 2 |
+| **MinIO Operator** | Cilium | 2 |
+| **external-dns** | 1Password Connect | 3 |
+| **Cloudflare Tunnel Ingress Controller** | 1Password Connect | 3 |
+| **Traefik** | cert-manager, external-dns | 4 |
+| **MinIO Tenant** | NFS Provisioner, Traefik, MinIO Operator | 5 |
+| **Uptime Kuma** | NFS Provisioner, cert-manager, external-dns, Cloudflare Tunnel | 5 |
+| **Grafana** | NFS Provisioner, Traefik, Cloudflare Tunnel | 6 |
+| **Mimir** | MinIO Tenant, Cloudflare Tunnel | 7 |
+| **Loki** | MinIO Tenant, Cloudflare Tunnel | 7 |
 
 ### 主要設定パラメータ
 
@@ -322,12 +350,15 @@ helmfile -l name=minio-tenant apply
 
 # 監視アプリケーション
 helmfile -l name=uptime-kuma apply
+```
 
+**Phase 6: 監視・ダッシュボード（第6層）**
+```bash
 # ダッシュボード
 helmfile -l name=grafana apply
 ```
 
-**Phase 6: 高度監視スタック（第6-7層）**
+**Phase 7: 高度監視スタック（第7層）**
 ```bash
 # メトリクス長期保存・分析
 helmfile -l name=mimir apply
