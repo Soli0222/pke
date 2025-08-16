@@ -10,25 +10,24 @@ PKE Helmfileは、Kubernetes上に完全なアプリケーションプラット�
 - **Cilium** (v1.18.0): CNI（Container Network Interface）、NetworkPolicy、LoadBalancer
 - **cert-manager** (v1.18.2): Let's Encrypt等による自動TLS証明書管理
 - **external-dns** (v1.17.0): Cloudflare等のDNSプロバイダーとの自動レコード同期
-- **Tailscale Operator** (v1.86.2): ゼロトラストVPNネットワーク管理
 
 ### シークレット・設定管理
 - **1Password Connect** (v2.0.2): 中央集権的シークレット管理とKubernetes統合
-- **Cloudflare Tunnel** (v0.3.2): セキュアな外部アクセストンネル
 
 ### Ingress・ロードバランシング
 - **Traefik** (v37.0.0): パブリックHTTP/HTTPSロードバランサー・リバースプロキシ
-- **Traefik Tailscale**: Tailscaleネットワーク専用のIngress Controller
+- **Cloudflare Tunnel Ingress Controller** (v0.0.18): セキュアな外部アクセストンネル
 
 ### 監視・オブザーバビリティスタック
-- **Victoria Metrics Cluster** (v0.27.1): 高性能メトリクス収集・保存・クエリエンジン
+- **Mimir Distributed**: 高性能メトリクス収集・保存・クエリエンジン（Prometheus互換）
+- **Loki**: ログ集約・検索システム
 - **Grafana** (v9.3.1): 統合可視化ダッシュボード・アラート管理
 - **Uptime Kuma** (v2.22.0): Webサービス・API監視・通知
 
 ### ストレージ・データ管理
 - **NFS Subdir External Provisioner** (v4.0.18): NFS動的ボリュームプロビジョニング
-- **MinIO Operator** (v7.1.1): S3互換オブジェクトストレージ基盤
-- **MinIO Tenant** (v7.1.1): マルチテナント対応オブジェクトストレージインスタンス
+- **MinIO Operator**: S3互換オブジェクトストレージ基盤
+- **MinIO Tenant**: マルチテナント対応オブジェクトストレージインスタンス
 
 ## ディレクトリ構造
 
@@ -41,37 +40,33 @@ helmfile/
 ├── values/                         # Helm Values設定（Go Template）
 │   ├── 1password-connect.gotmpl    # 1Password Connect設定
 │   ├── cilium.gotmpl              # Cilium CNI設定
-│   ├── cloudflare-tunnel.gotmpl    # Cloudflare Tunnel設定
+│   ├── cloudflare-tunnel-ingress-controller.gotmpl  # Cloudflare Tunnel設定
 │   ├── external-dns.gotmpl         # External DNS設定
 │   ├── grafana.gotmpl             # Grafana設定
+│   ├── loki.gotmpl                # Loki設定
+│   ├── mimir.gotmpl               # Mimir設定
 │   ├── minio-tenant.gotmpl         # MinIO Tenant設定
 │   ├── nfs-subdir-external-provisioner.gotmpl  # NFS Provisioner設定
-│   ├── traefik.gotmpl             # Traefik（パブリック）設定
-│   ├── traefik-tailscale.gotmpl    # Traefik（Tailscale）設定
-│   ├── uptime-kuma.gotmpl          # Uptime Kuma設定
-│   └── victoria-metrics-cluster.gotmpl  # Victoria Metrics設定
+│   ├── traefik.gotmpl             # Traefik設定
+│   └── uptime-kuma.gotmpl          # Uptime Kuma設定
 │
 └── manifests/                      # 追加Kubernetesマニフェスト
     ├── cert-manager/
     │   └── clusterissuer.yaml      # Let's Encrypt ClusterIssuer
     ├── cilium/
     │   └── default-pool.yaml       # Cilium LoadBalancer Pool
-    ├── cloudflare-tunnel/
+    ├── cloudflare-tunnel-ingress-controller/
     │   └── onepassworditem.yaml    # Cloudflare API Token Secret
     ├── external-dns/
     │   └── onepassworditem.yaml    # DNS Provider Secret
-    ├── grafana/
-    │   └── ingress-tailscale.yaml  # Tailscale専用Ingress
+    ├── loki/
+    │   └── onepassworditem.yaml    # Loki認証情報
+    ├── mimir/
+    │   └── onepassworditem.yaml    # Mimir認証情報
     ├── minio-tenant/
     │   └── onepassworditem.yaml    # MinIO認証情報
-    ├── tailscale-operator/
-    │   └── onepassworditem.yaml    # Tailscale認証情報
-    ├── traefik/
-    │   └── certificate.yaml        # パブリックドメイン証明書
-    ├── traefik-tailscale/
-    │   └── certificate.yaml        # Tailscaleドメイン証明書
-    └── victoriametrics/
-        └── ingress-tailscale.yaml  # VictoriaMetrics Tailscale Ingress
+    └── traefik/
+        └── certificate.yaml        # パブリックドメイン証明書
 ```
 
 ## アーキテクチャと依存関係
@@ -82,22 +77,24 @@ helmfile/
 graph TD
     A[1Password Connect] --> B[cert-manager]
     A --> C[external-dns]
-    A --> D[tailscale-operator]
-    A --> E[cloudflare-tunnel]
-    A --> F[minio-tenant]
+    A --> D[cloudflare-tunnel-ingress-controller]
+    A --> E[minio-tenant]
+    A --> F[mimir]
+    A --> G[loki]
     
-    B --> G[traefik]
-    C --> G
-    B --> H[traefik-tailscale]
-    C --> H
+    H[Cilium] --> I[NFS Subdir External Provisioner]
+    B --> J[Traefik]
+    C --> J
+    J --> K[Grafana]
     
-    G --> I[grafana]
-    H --> I
-    G --> J[vmcluster]
-    H --> J
+    L[MinIO Operator] --> E
     
-    K[cilium] --> L[nfs-subdir-external-provisioner]
-    M[minio-operator] --> F
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#f3e5f5
+    style J fill:#fff3e0
+    style K fill:#e8f5e8
+```
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
@@ -116,7 +113,6 @@ graph TD
 ```yaml
 # 共通ドメイン設定
 domain: "example.com"
-tailscale_domain: "tail12345.ts.net"
 
 # Load Balancer設定
 loadbalancer_ip_range: "192.168.20.100-192.168.20.110"
@@ -125,14 +121,15 @@ loadbalancer_ip_range: "192.168.20.100-192.168.20.110"
 cert_manager_email: "admin@example.com"
 ```
 
-**セキュリティ設定**:
+**ストレージ設定**:
 ```yaml
-# 1Password Connect
-onepassword_vault: "kubernetes"
-onepassword_server: "PKE-kkg"
+# NFS設定
+nfs_server: "192.168.20.10"
+nfs_path: "/mnt/nfs/kubernetes"
 
-# Tailscale設定
-tailscale_authkey_secret: "tailscale-authkey"
+# MinIO設定
+minio_tenant_size: "4Ti"
+minio_pools: 4
 ```
 
 ## 前提条件
@@ -188,8 +185,9 @@ Cloudflare Tunnelによる安全な外部アクセス設定：
 |-----------|------|--------|-------|
 | `cloudflare-tunnel` | API Credential | `token` | Cloudflare Tunnel認証 |
 | `external-dns-cloudflare` | API Credential | `api-token` | DNS管理 |
-| `tailscale-authkey` | API Credential | `authkey` | Tailscale VPN |
 | `minio-root-credentials` | Login | `username`, `password` | MinIOルート認証 |
+| `mimir-credentials` | Login | `username`, `password` | Mimir認証 |
+| `loki-credentials` | Login | `username`, `password` | Loki認証 |
 
 ### 4. DNS・ネットワーク設定
 
@@ -198,13 +196,6 @@ Cloudflare Tunnelによる安全な外部アクセス設定：
 # Cloudflare等で以下を設定
 *.kkg.example.com    A    <LoadBalancer_VIP>
 kkg.example.com      A    <LoadBalancer_VIP>
-```
-
-**Tailscale MagicDNS設定**:
-```bash
-# Tailscale Admin Console
-# DNS > MagicDNS > 有効化
-# ドメイン例: tail12345.ts.net
 ```
 
 ## デプロイメント手順
@@ -246,26 +237,26 @@ helmfile -l name=external-dns apply
 
 **Phase 2: ネットワーク・Ingress**
 ```bash
-# VPN・プライベートネットワーク
-helmfile -l name=tailscale-operator apply
-
 # ロードバランサー・Ingress
 helmfile -l name=traefik apply
-helmfile -l name=traefik-tailscale apply
 
 # 外部アクセス
-helmfile -l name=cloudflare-tunnel apply
+helmfile -l name=cloudflare-tunnel-ingress-controller apply
 ```
 
-**Phase 3: アプリケーション・サービス**
+**Phase 3: ストレージ・データ管理**
 ```bash
 # ストレージ
 helmfile -l name=nfs-subdir-external-provisioner apply
 helmfile -l name=minio-operator apply
 helmfile -l name=minio-tenant apply
+```
 
+**Phase 4: 監視・アプリケーション**
+```bash
 # 監視・ダッシュボード
-helmfile -l name=vmcluster apply
+helmfile -l name=mimir apply
+helmfile -l name=loki apply
 helmfile -l name=grafana apply
 helmfile -l name=uptime-kuma apply
 ```
@@ -327,24 +318,13 @@ kubectl get namespaces
 kubectl delete namespace <namespace> --force --grace-period=0
 ```
 
-## トラブルシューティング・運用ガイド
-
-### 診断・ヘルスチェック
-
-#### システム全体の健全性確認
-
-```bash
-# クラスター基本状態
-kubectl cluster-info
-kubectl get nodes -o wide
-kubectl get pods --all-namespaces | grep -v Running
-
 # 重要サービスの稼働確認
 kubectl -n kube-system get pods -l k8s-app=cilium
 kubectl -n cert-manager get pods
 kubectl -n 1password get pods
 kubectl -n traefik get pods
-```
+kubectl -n mimir get pods
+kubectl -n loki get pods
 
 #### ネットワーク・接続性診断
 
@@ -384,10 +364,15 @@ kubectl -n 1password logs deployment/connect-api
 # 認証トークン確認
 kubectl -n 1password describe secret onepassword-token
 
-# 手動テスト
-export OP_CONNECT_HOST=https://connect-api.1password.svc.cluster.local:8080
-curl -H "Authorization: Bearer $ONEPASSWORD_TOKEN" $OP_CONNECT_HOST/v1/vaults
+# OnePasswordItem状態確認
+kubectl get onepassworditems -A
+kubectl describe onepassworditem <item-name> -n <namespace>
 ```
+
+**解決方法**:
+- 1Password Connect Server接続確認
+- Vault権限確認
+- 認証トークン更新
 
 **解決方法**:
 - `ONEPASSWORD_TOKEN`環境変数の再設定
@@ -454,26 +439,27 @@ kubectl -n kube-system logs deployment/nfs-subdir-external-provisioner
 
 ### 監視・アラート設定
 
-#### Victoria Metrics + Grafana
+#### Mimir + Loki + Grafana
 
 **重要メトリクス監視**:
 ```bash
-# VictoriaMetrics接続確認
-kubectl port-forward -n victoria-metrics svc/vmcluster-vmselect 8481:8481
-curl http://localhost:8481/select/0/prometheus/api/v1/query?query=up
+# Mimir接続確認
+kubectl port-forward -n mimir svc/mimir-query-frontend 8080:8080
+curl http://localhost:8080/prometheus/api/v1/query?query=up
+
+# Loki接続確認
+kubectl port-forward -n loki svc/loki-query-frontend 3100:3100
+curl http://localhost:3100/ready
 
 # Grafana初期設定
 kubectl -n grafana get secret grafana -o jsonpath="{.data.admin-password}" | base64 -d
 ```
 
-#### ログ集約（推奨）
-
-```yaml
-# 追加推奨: Loki Stack
-# - Promtail (log collection)
-# - Loki (log aggregation)  
-# - Grafana (log visualization)
-```
+**監視対象**:
+- Kubernetes クラスター状態
+- アプリケーション可用性
+- リソース使用率（CPU/メモリ/ストレージ）
+- ネットワーク品質
 
 ### 運用ベストプラクティス
 
@@ -512,9 +498,10 @@ helmfile diff
    - アクセス権限最小化
 
 2. **ネットワークセキュリティ**:
+2. **セキュリティ強化**:
    - NetworkPolicy適用
-   - Tailscale ACL設定
    - 不要ポート閉鎖
+   - シークレット管理の改善
 
 3. **証明書管理**:
    - 証明書ローテーション確認
@@ -548,14 +535,14 @@ environments:
 
 **高負荷環境向け設定例**:
 ```yaml
-# values/victoria-metrics-cluster.gotmpl
-vmcluster:
-  vmselect:
-    replicaCount: 3
+# values/mimir.gotmpl
+mimir:
+  query_frontend:
+    replicas: 3
     resources:
       requests: { cpu: 500m, memory: 1Gi }
-  vmstorage:
-    replicaCount: 3
+  store_gateway:
+    replicas: 3
     resources:
       requests: { cpu: 1, memory: 2Gi }
 ```
@@ -570,9 +557,28 @@ vmcluster:
 ### 運用制限
 - **順次デプロイ**: 依存関係のため一部コンポーネントは順次実行必須
 - **外部依存**: CloudflareDNS、1Password Connect Server等の外部サービス依存
-- **リソース要件**: 最小構成でも8GB RAM、4 CPU推奨
+- **リソース要件**: 最小構成でも16GB RAM、8 CPU推奨（監視スタック含む）
 
 ### アップグレード注意点
 - **CRD変更**: cert-manager、Cilium等のCRD互換性確認必須
 - **データ移行**: Victoria Metrics、MinIO等のデータ移行計画
 - **ダウンタイム**: 一部コンポーネントは短時間のダウンタイム発生可能性
+- **データバックアップ**: MinIO、Grafana設定等の事前バックアップ推奨
+- **バージョン互換性**: Helm Chart、Kubernetesバージョンの互換性確認必須
+
+---
+
+## 関連リンク
+
+### 公式ドキュメント
+- [Helmfile](https://helmfile.readthedocs.io/)
+- [Cilium](https://docs.cilium.io/)
+- [Traefik](https://doc.traefik.io/traefik/)
+- [cert-manager](https://cert-manager.io/)
+- [Grafana Mimir](https://grafana.com/docs/mimir/)
+- [Grafana Loki](https://grafana.com/docs/loki/)
+
+### PKE関連ドキュメント
+- [Terraform Infrastructure](../terraform/README.md)
+- [Ansible Configuration](../ansible/README.md)
+- [Application Manifests](../manifest/README.md)
