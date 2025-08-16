@@ -1,4 +1,6 @@
 global:
+  extraArgs:
+    - -config.expand-env=true
   extraEnvFrom:
     - secretRef:
         name: minio-secrets
@@ -13,11 +15,6 @@ loki:
         index:
           prefix: loki_index_
           period: 24h
-  storage_config:
-    aws:
-      region: minio-kkg-1
-      bucketnames: loki-chunk
-      s3forcepathstyle: true
   pattern_ingester:
       enabled: true
   limits_config:
@@ -44,21 +41,32 @@ loki:
 
 deploymentMode: SimpleScalable
 
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  ingressClassName: traefik
+  hosts:
+    - loki.str08.net
+  tls:
+    - hosts:
+        - loki.str08.net
+      secretName: loki.str08.net-dns01
+
 gateway:
   ingress:
     enabled: true
-    annotations:
-      cert-manager.io/cluster-issuer: "letsencrypt"
-    ingressClassName: traefik
+    ingressClassName: cloudflare-tunnel
     hosts:
-      - host: "loki-gateway.str08.net"
+      - host: "loki.pstr.space"
         paths:
           - path: /
             pathType: Prefix
     tls:
-      - secretName: loki-gateway.str08.net-dns01
+      - secretName: loki.pstr.space-dns01
         hosts:
-          - loki-gateway.str08.net
+          - loki.pstr.space
 
 backend:
   replicas: 3
