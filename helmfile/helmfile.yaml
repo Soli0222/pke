@@ -1,25 +1,27 @@
 repositories:
   - name: cilium
     url: https://helm.cilium.io/
-  - name: nfs-subdir-external-provisioner
-    url: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
   - name: 1password
     url: https://1password.github.io/connect-helm-charts/
   - name: jetstack
     url: quay.io/jetstack/charts
     oci: true
+  - name: nfs-subdir-external-provisioner
+    url: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
   - name: external-dns
     url: https://kubernetes-sigs.github.io/external-dns/
+  - name: strrl
+    url: https://helm.strrl.dev
   - name: traefik
     url: https://traefik.github.io/charts
+  - name: minio
+    url: https://operator.min.io
   - name: uptime-kuma
     url: https://helm.irsigler.cloud
   - name: grafana
     url: https://grafana.github.io/helm-charts
-  - name: minio
-    url: https://operator.min.io
-  - name: strrl
-    url: https://helm.strrl.dev
+
+
 
 releases:
   - name: cilium
@@ -48,18 +50,13 @@ releases:
           - "-f"
           - "manifests/cilium/default-pool.yaml"
           - "--ignore-not-found=true"
-  
-  - name: nfs-subdir-external-provisioner
-    namespace: kube-system
-    chart: nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
-    version: 4.0.18
-    values:
-      - values/nfs-subdir-external-provisioner.gotmpl
 
   - name: connect
     namespace: 1password
     chart: 1password/connect
     version: 2.0.2
+    needs:
+      - kube-system/cilium
     createNamespace: true
     values:
       - values/1password-connect.gotmpl
@@ -68,6 +65,8 @@ releases:
     namespace: cert-manager
     chart: jetstack/cert-manager
     version: v1.18.2
+    needs:
+      - kube-system/cilium
     createNamespace: true
     set:
       - name: crds.enabled
@@ -92,11 +91,31 @@ releases:
           - "-f"
           - "manifests/cert-manager/clusterissuer.yaml"
           - "--ignore-not-found=true"
+  
+  - name: nfs-subdir-external-provisioner
+    namespace: kube-system
+    chart: nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
+    version: 4.0.18
+    needs:
+      - kube-system/cilium
+    values:
+      - values/nfs-subdir-external-provisioner.gotmpl
+
+  - name: minio-operator
+    namespace: minio-operator
+    chart: minio/operator
+    version: 7.1.1
+    needs:
+      - kube-system/cilium
+    createNamespace: true
 
   - name: external-dns
     namespace: external-dns
     chart: external-dns/external-dns
     version: 1.17.0
+    needs:
+      - kube-system/cilium
+      - 1password/connect
     createNamespace: true
     values:
       - values/external-dns.gotmpl
@@ -121,12 +140,44 @@ releases:
           - "manifests/external-dns/onepassworditem.yaml"
           - "--ignore-not-found=true"
 
+  - name: cloudflare-tunnel-ingress-controller
+    namespace: cloudflare-tunnel-ingress-controller
+    chart: strrl/cloudflare-tunnel-ingress-controller
+    version: 0.0.18
+    needs:
+      - kube-system/cilium
+      - 1password/connect
+    createNamespace: true
+    values:
+      - values/cloudflare-tunnel-ingress-controller.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "cloudflare-tunnel-ingress-controller"
+          - "-f"
+          - "manifests/cloudflare-tunnel-ingress-controller/onepassworditem.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "cloudflare-tunnel-ingress-controller"
+          - "-f"
+          - "manifests/cloudflare-tunnel-ingress-controller/onepassworditem.yaml"
+          - "--ignore-not-found=true"
+
   - name: traefik
     namespace: traefik
     chart: traefik/traefik
     version: 37.0.0
     createNamespace: true
     needs:
+      - 1password/connect
       - cert-manager/cert-manager
       - external-dns/external-dns
     values:
@@ -152,66 +203,15 @@ releases:
           - "manifests/traefik/certificate.yaml"
           - "--ignore-not-found=true"
 
-  - name: cloudflare-tunnel-ingress-controller
-    namespace: cloudflare-tunnel-ingress-controller
-    chart: strrl/cloudflare-tunnel-ingress-controller
-    version: 0.0.18
-    createNamespace: true
-    values:
-      - values/cloudflare-tunnel-ingress-controller.gotmpl
-    hooks:
-      - events: [postsync]
-        showlogs: true
-        command: "kubectl"
-        args:
-          - "apply"
-          - "-n"
-          - "cloudflare-tunnel-ingress-controller"
-          - "-f"
-          - "manifests/cloudflare-tunnel-ingress-controller/onepassworditem.yaml"
-      - events: [preuninstall]
-        showlogs: true
-        command: "kubectl"
-        args:
-          - "delete"
-          - "-n"
-          - "cloudflare-tunnel-ingress-controller"
-          - "-f"
-          - "manifests/cloudflare-tunnel-ingress-controller/onepassworditem.yaml"
-          - "--ignore-not-found=true"
-
-  - name: uptime-kuma
-    namespace: uptime-kuma
-    chart: uptime-kuma/uptime-kuma
-    version: 2.22.0
-    createNamespace: true
-    values:
-      - values/uptime-kuma.gotmpl
-
-  - name: grafana
-    namespace: grafana
-    chart: grafana/grafana
-    version: 9.3.1
-    createNamespace: true
-    needs:
-      - traefik/traefik
-      - cert-manager/cert-manager
-      - external-dns/external-dns
-    values:
-      - values/grafana.gotmpl
-
-  - name: minio-operator
-    namespace: minio-operator
-    chart: minio/operator
-    version: 7.1.1
-    createNamespace: true
-
   - name: minio-tenant
     namespace: minio-tenant
     chart: minio/tenant
     version: 7.1.1
     createNamespace: true
     needs:
+      - kube-system/nfs-subdir-external-provisioner
+      - 1password/connect
+      - traefik/traefik
       - minio-operator/minio-operator
     values:
       - values/minio-tenant.gotmpl
@@ -236,6 +236,31 @@ releases:
           - "manifests/minio-tenant/onepassworditem.yaml"
           - "--ignore-not-found=true"
 
+  - name: uptime-kuma
+    namespace: uptime-kuma
+    chart: uptime-kuma/uptime-kuma
+    version: 2.22.0
+    needs:
+      - kube-system/nfs-subdir-external-provisioner
+      - cert-manager/cert-manager
+      - external-dns/external-dns
+      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+    createNamespace: true
+    values:
+      - values/uptime-kuma.gotmpl
+
+  - name: grafana
+    namespace: grafana
+    chart: grafana/grafana
+    version: 9.3.1
+    createNamespace: true
+    needs:
+      - kube-system/nfs-subdir-external-provisioner
+      - traefik/traefik
+      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+    values:
+      - values/grafana.gotmpl
+
   - name: mimir
     namespace: mimir
     chart: grafana/mimir-distributed
@@ -243,6 +268,7 @@ releases:
     createNamespace: true
     needs:
       - minio-tenant/minio-tenant
+      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
     values:
       - values/mimir.gotmpl
     hooks:
@@ -273,6 +299,7 @@ releases:
     createNamespace: true
     needs:
       - minio-tenant/minio-tenant
+      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
     values:
       - values/loki.gotmpl
     hooks:

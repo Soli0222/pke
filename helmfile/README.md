@@ -4,30 +4,34 @@
 
 ## 概要
 
-PKE Helmfileは、Kubernetes上に完全なアプリケーションプラットフォームを構築するために、以下のコンポーネントを管理・デプロイします：
+PKE Helmfileは、Kubernetes上に完全なアプリケーションプラットフォームを構築するために、以下の13のコンポーネントを管理・デプロイします：
 
-### ネットワーク・セキュリティレイヤー
-- **Cilium** (v1.18.0): CNI（Container Network Interface）、NetworkPolicy、LoadBalancer
-- **cert-manager** (v1.18.2): Let's Encrypt等による自動TLS証明書管理
-- **external-dns** (v1.17.0): Cloudflare等のDNSプロバイダーとの自動レコード同期
+### 基盤ネットワーク・CNIレイヤー（デプロイ順序：1）
+- **Cilium** (v1.18.0): CNI（Container Network Interface）、NetworkPolicy、LoadBalancer、Service Mesh機能
 
-### シークレット・設定管理
+### コア基盤サービス（デプロイ順序：2）
 - **1Password Connect** (v2.0.2): 中央集権的シークレット管理とKubernetes統合
-
-### Ingress・ロードバランシング
-- **Traefik** (v37.0.0): パブリックHTTP/HTTPSロードバランサー・リバースプロキシ
-- **Cloudflare Tunnel Ingress Controller** (v0.0.18): セキュアな外部アクセストンネル
-
-### 監視・オブザーバビリティスタック
-- **Mimir Distributed**: 高性能メトリクス収集・保存・クエリエンジン（Prometheus互換）
-- **Loki**: ログ集約・検索システム
-- **Grafana** (v9.3.1): 統合可視化ダッシュボード・アラート管理
-- **Uptime Kuma** (v2.22.0): Webサービス・API監視・通知
-
-### ストレージ・データ管理
+- **cert-manager** (v1.18.2): Let's Encrypt等による自動TLS証明書管理
 - **NFS Subdir External Provisioner** (v4.0.18): NFS動的ボリュームプロビジョニング
-- **MinIO Operator**: S3互換オブジェクトストレージ基盤
-- **MinIO Tenant**: マルチテナント対応オブジェクトストレージインスタンス
+- **MinIO Operator** (v7.1.1): S3互換オブジェクトストレージ基盤
+
+### DNS・外部接続サービス（デプロイ順序：3）
+- **external-dns** (v1.17.0): Cloudflare等のDNSプロバイダーとの自動レコード同期
+- **Cloudflare Tunnel Ingress Controller** (v0.0.18): セキュアな外部アクセストンネル（Zero Trust）
+
+### Ingress・ロードバランシング（デプロイ順序：4）
+- **Traefik** (v37.0.0): パブリックHTTP/HTTPSロードバランサー・リバースプロキシ
+
+### ストレージ・データ管理（デプロイ順序：5）
+- **MinIO Tenant** (v7.1.1): マルチテナント対応オブジェクトストレージインスタンス（高可用性構成）
+
+### アプリケーション・監視サービス（デプロイ順序：5-7）
+- **Uptime Kuma** (v2.22.0): Webサービス・API監視・通知・ダウンタイム管理
+- **Grafana** (v9.3.1): 統合可視化ダッシュボード・アラート管理・メトリクス分析
+
+### 高度監視・オブザーバビリティスタック（デプロイ順序：7）
+- **Mimir Distributed** (v5.7.0): 高性能メトリクス収集・保存・クエリエンジン（Prometheus互換、長期保存）
+- **Loki** (v6.35.1): ログ集約・検索・分析システム（Grafana統合）
 
 ## ディレクトリ構造
 
@@ -75,35 +79,88 @@ helmfile/
 
 ```mermaid
 graph TD
-    A[1Password Connect] --> B[cert-manager]
-    A --> C[external-dns]
-    A --> D[cloudflare-tunnel-ingress-controller]
-    A --> E[minio-tenant]
-    A --> F[mimir]
-    A --> G[loki]
+    %% 基盤レイヤー（第1層）
+    H[Cilium CNI]
     
-    H[Cilium] --> I[NFS Subdir External Provisioner]
-    B --> J[Traefik]
+    %% 基盤サービス（第2層）- Ciliumに依存
+    H --> A[1Password Connect]
+    H --> B[cert-manager]
+    H --> I[NFS Subdir External Provisioner]
+    H --> L[MinIO Operator]
+    H --> C[external-dns - Cilium依存]
+    H --> D[Cloudflare Tunnel Ingress Controller - Cilium依存]
+    
+    %% シークレット・認証管理（第3層）
+    A --> C2[external-dns - 1Password依存]
+    A --> D2[Cloudflare Tunnel - 1Password依存]
+    A --> E[MinIO Tenant - 1Password依存]
+    
+    %% ロードバランサー・Ingress（第4層）
+    A --> J[Traefik]
+    B --> J
     C --> J
-    J --> K[Grafana]
+    C2 --> J
     
-    L[MinIO Operator] --> E
+    %% MinIOストレージ（第4層）
+    I --> E
+    L --> E
+    J --> E
     
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style C fill:#f3e5f5
-    style J fill:#fff3e0
-    style K fill:#e8f5e8
+    %% アプリケーション・監視（第5層）
+    E --> F[Mimir]
+    E --> G[Loki]
+    D --> F
+    D2 --> F
+    D --> G
+    D2 --> G
+    
+    I --> K[Uptime Kuma]
+    B --> K
+    C --> K
+    C2 --> K
+    D --> K
+    D2 --> K
+    
+    I --> M[Grafana]
+    J --> M
+    D --> M
+    D2 --> M
+    
+    %% スタイリング
+    style H fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
+    style A fill:#e1f5fe,stroke:#2196f3,stroke-width:2px
+    style B fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style C fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style C2 fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style J fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    style D fill:#fff8e1,stroke:#ffc107,stroke-width:2px
+    style D2 fill:#fff8e1,stroke:#ffc107,stroke-width:2px
+    style K fill:#fce4ec,stroke:#e91e63,stroke-width:2px
+    style M fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    style F fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
+    style G fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
+    style I fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    style L fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    style E fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
 ```
-    
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style C fill:#f3e5f5
-    style G fill:#fff3e0
-    style H fill:#fff3e0
-    style I fill:#e8f5e8
-    style J fill:#e8f5e8
-```
+
+### 詳細依存関係マトリクス
+
+| コンポーネント | 直接依存 | 間接依存 | デプロイ順序 |
+|---------------|----------|----------|------------|
+| **Cilium** | なし | なし | 1 |
+| **1Password Connect** | Cilium | なし | 2 |
+| **cert-manager** | Cilium | なし | 2 |
+| **NFS Subdir External Provisioner** | Cilium | なし | 2 |
+| **MinIO Operator** | Cilium | なし | 2 |
+| **external-dns** | Cilium, 1Password Connect | なし | 3 |
+| **Cloudflare Tunnel Ingress Controller** | Cilium, 1Password Connect | なし | 3 |
+| **Traefik** | 1Password Connect, cert-manager, external-dns | Cilium | 4 |
+| **MinIO Tenant** | NFS Provisioner, 1Password Connect, Traefik, MinIO Operator | Cilium, cert-manager, external-dns | 5 |
+| **Uptime Kuma** | NFS Provisioner, cert-manager, external-dns, Cloudflare Tunnel | Cilium, 1Password Connect | 5 |
+| **Grafana** | NFS Provisioner, Traefik, Cloudflare Tunnel | すべての基盤コンポーネント | 6 |
+| **Mimir** | MinIO Tenant, Cloudflare Tunnel | すべての基盤・ストレージコンポーネント | 7 |
+| **Loki** | MinIO Tenant, Cloudflare Tunnel | すべての基盤・ストレージコンポーネント | 7 |
 
 ### 主要設定パラメータ
 
@@ -222,43 +279,61 @@ curl -H "Authorization: Bearer $ONEPASSWORD_TOKEN" \
 
 #### 2. 段階的デプロイメント
 
-**Phase 1: 基盤コンポーネント**
+**Phase 1: 基盤ネットワーク（第1層）**
 ```bash
-# CNI・基盤ネットワーク
+# CNI・基盤ネットワーク（最重要・最優先）
 helmfile -l name=cilium apply
+```
 
+**Phase 2: コア基盤サービス（第2層）**
+```bash
 # シークレット管理基盤
 helmfile -l name=connect apply
 
-# 証明書・DNS管理
+# 証明書管理
 helmfile -l name=cert-manager apply
-helmfile -l name=external-dns apply
+
+# ストレージプロビジョニング
+helmfile -l name=nfs-subdir-external-provisioner apply
+
+# オブジェクトストレージ基盤
+helmfile -l name=minio-operator apply
 ```
 
-**Phase 2: ネットワーク・Ingress**
+**Phase 3: DNS・外部接続サービス（第3層）**
 ```bash
-# ロードバランサー・Ingress
-helmfile -l name=traefik apply
+# DNS管理
+helmfile -l name=external-dns apply
 
-# 外部アクセス
+# 外部アクセストンネル
 helmfile -l name=cloudflare-tunnel-ingress-controller apply
 ```
 
-**Phase 3: ストレージ・データ管理**
+**Phase 4: Ingress・ロードバランサー（第4層）**
 ```bash
-# ストレージ
-helmfile -l name=nfs-subdir-external-provisioner apply
-helmfile -l name=minio-operator apply
-helmfile -l name=minio-tenant apply
+# HTTP/HTTPSロードバランサー
+helmfile -l name=traefik apply
 ```
 
-**Phase 4: 監視・アプリケーション**
+**Phase 5: ストレージ・初期アプリケーション（第5層）**
 ```bash
-# 監視・ダッシュボード
-helmfile -l name=mimir apply
-helmfile -l name=loki apply
-helmfile -l name=grafana apply
+# オブジェクトストレージテナント
+helmfile -l name=minio-tenant apply
+
+# 監視アプリケーション
 helmfile -l name=uptime-kuma apply
+
+# ダッシュボード
+helmfile -l name=grafana apply
+```
+
+**Phase 6: 高度監視スタック（第6-7層）**
+```bash
+# メトリクス長期保存・分析
+helmfile -l name=mimir apply
+
+# ログ集約・分析
+helmfile -l name=loki apply
 ```
 
 #### 3. 完全自動デプロイ
@@ -316,7 +391,6 @@ helmfile -l name=uptime-kuma destroy
 # ネームスペース確認・手動削除
 kubectl get namespaces
 kubectl delete namespace <namespace> --force --grace-period=0
-```
 
 # 重要サービスの稼働確認
 kubectl -n kube-system get pods -l k8s-app=cilium
@@ -325,6 +399,7 @@ kubectl -n 1password get pods
 kubectl -n traefik get pods
 kubectl -n mimir get pods
 kubectl -n loki get pods
+```
 
 #### ネットワーク・接続性診断
 
@@ -498,7 +573,6 @@ helmfile diff
    - アクセス権限最小化
 
 2. **ネットワークセキュリティ**:
-2. **セキュリティ強化**:
    - NetworkPolicy適用
    - 不要ポート閉鎖
    - シークレット管理の改善
