@@ -23,13 +23,13 @@ ansible/
 ├── site-monitoring.yaml       # 監視エージェント設定
 ├── upgrade-k8s.yaml           # Kubernetesアップグレード
 ├── upgrade-containerd.yaml    # containerdアップグレード
+├── venv/                       # Python仮想環境（任意）
 │
 ├── inventories/
 │   ├── kkg                     # メインインベントリファイル
 │   ├── group_vars/
 │   │   ├── all.yml            # 全ホスト共通設定
-│   │   ├── lb.yml             # ロードバランサーグループ設定
-│   │   └── monitoring.yml     # 監視グループ設定
+│   │   └── lb.yml             # ロードバランサーグループ設定
 │   └── host_vars/
 │       ├── kkg-lb1.yml        # lb1固有設定
 │       └── kkg-lb2.yml        # lb2固有設定
@@ -134,15 +134,28 @@ cni_plugins_version: "1.7.1"
 kubernetes_version: 1.33.3
 
 # Network Configuration
-pod_network_cidr: 10.244.0.0/16
+pod_network_cidr: 10.26.0.0/16
 
 # Infrastructure Configuration
 cluster_name: kkg
 base_network: 192.168.20
 
-# Derived Variables
+# Network Addressing Scheme
+# .10 = Load Balancer VIP
+# .11-.12 = Load Balancers  
+# .13-.15 = Control Plane Nodes
+# .16-.18 = Worker Nodes
+
+# Derived Variables  
 lb_virtual_ip: "192.168.20.10"
 controlplane_endpoint: "192.168.20.10:6443"
+
+# Mimir Configuration
+mimir_endpoint: "https://mimir.str08.net/api/v1/push"
+mimir_org_id: anonymous
+
+# Alloy Configuration
+alloy_disable_reporting: true
 ```
 
 ### ロードバランサー変数 (group_vars/lb.yml)
@@ -158,7 +171,7 @@ haproxy_backend_port: 6443
 
 ```yaml
 # Keepalived Configuration
-keepalived_priority: 100  # kkg-lb1=100, kkg-lb2=90
+keepalived_priority: 200  # kkg-lb1=200, kkg-lb2=100
 keepalived_state: MASTER  # kkg-lb1=MASTER, kkg-lb2=BACKUP
 ```
 
@@ -183,6 +196,8 @@ keepalived_state: MASTER  # kkg-lb1=MASTER, kkg-lb2=BACKUP
 1. **Ansible環境**: Ansible 2.9以上
 2. **SSH接続**: 全ノードへのSSH鍵認証設定
 3. **権限**: sudo権限を持つユーザー
+4. **Python環境**: Python 3.8以上（仮想環境推奨）
+5. **ネットワーク**: 各ノード間の通信が可能であること
 
 ### 基本的な実行手順
 
@@ -290,7 +305,7 @@ ansible-playbook -i inventories/kkg site.yaml --start-at-task="タスク名"
 
 ### バージョン管理
 
-`group_vars/all.yml`で以下のバージョンを管理：
+`inventories/group_vars/all.yml`で以下のバージョンを管理：
 
 ```yaml
 containerd_version: "2.1.4"      # containerdバージョン
@@ -298,6 +313,22 @@ runc_version: "1.3.0"            # runcバージョン
 cni_plugins_version: "1.7.1"     # CNI Pluginsバージョン
 kubernetes_version: 1.33.3        # Kubernetesバージョン
 ```
+
+### 監視設定
+
+Alloy監視エージェントの設定：
+
+```yaml
+# Mimir Configuration
+mimir_endpoint: "https://mimir.str08.net/api/v1/push"
+mimir_org_id: anonymous
+
+# Alloy Configuration  
+alloy_disable_reporting: true
+```
+
+- **Mimir**: メトリクス収集とストレージ
+- **Alloy**: Grafana Alloyエージェントによる統合監視
 
 ## セキュリティ考慮事項
 
