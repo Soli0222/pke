@@ -1,4 +1,38 @@
 ---
+- block:
+  - name: Retrieve TLS certificate from 1Password
+    ansible.builtin.set_fact:
+      tls_cert_b64: "{{ lookup('community.general.onepassword', 'pstr.space mTLS', field='tls.pem', vault='Kubernetes') }}"
+
+  - name: Retrieve TLS private key from 1Password
+    ansible.builtin.set_fact:
+      tls_key_b64: "{{ lookup('community.general.onepassword', 'pstr.space mTLS', field='tls.key', vault='Kubernetes') }}"
+
+  - name: Create certificate directory
+    ansible.builtin.file:
+      path: /etc/cert/pstr.space
+      state: directory
+      mode: '0755'
+      owner: alloy
+      group: alloy
+
+  - name: Decode and save TLS certificate
+    ansible.builtin.copy:
+      content: "{{ tls_cert_b64 | b64decode }}"
+      dest: /etc/cert/pstr.space/tls.pem
+      mode: '0644'
+      owner: alloy
+      group: alloy
+
+  - name: Decode and save TLS private key
+    ansible.builtin.copy:
+      content: "{{ tls_key_b64 | b64decode }}"
+      dest: /etc/cert/pstr.space/tls.key
+      mode: '0600'
+      owner: alloy
+      group: alloy
+  when: inventory_hostname in groups['external']
+
 - name: Add Grafana repository key
   shell:
     cmd: > 
