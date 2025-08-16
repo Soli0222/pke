@@ -23,10 +23,21 @@
     src: alloy.env.j2
     dest: /etc/default/alloy
 
-- name: Configure Alloy
+- name: Remove Old Configuration
+  ansible.builtin.file:
+    path: /etc/alloy/config.alloy
+    state: absent
+
+- name: Configure Prometheus
   ansible.builtin.template:
-    src: config.alloy.j2
-    dest: /etc/alloy/config.alloy
+    src: prometheus.alloy.j2
+    dest: /etc/alloy/prometheus.alloy
+    mode: '0644'
+
+- name: Configure Loki
+  ansible.builtin.template:
+    src: loki.alloy.j2
+    dest: /etc/alloy/loki.alloy
     mode: '0644'
 
 - name: Systemd Daemon Reload

@@ -1,0 +1,7 @@
+# Mimir Configuration
+mimir_endpoint: "https://mimir.pstr.space/api/v1/push"
+mimir_org_id: anonymous
+
+# Loki Configuration
+loki_endpoint: "https://loki.pstr.space/loki/api/v1/push"
+loki_org_id: fake

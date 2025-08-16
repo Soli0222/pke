@@ -31,5 +31,6 @@ controlplane_endpoint: "192.168.20.10:6443"
 mimir_endpoint: "https://mimir.str08.net/api/v1/push"
 mimir_org_id: anonymous
 
-# Alloy Configuration
-alloy_disable_reporting: true
+# Loki Configuration
+loki_endpoint: "https://loki.str08.net/loki/api/v1/push"
+loki_org_id: fake

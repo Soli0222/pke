@@ -8,6 +8,8 @@ kkg-cp3 ansible_host=192.168.20.15
 kkg-wk1 ansible_host=192.168.20.16
 kkg-wk2 ansible_host=192.168.20.17
 kkg-wk3 ansible_host=192.168.20.18
+conohav2-1 ansible_host=conohav2-1
+xserver-1 ansible_host=xserver-1
 
 [lb]
 kkg-lb1
@@ -52,3 +54,17 @@ kkg-cp3
 kkg-wk1
 kkg-wk2
 kkg-wk3
+
+[internal]
+kkg-lb1
+kkg-lb2
+kkg-cp1
+kkg-cp2
+kkg-cp3
+kkg-wk1
+kkg-wk2
+kkg-wk3
+
+[external]
+conohav2-1
+xserver-1
