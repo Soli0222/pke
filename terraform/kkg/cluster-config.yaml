@@ -1,0 +1,108 @@
+cluster:
+  name: "kkg"
+  network:
+    gateway: "192.168.20.1"
+    nameserver: "192.168.20.1"
+    searchdomain: "local"
+    subnet: "23"
+  
+  user: "ubuntu"
+  
+  storage:
+    default: "local-lvm"
+  
+  # ノード別テンプレート名
+  template_ids:
+    "kkg-pve3": "ubuntu-2404-minimal-cloudimg"
+    "kkg-pve4": "ubuntu-2404-minimal-cloudimg"
+  
+  # VM共通設定
+  common_settings:
+    qemu_os: "other"
+    scsihw: "virtio-scsi-pci"
+    boot: "order=scsi0"
+    full_clone: false
+    cpu_type: "host"
+    network_model: "virtio"
+    bridge: "vmbr0"
+    disk_format: "raw"
+    emulatessd: true
+
+# VMのタイプ別設定
+vm_types:
+  control_plane:
+    memory: 6144
+    cpu_cores: 8
+    cpu_sockets: 1
+    disk_size: "50G"
+  
+  load_balancer:
+    memory: 2048
+    cpu_cores: 8
+    cpu_sockets: 1
+    disk_size: "20G"
+  
+  worker:
+    memory: 11264
+    cpu_cores: 8
+    cpu_sockets: 1
+    disk_size: "50G"
+  
+  worker_large:
+    memory: 16384
+    cpu_cores: 8
+    cpu_sockets: 1
+    disk_size: "100G"
+
+# 個別VM設定
+vms:
+  # Load Balancer Nodes
+  - name: "kkg-lb1"
+    vmid: 2011
+    type: "load_balancer"
+    target_node: "kkg-pve3"
+    ip: "192.168.20.11"
+    
+  - name: "kkg-lb2"
+    vmid: 2012
+    type: "load_balancer"
+    target_node: "kkg-pve4"
+    ip: "192.168.20.12"
+
+  # Control Plane Nodes
+  - name: "kkg-cp1"
+    vmid: 2013
+    type: "control_plane"
+    target_node: "kkg-pve3"
+    ip: "192.168.20.13"
+    
+  - name: "kkg-cp2"
+    vmid: 2014
+    type: "control_plane"
+    target_node: "kkg-pve4"
+    ip: "192.168.20.14"
+    
+  - name: "kkg-cp3"
+    vmid: 2015
+    type: "control_plane"
+    target_node: "kkg-pve3"
+    ip: "192.168.20.15"
+  
+  # Worker Nodes
+  - name: "kkg-wk1"
+    vmid: 2016
+    type: "worker"
+    target_node: "kkg-pve4"
+    ip: "192.168.20.16"
+    
+  - name: "kkg-wk2"
+    vmid: 2017
+    type: "worker"
+    target_node: "kkg-pve4"
+    ip: "192.168.20.17"
+    
+  - name: "kkg-wk3"
+    vmid: 2018
+    type: "worker_large"
+    target_node: "kkg-pve3"
+    ip: "192.168.20.18"
