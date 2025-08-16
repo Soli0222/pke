@@ -56,16 +56,13 @@ releases:
     values:
       - values/nfs-subdir-external-provisioner.gotmpl
 
-  # - name: connect
-  #   namespace: 1password
-  #   chart: 1password/connect
-  #   version: 2.0.2
-  #   createNamespace: true
-  #   values:
-  #     - values/1password-connect.gotmpl
-  #   set:
-  #     - name: connect.credentials
-  #       file: 1password-credentials.json
+  - name: connect
+    namespace: 1password
+    chart: 1password/connect
+    version: 2.0.2
+    createNamespace: true
+    values:
+      - values/1password-connect.gotmpl
 
   - name: cert-manager
     namespace: cert-manager
