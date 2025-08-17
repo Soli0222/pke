@@ -42,7 +42,6 @@
 - `terraform/` Proxmox 上に VM 群をプロビジョニング。詳細は `terraform/kkg/README.md`。
 - `ansible/` VM の OS 設定、containerd、Kubernetes、LB（HAProxy/Keepalived）、監視エージェントなどを自動化。詳細は `ansible/README.md`。
 - `helmfile/` クラスター上のプラットフォーム/アプリ群を Helmfile でデプロイ（Cilium, cert-manager, Traefik, 1Password Connect, external-dns, Cloudflare Tunnel, Mimir, Loki, Grafana, MinIO ほか）。詳細は `helmfile/README.md`。
-- `manifest/` 一部の自作/個別アプリ用の Helm チャートや追加マニフェスト（mk-stream, navidrome, spotify-nowplaying など）。
 - `vps/` VPSサーバー上のアプリケーション設定（Misskey など）。
 
 ## エンドツーエンド手順（概要）
@@ -52,28 +51,27 @@
    - クラスター設定は `terraform/kkg/cluster-config.yaml` で管理
 2. 基本セットアップ（OS・Kubernetes・LB 構築）
    - `ansible/site.yaml` で全自動、または `site-all.yaml` → `site-lb.yaml` → `site-k8s.yaml` の順に実行
-   - バージョンやネットワークは `ansible/inventories/kkg/group_vars/all.yaml` で管理
+   - バージョンやネットワークは `ansible/inventories/group_vars/internal.yaml` で管理
    - 現在のKubernetesバージョン: 1.33.3、containerdバージョン: 2.1.4
-3. プラットフォーム/アプリのデプロイ（13コンポーネント）
+3. プラットフォーム/アプリのデプロイ（基盤コンポーネント + カスタムアプリケーション）
    - `helmfile/helmfile.yaml` を適用
    - 1Password Connect、Cloudflare、cert-manager、DNS などの事前準備は `helmfile/README.md` を参照
-4. 追加アプリ
-   - `manifest/` 配下の各チャート/マニフェストを用途に応じて適用（mk-stream, navidrome, spotify-nowplaying）
+4. 追加VPSアプリ
    - `vps/` 配下のVPSアプリケーション設定を適用
 
 ## 主要コンポーネント（抜粋）
 
 ### 基盤インフラ・ネットワーク
-- ネットワーク/CNI: Cilium (v1.18.0)
+- ネットワーク/CNI: Cilium (v1.18.1)
 - Ingress/Proxy: Traefik (v37.0.0)
-- 証明書/DNS: cert-manager (v1.18.2), external-dns (v1.17.0)（Cloudflare）
+- 証明書/DNS: cert-manager (v1.18.2), external-dns (v1.18.0)（Cloudflare）
 - シークレット: 1Password Connect (v2.0.2)（OnePasswordItem CRD）
 
 ### 監視・オブザーバビリティ
 - メトリクス: Mimir Distributed (v5.7.0)（長期保存・分析）
-- ログ: Loki (v6.35.1)（集約・検索）
-- 可視化: Grafana (v9.3.1)
-- 監視エージェント: Alloy
+- ログ: Loki (v6.36.1)（集約・検索）
+- 可視化: Grafana (v9.3.2)
+- 監視エージェント: Alloy (v1.2.1)
 - アップタイム監視: Uptime Kuma (v2.22.0)
 
 ### ストレージ・データ
@@ -91,10 +89,14 @@
 
 ## アプリケーション・サービス
 
-### カスタムアプリケーション（manifest/）
-- **mk-stream**: ストリーミングサービス用Helmチャート
-- **navidrome**: 音楽ストリーミングサーバー
-- **spotify-nowplaying**: Spotify再生状況表示サービス
+### カスタムアプリケーション（helmfile経由でデプロイ）
+- **daypassed-bot** (v0.1.0): 日付関連Bot
+- **mc-mirror-cronjob** (v0.2.0): MinecraftミラーCronJob
+- **mk-stream** (v1.0.0): ストリーミングサービス用Helmチャート
+- **navidrome** (v1.0.0): 音楽ストリーミングサーバー
+- **note-tweet-connector** (v0.3.0): Note投稿連携サービス
+- **spotify-nowplaying** (v1.0.0): Spotify再生状況表示サービス
+- **subscription-manager** (v1.1.0): サブスクリプション管理サービス
 
 ### VPSアプリケーション（vps/）
 - **Misskey**: 分散SNSプラットフォーム（PostgreSQL設定含む）
