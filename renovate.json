@@ -1,3 +1,28 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json"
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "repositories": ["Soli0222/pke"],
+  "packageRules": [
+    {
+      "matchManagers": ["helm-requirements", "helm-values"],
+      "commitMessageTopic": "Helm chart {{depName}}"
+    },
+    {
+      "matchManagers": ["terraform"],
+      "commitMessageTopic": "Terraform {{depName}}"
+    },
+    {
+      "matchManagers": ["ansible", "ansible-galaxy"],
+      "commitMessageTopic": "Ansible {{depName}}"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "commitMessageTopic": "GitHub Action {{depName}}"
+    }
+  ],
+  "timezone": "Asia/Tokyo",
+  "prConcurrentLimit": 20,
+  "prHourlyLimit": 10
 }
