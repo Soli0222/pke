@@ -4,10 +4,10 @@
 
 ## 概要
 
-PKE Helmfileは、Kubernetes上に完全なアプリケーションプラットフォームを構築するために、以下の13のコンポーネントを管理・デプロイします：
+PKE Helmfileは、Kubernetes上に完全なアプリケーションプラットフォームを構築するために、以下の14のコンポーネントを管理・デプロイします：
 
 ### 基盤ネットワーク・CNIレイヤー（デプロイ順序：1）
-- **Cilium** (v1.18.0): CNI（Container Network Interface）、NetworkPolicy、LoadBalancer、Service Mesh機能
+- **Cilium** (v1.18.1): CNI（Container Network Interface）、NetworkPolicy、LoadBalancer、Service Mesh機能
 
 ### コア基盤サービス（デプロイ順序：2）
 - **1Password Connect** (v2.0.2): 中央集権的シークレット管理とKubernetes統合
@@ -16,7 +16,7 @@ PKE Helmfileは、Kubernetes上に完全なアプリケーションプラット�
 - **MinIO Operator** (v7.1.1): S3互換オブジェクトストレージ基盤
 
 ### DNS・外部接続サービス（デプロイ順序：3）
-- **external-dns** (v1.17.0): Cloudflare等のDNSプロバイダーとの自動レコード同期
+- **external-dns** (v1.18.0): Cloudflare等のDNSプロバイダーとの自動レコード同期
 - **Cloudflare Tunnel Ingress Controller** (v0.0.18): セキュアな外部アクセストンネル（Zero Trust）
 
 ### Ingress・ロードバランシング（デプロイ順序：4）
@@ -25,13 +25,16 @@ PKE Helmfileは、Kubernetes上に完全なアプリケーションプラット�
 ### ストレージ・データ管理（デプロイ順序：5）
 - **MinIO Tenant** (v7.1.1): マルチテナント対応オブジェクトストレージインスタンス（高可用性構成）
 
-### アプリケーション・監視サービス（デプロイ順序：5-7）
+### アプリケーション・監視サービス（デプロイ順序：5-6）
 - **Uptime Kuma** (v2.22.0): Webサービス・API監視・通知・ダウンタイム管理
-- **Grafana** (v9.3.1): 統合可視化ダッシュボード・アラート管理・メトリクス分析
+- **Grafana** (v9.3.2): 統合可視化ダッシュボード・アラート管理・メトリクス分析
 
 ### 高度監視・オブザーバビリティスタック（デプロイ順序：7）
 - **Mimir Distributed** (v5.7.0): 高性能メトリクス収集・保存・クエリエンジン（Prometheus互換、長期保存）
-- **Loki** (v6.35.1): ログ集約・検索・分析システム（Grafana統合）
+- **Loki** (v6.36.1): ログ集約・検索・分析システム（Grafana統合）
+
+### 監視エージェント（デプロイ順序：8）
+- **Alloy** (v1.2.1): 統合監視エージェント（メトリクス・ログ・トレース収集、Grafana Labs製）
 
 ## ディレクトリ構造
 
@@ -43,6 +46,7 @@ helmfile/
 │
 ├── values/                         # Helm Values設定（Go Template）
 │   ├── 1password-connect.gotmpl    # 1Password Connect設定
+│   ├── alloy.gotmpl              # Alloy監視エージェント設定
 │   ├── cilium.gotmpl              # Cilium CNI設定
 │   ├── cloudflare-tunnel-ingress-controller.gotmpl  # Cloudflare Tunnel設定
 │   ├── external-dns.gotmpl         # External DNS設定
@@ -81,7 +85,7 @@ helmfile/
 graph TD
     %% レイヤー1: 基盤ネットワーク
     subgraph "Layer 1: 基盤ネットワーク"
-        Cilium[Cilium CNI<br/>v1.18.0]
+        Cilium[Cilium CNI<br/>v1.18.1]
     end
 
     %% レイヤー2: コア基盤サービス
@@ -94,7 +98,7 @@ graph TD
 
     %% レイヤー3: DNS・外部接続
     subgraph "Layer 3: DNS・外部接続"
-        ExternalDNS[external-dns<br/>v1.17.0]
+        ExternalDNS[external-dns<br/>v1.18.0]
         CFTunnel[Cloudflare Tunnel<br/>Ingress Controller v0.0.18]
     end
 
@@ -111,13 +115,18 @@ graph TD
 
     %% レイヤー6: 監視・ダッシュボード
     subgraph "Layer 6: 監視・ダッシュボード"
-        Grafana[Grafana<br/>v9.3.1]
+        Grafana[Grafana<br/>v9.3.2]
     end
 
     %% レイヤー7: 高度監視・オブザーバビリティ
     subgraph "Layer 7: 高度監視・オブザーバビリティ"
         Mimir[Mimir Distributed<br/>v5.7.0]
-        Loki[Loki<br/>v6.35.1]
+        Loki[Loki<br/>v6.36.1]
+    end
+
+    %% レイヤー8: 監視エージェント
+    subgraph "Layer 8: 監視エージェント"
+        Alloy[Alloy<br/>v1.2.1]
     end
 
     %% 基本依存関係
@@ -156,6 +165,10 @@ graph TD
     MinIOTenant --> Loki
     CFTunnel --> Loki
 
+    %% 監視エージェント依存関係
+    Mimir --> Alloy
+    Loki --> Alloy
+
     %% スタイリング
     style Cilium fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
     style Connect fill:#e1f5fe,stroke:#2196f3,stroke-width:2px
@@ -170,6 +183,7 @@ graph TD
     style Grafana fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
     style Mimir fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
     style Loki fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
+    style Alloy fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
 ```
 
 ### 詳細依存関係マトリクス
@@ -189,6 +203,7 @@ graph TD
 | **Grafana** | NFS Provisioner, Traefik, Cloudflare Tunnel | 6 |
 | **Mimir** | MinIO Tenant, Cloudflare Tunnel | 7 |
 | **Loki** | MinIO Tenant, Cloudflare Tunnel | 7 |
+| **Alloy** | Mimir, Loki | 8 |
 
 ### 主要設定パラメータ
 
@@ -367,6 +382,12 @@ helmfile -l name=mimir apply
 helmfile -l name=loki apply
 ```
 
+**Phase 8: 監視エージェント（第8層）**
+```bash
+# 統合監視エージェント
+helmfile -l name=alloy apply
+```
+
 #### 3. 完全自動デプロイ
 
 ```bash
@@ -430,6 +451,7 @@ kubectl -n 1password get pods
 kubectl -n traefik get pods
 kubectl -n mimir get pods
 kubectl -n loki get pods
+kubectl -n alloy get pods
 ```
 
 #### ネットワーク・接続性診断
