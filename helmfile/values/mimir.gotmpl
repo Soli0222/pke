@@ -29,6 +29,10 @@ mimir:
       s3:
         bucket_name: mimir-ruler
 
+    limits:
+      max_global_series_per_user: 500000
+      max_global_metadata_per_user: 100000
+
 ingress:
   enabled: true
   className: traefik

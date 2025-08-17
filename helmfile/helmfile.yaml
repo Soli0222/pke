@@ -318,3 +318,14 @@ releases:
           - "-f"
           - "manifests/loki/onepassworditem.yaml"
           - "--ignore-not-found=true"
+
+  - name: alloy
+    namespace: alloy
+    chart: grafana/alloy
+    version: 1.2.1
+    createNamespace: true
+    needs:
+      - mimir/mimir
+      - loki/loki
+    values:
+      - values/alloy.gotmpl
