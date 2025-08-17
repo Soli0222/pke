@@ -20,8 +20,8 @@ repositories:
     url: https://helm.irsigler.cloud
   - name: grafana
     url: https://grafana.github.io/helm-charts
-  - name: renovate
-    url: https://docs.renovatebot.com/helm-charts/
+
+
 
 releases:
   - name: cilium
@@ -317,34 +317,4 @@ releases:
           - "loki"
           - "-f"
           - "manifests/loki/onepassworditem.yaml"
-          - "--ignore-not-found=true"
-
-  - name: renovate
-    namespace: renovate
-    chart: renovate/renovate
-    version: 43.14.0
-    createNamespace: true
-    needs:
-      - 1password/connect
-    values:
-      - values/renovate.gotmpl
-    hooks:
-      - events: [postsync]
-        showlogs: true
-        command: "kubectl"
-        args:
-          - "apply"
-          - "-n"
-          - "renovate"
-          - "-f"
-          - "manifests/renovate/onepassworditem.yaml"
-      - events: [preuninstall]
-        showlogs: true
-        command: "kubectl"
-        args:
-          - "delete"
-          - "-n"
-          - "renovate"
-          - "-f"
-          - "manifests/renovate/onepassworditem.yaml"
           - "--ignore-not-found=true"

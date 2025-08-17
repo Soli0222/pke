@@ -4,7 +4,7 @@
 
 ## 概要
 
-PKE Helmfileは、Kubernetes上に完全なアプリケーションプラットフォームを構築するために、以下の14のコンポーネントを管理・デプロイします：
+PKE Helmfileは、Kubernetes上に完全なアプリケーションプラットフォームを構築するために、以下の13のコンポーネントを管理・デプロイします：
 
 ### 基盤ネットワーク・CNIレイヤー（デプロイ順序：1）
 - **Cilium** (v1.18.0): CNI（Container Network Interface）、NetworkPolicy、LoadBalancer、Service Mesh機能
@@ -18,7 +18,6 @@ PKE Helmfileは、Kubernetes上に完全なアプリケーションプラット�
 ### DNS・外部接続サービス（デプロイ順序：3）
 - **external-dns** (v1.17.0): Cloudflare等のDNSプロバイダーとの自動レコード同期
 - **Cloudflare Tunnel Ingress Controller** (v0.0.18): セキュアな外部アクセストンネル（Zero Trust）
-- **Renovate** (v43.14.0): 依存関係自動更新・セキュリティパッチ管理・GitOps統合
 
 ### Ingress・ロードバランシング（デプロイ順序：4）
 - **Traefik** (v37.0.0): パブリックHTTP/HTTPSロードバランサー・リバースプロキシ
@@ -52,7 +51,6 @@ helmfile/
 │   ├── mimir.gotmpl               # Mimir設定
 │   ├── minio-tenant.gotmpl         # MinIO Tenant設定
 │   ├── nfs-subdir-external-provisioner.gotmpl  # NFS Provisioner設定
-│   ├── renovate.gotmpl             # Renovate設定
 │   ├── traefik.gotmpl             # Traefik設定
 │   └── uptime-kuma.gotmpl          # Uptime Kuma設定
 │
@@ -71,8 +69,6 @@ helmfile/
     │   └── onepassworditem.yaml    # Mimir認証情報
     ├── minio-tenant/
     │   └── onepassworditem.yaml    # MinIO認証情報
-    ├── renovate/
-    │   └── onepassworditem.yaml    # Renovate認証情報
     └── traefik/
         └── certificate.yaml        # パブリックドメイン証明書
 ```
@@ -100,7 +96,6 @@ graph TD
     subgraph "Layer 3: DNS・外部接続"
         ExternalDNS[external-dns<br/>v1.17.0]
         CFTunnel[Cloudflare Tunnel<br/>Ingress Controller v0.0.18]
-        Renovate[Renovate<br/>v43.14.0]
     end
 
     %% レイヤー4: Ingress・ロードバランシング
@@ -161,9 +156,6 @@ graph TD
     MinIOTenant --> Loki
     CFTunnel --> Loki
 
-    %% Renovate依存関係
-    Connect --> Renovate
-
     %% スタイリング
     style Cilium fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
     style Connect fill:#e1f5fe,stroke:#2196f3,stroke-width:2px
@@ -178,7 +170,6 @@ graph TD
     style Grafana fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
     style Mimir fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
     style Loki fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
-    style Renovate fill:#fff3e0,stroke:#ff9800,stroke-width:2px
 ```
 
 ### 詳細依存関係マトリクス
@@ -198,7 +189,6 @@ graph TD
 | **Grafana** | NFS Provisioner, Traefik, Cloudflare Tunnel | 6 |
 | **Mimir** | MinIO Tenant, Cloudflare Tunnel | 7 |
 | **Loki** | MinIO Tenant, Cloudflare Tunnel | 7 |
-| **Renovate** | 1Password Connect | 3 |
 
 ### 主要設定パラメータ
 
@@ -283,7 +273,6 @@ Cloudflare Tunnelによる安全な外部アクセス設定：
 | `minio-root-credentials` | Login | `username`, `password` | MinIOルート認証 |
 | `mimir-credentials` | Login | `username`, `password` | Mimir認証 |
 | `loki-credentials` | Login | `username`, `password` | Loki認証 |
-| `renovate-credentials` | API Credential | `token` | GitHub/GitLab API Token |
 
 ### 4. DNS・ネットワーク設定
 
@@ -346,9 +335,6 @@ helmfile -l name=external-dns apply
 
 # 外部アクセストンネル
 helmfile -l name=cloudflare-tunnel-ingress-controller apply
-
-# 依存関係自動更新
-helmfile -l name=renovate apply
 ```
 
 **Phase 4: Ingress・ロードバランサー（第4層）**
@@ -444,7 +430,6 @@ kubectl -n 1password get pods
 kubectl -n traefik get pods
 kubectl -n mimir get pods
 kubectl -n loki get pods
-kubectl -n renovate get pods
 ```
 
 #### ネットワーク・接続性診断
@@ -558,26 +543,6 @@ kubectl -n kube-system logs deployment/nfs-subdir-external-provisioner
 - アクセス権限確認
 - StorageClass annotation確認
 
-#### 5. Renovate関連
-
-**症状**: Renovate GitHubアクセスエラー・PR作成失敗
-```bash
-# Renovate設定確認
-kubectl -n renovate logs deployment/renovate -f
-
-# GitHub API Token確認
-kubectl -n renovate describe onepassworditem renovate-credentials
-
-# CronJob実行履歴確認
-kubectl -n renovate get cronjobs
-kubectl -n renovate get jobs --sort-by=.metadata.creationTimestamp
-```
-
-**解決方法**:
-- GitHub API Token権限確認
-- Rate Limit確認（GitHub API）
-- Repository権限設定確認
-
 ### 監視・アラート設定
 
 #### Mimir + Loki + Grafana
@@ -601,7 +566,6 @@ kubectl -n grafana get secret grafana -o jsonpath="{.data.admin-password}" | bas
 - アプリケーション可用性
 - リソース使用率（CPU/メモリ/ストレージ）
 - ネットワーク品質
-- セキュリティパッチ適用状況（Renovate）
 
 ### 運用ベストプラクティス
 
@@ -626,10 +590,6 @@ kubectl top pods -A --sort-by=memory
 ```bash
 # Helm Chart更新確認
 helmfile diff
-
-# Renovate動作確認
-kubectl -n renovate get cronjobs
-kubectl -n renovate logs job/<latest-job-name>
 
 # セキュリティアップデート
 # - Kubernetes版数確認
@@ -722,7 +682,6 @@ mimir:
 - [cert-manager](https://cert-manager.io/)
 - [Grafana Mimir](https://grafana.com/docs/mimir/)
 - [Grafana Loki](https://grafana.com/docs/loki/)
-- [Renovate](https://docs.renovatebot.com/)
 
 ### PKE関連ドキュメント
 - [Terraform Infrastructure](../terraform/README.md)
