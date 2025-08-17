@@ -322,7 +322,7 @@ releases:
   - name: renovate
     namespace: renovate
     chart: renovate/renovate
-    version: 43.14.0
+    version: 43.15.0
     createNamespace: true
     needs:
       - 1password/connect
