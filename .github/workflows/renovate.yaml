@@ -26,4 +26,5 @@ jobs:
         with:
           token: '${{ steps.get_token.outputs.token }}'
         env:
+          LOG_LEVEL: 'debug'
           RENOVATE_PLATFORM_COMMIT_ENABLED: 'true'
