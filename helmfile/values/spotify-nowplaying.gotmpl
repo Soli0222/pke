@@ -1,0 +1,22 @@
+ingress:
+  enabled: true
+  className: "cloudflare-tunnel"
+  hosts:
+    - host: spn.soli0222.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+onePassword:
+  enabled: true
+  itemPath: "vaults/Kubernetes/items/spotify-nowplaying-secret"
+
+env:
+  - name: PORT
+    value: "8080"
+  - name: SERVER_URI
+    value: "mi.soli0222.com"
+  - name: SPOTIFY_REDIRECT_URI_NOTE
+    value: "https://spn.soli0222.com/note/callback"
+  - name: SPOTIFY_REDIRECT_URI_TWEET
+    value: "https://spn.soli0222.com/tweet/callback"

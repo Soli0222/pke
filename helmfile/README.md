@@ -4,7 +4,7 @@
 
 ## 概要
 
-PKE Helmfileは、Kubernetes上に完全なアプリケーションプラットフォームを構築するために、以下の14のコンポーネントを管理・デプロイします：
+PKE Helmfileは、Kubernetes上に完全なアプリケーションプラットフォームを構築するために、基盤インフラストラクチャ（14コンポーネント）と7つのカスタムアプリケーションを管理・デプロイします：
 
 ### 基盤ネットワーク・CNIレイヤー（デプロイ順序：1）
 - **Cilium** (v1.18.1): CNI（Container Network Interface）、NetworkPolicy、LoadBalancer、Service Mesh機能
@@ -36,6 +36,16 @@ PKE Helmfileは、Kubernetes上に完全なアプリケーションプラット�
 ### 監視エージェント（デプロイ順序：8）
 - **Alloy** (v1.2.1): 統合監視エージェント（メトリクス・ログ・トレース収集、Grafana Labs製）
 
+### カスタムアプリケーション（デプロイ順序：9）
+- **Daypassed Bot** (v0.1.0): Misskey 経過日数Bot
+- **MC Mirror CronJob** (v0.2.0): S3 バックアップJob
+- **MK Stream** (v1.0.0): Misskey ストリームAPI使用Bot
+- **Navidrome** (v1.0.0): 音楽ストリーミングサーバー（Subsonic互換）
+- **Note Tweet Connector** (v0.3.0): Misskey ⇔ Twitter/X 自動投稿連携
+- **Spotify Nowplaying** (v1.0.0): Spotify 再生中楽曲共有ツール
+- **Subscription Manager** (v1.1.0): サブスクリプション管理
+<!-- - **Flow Sight** (v1.1.0): フロー可視化ツール（現在無効化） -->
+
 ## ディレクトリ構造
 
 ```
@@ -49,12 +59,20 @@ helmfile/
 │   ├── alloy.gotmpl              # Alloy監視エージェント設定
 │   ├── cilium.gotmpl              # Cilium CNI設定
 │   ├── cloudflare-tunnel-ingress-controller.gotmpl  # Cloudflare Tunnel設定
+│   ├── dayspassed-bot.gotmpl       # Daypassed Bot設定
 │   ├── external-dns.gotmpl         # External DNS設定
+│   ├── flow-sight.gotmpl           # Flow Sight設定（無効化中）
 │   ├── grafana.gotmpl             # Grafana設定
 │   ├── loki.gotmpl                # Loki設定
+│   ├── mc-mirror-cronjob.gotmpl    # MC Mirror CronJob設定
 │   ├── mimir.gotmpl               # Mimir設定
 │   ├── minio-tenant.gotmpl         # MinIO Tenant設定
+│   ├── mk-stream.gotmpl           # MK Stream設定
+│   ├── navidrome.gotmpl           # Navidrome設定
 │   ├── nfs-subdir-external-provisioner.gotmpl  # NFS Provisioner設定
+│   ├── note-tweet-connector.gotmpl # Note Tweet Connector設定
+│   ├── spotify-nowplaying.gotmpl   # Spotify Nowplaying設定
+│   ├── subscription-manager.gotmpl # Subscription Manager設定
 │   ├── traefik.gotmpl             # Traefik設定
 │   └── uptime-kuma.gotmpl          # Uptime Kuma設定
 │
@@ -129,6 +147,18 @@ graph TD
         Alloy[Alloy<br/>v1.2.1]
     end
 
+    %% レイヤー9: カスタムアプリケーション
+    subgraph "Layer 9: カスタムアプリケーション"
+        DaypassedBot[Daypassed Bot<br/>v0.1.0]
+        MCMirror[MC Mirror CronJob<br/>v0.2.0]
+        MKStream[MK Stream<br/>v1.0.0]
+        Navidrome[Navidrome<br/>v1.0.0]
+        NoteTweet[Note Tweet Connector<br/>v0.3.0]
+        SpotifyNP[Spotify Nowplaying<br/>v1.0.0]
+        SubManager[Subscription Manager<br/>v1.1.0]
+        %% FlowSight[Flow Sight<br/>v1.1.0]
+    end
+
     %% 基本依存関係
     Cilium --> Connect
     Cilium --> CertManager
@@ -169,6 +199,16 @@ graph TD
     Mimir --> Alloy
     Loki --> Alloy
 
+    %% カスタムアプリケーション依存関係
+    Connect --> DaypassedBot
+    MinIOTenant --> MCMirror
+    Connect --> MKStream
+    NFSProvisioner --> Navidrome
+    CFTunnel --> Navidrome
+    CFTunnel --> NoteTweet
+    CFTunnel --> SpotifyNP
+    Connect --> SubManager
+
     %% スタイリング
     style Cilium fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
     style Connect fill:#e1f5fe,stroke:#2196f3,stroke-width:2px
@@ -184,6 +224,13 @@ graph TD
     style Mimir fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
     style Loki fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
     style Alloy fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    style DaypassedBot fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style MCMirror fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style MKStream fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style Navidrome fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style NoteTweet fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style SpotifyNP fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style SubManager fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
 ```
 
 ### 詳細依存関係マトリクス
@@ -204,6 +251,13 @@ graph TD
 | **Mimir** | MinIO Tenant, Cloudflare Tunnel | 7 |
 | **Loki** | MinIO Tenant, Cloudflare Tunnel | 7 |
 | **Alloy** | Mimir, Loki | 8 |
+| **Daypassed Bot** | 1Password Connect | 9 |
+| **MC Mirror CronJob** | MinIO Tenant | 9 |
+| **MK Stream** | 1Password Connect | 9 |
+| **Navidrome** | NFS Provisioner, Cloudflare Tunnel | 9 |
+| **Note Tweet Connector** | Cloudflare Tunnel | 9 |
+| **Spotify Nowplaying** | Cloudflare Tunnel | 9 |
+| **Subscription Manager** | 1Password Connect | 9 |
 
 ### 主要設定パラメータ
 
@@ -288,6 +342,11 @@ Cloudflare Tunnelによる安全な外部アクセス設定：
 | `minio-root-credentials` | Login | `username`, `password` | MinIOルート認証 |
 | `mimir-credentials` | Login | `username`, `password` | Mimir認証 |
 | `loki-credentials` | Login | `username`, `password` | Loki認証 |
+| `discord-bot-token` | Password | `token` | Discord Bot認証 |
+| `twitter-api-keys` | API Credential | `api_key`, `api_secret`, `access_token`, `access_secret` | Twitter API認証 |
+| `spotify-api-keys` | API Credential | `client_id`, `client_secret`, `refresh_token` | Spotify API認証 |
+| `misskey-access-token` | Password | `token` | Misskey API認証 |
+| `note-api-token` | Password | `token` | Note.com API認証 |
 
 ### 4. DNS・ネットワーク設定
 
@@ -388,6 +447,30 @@ helmfile -l name=loki apply
 helmfile -l name=alloy apply
 ```
 
+**Phase 9: カスタムアプリケーション（第9層）**
+```bash
+# Misskey Bot
+helmfile -l name=daypassed-bot apply
+
+# S3 バックアップ
+helmfile -l name=mc-mirror-cronjob apply
+
+# Misskeyストリーミング
+helmfile -l name=mk-stream apply
+
+# 音楽ストリーミングサーバー
+helmfile -l name=navidrome apply
+
+# Misskey ⇔ Twitter/X連携
+helmfile -l name=note-tweet-connector apply
+
+# Spotify再生情報共有
+helmfile -l name=spotify-nowplaying apply
+
+# サブスクリプション管理
+helmfile -l name=subscription-manager apply
+```
+
 #### 3. 完全自動デプロイ
 
 ```bash
@@ -452,6 +535,9 @@ kubectl -n traefik get pods
 kubectl -n mimir get pods
 kubectl -n loki get pods
 kubectl -n alloy get pods
+
+# カスタムアプリケーション確認
+kubectl get pods -A | grep -E "(daypassed-bot|mc-mirror|mk-stream|navidrome|note-tweet|spotify|subscription)"
 ```
 
 #### ネットワーク・接続性診断
@@ -684,7 +770,8 @@ mimir:
 ### 運用制限
 - **順次デプロイ**: 依存関係のため一部コンポーネントは順次実行必須
 - **外部依存**: CloudflareDNS、1Password Connect Server等の外部サービス依存
-- **リソース要件**: 最小構成でも16GB RAM、8 CPU推奨（監視スタック含む）
+- **リソース要件**: 最小構成でも20GB RAM、10 CPU推奨（監視スタック・カスタムアプリケーション含む）
+- **API制限**: 各種外部サービス（Discord、Twitter、Spotify、Misskey、Note.com）のAPI制限に注意
 
 ### アップグレード注意点
 - **CRD変更**: cert-manager、Cilium等のCRD互換性確認必須
@@ -704,6 +791,10 @@ mimir:
 - [cert-manager](https://cert-manager.io/)
 - [Grafana Mimir](https://grafana.com/docs/mimir/)
 - [Grafana Loki](https://grafana.com/docs/loki/)
+- [1Password Connect](https://developer.1password.com/docs/connect/)
+
+### カスタムHelmチャート
+- [soli0222/helm-charts](https://github.com/Soli0222/helm-charts) - カスタムアプリケーション用Helmチャートリポジトリ
 
 ### PKE関連ドキュメント
 - [Terraform Infrastructure](../terraform/README.md)

@@ -1,0 +1,41 @@
+database:
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: "oky-synology-01"
+  service:
+    port: 5432
+
+onePasswordItem:
+  enabled: true
+
+# Frontend configuration
+frontend:
+  environment:
+    NEXT_PUBLIC_API_URL: "https://flow-sight.str08.net"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  hosts:
+    - host: flow-sight.str08.net
+      paths:
+        - path: /api
+          pathType: Prefix
+          backend:
+            service: backend
+        - path: /swagger
+          pathType: Prefix
+          backend:
+            service: backend
+        - path: /
+          pathType: Prefix
+          backend:
+            service: frontend
+  tls:
+   - secretName: flow-sight.str08.net-dns01
+     hosts:
+       - flow-sight.str08.net

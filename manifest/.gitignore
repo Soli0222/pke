@@ -1,6 +1,0 @@
-# k8s secret variables
-secret.yaml
-
-# Igrnore helm dependencies
-Chart.lock
-*.tgz

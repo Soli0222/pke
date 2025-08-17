@@ -1,9 +1,0 @@
-image:
-  repository: ghcr.io/soli0222/spotify-nowplaying
-  tag: 2.3.0
-
-env:
-  PORT: 8080
-  SERVER_URI: mi.soli0222.com
-  SPOTIFY_REDIRECT_URI_NOTE: https://spn.soli0222.com/note/callback
-  SPOTIFY_REDIRECT_URI_TWEET: https://spn.soli0222.com/tweet/callback

@@ -1,0 +1,12 @@
+ingress:
+  enabled: true
+  className: "cloudflare-tunnel"
+  hosts:
+    - host: ntc.pstr.space
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+onePassword:
+  enabled: true
+  itemPath: "vaults/Kubernetes/items/note-tweet-connector-secret"

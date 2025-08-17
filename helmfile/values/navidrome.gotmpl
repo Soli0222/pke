@@ -1,0 +1,40 @@
+persistence:
+  # Data volume configuration
+  data:
+    enabled: true
+    # Use existing PVC (if specified, no new PVC will be created)
+    existingClaim: ""
+    # Storage class for the PVC
+    storageClass: "oky-synology-01"
+    # Storage size
+    size: 10Gi
+    # Access modes
+    accessModes:
+      - ReadWriteOnce
+  
+  # Music volume configuration
+  music:
+    enabled: true
+    # Use existing PVC (if specified, no new PVC will be created)
+    existingClaim: ""
+    # Use existing PV (if specified, no new PV will be created)
+    existingVolume: ""
+    # Storage size
+    size: 500Gi
+    # Access modes
+    accessModes:
+      - ReadOnlyMany
+    nfs:
+      server: "192.168.20.250"
+      path: "/volume1/music"
+      mountOptions:
+        - nfsvers=4.1
+
+ingress:
+  enabled: true
+  className: "cloudflare-tunnel"
+  hosts:
+    - host: navidrome.pstr.space
+      paths:
+        - path: /
+          pathType: ImplementationSpecific

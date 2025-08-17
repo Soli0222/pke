@@ -1,0 +1,18 @@
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations: 
+    cert-manager.io/cluster-issuer: letsencrypt
+  hosts:
+    - host: subscription-manager.str08.net
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: subscription-manager.str08.net-dns01
+      hosts:
+        - subscription-manager.str08.net
+
+onePassword:
+  enabled: true
+  itemPath: "vaults/Kubernetes/items/subscription-manager"

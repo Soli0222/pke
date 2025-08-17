@@ -20,8 +20,8 @@ repositories:
     url: https://helm.irsigler.cloud
   - name: grafana
     url: https://grafana.github.io/helm-charts
-
-
+  - name: soli0222
+    url: https://soli0222.github.io/helm-charts
 
 releases:
   - name: cilium
@@ -329,3 +329,86 @@ releases:
       - loki/loki
     values:
       - values/alloy.gotmpl
+
+  - name: daypassed-bot
+    namespace: daypassed-bot
+    chart: soli0222/daypassed-bot
+    version: 0.1.0
+    createNamespace: true
+    needs:
+      - 1password/connect
+    values:
+      - values/dayspassed-bot.gotmpl
+
+  # - name: flow-sight
+  #   namespace: flow-sight
+  #   chart: soli0222/flow-sight
+  #   version: 1.1.0
+  #   createNamespace: true
+  #   needs:
+  #     - traefik/traefik
+  #   values:
+  #     - values/flow-sight.gotmpl
+
+  - name: mc-mirror-cronjob
+    namespace: mc-mirror-cronjob
+    chart: soli0222/mc-mirror-cronjob
+    version: 0.2.0
+    createNamespace: true
+    needs:
+      - minio-tenant/minio-tenant
+    values:
+      - values/mc-mirror-cronjob.gotmpl
+
+  - name: mk-stream
+    namespace: mk-stream
+    chart: soli0222/mk-stream
+    version: 1.0.0
+    createNamespace: true
+    needs:
+      - 1password/connect
+    values:
+      - values/mk-stream.gotmpl
+
+  - name: navidrome
+    namespace: navidrome
+    chart: soli0222/navidrome
+    version: 1.0.0
+    createNamespace: true
+    needs:
+      - kube-system/nfs-subdir-external-provisioner
+      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+    values:
+      - values/navidrome.gotmpl
+
+  - name: note-tweet-connector
+    namespace: note-tweet-connector
+    chart: soli0222/note-tweet-connector
+    version: 0.3.0
+    createNamespace: true
+    needs:
+      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+    values:
+      - values/note-tweet-connector.gotmpl
+
+  - name: spotify-nowplaying
+    namespace: spotify-nowplaying
+    chart: soli0222/spotify-nowplaying
+    version: 1.0.0
+    createNamespace: true
+    needs:
+      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+    values:
+      - values/spotify-nowplaying.gotmpl
+
+  - name: subscription-manager
+    namespace: subscription-manager
+    chart: soli0222/subscription-manager
+    version: 1.1.0
+    createNamespace: true
+    needs:
+      - 1password/connect
+    values:
+      - values/subscription-manager.gotmpl
+
+  
