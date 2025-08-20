@@ -260,7 +260,7 @@ releases:
   - name: mimir
     namespace: mimir
     chart: grafana/mimir-distributed
-    version: 5.7.0
+    version: 5.8.0
     createNamespace: true
     needs:
       - minio-tenant/minio-tenant
