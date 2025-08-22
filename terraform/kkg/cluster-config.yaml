@@ -68,6 +68,12 @@ vms:
     type: "load_balancer"
     target_node: "kkg-pve4"
     ip: "192.168.20.12"
+  
+  - name: "test"
+    vmid: 2019
+    type: "load_balancer"
+    target_node: "kkg-pve4"
+    ip: "192.168.20.2"
 
   # Control Plane Nodes
   - name: "kkg-cp1"
