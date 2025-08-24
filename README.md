@@ -39,8 +39,8 @@
 
 ## リポジトリ構成と役割
 
-- `terraform/` Proxmox 上に VM 群をプロビジョニング。詳細は `terraform/kkg/README.md`。
-- `ansible/` VM の OS 設定、containerd、Kubernetes、LB（HAProxy/Keepalived）、監視エージェントなどを自動化。詳細は `ansible/README.md`。
+- `terraform/` Proxmox 上に VM 群をプロビジョニング。詳細は `terraform/kkg/README.md`。Tailscale ACL 管理は `terraform/tailscale/README.md`。
+- `ansible/` VM の OS 設定、containerd、Kubernetes、LB（HAProxy/Keepalived）、監視エージェント、Tailscale などを自動化。詳細は `ansible/README.md`。
 - `helmfile/` クラスター上のプラットフォーム/アプリ群を Helmfile でデプロイ（Cilium, cert-manager, Traefik, 1Password Connect, external-dns, Cloudflare Tunnel, Mimir, Loki, Grafana, MinIO ほか）。詳細は `helmfile/README.md`。
 - `vps/` VPSサーバー上のアプリケーション設定（Misskey など）。
 
@@ -65,12 +65,12 @@
 - ネットワーク/CNI: Cilium (v1.18.1)
 - Ingress/Proxy: Traefik (v37.0.0)
 - 証明書/DNS: cert-manager (v1.18.2), external-dns (v1.18.0)（Cloudflare）
-- シークレット: 1Password Connect (v2.0.2)（OnePasswordItem CRD）
+- シークレット: 1Password Connect (v2.0.3)（OnePasswordItem CRD）
 
 ### 監視・オブザーバビリティ
-- メトリクス: Mimir Distributed (v5.7.0)（長期保存・分析）
-- ログ: Loki (v6.36.1)（集約・検索）
-- 可視化: Grafana (v9.3.2)
+- メトリクス: Mimir Distributed (v5.8.0)（長期保存・分析）
+- ログ: Loki (v6.37.0)（集約・検索）
+- 可視化: Grafana (v9.3.4)
 - 監視エージェント: Alloy (v1.2.1)
 - アップタイム監視: Uptime Kuma (v2.22.0)
 
@@ -83,7 +83,7 @@
 
 ## 参照
 
-- Terraform: `terraform/kkg/README.md`
+- Terraform: `terraform/kkg/README.md`, `terraform/tailscale/README.md`
 - Ansible: `ansible/README.md`
 - Helmfile: `helmfile/README.md`
 
