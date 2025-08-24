@@ -17,7 +17,6 @@ PKE Helmfileは、Kubernetes上に完全なアプリケーションプラット�
 
 ### DNS・外部接続サービス（デプロイ順序：3）
 - **external-dns** (v1.18.0): Cloudflare等のDNSプロバイダーとの自動レコード同期
-- **Cloudflare Tunnel Ingress Controller** (v0.0.18): セキュアな外部アクセストンネル（Zero Trust）
 
 ### Ingress・ロードバランシング（デプロイ順序：4）
 - **Traefik** (v37.0.0): パブリックHTTP/HTTPSロードバランサー・リバースプロキシ
@@ -59,7 +58,6 @@ helmfile/
 │   ├── 1password-connect.gotmpl    # 1Password Connect設定
 │   ├── alloy.gotmpl              # Alloy監視エージェント設定
 │   ├── cilium.gotmpl              # Cilium CNI設定
-│   ├── cloudflare-tunnel-ingress-controller.gotmpl  # Cloudflare Tunnel設定
 │   ├── dayspassed-bot.gotmpl       # Daypassed Bot設定
 │   ├── external-dns.gotmpl         # External DNS設定
 │   ├── flow-sight.gotmpl           # Flow Sight設定（無効化中）
@@ -75,6 +73,7 @@ helmfile/
 │   ├── spotify-nowplaying.gotmpl   # Spotify Nowplaying設定
 │   ├── subscription-manager.gotmpl # Subscription Manager設定
 │   ├── traefik.gotmpl             # Traefik設定
+│   ├── traefik-external.gotmpl     # Traefik External設定
 │   └── uptime-kuma.gotmpl          # Uptime Kuma設定
 │
 └── manifests/                      # 追加Kubernetesマニフェスト
@@ -82,8 +81,6 @@ helmfile/
     │   └── clusterissuer.yaml      # Let's Encrypt ClusterIssuer
     ├── cilium/
     │   └── default-pool.yaml       # Cilium LoadBalancer Pool
-    ├── cloudflare-tunnel-ingress-controller/
-    │   └── onepassworditem.yaml    # Cloudflare API Token Secret
     ├── external-dns/
     │   └── onepassworditem.yaml    # DNS Provider Secret
     ├── loki/
@@ -111,7 +108,7 @@ graph TD
 
     %% レイヤー2: コア基盤サービス
     subgraph "Layer 2: コア基盤サービス"
-        Connect[1Password Connect<br/>v2.0.2]
+        Connect[1Password Connect<br/>v2.0.3]
         CertManager[cert-manager<br/>v1.18.2]
         NFSProvisioner[NFS Subdir External<br/>Provisioner v4.0.18]
         MinIOOperator[MinIO Operator<br/>v7.1.1]
@@ -120,12 +117,12 @@ graph TD
     %% レイヤー3: DNS・外部接続
     subgraph "Layer 3: DNS・外部接続"
         ExternalDNS[external-dns<br/>v1.18.0]
-        CFTunnel[Cloudflare Tunnel<br/>Ingress Controller v0.0.18]
     end
 
     %% レイヤー4: Ingress・ロードバランシング
     subgraph "Layer 4: Ingress・ロードバランシング"
         Traefik[Traefik<br/>v37.0.0]
+        TraefikExt[Traefik External<br/>v37.0.0]
     end
 
     %% レイヤー5: ストレージ・初期アプリケーション
@@ -136,13 +133,13 @@ graph TD
 
     %% レイヤー6: 監視・ダッシュボード
     subgraph "Layer 6: 監視・ダッシュボード"
-        Grafana[Grafana<br/>v9.3.2]
+        Grafana[Grafana<br/>v9.3.4]
     end
 
     %% レイヤー7: 高度監視・オブザーバビリティ
     subgraph "Layer 7: 高度監視・オブザーバビリティ"
-        Mimir[Mimir Distributed<br/>v5.7.0]
-        Loki[Loki<br/>v6.36.1]
+        Mimir[Mimir Distributed<br/>v5.8.0]
+        Loki[Loki<br/>v6.37.0]
     end
 
     %% レイヤー8: 監視エージェント
@@ -170,11 +167,12 @@ graph TD
 
     %% DNS・外部接続の依存関係
     Connect --> ExternalDNS
-    Connect --> CFTunnel
 
     %% Traefik依存関係
     CertManager --> Traefik
     ExternalDNS --> Traefik
+    CertManager --> TraefikExt
+    ExternalDNS --> TraefikExt
 
     %% MinIO Tenant依存関係
     NFSProvisioner --> MinIOTenant
@@ -185,18 +183,18 @@ graph TD
     NFSProvisioner --> UptimeKuma
     CertManager --> UptimeKuma
     ExternalDNS --> UptimeKuma
-    CFTunnel --> UptimeKuma
+    TraefikExt --> UptimeKuma
 
     %% Grafana依存関係
     NFSProvisioner --> Grafana
     Traefik --> Grafana
-    CFTunnel --> Grafana
+    TraefikExt --> Grafana
 
     %% 高度監視スタック依存関係
     MinIOTenant --> Mimir
-    CFTunnel --> Mimir
+    TraefikExt --> Mimir
     MinIOTenant --> Loki
-    CFTunnel --> Loki
+    TraefikExt --> Loki
 
     %% 監視エージェント依存関係
     Mimir --> Alloy
@@ -207,9 +205,9 @@ graph TD
     MinIOTenant --> MCMirror
     Connect --> MKStream
     NFSProvisioner --> Navidrome
-    CFTunnel --> Navidrome
-    CFTunnel --> NoteTweet
-    CFTunnel --> SpotifyNP
+    TraefikExt --> Navidrome
+    TraefikExt --> NoteTweet
+    TraefikExt --> SpotifyNP
     Connect --> SubManager
 
     %% スタイリング
@@ -219,8 +217,9 @@ graph TD
     style NFSProvisioner fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
     style MinIOOperator fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
     style ExternalDNS fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
-    style CFTunnel fill:#fff8e1,stroke:#ffc107,stroke-width:2px
+    style ExternalDNS fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
     style Traefik fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    style TraefikExt fill:#fff3e0,stroke:#ff9800,stroke-width:2px
     style MinIOTenant fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
     style UptimeKuma fill:#fce4ec,stroke:#e91e63,stroke-width:2px
     style Grafana fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
@@ -246,21 +245,20 @@ graph TD
 | **NFS Subdir External Provisioner** | Cilium | 2 |
 | **MinIO Operator** | Cilium | 2 |
 | **external-dns** | 1Password Connect | 3 |
-| **Cloudflare Tunnel Ingress Controller** | 1Password Connect | 3 |
 | **Traefik** | cert-manager, external-dns | 4 |
 | **Traefik External** | cert-manager, external-dns | 4 |
 | **MinIO Tenant** | NFS Provisioner, Traefik, MinIO Operator | 5 |
-| **Uptime Kuma** | NFS Provisioner, cert-manager, external-dns, Cloudflare Tunnel | 5 |
-| **Grafana** | NFS Provisioner, Traefik, Cloudflare Tunnel | 6 |
-| **Mimir** | MinIO Tenant, Cloudflare Tunnel | 7 |
-| **Loki** | MinIO Tenant, Cloudflare Tunnel | 7 |
+| **Uptime Kuma** | NFS Provisioner, cert-manager, external-dns, Traefik External | 5 |
+| **Grafana** | NFS Provisioner, Traefik, Traefik External | 6 |
+| **Mimir** | MinIO Tenant, Traefik External | 7 |
+| **Loki** | MinIO Tenant, Traefik External | 7 |
 | **Alloy** | Mimir, Loki | 8 |
 | **Daypassed Bot** | 1Password Connect | 9 |
 | **MC Mirror CronJob** | MinIO Tenant | 9 |
 | **MK Stream** | 1Password Connect | 9 |
-| **Navidrome** | NFS Provisioner, Cloudflare Tunnel | 9 |
-| **Note Tweet Connector** | Cloudflare Tunnel | 9 |
-| **Spotify Nowplaying** | Cloudflare Tunnel | 9 |
+| **Navidrome** | NFS Provisioner, Traefik External | 9 |
+| **Note Tweet Connector** | Traefik External | 9 |
+| **Spotify Nowplaying** | Traefik External | 9 |
 | **Subscription Manager** | 1Password Connect | 9 |
 
 ### 主要設定パラメータ
@@ -322,17 +320,17 @@ export ONEPASSWORD_TOKEN=$(op connect token create kkg --server PKE-kkg --vault 
 op connect server get PKE-kkg --format json > 1password-credentials.json
 ```
 
-### 2. Cloudflare 外部アクセス設定
+### 2. 外部DNS設定
 
-Cloudflare Tunnelによる安全な外部アクセス設定：
+DNS管理のためのCloudflare API設定：
 
 ```bash
 # Cloudflare Dashboard操作
-# 1. Cloudflare Zero Trust > Access > Tunnels
-# 2. 新しいトンネル "pke-kkg" を作成
-# 3. Connector Token を取得して1Password Vaultに保存
+# 1. Cloudflare > API Token > Create Token
+# 2. DNS:Edit権限で特定ゾーンに制限したトークンを生成
+# 3. トークンを1Password Vaultに保存
 
-# 詳細設定: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deployment-guides/kubernetes/
+# 詳細設定: https://developers.cloudflare.com/dns/
 ```
 
 ### 3. シークレット事前準備
@@ -341,7 +339,6 @@ Cloudflare Tunnelによる安全な外部アクセス設定：
 
 | Item Name | Type | Fields | Usage |
 |-----------|------|--------|-------|
-| `cloudflare-tunnel` | API Credential | `token` | Cloudflare Tunnel認証 |
 | `external-dns-cloudflare` | API Credential | `api-token` | DNS管理 |
 | `minio-root-credentials` | Login | `username`, `password` | MinIOルート認証 |
 | `mimir-credentials` | Login | `username`, `password` | Mimir認証 |
@@ -410,9 +407,6 @@ helmfile -l name=minio-operator apply
 ```bash
 # DNS管理
 helmfile -l name=external-dns apply
-
-# 外部アクセストンネル
-helmfile -l name=cloudflare-tunnel-ingress-controller apply
 ```
 
 **Phase 4: Ingress・ロードバランサー（第4層）**
