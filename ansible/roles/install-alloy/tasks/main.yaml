@@ -1,4 +1,23 @@
 ---
+- name: Add Grafana repository key
+  shell:
+    cmd: > 
+      curl -fsSL https://apt.grafana.com/gpg.key |
+      gpg --yes --dearmor -o /etc/apt/keyrings/grafana.gpg 
+
+- name: Add Grafana repository
+  shell:
+    cmd: > 
+      echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" |
+      tee /etc/apt/sources.list.d/grafana.list
+
+- name: Install Alloy
+  apt:
+    name:
+      - alloy
+    state: present
+    update_cache: yes
+
 - block:
   - name: Retrieve TLS certificate from 1Password
     ansible.builtin.set_fact:
@@ -32,25 +51,6 @@
       owner: alloy
       group: alloy
   when: inventory_hostname in groups['external']
-
-- name: Add Grafana repository key
-  shell:
-    cmd: > 
-      curl -fsSL https://apt.grafana.com/gpg.key |
-      gpg --yes --dearmor -o /etc/apt/keyrings/grafana.gpg 
-
-- name: Add Grafana repository
-  shell:
-    cmd: > 
-      echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" |
-      tee /etc/apt/sources.list.d/grafana.list
-
-- name: Install Alloy
-  apt:
-    name:
-      - alloy
-    state: present
-    update_cache: yes
 
 - name: Configure Alloy Env
   ansible.builtin.template:

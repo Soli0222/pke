@@ -1,0 +1,7 @@
+- name: Install Alloy
+  become: true
+  hosts: tailscale-internal:tailscale-external
+  roles:
+    - install-tailscale
+    - configure-tailscale
+    - configure-iptables-for-external

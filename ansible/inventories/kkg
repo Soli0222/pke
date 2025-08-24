@@ -10,7 +10,6 @@ kkg-wk2 ansible_host=192.168.20.17
 kkg-wk3 ansible_host=192.168.20.18
 conohav2-1 ansible_host=conohav2-1
 xserver-1 ansible_host=xserver-1
-conohav3-1 ansible_host=conohav3-1
 
 [lb]
 kkg-lb1
@@ -69,10 +68,13 @@ kkg-wk3
 [external]
 conohav2-1
 xserver-1
-conohav3-1
 
 [misskey]
 xserver-1
 
-[wireguard]
-conohav3-1
+[tailscale-internal]
+kkg-lb1
+kkg-lb2
+
+[tailscale-external]
+conohav2-1

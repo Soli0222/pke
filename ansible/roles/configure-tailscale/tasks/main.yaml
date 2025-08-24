@@ -1,0 +1,28 @@
+---
+- name: Retrieve Auth-Key from 1Password
+  ansible.builtin.set_fact:
+    tailscale_auth_key: "{{ lookup('community.general.onepassword', 'tailscale auth-key for kkg', field='authkey', vault='Kubernetes') }}"
+
+- name: Enable IPv4 forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+    reload: yes
+
+- name: Enable IPv6 forwarding
+  sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: '1'
+    state: present
+    reload: yes
+
+- name: Up Tailscale
+  command: tailscale up --authkey {{ tailscale_auth_key }}
+
+- name: Set Tailscale Subnet Routes
+  command: tailscale up --advertise-routes={{ tailscale_advertise_routes }}/32
+  when: inventory_hostname in groups['tailscale-internal']
+
+- name: Set Tailscale Accept Routes
+  command: tailscale set --accept-routes
