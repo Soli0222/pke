@@ -65,12 +65,12 @@
 - ネットワーク/CNI: Cilium (v1.18.1)
 - Ingress/Proxy: Traefik (v37.0.0)
 - 証明書/DNS: cert-manager (v1.18.2), external-dns (v1.18.0)（Cloudflare）
-- シークレット: 1Password Connect (v2.0.2)（OnePasswordItem CRD）
+- シークレット: 1Password Connect (v2.0.3)（OnePasswordItem CRD）
 
 ### 監視・オブザーバビリティ
-- メトリクス: Mimir Distributed (v5.7.0)（長期保存・分析）
-- ログ: Loki (v6.36.1)（集約・検索）
-- 可視化: Grafana (v9.3.2)
+- メトリクス: Mimir Distributed (v5.8.0)（長期保存・分析）
+- ログ: Loki (v6.37.0)（集約・検索）
+- 可視化: Grafana (v9.3.4)
 - 監視エージェント: Alloy (v1.2.1)
 - アップタイム監視: Uptime Kuma (v2.22.0)
 

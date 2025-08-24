@@ -21,6 +21,7 @@ ansible/
 ├── site-lb.yaml               # ロードバランサー設定
 ├── site-k8s.yaml              # Kubernetesクラスター設定
 ├── site-monitoring.yaml       # 監視エージェント設定
+├── site-tailscale.yaml        # Tailscaleネットワーク設定
 ├── upgrade-k8s.yaml           # Kubernetesアップグレード
 ├── upgrade-containerd.yaml    # containerdアップグレード
 ├── venv/                       # Python仮想環境（任意）
@@ -28,7 +29,9 @@ ansible/
 ├── inventories/
 │   ├── kkg                     # メインインベントリファイル
 │   ├── group_vars/
-│   │   ├── all.yml            # 全ホスト共通設定
+│   │   ├── all.yaml           # Tailscale・外部アクセス設定
+│   │   ├── internal.yaml      # 内部クラスター設定
+│   │   ├── external.yaml      # 外部ノード設定
 │   │   └── lb.yml             # ロードバランサーグループ設定
 │   └── host_vars/
 │       ├── kkg-lb1.yml        # lb1固有設定
@@ -40,8 +43,15 @@ ansible/
     ├── install-alloy/          # Alloy監視エージェント
     ├── install-containerd/     # containerdコンテナランタイム
     ├── install-haproxy/        # HAProxyロードバランサー
+    ├── configure-iptables-for-external/ # 外部接続iptables設定
+    ├── configure-tailscale/     # Tailscale設定
+    ├── init-cp-kubernetes/     # Kubernetesクラスター初期化
+    ├── install-alloy/          # Alloy監視エージェント
+    ├── install-containerd/     # containerdコンテナランタイム
+    ├── install-haproxy/        # HAProxyロードバランサー
     ├── install-keepalived/     # Keepalived高可用性
     ├── install-kubernetes/     # Kubernetesコンポーネント
+    ├── install-tailscale/      # Tailscaleネットワーキング
     ├── join-cp-kubernetes/     # コントロールプレーン参加
     ├── join-wk-kubernetes/     # ワーカーノード参加
     └── upgrade-kubernetes/     # Kubernetesアップグレード
@@ -59,6 +69,7 @@ ansible/
 ### 専用プレイブック
 
 - **`site-monitoring.yaml`**: 監視エージェント（Alloy）の配布
+- **`site-tailscale.yaml`**: Tailscaleネットワークの設定・管理
 - **`upgrade-k8s.yaml`**: Kubernetesのアップグレード
 - **`upgrade-containerd.yaml`**: containerd（必要に応じてrunc/CNI含む）のアップグレード
 
@@ -75,6 +86,9 @@ ansible/
 | `install-haproxy` | HAProxyロードバランサーの設定 | lb |
 | `install-keepalived` | Keepalived高可用性の設定 | lb |
 | `install-alloy` | Alloy監視エージェントの配布 | all |
+| `install-tailscale` | Tailscaleネットワーキングのインストール | 指定ノード |
+| `configure-tailscale` | Tailscaleの設定・管理 | 指定ノード |
+| `configure-iptables-for-external` | 外部接続用iptables設定 | 指定ノード |
 | `upgrade-kubernetes` | Kubernetesコンポーネントのアップグレード | k8s |
 
 ## インベントリ構造
@@ -118,7 +132,7 @@ kkg-wk3 ansible_host=192.168.20.18
 
 ## 主要な設定変数
 
-### グローバル変数 (group_vars/all.yml)
+### グローバル変数 (group_vars/internal.yaml)
 
 ```yaml
 # Global Ansible Configuration
@@ -154,8 +168,19 @@ controlplane_endpoint: "192.168.20.10:6443"
 mimir_endpoint: "https://mimir.str08.net/api/v1/push"
 mimir_org_id: anonymous
 
+# Loki Configuration
+loki_endpoint: "https://loki.str08.net/loki/api/v1/push"
+loki_org_id: fake
+```
+
+### Tailscale・外部アクセス変数 (group_vars/all.yaml)
+
+```yaml
 # Alloy Configuration
 alloy_disable_reporting: true
+
+# Tailscale Configuration
+tailscale_advertise_routes: "192.168.21.101"
 ```
 
 ### ロードバランサー変数 (group_vars/lb.yml)
@@ -211,6 +236,7 @@ ansible-playbook -i inventories/kkg site.yaml
 ansible-playbook -i inventories/kkg site-lb.yaml      # ロードバランサーのみ
 ansible-playbook -i inventories/kkg site-k8s.yaml     # Kubernetesのみ
 ansible-playbook -i inventories/kkg site-monitoring.yaml # 監視のみ
+ansible-playbook -i inventories/kkg site-tailscale.yaml  # Tailscaleのみ
 ```
 
 #### 2. ステップバイステップ実行
@@ -227,6 +253,9 @@ ansible-playbook -i inventories/kkg site-k8s.yaml
 
 # 4. 監視エージェント配布
 ansible-playbook -i inventories/kkg site-monitoring.yaml
+
+# 5. Tailscaleネットワーク設定（必要に応じて）
+ansible-playbook -i inventories/kkg site-tailscale.yaml
 ```
 
 #### 3. アップグレード
@@ -286,7 +315,7 @@ ansible-playbook -i inventories/kkg site.yaml --start-at-task="タスク名"
 
 1. **インベントリファイルをコピー**: `inventories/kkg` → `inventories/new-env`
 2. **IPアドレスを更新**: 新しい環境のIPアドレスに変更
-3. **group_vars/all.ymlを調整**: ネットワーク設定とバージョンを更新
+3. **group_vars/internal.yamlを調整**: ネットワーク設定とバージョンを更新
 4. **SSH鍵パスを設定**: `ansible_ssh_private_key_file`を適切なパスに設定
 
 ### スケールアウト
@@ -305,7 +334,7 @@ ansible-playbook -i inventories/kkg site.yaml --start-at-task="タスク名"
 
 ### バージョン管理
 
-`inventories/group_vars/all.yml`で以下のバージョンを管理：
+`inventories/group_vars/internal.yaml`で以下のバージョンを管理：
 
 ```yaml
 containerd_version: "2.1.4"      # containerdバージョン

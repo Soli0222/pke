@@ -10,7 +10,7 @@ PKE Helmfileは、Kubernetes上に完全なアプリケーションプラット�
 - **Cilium** (v1.18.1): CNI（Container Network Interface）、NetworkPolicy、LoadBalancer、Service Mesh機能
 
 ### コア基盤サービス（デプロイ順序：2）
-- **1Password Connect** (v2.0.2): 中央集権的シークレット管理とKubernetes統合
+- **1Password Connect** (v2.0.3): 中央集権的シークレット管理とKubernetes統合
 - **cert-manager** (v1.18.2): Let's Encrypt等による自動TLS証明書管理
 - **NFS Subdir External Provisioner** (v4.0.18): NFS動的ボリュームプロビジョニング
 - **MinIO Operator** (v7.1.1): S3互換オブジェクトストレージ基盤
@@ -21,17 +21,18 @@ PKE Helmfileは、Kubernetes上に完全なアプリケーションプラット�
 
 ### Ingress・ロードバランシング（デプロイ順序：4）
 - **Traefik** (v37.0.0): パブリックHTTP/HTTPSロードバランサー・リバースプロキシ
+- **Traefik External** (v37.0.0): 外部アクセス用Traefikインスタンス
 
 ### ストレージ・データ管理（デプロイ順序：5）
 - **MinIO Tenant** (v7.1.1): マルチテナント対応オブジェクトストレージインスタンス（高可用性構成）
 
 ### アプリケーション・監視サービス（デプロイ順序：5-6）
 - **Uptime Kuma** (v2.22.0): Webサービス・API監視・通知・ダウンタイム管理
-- **Grafana** (v9.3.2): 統合可視化ダッシュボード・アラート管理・メトリクス分析
+- **Grafana** (v9.3.4): 統合可視化ダッシュボード・アラート管理・メトリクス分析
 
 ### 高度監視・オブザーバビリティスタック（デプロイ順序：7）
-- **Mimir Distributed** (v5.7.0): 高性能メトリクス収集・保存・クエリエンジン（Prometheus互換、長期保存）
-- **Loki** (v6.36.1): ログ集約・検索・分析システム（Grafana統合）
+- **Mimir Distributed** (v5.8.0): 高性能メトリクス収集・保存・クエリエンジン（Prometheus互換、長期保存）
+- **Loki** (v6.37.0): ログ集約・検索・分析システム（Grafana統合）
 
 ### 監視エージェント（デプロイ順序：8）
 - **Alloy** (v1.2.1): 統合監視エージェント（メトリクス・ログ・トレース収集、Grafana Labs製）
@@ -91,8 +92,10 @@ helmfile/
     │   └── onepassworditem.yaml    # Mimir認証情報
     ├── minio-tenant/
     │   └── onepassworditem.yaml    # MinIO認証情報
-    └── traefik/
-        └── certificate.yaml        # パブリックドメイン証明書
+    ├── traefik/
+    │   └── certificate.yaml        # パブリックドメイン証明書
+    └── traefik-external/
+        └── certificate.yaml        # 外部アクセス用証明書
 ```
 
 ## アーキテクチャと依存関係
@@ -245,6 +248,7 @@ graph TD
 | **external-dns** | 1Password Connect | 3 |
 | **Cloudflare Tunnel Ingress Controller** | 1Password Connect | 3 |
 | **Traefik** | cert-manager, external-dns | 4 |
+| **Traefik External** | cert-manager, external-dns | 4 |
 | **MinIO Tenant** | NFS Provisioner, Traefik, MinIO Operator | 5 |
 | **Uptime Kuma** | NFS Provisioner, cert-manager, external-dns, Cloudflare Tunnel | 5 |
 | **Grafana** | NFS Provisioner, Traefik, Cloudflare Tunnel | 6 |
@@ -415,6 +419,9 @@ helmfile -l name=cloudflare-tunnel-ingress-controller apply
 ```bash
 # HTTP/HTTPSロードバランサー
 helmfile -l name=traefik apply
+
+# 外部アクセス用ロードバランサー
+helmfile -l name=traefik-external apply
 ```
 
 **Phase 5: ストレージ・初期アプリケーション（第5層）**
