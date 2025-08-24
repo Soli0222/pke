@@ -10,8 +10,6 @@ repositories:
     url: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
   - name: external-dns
     url: https://kubernetes-sigs.github.io/external-dns/
-  - name: strrl
-    url: https://helm.strrl.dev
   - name: traefik
     url: https://traefik.github.io/charts
   - name: minio
@@ -139,36 +137,6 @@ releases:
           - "manifests/external-dns/onepassworditem.yaml"
           - "--ignore-not-found=true"
 
-  - name: cloudflare-tunnel-ingress-controller
-    namespace: cloudflare-tunnel-ingress-controller
-    chart: strrl/cloudflare-tunnel-ingress-controller
-    version: 0.0.18
-    needs:
-      - 1password/connect
-    createNamespace: true
-    values:
-      - values/cloudflare-tunnel-ingress-controller.gotmpl
-    hooks:
-      - events: [postsync]
-        showlogs: true
-        command: "kubectl"
-        args:
-          - "apply"
-          - "-n"
-          - "cloudflare-tunnel-ingress-controller"
-          - "-f"
-          - "manifests/cloudflare-tunnel-ingress-controller/onepassworditem.yaml"
-      - events: [preuninstall]
-        showlogs: true
-        command: "kubectl"
-        args:
-          - "delete"
-          - "-n"
-          - "cloudflare-tunnel-ingress-controller"
-          - "-f"
-          - "manifests/cloudflare-tunnel-ingress-controller/onepassworditem.yaml"
-          - "--ignore-not-found=true"
-
   - name: traefik
     namespace: traefik
     chart: traefik/traefik
@@ -271,7 +239,7 @@ releases:
       - kube-system/nfs-subdir-external-provisioner
       - cert-manager/cert-manager
       - external-dns/external-dns
-      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+      - traefik-external/traefik-external
     createNamespace: true
     values:
       - values/uptime-kuma.gotmpl
@@ -284,7 +252,7 @@ releases:
     needs:
       - kube-system/nfs-subdir-external-provisioner
       - traefik/traefik
-      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+      - traefik-external/traefik-external
     values:
       - values/grafana.gotmpl
 
@@ -295,7 +263,7 @@ releases:
     createNamespace: true
     needs:
       - minio-tenant/minio-tenant
-      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+      - traefik-external/traefik-external
     values:
       - values/mimir.gotmpl
     hooks:
@@ -326,7 +294,7 @@ releases:
     createNamespace: true
     needs:
       - minio-tenant/minio-tenant
-      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+      - traefik-external/traefik-external
     values:
       - values/loki.gotmpl
     hooks:
@@ -408,7 +376,7 @@ releases:
     createNamespace: true
     needs:
       - kube-system/nfs-subdir-external-provisioner
-      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+      - traefik-external/traefik-external
     values:
       - values/navidrome.gotmpl
 
@@ -418,7 +386,7 @@ releases:
     version: 0.3.0
     createNamespace: true
     needs:
-      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+      - traefik-external/traefik-external
     values:
       - values/note-tweet-connector.gotmpl
 
@@ -428,7 +396,7 @@ releases:
     version: 1.0.0
     createNamespace: true
     needs:
-      - cloudflare-tunnel-ingress-controller/cloudflare-tunnel-ingress-controller
+      - traefik-external/traefik-external
     values:
       - values/spotify-nowplaying.gotmpl
 
