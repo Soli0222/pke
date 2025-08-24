@@ -3,12 +3,13 @@ kind: Ingress
 metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
   name: nginx
   namespace: default
 spec:
   ingressClassName: traefik-external
   rules:
-  - host: nginx.pstr.space
+  - host: nginx.str08.net
     http:
       paths:
       - backend:
@@ -20,5 +21,5 @@ spec:
         pathType: Prefix
   tls:
   - hosts:
-    - nginx.pstr.space
-    secretName: nginx.pstr.space-dns01
+    - nginx.str08.net
+    secretName: nginx.str08.net-dns01
