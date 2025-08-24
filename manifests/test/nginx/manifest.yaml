@@ -5,6 +5,7 @@ metadata:
   labels:
     run: nginx
   name: nginx
+  namespace: default
 spec:
   containers:
   - image: nginx:1.28
@@ -26,6 +27,7 @@ metadata:
   labels:
     run: nginx
   name: nginx
+  namespace: default
 spec:
   ports:
   - port: 80
