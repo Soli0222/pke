@@ -31,10 +31,14 @@ resource "tailscale_acl" "main" {
   acl = jsonencode({
     "tagOwners" = {
       "tag:kkg-external" = ["group:kkg"],
+      "tag:service"      = ["group:service"],
+      "tag:operation"    = ["group:operation"],
     }
 
     "groups" = {
       "group:kkg"         = ["Soli0222@github"],
+      "group:service"     = ["Soli0222@github"],
+      "group:operation"   = ["Soli0222@github"],
     }
 
     "grants" = [
@@ -56,9 +60,10 @@ resource "tailscale_acl" "main" {
     "ssh" = [
       {
         "action" = "check",
-        "src"    = ["autogroup:member"],
-        "dst"    = ["autogroup:self"],
-        "users"  = ["autogroup:nonroot", "root"],
+        "src"    = ["tag:operation"],
+        "dst"    = ["tag:service"],
+        "users"  = ["ubuntu"],
+        "action" = "accept",
       },
     ]
   })
