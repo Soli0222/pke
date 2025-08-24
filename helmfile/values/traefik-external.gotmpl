@@ -1,0 +1,27 @@
+logs:
+  access:
+    enabled: true
+
+service:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "traefik-external.str08.net"
+
+ingressClass:
+  enabled: true
+  isDefaultClass: false
+  name: "traefik-external"
+
+providers:
+  kubernetesCRD:
+    ingressClass: "traefik-external"
+
+  kubernetesIngress:
+    ingressClass:  "traefik-external"
+
+ingressRoute:
+  dashboard:
+    enabled: true
+    matchRule: Host(`traefik-external.str08.net`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+    entryPoints: ["web", "websecure"]
+    tls: 
+      secretName: "traefik-external.str08.net-dns01"
