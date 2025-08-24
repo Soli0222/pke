@@ -39,8 +39,8 @@
 
 ## リポジトリ構成と役割
 
-- `terraform/` Proxmox 上に VM 群をプロビジョニング。詳細は `terraform/kkg/README.md`。
-- `ansible/` VM の OS 設定、containerd、Kubernetes、LB（HAProxy/Keepalived）、監視エージェントなどを自動化。詳細は `ansible/README.md`。
+- `terraform/` Proxmox 上に VM 群をプロビジョニング。詳細は `terraform/kkg/README.md`。Tailscale ACL 管理は `terraform/tailscale/README.md`。
+- `ansible/` VM の OS 設定、containerd、Kubernetes、LB（HAProxy/Keepalived）、監視エージェント、Tailscale などを自動化。詳細は `ansible/README.md`。
 - `helmfile/` クラスター上のプラットフォーム/アプリ群を Helmfile でデプロイ（Cilium, cert-manager, Traefik, 1Password Connect, external-dns, Cloudflare Tunnel, Mimir, Loki, Grafana, MinIO ほか）。詳細は `helmfile/README.md`。
 - `vps/` VPSサーバー上のアプリケーション設定（Misskey など）。
 
@@ -83,7 +83,7 @@
 
 ## 参照
 
-- Terraform: `terraform/kkg/README.md`
+- Terraform: `terraform/kkg/README.md`, `terraform/tailscale/README.md`
 - Ansible: `ansible/README.md`
 - Helmfile: `helmfile/README.md`
 
