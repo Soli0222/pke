@@ -1,0 +1,99 @@
+---
+- block:
+  - name: Enable IPv4 forwarding
+    sysctl:
+      name: net.ipv4.ip_forward
+      value: "1"
+      state: present
+      reload: yes
+  
+  - name: Enable IPv6 forwarding
+    sysctl:
+      name: net.ipv6.conf.all.forwarding
+      value: '1'
+      state: present
+      reload: yes
+
+  - name: Install iptables-persistent package
+    package:
+      name: iptables-persistent
+      state: present
+
+  - name: Set up HTTPS port forwarding (443) to home server
+    iptables:
+      table: nat
+      chain: PREROUTING
+      protocol: tcp
+      destination_port: "443"
+      jump: DNAT
+      to_destination: "{{ tailscale_advertise_routes }}:443"
+      comment: "Forward HTTPS to home server"
+
+  - name: Set up HTTP port forwarding (80) to home server
+    iptables:
+      table: nat
+      chain: PREROUTING
+      protocol: tcp
+      destination_port: "80"
+      jump: DNAT
+      to_destination: "{{ tailscale_advertise_routes }}:80"
+      comment: "Forward HTTP to home server"
+
+  - name: Set up masquerade for home server traffic
+    iptables:
+      table: nat
+      chain: POSTROUTING
+      destination: "{{ tailscale_advertise_routes }}"
+      jump: MASQUERADE
+      comment: "Masquerade traffic to home server"
+
+  - name: Allow forwarding HTTPS traffic to home server
+    iptables:
+      chain: FORWARD
+      protocol: tcp
+      destination_port: "443"
+      destination: "{{ tailscale_advertise_routes }}"
+      jump: ACCEPT
+      comment: "Allow HTTPS forwarding to home server"
+
+  - name: Allow forwarding HTTP traffic to home server
+    iptables:
+      chain: FORWARD
+      protocol: tcp
+      destination_port: "80"
+      destination: "{{ tailscale_advertise_routes }}"
+      jump: ACCEPT
+      comment: "Allow HTTP forwarding to home server"
+
+  - name: Allow established and related connections
+    iptables:
+      chain: FORWARD
+      match:
+        - state
+      ctstate:
+        - ESTABLISHED
+        - RELATED
+      jump: ACCEPT
+      comment: "Allow established and related connections"
+
+  - name: Check if TCPMSS rule already exists
+    shell: iptables -t mangle -C FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+    register: tcpmss_rule_exists
+    failed_when: false
+    changed_when: false
+
+  - name: Clamp MSS to PMTU for forwarded TCP traffic
+    shell: iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+    when: tcpmss_rule_exists.rc != 0
+
+  - name: Create iptables directory if not exists
+    file:
+      path: /etc/iptables
+      state: directory
+      mode: '0755'
+
+  - name: Save iptables rules
+    shell: iptables-save > /etc/iptables/rules.v4
+    notify: restart iptables-persistent
+
+  when: "'tailscale-external' in group_names"

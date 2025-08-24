@@ -71,3 +71,10 @@ xserver-1
 
 [misskey]
 xserver-1
+
+[tailscale-internal]
+kkg-lb1
+kkg-lb2
+
+[tailscale-external]
+conohav2-1

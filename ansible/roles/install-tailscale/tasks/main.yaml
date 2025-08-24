@@ -1,0 +1,35 @@
+---
+- name: Create keyrings directory
+  file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download and add Tailscale GPG key
+  get_url:
+    url: "https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg"
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    mode: '0644'
+
+- name: Add Tailscale repository
+  get_url:
+    url: "https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list"
+    dest: /etc/apt/sources.list.d/tailscale.list
+    mode: '0644'
+
+- name: Update apt cache
+  apt:
+    update_cache: true
+
+- name: Install Tailscale packages
+  apt:
+    name:
+      - tailscale
+      - tailscale-archive-keyring
+    state: present
+
+- name: Enable and start tailscaled service
+  systemd:
+    name: tailscaled
+    enabled: true
+    state: started

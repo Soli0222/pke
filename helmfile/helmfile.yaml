@@ -200,6 +200,37 @@ releases:
           - "manifests/traefik/certificate.yaml"
           - "--ignore-not-found=true"
 
+  - name: traefik-external
+    namespace: traefik-external
+    chart: traefik/traefik
+    version: 37.0.0
+    createNamespace: true
+    needs:
+      - cert-manager/cert-manager
+      - external-dns/external-dns
+    values:
+      - values/traefik-external.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "traefik-external"
+          - "-f"
+          - "manifests/traefik-external/certificate.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "traefik-external"
+          - "-f"
+          - "manifests/traefik-external/certificate.yaml"
+          - "--ignore-not-found=true"
+
   - name: minio-tenant
     namespace: minio-tenant
     chart: minio/tenant

@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: traefik-external.str08.net
+  namespace: traefik-external
+spec:
+  secretName: traefik-external.str08.net-dns01
+  dnsNames:
+    - "traefik-external.str08.net"
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer
