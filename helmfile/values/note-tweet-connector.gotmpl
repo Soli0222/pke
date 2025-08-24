@@ -1,11 +1,18 @@
 ingress:
   enabled: true
-  className: "cloudflare-tunnel"
+  className: traefik-external
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
   hosts:
     - host: ntc.pstr.space
       paths:
         - path: /
           pathType: ImplementationSpecific
+  tls:
+    - hosts:
+        - ntc.pstr.space
+      secretName: ntc.pstr.space-dns01
 
 onePassword:
   enabled: true

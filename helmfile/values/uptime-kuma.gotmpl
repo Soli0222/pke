@@ -5,13 +5,19 @@ volume:
 
 ingress:
   enabled: true
-  className: cloudflare-tunnel
-  annotations: ""
+  className: traefik-external
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
   hosts:
     - host: status.pstr.space
       paths:
         - path: /
           pathType: ImplementationSpecific
+  tls:
+    - hosts:
+        - status.pstr.space
+      secretName: status.pstr.space-dns01
 
 serviceMonitor:
   enabled: false

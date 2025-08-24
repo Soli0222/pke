@@ -5,7 +5,7 @@ env:
         name: cloudflare-api-token
         key: apiToken
 
-managedRecordTypes: ["A", "AAAA"]
+managedRecordTypes: ["A", "AAAA", "CNAME", "TXT"]
 
 sources:
   - service
@@ -15,6 +15,8 @@ sources:
 
 domainFilters: 
   - str08.net
+  - soli0222.com
+  - pstr.space
 
 policy: sync
 

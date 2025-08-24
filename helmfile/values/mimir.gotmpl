@@ -56,10 +56,17 @@ nginx:
       memory: 512Mi
   ingress:
     enabled: true
-    ingressClassName: cloudflare-tunnel
+    ingressClassName: traefik-external
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+      external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
+      external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
     hosts:
       - host: mimir.pstr.space
         paths:
           - path: /
             pathType: Prefix
-    tls: {}
+    tls:
+      - hosts:
+          - mimir.pstr.space
+        secretName: mimir.pstr.space-dns01
