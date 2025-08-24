@@ -1,11 +1,15 @@
 ingress:
   enabled: true
-  className: "cloudflare-tunnel"
+  className: traefik-external
   hosts:
     - host: ntc.pstr.space
       paths:
         - path: /
           pathType: ImplementationSpecific
+  tls:
+    - hosts:
+        - ntc.pstr.space
+      secretName: ntc.pstr.space-dns01
 
 onePassword:
   enabled: true
