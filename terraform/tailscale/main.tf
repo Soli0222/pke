@@ -30,34 +30,16 @@ provider "tailscale" {
 resource "tailscale_acl" "main" {
   acl = jsonencode({
     "tagOwners" = {
-      "tag:k8s-operator" = [],
-      "tag:k8s"          = ["tag:k8s-operator"],
       "tag:kkg-external" = ["group:kkg"],
     }
 
     "groups" = {
-      "group:k8s-readers" = ["Soli0222@github"],
-      "group:prod"        = ["Soli0222@github"],
       "group:kkg"         = ["Soli0222@github"],
     }
 
     "grants" = [
       {
-        "src" = ["group:prod"],
-        "dst" = ["tag:k8s-operator"],
-        "app" = {
-          "tailscale.com/cap/kubernetes" = [{"impersonate" = {"groups" = ["system:masters"]}}],
-        },
-      },
-      {
-        "src" = ["group:k8s-readers"],
-        "dst" = ["tag:k8s-operator"],
-        "app" = {
-          "tailscale.com/cap/kubernetes" = [{"impersonate" = {"groups" = ["tailnet-readers"]}}],
-        },
-      },
-      {
-        "src" = ["group:kkg"],
+        "src" = ["tag:kkg-external"],
         "dst" = ["192.168.21.101/32"],
         "ip"  = ["*:*"],
       },
