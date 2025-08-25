@@ -3,13 +3,13 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    run: nginx
-  name: nginx
+    run: nginx-origin
+  name: nginx-origin
   namespace: default
 spec:
   containers:
   - image: nginx:1.28
-    name: nginx
+    name: nginx-origin
     resources:
       limits:
         cpu: 200m
@@ -25,8 +25,8 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    run: nginx
-  name: nginx
+    run: nginx-origin
+  name: nginx-origin
   namespace: default
 spec:
   ports:
@@ -34,7 +34,7 @@ spec:
     protocol: TCP
     targetPort: 80
   selector:
-    run: nginx
+    run: nginx-origin
 status:
   loadBalancer: {}
 ---
@@ -44,23 +44,22 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
     external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-  name: nginx
+  name: nginx-origin
   namespace: default
 spec:
   ingressClassName: traefik-external
   rules:
-  - host: nginx.pstr.space
+  - host: nginx-origin.pstr.space
     http:
       paths:
       - backend:
           service:
-            name: nginx
+            name: nginx-origin
             port:
               number: 80
         path: /
         pathType: Prefix
   tls:
   - hosts:
-    - nginx.pstr.space
-    secretName: nginx.pstr.space-dns01
+    - nginx-origin.pstr.space
+    secretName: nginx-origin.pstr.space-dns01
