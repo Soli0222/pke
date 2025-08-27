@@ -247,7 +247,7 @@ releases:
   - name: grafana
     namespace: grafana
     chart: grafana/grafana
-    version: 9.3.4
+    version: 9.3.6
     createNamespace: true
     needs:
       - kube-system/nfs-subdir-external-provisioner
