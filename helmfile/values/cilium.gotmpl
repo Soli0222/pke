@@ -30,3 +30,14 @@ hubble:
     enabled: true
   ui:
     enabled: true
+    ingress:
+      enabled: true
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt
+      className: traefik
+      hosts:
+        - hubble.str08.net
+      tls:
+       - secretName: hubble.str08.net-dns01
+         hosts:
+           - hubble.str08.net
