@@ -403,7 +403,7 @@ releases:
   - name: subscription-manager
     namespace: subscription-manager
     chart: soli0222/subscription-manager
-    version: 1.1.0
+    version: 1.1.1
     createNamespace: true
     needs:
       - 1password/connect
