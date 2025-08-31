@@ -372,7 +372,7 @@ releases:
   - name: navidrome
     namespace: navidrome
     chart: soli0222/navidrome
-    version: 1.0.0
+    version: 1.0.1
     createNamespace: true
     needs:
       - kube-system/nfs-subdir-external-provisioner
