@@ -352,7 +352,7 @@ releases:
   - name: mc-mirror-cronjob
     namespace: mc-mirror-cronjob
     chart: soli0222/mc-mirror-cronjob
-    version: 0.2.0
+    version: 0.2.1
     createNamespace: true
     needs:
       - minio-tenant/minio-tenant
