@@ -410,4 +410,12 @@ releases:
     values:
       - values/subscription-manager.gotmpl
 
-  
+  - name: wallos
+    namespace: wallos
+    chart: soli0222/wallos
+    version: 0.1.2
+    createNamespace: true
+    needs:
+      - traefik/traefik
+    values:
+      - values/wallos.gotmpl

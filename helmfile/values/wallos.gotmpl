@@ -1,0 +1,14 @@
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations: 
+    cert-manager.io/cluster-issuer: letsencrypt
+  hosts:
+    - host: wallos.str08.net
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: wallos.str08.net-dns01
+      hosts:
+        - wallos.str08.net
