@@ -413,7 +413,7 @@ releases:
   - name: wallos
     namespace: wallos
     chart: soli0222/wallos
-    version: 0.1.0
+    version: 0.1.2
     createNamespace: true
     needs:
       - traefik/traefik
