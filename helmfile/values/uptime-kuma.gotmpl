@@ -8,7 +8,7 @@ ingress:
   className: traefik-external
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
-    external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
+    external-dns.alpha.kubernetes.io/target: status-pstr-space.b-cdn.net
   hosts:
     - host: status.pstr.space
       paths:
