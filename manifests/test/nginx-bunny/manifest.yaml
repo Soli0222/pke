@@ -43,7 +43,7 @@ kind: Ingress
 metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
-    external-dns.alpha.kubernetes.io/target: conohav2-1.b-cdn.net
+    external-dns.alpha.kubernetes.io/target: nginx-bunny-pstr-space.b-cdn.net
   name: nginx-bunny
   namespace: default
 spec:
