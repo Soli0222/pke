@@ -20,6 +20,8 @@ repositories:
     url: https://grafana.github.io/helm-charts
   - name: soli0222
     url: https://soli0222.github.io/helm-charts
+  - name: cnpg
+    url: https://cloudnative-pg.github.io/charts
 
 releases:
   - name: cilium
@@ -419,3 +421,11 @@ releases:
       - traefik/traefik
     values:
       - values/wallos.gotmpl
+
+  - name: cnpg
+    namespace: cnpg-system
+    chart: cnpg/cloudnative-pg
+    version: 0.26.0
+    createNamespace: true
+    needs:
+      - kube-system/cilium
