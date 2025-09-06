@@ -22,3 +22,15 @@ pullzones:
       - name: "status.pstr.space"
         tls_enabled: true
         force_ssl: false
+
+  - name: "mi-pstr-space"
+    origin_url: "http://conohav2-1.pstr.space"
+    host_header: "mi.pstr.space"
+    tier: "Standard"
+    hostnames:
+      - name: "mi-pstr-space.b-cdn.net"
+        tls_enabled: true
+        force_ssl: false
+      - name: "mi.pstr.space"
+        tls_enabled: true
+        force_ssl: false
