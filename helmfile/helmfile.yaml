@@ -429,3 +429,13 @@ releases:
     createNamespace: true
     needs:
       - kube-system/cilium
+
+  - name: summaly
+    namespace: summaly
+    chart: soli0222/summaly
+    version: 0.1.2
+    createNamespace: true
+    needs:
+      - traefik-external/traefik-external
+    values:
+      - values/summaly.gotmpl
