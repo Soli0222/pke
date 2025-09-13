@@ -36,6 +36,16 @@ alloy:
         role = "node"
       }
 
+      // Kubernetes discovery for PodMonitors
+      discovery.kubernetes "podmonitors" {
+        role = "podmonitor"
+      }
+
+      // Kubernetes discovery for ServiceMonitors
+      discovery.kubernetes "servicemonitors" {
+        role = "servicemonitor"
+      }
+
       // Scrape Kubernetes API server metrics
       prometheus.scrape "kubernetes_api" {
         targets = discovery.kubernetes.services.targets
@@ -87,6 +97,24 @@ alloy:
         }
       }
 
+      // Process PodMonitors
+      prometheus.operator.podmonitors "podmonitors" {
+        forward_to = [prometheus.remote_write.default.receiver]
+        
+        clustering {
+          enabled = true
+        }
+      }
+
+      // Process ServiceMonitors
+      prometheus.operator.servicemonitors "servicemonitors" {
+        forward_to = [prometheus.remote_write.default.receiver]
+        
+        clustering {
+          enabled = true
+        }
+      }
+
       // Collect pod logs
       loki.source.podlogs "pod_logs" {
         forward_to = [loki.write.default.receiver]
@@ -105,7 +133,7 @@ alloy:
       }
 
 serviceMonitor:
-  enabled: false
+  enabled: true
 
 ingress:
   enabled: true

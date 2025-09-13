@@ -1,9 +1,15 @@
+deployment:
+  replicas: 2
+
 logs:
   access:
     enabled: true
 
 metrics:
   addInternals: true
+  prometheus:
+    serviceMonitor:
+      enabled: true
 
 service:
   annotations:

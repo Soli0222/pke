@@ -70,3 +70,7 @@ nginx:
       - hosts:
           - mimir.pstr.space
         secretName: mimir.pstr.space-dns01
+
+metaMonitoring:
+  serviceMonitor:
+    enabled: true
