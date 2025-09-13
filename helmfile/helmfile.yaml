@@ -142,7 +142,7 @@ releases:
   - name: traefik
     namespace: traefik
     chart: traefik/traefik
-    version: 37.1.0
+    version: 37.1.1
     createNamespace: true
     needs:
       - cert-manager/cert-manager
@@ -173,7 +173,7 @@ releases:
   - name: traefik-external
     namespace: traefik-external
     chart: traefik/traefik
-    version: 37.1.0
+    version: 37.1.1
     createNamespace: true
     needs:
       - cert-manager/cert-manager
