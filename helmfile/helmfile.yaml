@@ -433,7 +433,7 @@ releases:
   - name: summaly
     namespace: summaly
     chart: soli0222/summaly
-    version: 0.1.3
+    version: 0.1.4
     createNamespace: true
     needs:
       - traefik-external/traefik-external
