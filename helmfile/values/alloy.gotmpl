@@ -19,6 +19,10 @@ alloy:
             "X-Scope-OrgID" = "anonymous",
           }
         }
+        
+        external_labels = {
+          cluster = "kkg",
+        }
       }
 
       // Kubernetes discovery for services
@@ -74,7 +78,7 @@ alloy:
         }
         
         clustering {
-          enabled = true
+          enabled = false  // Disable clustering for node metrics to avoid duplicates
         }
       }
 
@@ -93,7 +97,7 @@ alloy:
         }
         
         clustering {
-          enabled = true
+          enabled = false  // Disable clustering for cAdvisor to avoid duplicates
         }
       }
 
@@ -130,6 +134,10 @@ alloy:
         forward_to = [prometheus.remote_write.default.receiver]
         scrape_interval = "15s"
         metrics_path = "/metrics"
+        
+        clustering {
+          enabled = false  // Don't cluster self-monitoring
+        }
       }
 
 serviceMonitor:
