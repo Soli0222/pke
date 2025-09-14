@@ -135,13 +135,85 @@ alloy:
         }
       }
 
-      // Collect pod logs
-      loki.source.podlogs "pod_logs" {
-        forward_to = [loki.write.default.receiver]
+      // Relabel pod discovery targets to add proper labels
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pods.targets
+
+        // Label creation - "namespace" field from "__meta_kubernetes_namespace"
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          action = "replace"
+          target_label = "namespace"
+        }
+
+        // Label creation - "pod" field from "__meta_kubernetes_pod_name"
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          action = "replace"
+          target_label = "pod"
+        }
+
+        // Label creation - "container" field from "__meta_kubernetes_pod_container_name"
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "container"
+        }
+
+        // Label creation - "app" field from "__meta_kubernetes_pod_label_app_kubernetes_io_name"
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+          action = "replace"
+          target_label = "app"
+        }
+
+        // Label creation - "job" field from "__meta_kubernetes_namespace" and "__meta_kubernetes_pod_container_name"
+        rule {
+          source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "job"
+          separator = "/"
+          replacement = "$1"
+        }
+
+        // Label creation - "__path__" field from "__meta_kubernetes_pod_uid" and "__meta_kubernetes_pod_container_name"
+        rule {
+          source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "__path__"
+          separator = "/"
+          replacement = "/var/log/pods/*$1/*.log"
+        }
+
+        // Label creation - "container_runtime" field from "__meta_kubernetes_pod_container_id"
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_id"]
+          action = "replace"
+          target_label = "container_runtime"
+          regex = "^(\\S+):\\/\\/.+$"
+          replacement = "$1"
+        }
+      }
+
+      // Collect pod logs with automatic Kubernetes labels
+      loki.source.kubernetes "pod_logs" {
+        targets    = discovery.relabel.pod_logs.output
+        forward_to = [loki.process.pod_logs.receiver]
         
         clustering {
           enabled = true
         }
+      }
+
+      // Process logs and add cluster label
+      loki.process "pod_logs" {
+        stage.static_labels {
+          values = {
+            cluster = "kkg",
+          }
+        }
+
+        forward_to = [loki.write.default.receiver]
       }
 
       // Scrape Alloy's own metrics
@@ -165,7 +237,7 @@ rbac:
 serviceAccount:
   create: true
 
-# Additional RBAC rules for PrometheusRule access
+# Additional RBAC rules for PrometheusRule access and pod logs
 extraObjects:
   - apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRole
@@ -177,6 +249,13 @@ extraObjects:
       verbs: ["get", "list", "watch"]
     - apiGroups: ["monitoring.coreos.com"]
       resources: ["prometheusrules"]
+      verbs: ["get", "list", "watch"]
+    # Pod logs collection permissions
+    - apiGroups: [""]
+      resources: ["pods", "pods/log"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: [""]
+      resources: ["nodes"]
       verbs: ["get", "list", "watch"]
   - apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
