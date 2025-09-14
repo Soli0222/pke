@@ -25,6 +25,22 @@ alloy:
         }
       }
 
+      // Mimir rules endpoint for PrometheusRule resources
+      mimir.rules.kubernetes "default" {
+        address = "http://mimir-nginx.mimir"
+        tenant_id = "anonymous"
+        
+        // Select all PrometheusRule resources (empty selector)
+        rule_selector {
+          match_labels = {}  // Monitor all PrometheusRule resources
+        }
+        
+        // Select namespaces where PrometheusRule resources are monitored
+        rule_namespace_selector {
+          match_labels = {}  // Monitor all namespaces
+        }
+      }
+
       // Kubernetes discovery for services
       discovery.kubernetes "services" {
         role = "service"
@@ -142,6 +158,38 @@ alloy:
 
 serviceMonitor:
   enabled: true
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+
+# Additional RBAC rules for PrometheusRule access
+extraObjects:
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: alloy-prometheusrule-reader
+    rules:
+    - apiGroups: [""]
+      resources: ["namespaces"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["monitoring.coreos.com"]
+      resources: ["prometheusrules"]
+      verbs: ["get", "list", "watch"]
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: alloy-prometheusrule-reader
+    subjects:
+    - kind: ServiceAccount
+      name: alloy
+      namespace: alloy
+    roleRef:
+      kind: ClusterRole
+      name: alloy-prometheusrule-reader
+      apiGroup: rbac.authorization.k8s.io
 
 ingress:
   enabled: true
