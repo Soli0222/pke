@@ -67,6 +67,8 @@ releases:
     namespace: cert-manager
     chart: jetstack/cert-manager
     version: v1.18.2
+    values:
+      - values/cert-manager.gotmpl
     needs:
       - kube-system/cilium
     createNamespace: true
