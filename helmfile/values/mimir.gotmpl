@@ -31,7 +31,9 @@ mimir:
 
     limits:
       max_global_series_per_user: 500000
-      max_global_metadata_per_user: 100000
+      ingestion_rate: 50000
+      ingestion_burst_size: 1000000
+      out_of_order_time_window: "5m"
 
 ingress:
   enabled: true
@@ -70,3 +72,7 @@ nginx:
       - hosts:
           - mimir.pstr.space
         secretName: mimir.pstr.space-dns01
+
+metaMonitoring:
+  serviceMonitor:
+    enabled: true
