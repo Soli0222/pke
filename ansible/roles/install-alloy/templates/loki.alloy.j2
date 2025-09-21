@@ -30,7 +30,10 @@ loki.source.journal "read"  {
 
 
 local.file_match "local_files" {
-  path_targets = [{"__path__" = "/var/log/*.log"}]
+  path_targets = [
+    {"__path__" = "/var/log/*.log"},
+    {"__path__" = "/var/log/nginx/*.log"},
+  ]
   sync_period = "5s"
 }
 
@@ -39,6 +42,24 @@ loki.relabel "add_origin_file_label" {
   rule {
     target_label = "origin"
     replacement  = "file"
+  }
+  rule {
+    source_labels = ["__path__"]
+    regex         = "/var/log/nginx/access\\.log"
+    target_label  = "log_type"
+    replacement   = "nginx_access"
+  }
+  rule {
+    source_labels = ["__path__"]
+    regex         = "/var/log/nginx/error\\.log"
+    target_label  = "log_type"
+    replacement   = "nginx_error"
+  }
+  rule {
+    source_labels = ["__path__"]
+    regex         = "/var/log/nginx/.*\\.log"
+    target_label  = "service"
+    replacement   = "nginx"
   }
 }
 
