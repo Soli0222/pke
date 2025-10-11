@@ -3,13 +3,13 @@ ingress:
   className: "traefik-external"
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
-    external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
+    external-dns.alpha.kubernetes.io/target: 157.7.66.200
   hosts:
-    - host: summaly.pstr.space
+    - host: summaly.soli0222.com
       paths:
         - path: /
           pathType: Prefix
   tls:
     - hosts:
-        - summaly.pstr.space
-      secretName: summaly.pstr.space-dns01
+        - summaly.soli0222.com
+      secretName: summaly.soli0222.com-dns01
