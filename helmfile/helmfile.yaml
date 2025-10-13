@@ -446,4 +446,4 @@ releases:
 
   - name: prometheus-operator-crd
     chart: prometheus-community/prometheus-operator-crds
-    version: 24.0.0
+    version: 24.0.1
