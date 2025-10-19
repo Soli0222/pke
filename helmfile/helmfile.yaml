@@ -447,3 +447,34 @@ releases:
   - name: prometheus-operator-crd
     chart: prometheus-community/prometheus-operator-crds
     version: 24.0.0
+
+  - name: tempo
+    namespace: tempo
+    chart: grafana/tempo-distributed
+    version: 1.48.0
+    createNamespace: true
+    needs:
+      - minio-tenant/minio-tenant
+      - traefik-external/traefik-external
+    values:
+      - values/tempo.gotmpl
+    hooks:
+      - events: [postsync]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "tempo"
+          - "-f"
+          - "manifests/tempo/onepassworditem.yaml"
+      - events: [preuninstall]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "tempo"
+          - "-f"
+          - "manifests/tempo/onepassworditem.yaml"
+          - "--ignore-not-found=true"
