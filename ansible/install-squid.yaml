@@ -1,0 +1,5 @@
+- name: Install Squid
+  hosts: conohav2-1
+  become: true
+  roles:
+    - install-squid

@@ -1,0 +1,99 @@
+- name: Install Squid and auth tools
+  apt:
+    name:
+      - squid
+      - apache2-utils
+      - python3-passlib
+    state: present
+    update_cache: yes
+
+- name: Retrieve Squid Username from 1Password
+  ansible.builtin.set_fact:
+    username: "{{ lookup('community.general.onepassword', 'squid', field='username', vault='Kubernetes') }}"
+
+- name: Retrieve Squid Password from 1Password
+  ansible.builtin.set_fact:
+    password: "{{ lookup('community.general.onepassword', 'squid', field='password', vault='Kubernetes') }}"
+
+- name: Create squid config directory
+  file:
+    path: /etc/squid
+    state: directory
+    mode: '0755'
+
+- name: Remove existing htpasswd file
+  file:
+    path: /etc/squid/passwd
+    state: absent
+
+- name: Create htpasswd file for Squid authentication
+  community.general.htpasswd:
+    path: /etc/squid/passwd
+    name: "{{ username }}"
+    password: "{{ password }}"
+    owner: proxy
+    group: proxy
+    mode: '0640'
+
+- name: Configure Squid
+  copy:
+    dest: /etc/squid/squid.conf
+    content: |
+      # HTTPSプロキシとして動作
+      https_port 3128 tls-cert=/etc/letsencrypt/live/pstr.space/fullchain.pem tls-key=/etc/letsencrypt/live/pstr.space/privkey.pem
+
+      # 基本認証の設定
+      auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/passwd
+      auth_param basic children 5
+      auth_param basic casesensitive on
+      auth_param basic realm Squid Proxy Server
+      auth_param basic credentialsttl 2 hours
+
+      # ACL定義
+      acl SSL_ports port 443
+      acl Safe_ports port 80
+      acl Safe_ports port 443
+      acl CONNECT method CONNECT
+      acl authenticated proxy_auth REQUIRED
+
+      # ブロックするURL Path (GraphQL HomeTimeline API)
+      acl blocked_path urlpath_regex ^/i/api/graphql/[^/]+/HomeTimeline/?\$
+
+      # ブロックするHost (x.com または twitter.com)
+      acl blocked_hosts dstdomain .x.com
+      acl blocked_hosts dstdomain .twitter.com
+
+      # アクセス制御ルール
+      http_access deny blocked_path blocked_hosts
+      http_access deny !Safe_ports
+      http_access deny CONNECT !SSL_ports
+      http_access allow localhost manager
+      http_access deny manager
+      http_access deny !authenticated
+      http_access allow authenticated
+      http_access deny all
+
+      # キャッシュ設定
+      cache_dir ufs /var/spool/squid 100 16 256
+      coredump_dir /var/spool/squid
+
+      # ログ設定
+      access_log /var/log/squid/access.log squid
+      cache_log /var/log/squid/cache.log
+
+- name: Stop Squid
+  systemd:
+    name: squid
+    state: stopped
+
+- name: Initialize Squid cache directory
+  command: squid -z
+  args:
+    creates: /var/spool/squid/00
+
+- name: Enable and start Squid service
+  systemd:
+    name: squid
+    enabled: yes
+    state: started
+    daemon_reload: yes
