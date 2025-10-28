@@ -296,7 +296,7 @@ releases:
   - name: loki
     namespace: loki
     chart: grafana/loki
-    version: 6.42.0
+    version: 6.44.0
     createNamespace: true
     needs:
       - minio-tenant/minio-tenant
