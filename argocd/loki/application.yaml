@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  sources:
+    - chart: loki
+      repoURL: https://grafana.github.io/helm-charts
+      targetRevision: 6.45.2
+      helm:
+        valueFiles:
+          - $values/argocd/loki/values.yaml
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      path: argocd/loki/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: loki
+  syncPolicy: {}
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    # syncOptions:
+    #   - CreateNamespace=true
