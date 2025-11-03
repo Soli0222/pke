@@ -1,0 +1,136 @@
+name: Helm Template Diff
+
+on:
+  pull_request:
+    paths:
+      - 'argocd/**/application.yaml'
+      - 'argocd/**/values.yaml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install --upgrade pip pyyaml
+
+      - name: Render Helm template diff
+        id: render
+        continue-on-error: true
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          COMMENT_DIR: helm-diff-comments
+        run: python scripts/render_helm_diff.py
+
+      - name: Upload diff artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-diff-comments
+          path: helm-diff-comments
+
+      - name: Sync PR comments
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          COMMENT_MANIFEST: ${{ steps.render.outputs.comment_manifest }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+            const manifestRaw = process.env.COMMENT_MANIFEST || '[]';
+            let manifest;
+            try {
+              manifest = JSON.parse(manifestRaw);
+            } catch (error) {
+              throw new Error(`Failed to parse comment manifest: ${error}`);
+            }
+
+            const desired = new Map();
+            const workspace = process.env.GITHUB_WORKSPACE || '';
+            for (const entry of manifest) {
+              const filePath = path.join(workspace, entry.path);
+              const body = fs.readFileSync(filePath, 'utf8');
+              desired.set(entry.slug, body);
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.issue.number;
+            const existing = new Map();
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const tagPattern = /<!-- helm-diff:([a-z0-9-]+) -->/;
+            for (const comment of comments) {
+              const match = comment.body.match(tagPattern);
+              if (match) {
+                existing.set(match[1], comment);
+              }
+            }
+
+            for (const [slug, body] of desired.entries()) {
+              const current = existing.get(slug);
+              if (current) {
+                if (current.body !== body) {
+                  await github.rest.issues.updateComment({
+                    owner,
+                    repo,
+                    comment_id: current.id,
+                    body,
+                  });
+                  await delay(1000);
+                }
+              } else {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number,
+                  body,
+                });
+                await delay(1000);
+              }
+            }
+
+            for (const [slug, comment] of existing.entries()) {
+              if (!desired.has(slug)) {
+                await github.rest.issues.deleteComment({
+                  owner,
+                  repo,
+                  comment_id: comment.id,
+                });
+                await delay(1000);
+              }
+            }
+
+      - name: Fail if render failed
+        if: steps.render.outcome == 'failure'
+        run: exit 1
