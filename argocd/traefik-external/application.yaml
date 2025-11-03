@@ -12,6 +12,7 @@ spec:
       repoURL: https://traefik.github.io/charts
       targetRevision: 37.2.0
       helm:
+        skipCrds: true
         valueFiles:
           - $values/argocd/traefik-external/values.yaml
     - repoURL: https://github.com/Soli0222/pke.git
