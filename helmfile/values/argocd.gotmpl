@@ -1,0 +1,64 @@
+## Global settings
+global:
+  domain: argocd.str08.net
+    
+## Server
+server:
+  ingress:
+    enabled: true
+    ingressClassName: "traefik"
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+    hostname: argocd.str08.net
+    extraTls:
+      - secretName: argocd.str08.net-dns01
+        hosts:
+          - argocd.str08.net
+    
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+## Application Controller
+controller:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+
+## Repo Server
+repoServer:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+## ApplicationSet Controller
+applicationSet:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+## Notifications Controller
+notifications:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+## Dex
+dex:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+## Redis
+redis:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true

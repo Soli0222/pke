@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: summaly
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  sources:
+    - chart: summaly
+      repoURL: https://soli0222.github.io/helm-charts
+      targetRevision: 0.1.6
+      helm:
+        valueFiles:
+          - $values/argocd/summaly/values.yaml
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: summaly
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

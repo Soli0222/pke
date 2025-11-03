@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mk-stream
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  sources:
+    - chart: mk-stream
+      repoURL: https://soli0222.github.io/helm-charts
+      targetRevision: 1.0.0
+      helm:
+        valueFiles:
+          - $values/argocd/mk-stream/values.yaml
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mk-stream
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,3 +1,6 @@
+crds:
+  enabled: true
+
 prometheus:
   servicemonitor:
     enabled: true
