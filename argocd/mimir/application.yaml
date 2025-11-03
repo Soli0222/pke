@@ -10,7 +10,7 @@ spec:
   sources:
     - chart: mimir-distributed
       repoURL: https://grafana.github.io/helm-charts
-      targetRevision: 5.8.0
+      targetRevision: 6.0.0
       helm:
         valueFiles:
           - $values/argocd/mimir/values.yaml
