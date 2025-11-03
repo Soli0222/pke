@@ -14,9 +14,9 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: prometheus-operator-crd
-  syncPolicy: {}
-    # automated:
-    #   prune: true
-    #   selfHeal: true
-    # syncOptions:
-    #   - CreateNamespace=true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -17,9 +17,9 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: minio-operator
-  syncPolicy: {}
-    # automated:
-    #   prune: true
-    #   selfHeal: true
-    # syncOptions:
-    #   - CreateNamespace=true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
