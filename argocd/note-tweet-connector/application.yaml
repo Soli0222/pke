@@ -20,9 +20,9 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: note-tweet-connector
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
+  syncPolicy: {}
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    # syncOptions:
+    #   - CreateNamespace=true
