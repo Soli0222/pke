@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import difflib
+import json
 import os
 import re
 import subprocess
@@ -12,14 +13,13 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 APPS_ROOT = Path("argocd")
 TARGET_PREFIX = "$values/"
-MAX_DIFF_LINES = 400
 
 
 @dataclass
@@ -130,6 +130,11 @@ def materialise_values(commit: str, references: List[str]) -> tuple[List[Path], 
     return files, base_path
 
 
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "app"
+
+
 def render_state(commit: str, app: str) -> RenderedState:
     app_path = APPS_ROOT / app / "application.yaml"
     raw_app = git_read(commit, app_path)
@@ -181,14 +186,6 @@ def render_state(commit: str, app: str) -> RenderedState:
     return RenderedState(result.stdout, chart, version, None)
 
 
-def trim_diff(diff_lines: List[str]) -> str:
-    if len(diff_lines) <= MAX_DIFF_LINES:
-        return "\n".join(diff_lines)
-    trimmed = diff_lines[:MAX_DIFF_LINES]
-    trimmed.append("... diff truncated ...")
-    return "\n".join(trimmed)
-
-
 def build_section(app: str, base_state: RenderedState, head_state: RenderedState) -> str:
     base_label = f"{base_state.chart or 'n/a'}@{base_state.version or 'n/a'}"
     head_label = f"{head_state.chart or 'n/a'}@{head_state.version or 'n/a'}"
@@ -224,39 +221,60 @@ def build_section(app: str, base_state: RenderedState, head_state: RenderedState
         lines.append("No changes detected in rendered manifests.")
         return "\n".join(lines)
     lines.append("```diff")
-    lines.append(trim_diff(diff))
+    lines.append("\n".join(diff))
     lines.append("```")
     return "\n".join(lines)
 
 
-def write_comment(sections: List[str], should_comment: bool, comment_path: Path) -> None:
-    if should_comment:
-        body = ["<!-- helm-diff -->", "Helm template diff for updated Argo CD applications:"]
-        body.extend(sections)
-    else:
-        body = ["<!-- helm-diff -->", "No Helm chart version or values changes detected."]
-    comment_path.write_text("\n\n".join(body) + "\n")
+def write_comments(entries: List[Tuple[str, str]], comment_dir: Path) -> List[dict]:
+    comment_dir.mkdir(parents=True, exist_ok=True)
+    for existing in comment_dir.glob("*.md"):
+        try:
+            existing.unlink()
+        except OSError:
+            pass
+    manifest: List[dict] = []
+    for app, body in entries:
+        slug = slugify(app)
+        path = comment_dir / f"{slug}.md"
+        content = f"<!-- helm-diff:{slug} -->\n{body}\n"
+        path.write_text(content)
+        manifest.append({
+            "app": app,
+            "slug": slug,
+            "path": str(path.relative_to(REPO_ROOT)),
+        })
+    manifest_path = comment_dir / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+    return manifest
+
+
+def set_outputs(has_changes: bool, manifest: List[dict]) -> None:
     output = os.environ.get("GITHUB_OUTPUT")
     if output:
         with open(output, "a", encoding="utf-8") as fh:
-            fh.write(f"has_changes={'true' if should_comment else 'false'}\n")
+            fh.write(f"has_changes={'true' if has_changes else 'false'}\n")
+            fh.write(f"comment_manifest={json.dumps(manifest)}\n")
 
 
 def main() -> int:
     base = os.environ.get("BASE_SHA") or os.environ.get("BASE_REF") or "origin/main"
     head = os.environ.get("HEAD_SHA") or os.environ.get("HEAD_REF") or "HEAD"
-    comment_path = Path(os.environ.get("COMMENT_PATH", "helm-diff-comment.md"))
+    comment_dir = Path(os.environ.get("COMMENT_DIR", "helm-diff-comments"))
     try:
         changed_files = git_diff_files(base, head)
         apps = detect_changed_apps(base, head, changed_files)
-        sections: List[str] = []
+        entries: List[Tuple[str, str]] = []
         for app in apps:
             base_state = render_state(base, app)
             head_state = render_state(head, app)
-            sections.append(build_section(app, base_state, head_state))
-        write_comment(sections, bool(apps), comment_path)
+            entries.append((app, build_section(app, base_state, head_state)))
+        manifest = write_comments(entries, comment_dir)
+        set_outputs(bool(manifest), manifest)
     except HelmDiffError as exc:
-        write_comment([f"Rendering failed:\n```text\n{exc}\n```"], True, comment_path)
+        message = "Helm template diff failed:\n```text\n" + str(exc) + "\n```"
+        manifest = write_comments([("error", message)], comment_dir)
+        set_outputs(True, manifest)
         return 1
     return 0
 

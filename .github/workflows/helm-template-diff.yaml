@@ -38,34 +38,93 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          COMMENT_PATH: helm-diff-comment.md
+          COMMENT_DIR: helm-diff-comments
         run: python scripts/render_helm_diff.py
 
       - name: Upload diff artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: helm-diff-comment
-          path: helm-diff-comment.md
+          name: helm-diff-comments
+          path: helm-diff-comments
 
-      - name: Find existing comment
+      - name: Sync PR comments
         if: always()
-        id: find-comment
-        uses: peter-evans/find-comment@v4
+        uses: actions/github-script@v7
+        env:
+          COMMENT_MANIFEST: ${{ steps.render.outputs.comment_manifest }}
         with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: '<!-- helm-diff -->'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
 
-      - name: Comment on PR
-        if: steps.render.outputs.has_changes == 'true'
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body-path: helm-diff-comment.md
-          token: ${{ secrets.GITHUB_TOKEN }}
-          edit-mode: replace
-          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+            const manifestRaw = process.env.COMMENT_MANIFEST || '[]';
+            let manifest;
+            try {
+              manifest = JSON.parse(manifestRaw);
+            } catch (error) {
+              throw new Error(`Failed to parse comment manifest: ${error}`);
+            }
+
+            const desired = new Map();
+            const workspace = process.env.GITHUB_WORKSPACE || '';
+            for (const entry of manifest) {
+              const filePath = path.join(workspace, entry.path);
+              const body = fs.readFileSync(filePath, 'utf8');
+              desired.set(entry.slug, body);
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.issue.number;
+            const existing = new Map();
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const tagPattern = /<!-- helm-diff:([a-z0-9-]+) -->/;
+            for (const comment of comments) {
+              const match = comment.body.match(tagPattern);
+              if (match) {
+                existing.set(match[1], comment);
+              }
+            }
+
+            for (const [slug, body] of desired.entries()) {
+              const current = existing.get(slug);
+              if (current) {
+                if (current.body !== body) {
+                  await github.rest.issues.updateComment({
+                    owner,
+                    repo,
+                    comment_id: current.id,
+                    body,
+                  });
+                }
+              } else {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number,
+                  body,
+                });
+              }
+            }
+
+            for (const [slug, comment] of existing.entries()) {
+              if (!desired.has(slug)) {
+                await github.rest.issues.deleteComment({
+                  owner,
+                  repo,
+                  comment_id: comment.id,
+                });
+              }
+            }
 
       - name: Fail if render failed
         if: steps.render.outcome == 'failure'
