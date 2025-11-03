@@ -296,7 +296,8 @@ def write_comments(entries: List[CommentEntry], comment_dir: Path) -> List[dict]
             pass
     manifest: List[dict] = []
     for entry in entries:
-        slug = slugify(f"{entry.app}-{entry.source}")
+        slug_base = entry.app if entry.source == "app" else f"{entry.app}-{entry.source}"
+        slug = slugify(slug_base)
         path = comment_dir / f"{slug}.md"
         content = f"<!-- helm-diff:{slug} -->\n{entry.body}\n"
         path.write_text(content)
@@ -309,6 +310,24 @@ def write_comments(entries: List[CommentEntry], comment_dir: Path) -> List[dict]
     manifest_path = comment_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
+
+
+def group_entries(entries: List[CommentEntry]) -> List[CommentEntry]:
+    if not entries:
+        return []
+    bodies_by_app: dict[str, List[str]] = {}
+    order: List[str] = []
+    for entry in entries:
+        if entry.app not in bodies_by_app:
+            bodies_by_app[entry.app] = []
+            order.append(entry.app)
+        bodies_by_app[entry.app].append(entry.body)
+    grouped: List[CommentEntry] = []
+    for app in order:
+        combined_sections = "\n\n".join(bodies_by_app[app])
+        combined = f"## {app}\n\n{combined_sections}" if combined_sections else f"## {app}"
+        grouped.append(CommentEntry(app=app, source="app", body=combined))
+    return grouped
 
 
 def set_outputs(has_changes: bool, manifest: List[dict]) -> None:
@@ -337,6 +356,7 @@ def main() -> int:
             base_state = render_state(base, app)
             head_state = render_state(head, app)
             entries.extend(build_entries(app, base_state, head_state))
+        entries = group_entries(entries)
         manifest = write_comments(entries, comment_dir)
         set_outputs(bool(entries), manifest)
     except HelmDiffError as exc:
