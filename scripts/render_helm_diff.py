@@ -11,9 +11,10 @@ import subprocess
 import sys
 import shutil
 import tempfile
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence
 
 import yaml
 
@@ -32,6 +33,13 @@ class RenderedState:
 
 class HelmDiffError(Exception):
     pass
+
+
+@dataclass
+class CommentEntry:
+    app: str
+    source: str
+    body: str
 
 
 def run(cmd: Sequence[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -135,6 +143,37 @@ def slugify(value: str) -> str:
     return slug or "app"
 
 
+def format_chart_suffix(base_state: RenderedState, head_state: RenderedState) -> str:
+    base_label = f"{base_state.chart or 'n/a'}@{base_state.version or 'n/a'}"
+    head_label = f"{head_state.chart or 'n/a'}@{head_state.version or 'n/a'}"
+    if base_state.chart is None and head_state.chart is None:
+        return ""
+    if base_state.chart is None:
+        return f" (new: {head_label})"
+    if head_state.chart is None:
+        return f" (removed: {base_label})"
+    if base_label == head_label:
+        return f" ({head_label})"
+    return f" ({base_label} → {head_label})"
+
+
+def split_manifest(manifest: Optional[str]) -> tuple[dict[str, List[str]], List[str]]:
+    if not manifest:
+        return {}, []
+    docs: dict[str, List[str]] = defaultdict(list)
+    order: List[str] = []
+    for raw_doc in manifest.split("\n---\n"):
+        doc = raw_doc.strip()
+        if not doc:
+            continue
+        lines = doc.splitlines()
+        source_line = next((line for line in lines if line.startswith("# Source: ")), None)
+        source = source_line[len("# Source: ") :].strip() if source_line else "manifest"
+        docs[source].append("\n".join(lines))
+        order.append(source)
+    return dict(docs), order
+
+
 def render_state(commit: str, app: str) -> RenderedState:
     app_path = APPS_ROOT / app / "application.yaml"
     raw_app = git_read(commit, app_path)
@@ -186,47 +225,69 @@ def render_state(commit: str, app: str) -> RenderedState:
     return RenderedState(result.stdout, chart, version, None)
 
 
-def build_section(app: str, base_state: RenderedState, head_state: RenderedState) -> str:
-    base_label = f"{base_state.chart or 'n/a'}@{base_state.version or 'n/a'}"
-    head_label = f"{head_state.chart or 'n/a'}@{head_state.version or 'n/a'}"
-    if base_state.chart is None and head_state.chart is None:
-        title_suffix = ""
-    elif base_state.chart is None:
-        title_suffix = f" (new: {head_label})"
-    elif head_state.chart is None:
-        title_suffix = f" (removed: {base_label})"
-    elif base_label == head_label:
-        title_suffix = f" ({head_label})"
-    else:
-        title_suffix = f" ({base_label} → {head_label})"
-    lines = [f"### {app}{title_suffix}"]
+def build_entries(app: str, base_state: RenderedState, head_state: RenderedState) -> List[CommentEntry]:
+    chart_suffix = format_chart_suffix(base_state, head_state)
     if base_state.error or head_state.error:
+        lines = [f"### {app}{chart_suffix}"]
         if base_state.error:
             lines.append(f"Base render failed:\n```text\n{base_state.error}\n```")
         if head_state.error:
             lines.append(f"PR render failed:\n```text\n{head_state.error}\n```")
-        return "\n".join(lines)
-    base_text = base_state.manifest or ""
-    head_text = head_state.manifest or ""
-    diff = list(
-        difflib.unified_diff(
-            base_text.splitlines(),
-            head_text.splitlines(),
-            fromfile=f"base/{app}",
-            tofile=f"pr/{app}",
-            lineterm="",
-        )
-    )
-    if not diff:
-        lines.append("No changes detected in rendered manifests.")
-        return "\n".join(lines)
-    lines.append("```diff")
-    lines.append("\n".join(diff))
-    lines.append("```")
-    return "\n".join(lines)
+        return [CommentEntry(app=app, source="render-error", body="\n".join(lines))]
+
+    base_docs, base_order = split_manifest(base_state.manifest)
+    head_docs, head_order = split_manifest(head_state.manifest)
+    seen_sources = set()
+    ordered_sources: List[str] = []
+    for source in base_order + head_order:
+        if source not in seen_sources:
+            seen_sources.add(source)
+            ordered_sources.append(source)
+    for source in list(base_docs.keys()) + list(head_docs.keys()):
+        if source not in seen_sources:
+            seen_sources.add(source)
+            ordered_sources.append(source)
+
+    entries: List[CommentEntry] = []
+    for source in ordered_sources:
+        base_list = base_docs.get(source, [])
+        head_list = head_docs.get(source, [])
+        max_len = max(len(base_list), len(head_list))
+        if max_len == 0:
+            continue
+        for idx in range(max_len):
+            base_doc = base_list[idx] if idx < len(base_list) else None
+            head_doc = head_list[idx] if idx < len(head_list) else None
+            if base_doc == head_doc:
+                continue
+            source_display = source if max_len == 1 else f"{source} [{idx + 1}]"
+            status = ""
+            if base_doc is None and head_doc is not None:
+                status = " (added)"
+            elif head_doc is None and base_doc is not None:
+                status = " (removed)"
+            title = f"### {app} — {source_display}{chart_suffix}{status}"
+            diff = list(
+                difflib.unified_diff(
+                    base_doc.splitlines() if base_doc else [],
+                    head_doc.splitlines() if head_doc else [],
+                    fromfile=f"base/{source_display}",
+                    tofile=f"pr/{source_display}",
+                    lineterm="",
+                )
+            )
+            body_lines = [title]
+            if diff:
+                body_lines.append("```diff")
+                body_lines.append("\n".join(diff))
+                body_lines.append("```")
+            else:
+                body_lines.append("No changes detected in rendered manifests.")
+            entries.append(CommentEntry(app=app, source=source_display, body="\n".join(body_lines)))
+    return entries
 
 
-def write_comments(entries: List[Tuple[str, str]], comment_dir: Path) -> List[dict]:
+def write_comments(entries: List[CommentEntry], comment_dir: Path) -> List[dict]:
     comment_dir.mkdir(parents=True, exist_ok=True)
     for existing in comment_dir.glob("*.md"):
         try:
@@ -234,13 +295,14 @@ def write_comments(entries: List[Tuple[str, str]], comment_dir: Path) -> List[di
         except OSError:
             pass
     manifest: List[dict] = []
-    for app, body in entries:
-        slug = slugify(app)
+    for entry in entries:
+        slug = slugify(f"{entry.app}-{entry.source}")
         path = comment_dir / f"{slug}.md"
-        content = f"<!-- helm-diff:{slug} -->\n{body}\n"
+        content = f"<!-- helm-diff:{slug} -->\n{entry.body}\n"
         path.write_text(content)
         manifest.append({
-            "app": app,
+            "app": entry.app,
+            "source": entry.source,
             "slug": slug,
             "path": str(path.relative_to(REPO_ROOT)),
         })
@@ -270,16 +332,16 @@ def main() -> int:
     try:
         changed_files = git_diff_files(base, head)
         apps = detect_changed_apps(base, head, changed_files)
-        entries: List[Tuple[str, str]] = []
+        entries: List[CommentEntry] = []
         for app in apps:
             base_state = render_state(base, app)
             head_state = render_state(head, app)
-            entries.append((app, build_section(app, base_state, head_state)))
+            entries.extend(build_entries(app, base_state, head_state))
         manifest = write_comments(entries, comment_dir)
-        set_outputs(bool(manifest), manifest)
+        set_outputs(bool(entries), manifest)
     except HelmDiffError as exc:
         message = "Helm template diff failed:\n```text\n" + str(exc) + "\n```"
-        manifest = write_comments([("error", message)], comment_dir)
+        manifest = write_comments([CommentEntry(app="error", source="render", body=message)], comment_dir)
         set_outputs(True, manifest)
         return 1
     return 0
