@@ -260,7 +260,13 @@ def set_outputs(has_changes: bool, manifest: List[dict]) -> None:
 def main() -> int:
     base = os.environ.get("BASE_SHA") or os.environ.get("BASE_REF") or "origin/main"
     head = os.environ.get("HEAD_SHA") or os.environ.get("HEAD_REF") or "HEAD"
-    comment_dir = Path(os.environ.get("COMMENT_DIR", "helm-diff-comments"))
+    raw_comment_dir = Path(os.environ.get("COMMENT_DIR", "helm-diff-comments"))
+    comment_dir = raw_comment_dir if raw_comment_dir.is_absolute() else (REPO_ROOT / raw_comment_dir)
+    comment_dir = comment_dir.resolve()
+    try:
+        comment_dir.relative_to(REPO_ROOT)
+    except ValueError as exc:  # Defensive guard to keep outputs inside repo checkout
+        raise HelmDiffError(f"Comment directory must reside within the repository: {comment_dir}") from exc
     try:
         changed_files = git_diff_files(base, head)
         apps = detect_changed_apps(base, head, changed_files)
