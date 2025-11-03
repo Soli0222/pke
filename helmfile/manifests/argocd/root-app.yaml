@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/Soli0222/pke/
     targetRevision: main
-    path: argocd/apps
+    path: argocd
     directory:
       recurse: true
       include: '**/application.yaml'
