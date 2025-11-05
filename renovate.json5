@@ -1,129 +1,180 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json", // keep schema for IDE support
-
-  // Baseline presets suitable for infrastructure-heavy repos
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
-    "config:recommended",
+    'config:recommended',
   ],
-
-  repositories: ["Soli0222/pke"],
-
-  timezone: "Asia/Tokyo",
+  repositories: [
+    'Soli0222/pke',
+  ],
+  timezone: 'Asia/Tokyo',
   prConcurrentLimit: 15,
   prHourlyLimit: 8,
-
-  labels: ["dependencies"],
-
-  enabledManagers: [
-    "ansible",
-    "ansible-galaxy",
-    "github-actions",
-    "helmfile",
-    "helm-requirements",
-    "helm-values",
-    "regex",
-    "terraform"
+  labels: [
+    'dependencies',
   ],
-
+  enabledManagers: [
+    'ansible',
+    'ansible-galaxy',
+    'github-actions',
+    'helmfile',
+    'helm-requirements',
+    'helm-values',
+    'custom.regex',
+    'terraform',
+  ],
   packageRules: [
     {
-      matchManagers: ["terraform"],
-      commitMessageTopic: "Terraform {{depName}}",
-      addLabels: ["manager:terraform"],
+      matchManagers: [
+        'terraform',
+      ],
+      commitMessageTopic: 'Terraform {{depName}}',
+      addLabels: [
+        'manager:terraform',
+      ],
     },
     {
-      matchManagers: ["helmfile", "helm-requirements", "helm-values"],
-      commitMessageTopic: "Helm chart {{depName}}",
-      addLabels: ["manager:helm"],
+      matchManagers: [
+        'helmfile',
+        'helm-requirements',
+        'helm-values',
+      ],
+      commitMessageTopic: 'Helm chart {{depName}}',
+      addLabels: [
+        'manager:helm',
+      ],
     },
     {
-      matchManagers: ["ansible", "ansible-galaxy"],
-      commitMessageTopic: "Ansible {{depName}}",
-      addLabels: ["manager:ansible"],
+      matchManagers: [
+        'ansible',
+        'ansible-galaxy',
+      ],
+      commitMessageTopic: 'Ansible {{depName}}',
+      addLabels: [
+        'manager:ansible',
+      ],
     },
     {
-      matchManagers: ["github-actions"],
-      commitMessageTopic: "GitHub Action {{depName}}",
-      addLabels: ["manager:github-actions"],
+      matchManagers: [
+        'github-actions',
+      ],
+      commitMessageTopic: 'GitHub Action {{depName}}',
+      addLabels: [
+        'manager:github-actions',
+      ],
       separateMinorPatch: true,
     },
     {
-      matchManagers: ["regex"],
+      matchManagers: [
+        'custom.regex',
+      ],
       matchDepNames: [
-        "containerd/containerd",
-        "opencontainers/runc",
-        "containernetworking/plugins",
-        "kubernetes/kubernetes"
+        'containerd/containerd',
+        'opencontainers/runc',
+        'containernetworking/plugins',
+        'kubernetes/kubernetes',
       ],
-      commitMessageTopic: "Infrastructure {{depName}}",
-      groupName: "Infrastructure components",
-      addLabels: ["manager:ansible-vars"],
+      commitMessageTopic: 'Infrastructure {{depName}}',
+      groupName: 'Infrastructure components',
+      addLabels: [
+        'manager:ansible-vars',
+      ],
     },
     {
-      matchManagers: ["regex"],
-      matchFileNames: ["argocd/**/application.yaml"],
-      commitMessageTopic: "Argo CD chart {{depName}}",
-      addLabels: ["manager:argocd"]
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchFileNames: [
+        'argocd/**/application.yaml',
+      ],
+      commitMessageTopic: 'Argo CD chart {{depName}}',
+      addLabels: [
+        'manager:argocd',
+      ],
     },
     {
-      matchManagers: ["regex"],
-      matchFileNames: ["manifests/test/**/*.{yaml,yml}"],
-      commitMessageTopic: "Test manifest {{depName}}",
-      addLabels: ["manager:k8s-test"]
-    }
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchFileNames: [
+        'manifests/test/**/*.{yaml,yml}',
+      ],
+      commitMessageTopic: 'Test manifest {{depName}}',
+      addLabels: [
+        'manager:k8s-test',
+      ],
+    },
   ],
-
-  regexManagers: [
+  customManagers: [
     {
-      // Ansible inventory values controlling containerd releases
-      fileMatch: ["ansible/inventories/group_vars/.*\\.ya?ml$"],
-      matchStrings: ["containerd_version:\\s*\"(?<currentValue>[^\"]+)\""],
-      depNameTemplate: "containerd/containerd",
-      datasourceTemplate: "github-releases",
-      versioningTemplate: "semver"
-    },
-    {
-      // Ansible inventory values controlling runc releases
-      fileMatch: ["ansible/inventories/group_vars/.*\\.ya?ml$"],
-      matchStrings: ["runc_version:\\s*\"(?<currentValue>[^\"]+)\""],
-      depNameTemplate: "opencontainers/runc",
-      datasourceTemplate: "github-releases",
-      versioningTemplate: "semver"
-    },
-    {
-      // Ansible inventory values controlling CNI plugin releases
-      fileMatch: ["ansible/inventories/group_vars/.*\\.ya?ml$"],
-      matchStrings: ["cni_plugins_version:\\s*\"(?<currentValue>[^\"]+)\""],
-      depNameTemplate: "containernetworking/plugins",
-      datasourceTemplate: "github-releases",
-      versioningTemplate: "semver"
-    },
-    {
-      // Ansible inventory values controlling Kubernetes releases
-      fileMatch: ["ansible/inventories/group_vars/.*\\.ya?ml$"],
-      matchStrings: ["kubernetes_version:\\s*(?<currentValue>[^\\s]+)"],
-      depNameTemplate: "kubernetes/kubernetes",
-      datasourceTemplate: "github-releases",
-      versioningTemplate: "semver"
-    },
-    {
-      // Argo CD Application Helm sources
-      fileMatch: ["argocd/.+/application\\.ya?ml$"],
-      matchStrings: [
-        "(?m)^\\s+-\\s+chart:\\s+(?<depName>[A-Za-z0-9_.\\-/]+)\\s*\\n^\\s+repoURL:\\s+(?<registryUrl>https?://[^\\s]+)\\s*\\n^\\s+targetRevision:\\s*(?<currentValue>[^\\s]+)"
+      customType: 'regex',
+      managerFilePatterns: [
+        '/ansible/inventories/group_vars/.*\\.ya?ml$/',
       ],
-      datasourceTemplate: "helm",
-      registryUrlTemplate: "{{registryUrl}}",
-      versioningTemplate: "semver"
+      matchStrings: [
+        'containerd_version:\\s*"(?<currentValue>[^"]+)"',
+      ],
+      depNameTemplate: 'containerd/containerd',
+      datasourceTemplate: 'github-releases',
+      versioningTemplate: 'semver',
     },
     {
-      // Standalone Kubernetes test manifests with direct container tags
-      fileMatch: ["manifests/test/.+\\.ya?ml$"],
-      matchStrings: [
-        "image:\\s+(?<depName>[\\w./-]+):(?<currentValue>[\\w.-]+)"
+      customType: 'regex',
+      managerFilePatterns: [
+        '/ansible/inventories/group_vars/.*\\.ya?ml$/',
       ],
-      datasourceTemplate: "docker",
-      versioningTemplate: "semver"
-    }
-  ]
+      matchStrings: [
+        'runc_version:\\s*"(?<currentValue>[^"]+)"',
+      ],
+      depNameTemplate: 'opencontainers/runc',
+      datasourceTemplate: 'github-releases',
+      versioningTemplate: 'semver',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/ansible/inventories/group_vars/.*\\.ya?ml$/',
+      ],
+      matchStrings: [
+        'cni_plugins_version:\\s*"(?<currentValue>[^"]+)"',
+      ],
+      depNameTemplate: 'containernetworking/plugins',
+      datasourceTemplate: 'github-releases',
+      versioningTemplate: 'semver',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/ansible/inventories/group_vars/.*\\.ya?ml$/',
+      ],
+      matchStrings: [
+        'kubernetes_version:\\s*(?<currentValue>[^\\s]+)',
+      ],
+      depNameTemplate: 'kubernetes/kubernetes',
+      datasourceTemplate: 'github-releases',
+      versioningTemplate: 'semver',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/argocd/.+/application\\.ya?ml$/',
+      ],
+      matchStrings: [
+        '(?m)^\\s+-\\s+chart:\\s+(?<depName>[A-Za-z0-9_.\\-/]+)\\s*\\n^\\s+repoURL:\\s+(?<registryUrl>https?://[^\\s]+)\\s*\\n^\\s+targetRevision:\\s*(?<currentValue>[^\\s]+)',
+      ],
+      datasourceTemplate: 'helm',
+      registryUrlTemplate: '{{registryUrl}}',
+      versioningTemplate: 'semver',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/manifests/test/.+\\.ya?ml$/',
+      ],
+      matchStrings: [
+        'image:\\s+(?<depName>[\\w./-]+):(?<currentValue>[\\w.-]+)',
+      ],
+      datasourceTemplate: 'docker',
+      versioningTemplate: 'semver',
+    },
+  ],
 }
