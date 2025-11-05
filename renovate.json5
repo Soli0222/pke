@@ -4,14 +4,9 @@
   // Baseline presets suitable for infrastructure-heavy repos
   extends: [
     "config:recommended",
-    ":dependencyDashboard",
-    ":separateMultipleMajorReleases"
   ],
 
   timezone: "Asia/Tokyo",
-  onboarding: false,
-  dependencyDashboardAutoclose: true,
-  suppressNotifications: ["prIgnoreNotification"],
   prConcurrentLimit: 15,
   prHourlyLimit: 8,
 
@@ -33,26 +28,22 @@
       matchManagers: ["terraform"],
       commitMessageTopic: "Terraform {{depName}}",
       addLabels: ["manager:terraform"],
-      stabilityDays: 2
     },
     {
       matchManagers: ["helmfile", "helm-requirements", "helm-values"],
       commitMessageTopic: "Helm chart {{depName}}",
       addLabels: ["manager:helm"],
-      stabilityDays: 1
     },
     {
       matchManagers: ["ansible", "ansible-galaxy"],
       commitMessageTopic: "Ansible {{depName}}",
       addLabels: ["manager:ansible"],
-      stabilityDays: 3
     },
     {
       matchManagers: ["github-actions"],
       commitMessageTopic: "GitHub Action {{depName}}",
       addLabels: ["manager:github-actions"],
       separateMinorPatch: true,
-      stabilityDays: 1
     },
     {
       matchManagers: ["regex"],
@@ -65,7 +56,6 @@
       commitMessageTopic: "Infrastructure {{depName}}",
       groupName: "Infrastructure components",
       addLabels: ["manager:ansible-vars"],
-      stabilityDays: 3
     },
     {
       matchManagers: ["regex"],
