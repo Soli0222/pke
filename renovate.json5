@@ -6,6 +6,8 @@
     "config:recommended",
   ],
 
+  repositories: ["Soli0222/pke"],
+
   timezone: "Asia/Tokyo",
   prConcurrentLimit: 15,
   prHourlyLimit: 8,
