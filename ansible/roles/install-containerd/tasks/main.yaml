@@ -58,7 +58,6 @@
     dest: "/usr/local/lib/systemd/system/containerd.service"
     mode: "0644"
   when: containerd_setup_systemd_unit | bool
-  notify: Reload systemd
 
 - name: Generate default containerd config if missing
   become: true
@@ -81,5 +80,5 @@
   ansible.builtin.systemd:
     name: containerd
     enabled: true
-    state: started
+    state: restarted
     daemon_reload: true
