@@ -6,6 +6,9 @@
   repositories: [
     'Soli0222/pke',
   ],
+  reviewers: [
+    'Soli0222',
+  ],
   timezone: 'Asia/Tokyo',
   prConcurrentLimit: 15,
   prHourlyLimit: 8,
