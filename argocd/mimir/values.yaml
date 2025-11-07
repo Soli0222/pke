@@ -48,31 +48,6 @@ ingress:
         - mimir.str08.net
       secretName: mimir.str08.net-dns01
 
-nginx:
-  replicas: 1
-  resources:
-    limits:
-      memory: 731Mi
-    requests:
-      cpu: 1
-      memory: 512Mi
-  ingress:
-    enabled: true
-    ingressClassName: traefik-external
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt
-      external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
-      external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-    hosts:
-      - host: mimir.pstr.space
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-      - hosts:
-          - mimir.pstr.space
-        secretName: mimir.pstr.space-dns01
-
 metaMonitoring:
   serviceMonitor:
     enabled: true
