@@ -14,7 +14,7 @@ alloy:
       // Prometheus remote write endpoint for metrics
       prometheus.remote_write "default" {
         endpoint {
-          url = "http://mimir-nginx.mimir/api/v1/push"
+          url = "https://mimir.str08.net/api/v1/push"
           headers = {
             "X-Scope-OrgID" = "anonymous",
           }
@@ -27,7 +27,7 @@ alloy:
 
       // Mimir rules endpoint for PrometheusRule resources
       mimir.rules.kubernetes "default" {
-        address = "http://mimir-nginx.mimir"
+        address = "https://mimir.str08.net"
         tenant_id = "anonymous"
         
         // Select all PrometheusRule resources (empty selector)
