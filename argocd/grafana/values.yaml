@@ -25,3 +25,8 @@ ingress:
    - secretName: grafana.str08.net-dns01
      hosts:
        - grafana.str08.net
+
+grafana.ini:
+  feature_toggles:
+    provisioning: true
+    kubernetesDashboards: true\
