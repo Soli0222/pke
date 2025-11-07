@@ -1,0 +1,41 @@
+global:
+  extraArgs:
+    - "-config.expand-env=true"
+  extraEnvFrom:
+    - secretRef:
+        name: minio-secrets
+
+minio:
+  enabled: false
+
+storage:
+  trace:
+    backend: s3
+    s3:
+      access_key: "${S3_ACCESS_KEY_ID}"
+      secret_key: "${S3_SECRET_ACCESS_KEY}"
+      bucket: "tempo-traces"
+      endpoint: "minio.str08.net"
+      region: "minio-kkg-1"
+      forcepathstyle: true
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  ingressClassName: traefik
+  hosts:
+    - tempo.str08.net
+  tls:
+    - hosts:
+        - tempo.str08.net
+      secretName: tempo.str08.net-dns01
+
+queryFrontend:
+  extraArgs:
+    - "-config.expand-env=true"
+
+metaMonitoring:
+  serviceMonitor:
+    enabled: true
