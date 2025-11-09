@@ -35,7 +35,7 @@ mimir:
       ingestion_burst_size: 1000000
       out_of_order_time_window: "5m"
 
-ingrester:
+ingester:
   replicas: 4
   zoneAwareReplication:
     enabled: false
