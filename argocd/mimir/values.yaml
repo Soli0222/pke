@@ -51,3 +51,8 @@ ingress:
 metaMonitoring:
   serviceMonitor:
     enabled: true
+
+  prometheusRule:
+    enabled: true
+    mimirAlerts: true
+    mimirRules: true

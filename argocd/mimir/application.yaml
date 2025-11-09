@@ -20,11 +20,6 @@ spec:
     - repoURL: https://github.com/Soli0222/pke.git
       targetRevision: HEAD
       path: argocd/mimir/manifests
-    - repoURL: https://github.com/grafana/mimir.git
-      targetRevision: main
-      path: operations/mimir-mixin-compiled
-      directory:
-        include: '{alerts.yaml,rules.yaml}'
   destination:
     server: https://kubernetes.default.svc
     namespace: mimir
