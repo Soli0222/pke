@@ -30,7 +30,7 @@ mimir:
         bucket_name: mimir-ruler
 
     limits:
-      max_global_series_per_user: 500000
+      max_global_series_per_user: 1000000
       ingestion_rate: 50000
       ingestion_burst_size: 1000000
       out_of_order_time_window: "5m"
