@@ -30,3 +30,8 @@ grafana.ini:
   feature_toggles:
     provisioning: true
     kubernetesDashboards: true
+
+sidecar:
+  dashboards:
+    enabled: true
+    searchNamespace: ALL

@@ -21,6 +21,8 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 APPS_ROOT = Path("argocd")
 TARGET_PREFIX = "$values/"
+MAX_COMMENT_LENGTH = 64000  # Safety margin under GitHub's 65,536 character limit
+PREVIEW_CHAR_LIMIT = 4000
 
 
 @dataclass
@@ -141,6 +143,55 @@ def materialise_values(commit: str, references: List[str]) -> tuple[List[Path], 
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or "app"
+
+
+def extract_diff_preview(body: str, limit: int) -> str:
+    if limit <= 0:
+        return ""
+    marker = "```diff"
+    start = body.find(marker)
+    if start == -1:
+        return body[:limit]
+    newline = body.find("\n", start)
+    if newline == -1:
+        return ""
+    remainder = body[newline + 1 :]
+    end = remainder.find("```")
+    diff_section = remainder if end == -1 else remainder[:end]
+    return diff_section[:limit]
+
+
+def build_truncated_body(
+    entry: CommentEntry,
+    slug: str,
+    *,
+    preview_limit: int,
+    artifact_path: str,
+    original_length: int,
+) -> str:
+    lines = entry.body.splitlines()
+    title = lines[0] if lines else f"## {entry.app}"
+    preview = extract_diff_preview(entry.body, preview_limit).rstrip()
+    message_lines = [
+        title,
+        "",
+        f"WARNING: Rendered diff is too large for a GitHub comment ({original_length} characters).",
+        "Download the workflow artifact from this run to review the full output.",
+        f"- Full diff file: `{artifact_path}`",
+    ]
+    if preview:
+        message_lines.extend(
+            [
+                "",
+                "Preview:",
+                "```diff",
+                preview,
+                "```",
+                "",
+                "_Preview truncated._",
+            ]
+        )
+    return "\n".join(message_lines).strip()
 
 
 def format_chart_suffix(base_state: RenderedState, head_state: RenderedState) -> str:
@@ -299,13 +350,58 @@ def write_comments(entries: List[CommentEntry], comment_dir: Path) -> List[dict]
         slug_base = entry.app if entry.source == "app" else f"{entry.app}-{entry.source}"
         slug = slugify(slug_base)
         path = comment_dir / f"{slug}.md"
-        content = f"<!-- helm-diff:{slug} -->\n{entry.body}\n"
-        path.write_text(content)
+        raw_body = entry.body.rstrip()
+        comment_content = f"<!-- helm-diff:{slug} -->\n{raw_body}\n"
+        original_length = len(comment_content)
+        metadata: dict[str, object] = {}
+        if original_length > MAX_COMMENT_LENGTH:
+            full_path = comment_dir / f"{slug}-full.md"
+            full_path.write_text(comment_content)
+            artifact_rel = str(full_path.relative_to(REPO_ROOT))
+            preview_limit = PREVIEW_CHAR_LIMIT
+            truncated_body = build_truncated_body(
+                entry,
+                slug,
+                preview_limit=preview_limit,
+                artifact_path=artifact_rel,
+                original_length=original_length,
+            )
+            comment_content = f"<!-- helm-diff:{slug} -->\n{truncated_body}\n"
+            while len(comment_content) > MAX_COMMENT_LENGTH and preview_limit > 0:
+                preview_limit = max(preview_limit // 2, 0)
+                truncated_body = build_truncated_body(
+                    entry,
+                    slug,
+                    preview_limit=preview_limit,
+                    artifact_path=artifact_rel,
+                    original_length=original_length,
+                )
+                comment_content = f"<!-- helm-diff:{slug} -->\n{truncated_body}\n"
+            if len(comment_content) > MAX_COMMENT_LENGTH:
+                truncated_body = build_truncated_body(
+                    entry,
+                    slug,
+                    preview_limit=0,
+                    artifact_path=artifact_rel,
+                    original_length=original_length,
+                )
+                comment_content = f"<!-- helm-diff:{slug} -->\n{truncated_body}\n"
+            if len(comment_content) > MAX_COMMENT_LENGTH:
+                raise HelmDiffError(
+                    "Truncated comment still exceeds GitHub's limit; reduce rendered output."
+                )
+            metadata.update({
+                "truncated": True,
+                "full_path": artifact_rel,
+                "original_length": original_length,
+            })
+        path.write_text(comment_content)
         manifest.append({
             "app": entry.app,
             "source": entry.source,
             "slug": slug,
             "path": str(path.relative_to(REPO_ROOT)),
+            **metadata,
         })
     manifest_path = comment_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
