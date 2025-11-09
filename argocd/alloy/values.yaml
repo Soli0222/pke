@@ -228,6 +228,9 @@ alloy:
         }
       }
 
+controller:
+  type: 'deployment'
+
 serviceMonitor:
   enabled: true
 
