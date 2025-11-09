@@ -24,6 +24,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: mimir
   syncPolicy:
+    terminate:
+      timeout: 15m
     automated:
       prune: true
       selfHeal: true
