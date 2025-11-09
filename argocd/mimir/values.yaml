@@ -36,7 +36,7 @@ mimir:
       out_of_order_time_window: "5m"
 
 ingester:
-  replicas: 4
+  replicas: 3
   zoneAwareReplication:
     enabled: false
 
