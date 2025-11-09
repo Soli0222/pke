@@ -35,6 +35,16 @@ mimir:
       ingestion_burst_size: 1000000
       out_of_order_time_window: "5m"
 
+ingrester:
+  replicas: 4
+  zoneAwareReplication:
+    enabled: false
+
+store_gateway:
+  replicas: 3
+  zoneAwareReplication:
+    enabled: false
+
 ingress:
   enabled: true
   className: traefik
