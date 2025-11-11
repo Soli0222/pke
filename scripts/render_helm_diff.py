@@ -23,6 +23,7 @@ APPS_ROOT = Path("argocd")
 TARGET_PREFIX = "$values/"
 MAX_COMMENT_LENGTH = 64000  # Safety margin under GitHub's 65,536 character limit
 PREVIEW_CHAR_LIMIT = 4000
+DEFAULT_HELM_API_VERSIONS = ["monitoring.coreos.com/v1"]
 
 
 @dataclass
@@ -264,6 +265,8 @@ def render_state(commit: str, app: str) -> RenderedState:
             args.extend(["--version", str(version)])
         if skip_crds:
             args.append("--skip-crds")
+        for api_version in DEFAULT_HELM_API_VERSIONS:
+            args.extend(["--api-versions", api_version])
         for vf in value_files:
             if vf.is_file():
                 args.extend(["-f", str(vf)])
