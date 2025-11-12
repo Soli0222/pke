@@ -8,7 +8,7 @@ username: ubuntu
 containerd_version: "2.2.0"
 runc_version: "1.3.3"
 cni_plugins_version: "1.8.0"
-kubernetes_version: 1.34.1
+kubernetes_version: 1.34.2
 
 # Network Configuration
 pod_network_cidr: 10.26.0.0/16
