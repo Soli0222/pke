@@ -35,3 +35,5 @@ sidecar:
   dashboards:
     enabled: true
     searchNamespace: ALL
+    provider:
+      foldersFromFilesStructure: true

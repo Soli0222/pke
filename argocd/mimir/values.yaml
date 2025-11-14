@@ -64,8 +64,6 @@ metaMonitoring:
 
   dashboards:
     enabled: true
-    annotations:
-      grafana_folder: "Mimir"
 
   prometheusRule:
     enabled: true
