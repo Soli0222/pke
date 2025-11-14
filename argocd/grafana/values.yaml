@@ -31,6 +31,22 @@ grafana.ini:
     provisioning: true
     kubernetesDashboards: true
 
+dashboardProviders:
+ dashboardproviders.yaml:
+  apiVersion: 1
+  providers:
+    - name: 'sidecarProvider'
+      orgId: 1
+      folder: ''
+      folderUid: ''
+      type: file
+      disableDeletion: false
+      allowUiUpdates: false
+      updateIntervalSeconds: 30
+      options:
+        foldersFromFilesStructure: false
+        path: /tmp/dashboards
+
 sidecar:
   dashboards:
     enabled: true
