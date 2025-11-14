@@ -111,5 +111,13 @@ minio:
   enabled: false
 
 monitoring:
+  dashboards:
+    enabled: true
+    annotations:
+      k8s-sidecar-target-directory: /tmp/dashboards/Loki Dashboards
+
+  rules:
+    enabled: true
+
   serviceMonitor:
     enabled: true
