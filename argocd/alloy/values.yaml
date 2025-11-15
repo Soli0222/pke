@@ -23,8 +23,6 @@ alloy:
         external_labels = {
           cluster = "kkg",
         }
-
-        retry_on_http_429 = true
       }
 
       // Mimir rules endpoint for PrometheusRule resources
