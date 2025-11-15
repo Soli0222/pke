@@ -24,13 +24,6 @@ alloy:
           cluster = "kkg",
         }
 
-        queue_config {
-          capacity = 5000
-          max_samples_per_send = 1000
-          min_shards = 1
-          max_shards = 10
-        }
-
         retry_on_http_429 = true
       }
 
