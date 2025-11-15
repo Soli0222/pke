@@ -23,6 +23,15 @@ alloy:
         external_labels = {
           cluster = "kkg",
         }
+
+        queue_config {
+          capacity = 5000
+          max_samples_per_send = 1000
+          min_shards = 1
+          max_shards = 10
+        }
+
+        retry_on_http_429 = true
       }
 
       // Mimir rules endpoint for PrometheusRule resources
@@ -66,9 +75,51 @@ alloy:
         role = "servicemonitor"
       }
 
+      // Kubernetes discovery for API server endpoints
+      discovery.kubernetes "api_endpoints" {
+        role = "endpoints"
+      }
+
+      // Filter API server endpoints down to the default/kubernetes service
+      discovery.relabel "kubernetes_api" {
+        targets = discovery.kubernetes.api_endpoints.targets
+
+        rule {
+          action = "keep"
+          source_labels = ["__meta_kubernetes_service_name", "__meta_kubernetes_namespace"]
+          separator = ";"
+          regex = "kubernetes;default"
+        }
+
+        rule {
+          action = "keep"
+          source_labels = ["__meta_kubernetes_endpoint_port_name"]
+          regex = "https"
+        }
+      }
+
+      // Normalize kubelet discovery targets to use the secured port
+      discovery.relabel "kubelet_targets" {
+        targets = discovery.kubernetes.nodes.targets
+
+        rule {
+          action = "replace"
+          source_labels = ["__meta_kubernetes_node_address_InternalIP"]
+          target_label = "__address__"
+          regex = "(.+)"
+          replacement = "$1:10250"
+        }
+
+        rule {
+          action = "replace"
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label = "instance"
+        }
+      }
+
       // Scrape Kubernetes API server metrics
       prometheus.scrape "kubernetes_api" {
-        targets = discovery.kubernetes.services.targets
+        targets = discovery.relabel.kubernetes_api.output
         forward_to = [prometheus.remote_write.default.receiver]
         
         scrape_interval = "30s"
@@ -81,7 +132,7 @@ alloy:
 
       // Scrape node metrics (kubelet)
       prometheus.scrape "kubernetes_nodes" {
-        targets = discovery.kubernetes.nodes.targets
+        targets = discovery.relabel.kubelet_targets.output
         forward_to = [prometheus.remote_write.default.receiver]
         
         scrape_interval = "30s"
@@ -100,7 +151,7 @@ alloy:
 
       // Scrape cAdvisor metrics
       prometheus.scrape "kubernetes_cadvisor" {
-        targets = discovery.kubernetes.nodes.targets
+        targets = discovery.relabel.kubelet_targets.output
         forward_to = [prometheus.remote_write.default.receiver]
         
         scrape_interval = "30s"
@@ -167,24 +218,6 @@ alloy:
           target_label = "app"
         }
 
-        // Label creation - "job" field from "__meta_kubernetes_namespace" and "__meta_kubernetes_pod_container_name"
-        rule {
-          source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_container_name"]
-          action = "replace"
-          target_label = "job"
-          separator = "/"
-          replacement = "$1"
-        }
-
-        // Label creation - "__path__" field from "__meta_kubernetes_pod_uid" and "__meta_kubernetes_pod_container_name"
-        rule {
-          source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
-          action = "replace"
-          target_label = "__path__"
-          separator = "/"
-          replacement = "/var/log/pods/*$1/*.log"
-        }
-
         // Label creation - "container_runtime" field from "__meta_kubernetes_pod_container_id"
         rule {
           source_labels = ["__meta_kubernetes_pod_container_id"]
@@ -192,6 +225,46 @@ alloy:
           target_label = "container_runtime"
           regex = "^(\\S+):\\/\\/.+$"
           replacement = "$1"
+        }
+
+        // Label creation - "job" field from namespace and pod name
+        rule {
+          source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name"]
+          action = "replace"
+          target_label = "job"
+          separator = ";"
+          regex = "([^;]+);([^;]+)"
+          replacement = "$1/$2"
+        }
+
+        // Default pod log path resolution
+        rule {
+          source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "__path__"
+          separator = ";"
+          regex = "([^;]+);([^;]+);([^;]+);([^;]+)"
+          replacement = "/var/log/pods/$1_$2_$3/$4/*.log"
+        }
+
+        // Override log path for containerd runtimes
+        rule {
+          source_labels = ["container_runtime", "__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "__path__"
+          separator = ";"
+          regex = "containerd;([^;]+);([^;]+);([^;]+);([^;]+)"
+          replacement = "/var/log/pods/$1_$2_$3/$4/*.log"
+        }
+
+        // Override log path for CRI-O runtimes
+        rule {
+          source_labels = ["container_runtime", "__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "__path__"
+          separator = ";"
+          regex = "cri-o;([^;]+);([^;]+);([^;]+);([^;]+)"
+          replacement = "/var/log/pods/$1_$2_$3/$4/*.log"
         }
       }
 
@@ -239,6 +312,7 @@ rbac:
 
 serviceAccount:
   create: true
+  name: alloy
 
 # Additional RBAC rules for PrometheusRule access and pod logs
 extraObjects:
@@ -248,17 +322,13 @@ extraObjects:
       name: alloy-prometheusrule-reader
     rules:
     - apiGroups: [""]
-      resources: ["namespaces"]
+      resources: ["namespaces", "nodes", "pods", "pods/log", "services", "endpoints", "secrets"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["discovery.k8s.io"]
+      resources: ["endpointslices"]
       verbs: ["get", "list", "watch"]
     - apiGroups: ["monitoring.coreos.com"]
-      resources: ["prometheusrules"]
-      verbs: ["get", "list", "watch"]
-    # Pod logs collection permissions
-    - apiGroups: [""]
-      resources: ["pods", "pods/log"]
-      verbs: ["get", "list", "watch"]
-    - apiGroups: [""]
-      resources: ["nodes"]
+      resources: ["prometheusrules", "podmonitors", "servicemonitors", "probes"]
       verbs: ["get", "list", "watch"]
   - apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
