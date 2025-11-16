@@ -116,11 +116,18 @@ def find_chart_source(spec: dict) -> Optional[dict]:
     sources = spec.get("sources") or []
     if isinstance(sources, dict):  # defensive for legacy single source layout
         sources = [sources]
+    helm_candidates: List[dict] = []
     for source in sources:
-        if isinstance(source, dict) and source.get("chart"):
+        if not isinstance(source, dict):
+            continue
+        if source.get("chart"):
             return source
+        if source.get("helm"):
+            helm_candidates.append(source)
+    if helm_candidates:
+        return helm_candidates[0]
     legacy = spec.get("source")
-    if isinstance(legacy, dict) and legacy.get("chart"):
+    if isinstance(legacy, dict) and (legacy.get("chart") or legacy.get("helm")):
         return legacy
     return None
 
@@ -139,6 +146,38 @@ def materialise_values(commit: str, references: List[str]) -> tuple[List[Path], 
         target.write_text(content)
         files.append(target)
     return files, base_path
+
+
+def materialise_chart_from_repo(repo_url: str, chart_subpath: str, revision: Optional[str]) -> tuple[Path, Path]:
+    if not repo_url:
+        raise HelmDiffError("repoURL is required when using path-based Helm sources")
+    chart_subpath = (chart_subpath or "").strip()
+    if not chart_subpath:
+        raise HelmDiffError("path is required when using repoURL-based Helm sources")
+
+    checkout_root = Path(tempfile.mkdtemp(prefix="helm-chart-"))
+    repo_dir = checkout_root / "repo"
+    run(["git", "clone", "--depth", "1", repo_url, str(repo_dir)])
+    if revision:
+        fetch_cmd = ["git", "-C", str(repo_dir), "fetch", "--depth", "1", "origin", revision]
+        fetch_result = run(fetch_cmd, check=False)
+        if fetch_result.returncode != 0:
+            run(["git", "-C", str(repo_dir), "fetch", "origin", revision])
+        run(["git", "-C", str(repo_dir), "checkout", revision])
+
+    repo_root = repo_dir.resolve()
+    chart_rel = Path(chart_subpath.lstrip("/"))
+    chart_dir = (repo_root / chart_rel).resolve()
+    try:
+        chart_dir.relative_to(repo_root)
+    except ValueError as exc:  # pragma: no cover - guard against path traversal
+        raise HelmDiffError(f"Chart path '{chart_subpath}' escapes the repository checkout") from exc
+    if not chart_dir.is_dir():
+        revision_label = revision or "default"
+        raise HelmDiffError(
+            f"Chart path '{chart_subpath}' not found in repository {repo_url} (revision {revision_label})"
+        )
+    return chart_dir, checkout_root
 
 
 def slugify(value: str) -> str:
@@ -240,6 +279,7 @@ def render_state(commit: str, app: str) -> RenderedState:
     release_name = metadata.get("name", app)
     namespace = (spec.get("destination") or {}).get("namespace", "default")
     chart = chart_source.get("chart")
+    chart_path = chart_source.get("path")
     repo = chart_source.get("repoURL")
     version = chart_source.get("targetRevision")
     helm_cfg = chart_source.get("helm", {})
@@ -248,20 +288,31 @@ def render_state(commit: str, app: str) -> RenderedState:
         value_refs = [value_refs]
     skip_crds = helm_cfg.get("skipCrds", False)
     value_files, temp_dir = materialise_values(commit, list(value_refs))
+    chart_temp_dir: Optional[Path] = None
+    chart_label = chart or chart_path
     try:
-        if not chart:
-            raise HelmDiffError("Chart name is missing in application.yaml")
+        chart_arg = chart
+        repo_arg = repo
+        allow_version_flag = True
+        if not chart_arg:
+            if chart_path:
+                chart_dir, chart_temp_dir = materialise_chart_from_repo(repo or "", chart_path, version)
+                chart_arg = str(chart_dir)
+                repo_arg = None
+                allow_version_flag = False
+            else:
+                raise HelmDiffError("Chart name is missing in application.yaml")
         args = [
             "helm",
             "template",
             release_name,
-            chart,
+            chart_arg,
             "--namespace",
             namespace,
         ]
-        if repo:
-            args.extend(["--repo", repo])
-        if version:
+        if repo_arg:
+            args.extend(["--repo", repo_arg])
+        if version and allow_version_flag:
             args.extend(["--version", str(version)])
         if skip_crds:
             args.append("--skip-crds")
@@ -272,11 +323,13 @@ def render_state(commit: str, app: str) -> RenderedState:
                 args.extend(["-f", str(vf)])
         result = run(args)
     except HelmDiffError as exc:
-        return RenderedState(None, chart, version, str(exc))
+        return RenderedState(None, chart_label, version, str(exc))
     finally:
         if temp_dir:
             shutil.rmtree(temp_dir, ignore_errors=True)
-    return RenderedState(result.stdout, chart, version, None)
+        if chart_temp_dir:
+            shutil.rmtree(chart_temp_dir, ignore_errors=True)
+    return RenderedState(result.stdout, chart_label, version, None)
 
 
 def build_entries(app: str, base_state: RenderedState, head_state: RenderedState) -> List[CommentEntry]:
