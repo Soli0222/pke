@@ -90,7 +90,7 @@ valkey:
   image:
     registry: docker.io
     repository: valkey/valkey
-    tag: 9.0.0-alpine
+    tag: 9.0.0-alpine3.22
   architecture: standalone
   auth:
     enabled: false
