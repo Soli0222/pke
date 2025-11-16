@@ -15,7 +15,8 @@ spec:
         releaseName: n8n
         valueFiles:
           - $values/argocd/n8n/values.yaml
-    - repoURL: https://valkey.io/valkey-helm
+    - chart: valkey
+      repoURL: https://valkey.io/valkey-helm
       targetRevision: 0.7.7
       helm:
         releaseName: n8n-valkey
