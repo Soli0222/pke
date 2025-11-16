@@ -40,7 +40,7 @@ main:
           active: true
       bull:
         redis:
-          host: n8n-valkey-primary
+          host: n8n-valkey
           port: 6379
   extraEnv: &extraEnv
     N8N_ENCRYPTION_KEY:
@@ -83,27 +83,7 @@ webhook:
   extraVolumes: *extraVolumes
 
 valkey:
-  enabled: true
-  global:
-    security:
-      allowInsecureImages: true
-  image:
-    registry: docker.io
-    repository: valkey/valkey
-    tag: 9.0.0-alpine3.22
-  architecture: standalone
-  auth:
-    enabled: false
-  primary:
-    kind: Deployment
-    persistence:
-      enabled: false
-    resources:
-      requests:
-        memory: 256Mi
-        cpu: 100m
-  sentinel:
-    enabled: false
+  enabled: false
 
 extraManifests:
   - apiVersion: postgresql.cnpg.io/v1
