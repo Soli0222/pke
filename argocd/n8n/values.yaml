@@ -6,14 +6,14 @@ ingress:
   enabled: true
   className: traefik-external
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-http01
+    cert-manager.io/cluster-issuer: letsencrypt
     external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
   hosts:
     - host: *hostname
       paths:
         - /
   tls:
-    - secretName: n8n.pstr.space-http01
+    - secretName: n8n.pstr.space-dns01
       hosts:
         - *hostname
 
