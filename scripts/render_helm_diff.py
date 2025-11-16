@@ -180,6 +180,16 @@ def materialise_chart_from_repo(repo_url: str, chart_subpath: str, revision: Opt
     return chart_dir, checkout_root
 
 
+def ensure_chart_dependencies(chart_dir: Path) -> None:
+    if not chart_dir.is_dir():
+        raise HelmDiffError(f"Chart directory does not exist: {chart_dir}")
+    result = run(["helm", "dependency", "build", str(chart_dir)], check=False)
+    if result.returncode != 0:
+        raise HelmDiffError(
+            "Failed to build chart dependencies:\n" + (result.stderr or result.stdout or "unknown error")
+        )
+
+
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or "app"
@@ -297,6 +307,7 @@ def render_state(commit: str, app: str) -> RenderedState:
         if not chart_arg:
             if chart_path:
                 chart_dir, chart_temp_dir = materialise_chart_from_repo(repo or "", chart_path, version)
+                ensure_chart_dependencies(chart_dir)
                 chart_arg = str(chart_dir)
                 repo_arg = None
                 allow_version_flag = False
