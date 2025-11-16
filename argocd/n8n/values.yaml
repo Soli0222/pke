@@ -1,0 +1,121 @@
+_shared_config:
+  hostname: &hostname n8n.pstr.space
+  url: &url https://n8n.pstr.space
+
+ingress:
+  enabled: true
+  className: traefik-external
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-http01
+    external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
+  hosts:
+    - host: *hostname
+      paths:
+        - /
+  tls:
+    - secretName: n8n.pstr.space-http01
+      hosts:
+        - *hostname
+
+main:
+  config:
+    n8n:
+      editor_base_url: *url
+    executions_mode: queue
+    db:
+      type: postgresdb
+      postgresdb:
+        host: db-rw
+        user: n8n
+        pool:
+          size: 10
+        ssl:
+          enabled: true
+          reject_Unauthorized: true
+          ca_file: "/home/ssl/certs/postgresql/ca.crt"
+    webhook_url: *url
+    queue:
+      health:
+        check:
+          active: true
+      bull:
+        redis:
+          host: n8n-valkey-primary
+          port: 6379
+  extraEnv: &extraEnv
+    N8N_ENCRYPTION_KEY:
+      valueFrom:
+        secretKeyRef:
+          name: n8n-encryption-key
+          key: encryption-key
+    DB_POSTGRESDB_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: db-app
+          key: password
+  extraVolumeMounts: &extraVolumeMounts
+    - name: db-ca-cert
+      mountPath: /home/ssl/certs/postgresql
+      readOnly: true
+  extraVolumes: &extraVolumes
+    - name: db-ca-cert
+      secret:
+        secretName: db-ca
+        items:
+          - key: ca.crt
+            path: ca.crt
+  resources:
+    limits:
+      memory: 2048Mi
+    requests:
+      memory: 512Mi
+
+worker:
+  enabled: true
+  extraEnv: *extraEnv
+  extraVolumeMounts: *extraVolumeMounts
+  extraVolumes: *extraVolumes
+
+webhook:
+  enabled: true
+  extraEnv: *extraEnv
+  extraVolumeMounts: *extraVolumeMounts
+  extraVolumes: *extraVolumes
+
+valkey:
+  enabled: true
+  architecture: standalone
+  sentinel:
+    enabled: false
+  auth:
+    enabled: false
+  primary:
+    kind: Deployment
+    persistence:
+      enabled: false
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+
+extraManifests:
+  - apiVersion: postgresql.cnpg.io/v1
+    kind: Cluster
+    metadata:
+      name: db
+    spec:
+      instances: 1
+      bootstrap:
+        initdb:
+          database: n8n
+          owner: n8n
+      postgresql:
+        parameters:
+          shared_buffers: "64MB"
+      resources:
+        requests:
+          memory: "512Mi"
+        limits:
+          memory: "512Mi"
+      storage:
+        size: 5Gi
