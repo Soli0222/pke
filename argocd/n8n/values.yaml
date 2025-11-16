@@ -87,6 +87,10 @@ valkey:
   architecture: standalone
   sentinel:
     enabled: false
+  image:
+    registry: docker.io
+    repository: valkey/valkey
+    digest: 9.0.0-alpine
   auth:
     enabled: false
   primary:
