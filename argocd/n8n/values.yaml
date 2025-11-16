@@ -84,9 +84,14 @@ webhook:
 
 valkey:
   enabled: true
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    registry: docker.io
+    repository: valkey/valkey
+    tag: 9.0.0-alpine3.22
   architecture: standalone
-  sentinel:
-    enabled: false
   auth:
     enabled: false
   primary:
@@ -97,6 +102,8 @@ valkey:
       requests:
         memory: 256Mi
         cpu: 100m
+  sentinel:
+    enabled: false
 
 extraManifests:
   - apiVersion: postgresql.cnpg.io/v1
