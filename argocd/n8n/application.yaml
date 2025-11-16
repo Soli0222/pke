@@ -15,6 +15,13 @@ spec:
         releaseName: n8n
         valueFiles:
           - $values/argocd/n8n/values.yaml
+    - chart: valkey
+      repoURL: https://valkey.io/valkey-helm
+      targetRevision: 0.7.7
+      helm:
+        releaseName: n8n-valkey
+        valueFiles:
+          - $values/argocd/n8n/valkey-values.yaml
     - repoURL: https://github.com/Soli0222/pke.git
       targetRevision: HEAD
       ref: values

@@ -14,7 +14,7 @@ import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence
+from typing import Dict, Iterable, List, Optional, Sequence, Set
 
 import yaml
 
@@ -24,6 +24,175 @@ TARGET_PREFIX = "$values/"
 MAX_COMMENT_LENGTH = 64000  # Safety margin under GitHub's 65,536 character limit
 PREVIEW_CHAR_LIMIT = 4000
 DEFAULT_HELM_API_VERSIONS = ["monitoring.coreos.com/v1"]
+VALUE_REF_PATTERN = re.compile(r"^\$(?P<ref>[^/]+)/(?P<path>.+)$")
+
+
+@dataclass
+class MaterializedRepo:
+    kind: str  # "local" or "remote"
+    commit: Optional[str]
+    root: Optional[Path]
+    repo_url: Optional[str]
+    target_revision: Optional[str]
+    cleanup_path: Optional[Path] = None
+
+    def is_local(self) -> bool:
+        return self.kind == "local"
+
+
+LOCAL_REPO_URLS: Optional[Set[str]] = None
+
+
+def _normalise_repo_url(url: Optional[str]) -> Optional[str]:
+    if not url:
+        return None
+    value = url.strip()
+    if value.startswith("git@") and ":" in value:
+        host, path = value.split(":", 1)
+        value = host.split("@", 1)[1] + "/" + path
+    else:
+        value = re.sub(r"^[a-zA-Z0-9+.-]+://", "", value)
+    if value.endswith(".git"):
+        value = value[:-4]
+    return value.rstrip("/")
+
+
+def _get_local_repo_urls() -> Set[str]:
+    global LOCAL_REPO_URLS
+    if LOCAL_REPO_URLS is not None:
+        return LOCAL_REPO_URLS
+    urls: Set[str] = set()
+    result = run(["git", "remote", "-v"], check=False)
+    if result.returncode == 0:
+        for line in result.stdout.splitlines():
+            parts = line.split()
+            if len(parts) >= 2:
+                normalised = _normalise_repo_url(parts[1])
+                if normalised:
+                    urls.add(normalised)
+    LOCAL_REPO_URLS = urls
+    return LOCAL_REPO_URLS
+
+
+def is_local_repo(repo_url: Optional[str]) -> bool:
+    if not repo_url:
+        return True
+    normalised = _normalise_repo_url(repo_url)
+    return normalised in _get_local_repo_urls()
+
+
+def git_list_files(commit: str, rel_path: str) -> List[str]:
+    path_arg = rel_path.rstrip("/") if rel_path else ""
+    args = ["git", "ls-tree", "-r", "--name-only", commit]
+    if path_arg:
+        args.extend(["--", path_arg])
+    result = run(args, check=False)
+    if result.returncode not in (0, 129):  # 129 when path missing
+        raise HelmDiffError(result.stderr or result.stdout or "git ls-tree failed")
+    files = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    return sorted(files)
+
+
+def clone_repo(repo_url: str, revision: Optional[str]) -> tuple[Path, Path]:
+    if not repo_url:
+        raise HelmDiffError("repoURL is required when cloning a repository")
+    checkout_root = Path(tempfile.mkdtemp(prefix="helm-repo-"))
+    repo_dir = checkout_root / "repo"
+    run(["git", "clone", "--depth", "1", repo_url, str(repo_dir)])
+    if revision and revision not in {"", "HEAD"}:
+        fetch_cmd = ["git", "-C", str(repo_dir), "fetch", "--depth", "1", "origin", revision]
+        fetch_result = run(fetch_cmd, check=False)
+        if fetch_result.returncode != 0:
+            run(["git", "-C", str(repo_dir), "fetch", "origin", revision])
+        run(["git", "-C", str(repo_dir), "checkout", revision])
+    return repo_dir, checkout_root
+
+
+def export_local_repo_subpath(commit: str, subpath: str) -> tuple[Path, Path]:
+    clean_subpath = (subpath or "").strip().lstrip("/")
+    if not clean_subpath:
+        raise HelmDiffError("path is required when exporting from the local repository")
+    files = git_list_files(commit, clean_subpath)
+    if not files:
+        raise HelmDiffError(f"Path '{clean_subpath}' not found in local repository")
+    checkout_root = Path(tempfile.mkdtemp(prefix="helm-local-"))
+    chart_dir = checkout_root / "chart"
+    for file_path in files:
+        rel = file_path
+        prefix = clean_subpath.rstrip("/") + "/"
+        if file_path == clean_subpath:
+            rel = Path(file_path).name
+        elif file_path.startswith(prefix):
+            rel = file_path[len(prefix) :]
+        target = chart_dir / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        content = git_read(commit, Path(file_path))
+        if content is None:
+            continue
+        target.write_text(content)
+    return chart_dir, checkout_root
+
+
+def materialize_repo_for_source(
+    source: dict,
+    commit: str,
+    cleanup_paths: List[Path],
+) -> MaterializedRepo:
+    repo_url = source.get("repoURL")
+    target_revision = source.get("targetRevision")
+    if is_local_repo(repo_url):
+        return MaterializedRepo(
+            kind="local",
+            commit=commit,
+            root=None,
+            repo_url=repo_url,
+            target_revision=target_revision,
+        )
+    repo_dir, checkout_root = clone_repo(repo_url or "", target_revision)
+    cleanup_paths.append(checkout_root)
+    return MaterializedRepo(
+        kind="remote",
+        commit=None,
+        root=repo_dir,
+        repo_url=repo_url,
+        target_revision=target_revision,
+        cleanup_path=checkout_root,
+    )
+
+
+def read_materialized_file(materialized: MaterializedRepo, rel_path: str) -> Optional[str]:
+    relative = rel_path.lstrip("/")
+    if not relative:
+        return None
+    if materialized.is_local():
+        return git_read(materialized.commit or "HEAD", Path(relative))
+    if not materialized.root:
+        return None
+    target = (materialized.root / relative).resolve()
+    try:
+        target.relative_to(materialized.root)
+    except ValueError:
+        raise HelmDiffError(f"Value file path '{rel_path}' escapes repository root")
+    if not target.is_file():
+        return None
+    return target.read_text()
+
+
+def ensure_alias_repo(
+    alias: str,
+    sources: List[dict],
+    commit: str,
+    cleanup_paths: List[Path],
+    alias_cache: Dict[str, MaterializedRepo],
+) -> MaterializedRepo:
+    if alias in alias_cache:
+        return alias_cache[alias]
+    for source in sources:
+        if isinstance(source, dict) and source.get("ref") == alias:
+            repo = materialize_repo_for_source(source, commit, cleanup_paths)
+            alias_cache[alias] = repo
+            return repo
+    raise HelmDiffError(f"Value file alias '{alias}' is not defined in sources")
 
 
 @dataclass
@@ -112,34 +281,31 @@ def parse_application(raw: str) -> dict:
     return data
 
 
-def find_chart_source(spec: dict) -> Optional[dict]:
-    sources = spec.get("sources") or []
-    if isinstance(sources, dict):  # defensive for legacy single source layout
-        sources = [sources]
-    helm_candidates: List[dict] = []
-    for source in sources:
-        if not isinstance(source, dict):
-            continue
-        if source.get("chart"):
-            return source
-        if source.get("helm"):
-            helm_candidates.append(source)
-    if helm_candidates:
-        return helm_candidates[0]
-    legacy = spec.get("source")
-    if isinstance(legacy, dict) and (legacy.get("chart") or legacy.get("helm")):
-        return legacy
-    return None
-
-
-def materialise_values(commit: str, references: List[str]) -> tuple[List[Path], Optional[Path]]:
+def materialise_values(
+    commit: str,
+    references: List[str],
+    *,
+    alias_cache: Dict[str, MaterializedRepo],
+    sources: List[dict],
+    cleanup_paths: List[Path],
+) -> tuple[List[Path], Optional[Path]]:
     if not references:
         return [], None
     base_path = Path(tempfile.mkdtemp(prefix="helm-values-"))
     files: List[Path] = []
     for idx, ref in enumerate(references):
-        rel_path = ref.replace(TARGET_PREFIX, "") if ref.startswith(TARGET_PREFIX) else ref
-        content = git_read(commit, Path(rel_path))
+        if not isinstance(ref, str):
+            continue
+        content: Optional[str]
+        match = VALUE_REF_PATTERN.match(ref)
+        if match:
+            alias = match.group("ref")
+            rel_path = match.group("path")
+            materialized = ensure_alias_repo(alias, sources, commit, cleanup_paths, alias_cache)
+            content = read_materialized_file(materialized, rel_path)
+        else:
+            rel_path = ref.replace(TARGET_PREFIX, "") if ref.startswith(TARGET_PREFIX) else ref
+            content = git_read(commit, Path(rel_path))
         if content is None:
             continue
         target = base_path / f"values-{idx}.yaml"
@@ -148,23 +314,22 @@ def materialise_values(commit: str, references: List[str]) -> tuple[List[Path], 
     return files, base_path
 
 
-def materialise_chart_from_repo(repo_url: str, chart_subpath: str, revision: Optional[str]) -> tuple[Path, Path]:
-    if not repo_url:
-        raise HelmDiffError("repoURL is required when using path-based Helm sources")
+def materialise_chart_from_repo(
+    repo_url: str,
+    chart_subpath: str,
+    revision: Optional[str],
+    *,
+    local_commit: Optional[str] = None,
+) -> tuple[Path, Path]:
     chart_subpath = (chart_subpath or "").strip()
     if not chart_subpath:
         raise HelmDiffError("path is required when using repoURL-based Helm sources")
+    if is_local_repo(repo_url):
+        if not local_commit:
+            raise HelmDiffError("Local chart sources require a commit reference")
+        return export_local_repo_subpath(local_commit, chart_subpath)
 
-    checkout_root = Path(tempfile.mkdtemp(prefix="helm-chart-"))
-    repo_dir = checkout_root / "repo"
-    run(["git", "clone", "--depth", "1", repo_url, str(repo_dir)])
-    if revision:
-        fetch_cmd = ["git", "-C", str(repo_dir), "fetch", "--depth", "1", "origin", revision]
-        fetch_result = run(fetch_cmd, check=False)
-        if fetch_result.returncode != 0:
-            run(["git", "-C", str(repo_dir), "fetch", "origin", revision])
-        run(["git", "-C", str(repo_dir), "checkout", revision])
-
+    repo_dir, checkout_root = clone_repo(repo_url, revision)
     repo_root = repo_dir.resolve()
     chart_rel = Path(chart_subpath.lstrip("/"))
     chart_dir = (repo_root / chart_rel).resolve()
@@ -244,9 +409,19 @@ def build_truncated_body(
     return "\n".join(message_lines).strip()
 
 
+def _format_chart_label(chart: Optional[str], version: Optional[str]) -> str:
+    if chart and version:
+        return f"{chart}@{version}"
+    if chart:
+        return chart
+    if version:
+        return f"n/a@{version}"
+    return "n/a"
+
+
 def format_chart_suffix(base_state: RenderedState, head_state: RenderedState) -> str:
-    base_label = f"{base_state.chart or 'n/a'}@{base_state.version or 'n/a'}"
-    head_label = f"{head_state.chart or 'n/a'}@{head_state.version or 'n/a'}"
+    base_label = _format_chart_label(base_state.chart, base_state.version)
+    head_label = _format_chart_label(head_state.chart, head_state.version)
     if base_state.chart is None and head_state.chart is None:
         return ""
     if base_state.chart is None:
@@ -275,38 +450,156 @@ def split_manifest(manifest: Optional[str]) -> tuple[dict[str, List[str]], List[
     return dict(docs), order
 
 
-def render_state(commit: str, app: str) -> RenderedState:
-    app_path = APPS_ROOT / app / "application.yaml"
-    raw_app = git_read(commit, app_path)
-    if raw_app is None:
-        return RenderedState(None, None, None, None)
-    data = parse_application(raw_app)
-    metadata = data.get("metadata", {})
-    spec = data.get("spec", {})
-    chart_source = find_chart_source(spec)
-    if not chart_source:
-        return RenderedState(None, None, None, "No Helm chart source found")
-    release_name = metadata.get("name", app)
-    namespace = (spec.get("destination") or {}).get("namespace", "default")
-    chart = chart_source.get("chart")
-    chart_path = chart_source.get("path")
-    repo = chart_source.get("repoURL")
-    version = chart_source.get("targetRevision")
-    helm_cfg = chart_source.get("helm", {})
+def classify_source_kind(source: dict) -> str:
+    if not isinstance(source, dict):
+        return "unknown"
+    if source.get("helm") or source.get("chart"):
+        return "helm"
+    if source.get("path"):
+        return "directory"
+    if source.get("ref"):
+        return "value-only"
+    return "unknown"
+
+
+def _relative_path_within_base(path: str, base: str) -> str:
+    clean_base = base.strip().strip("/")
+    candidate = path.strip().lstrip("/")
+    if not clean_base:
+        return candidate
+    if path == clean_base:
+        return Path(path).name
+    prefix = clean_base + "/"
+    if candidate.startswith(prefix):
+        return candidate[len(prefix) :]
+    if path.startswith(prefix):
+        return path[len(prefix) :]
+    return candidate
+
+
+def _format_directory_doc(base_path: str, repo_relative: str, content: Optional[str]) -> Optional[str]:
+    if not content:
+        return None
+    body = content.strip()
+    if not body:
+        return None
+    clean_base = base_path.strip().strip("/")
+    rel = _relative_path_within_base(repo_relative, clean_base)
+    if clean_base and rel:
+        source_label = f"{clean_base}/{rel}".strip("/")
+    else:
+        source_label = clean_base or rel or repo_relative
+    source_label = source_label or "manifest"
+    return f"# Source: {source_label}\n{body}"
+
+
+def render_directory_source(
+    commit: str,
+    source: dict,
+    *,
+    alias_cache: Dict[str, MaterializedRepo],
+    cleanup_paths: List[Path],
+    label: str,
+) -> tuple[Optional[str], Optional[str]]:
+    directory_path = (source.get("path") or "").strip()
+    if not directory_path:
+        raise HelmDiffError("Directory source is missing a path")
+    materialized = materialize_repo_for_source(source, commit, cleanup_paths)
+    ref_name = source.get("ref")
+    if ref_name and ref_name not in alias_cache:
+        alias_cache[ref_name] = materialized
+
+    docs: List[str] = []
+    suffixes = {".yaml", ".yml", ".json"}
+    if materialized.is_local():
+        repo_commit = materialized.commit or commit
+        file_paths = git_list_files(repo_commit, directory_path)
+        if not file_paths:
+            raise HelmDiffError(f"Directory path '{directory_path}' not found in local repository")
+        for repo_rel in file_paths:
+            if Path(repo_rel).suffix.lower() not in suffixes:
+                continue
+            content = git_read(repo_commit, Path(repo_rel))
+            doc = _format_directory_doc(directory_path, repo_rel, content)
+            if doc:
+                docs.append(doc)
+    else:
+        if not materialized.root:
+            raise HelmDiffError("Remote directory source did not provide a checkout root")
+        base_dir = (materialized.root / directory_path.lstrip("/")).resolve()
+        try:
+            base_dir.relative_to(materialized.root)
+        except ValueError:
+            raise HelmDiffError(f"Directory path '{directory_path}' escapes repository root")
+        if not base_dir.exists():
+            raise HelmDiffError(f"Directory path '{directory_path}' not found in repository {source.get('repoURL')}")
+        if base_dir.is_file():
+            candidates = [base_dir]
+        else:
+            candidates = sorted(p for p in base_dir.rglob("*") if p.is_file())
+        for file_path in candidates:
+            if file_path.suffix.lower() not in suffixes:
+                continue
+            rel = str(file_path.relative_to(materialized.root))
+            content = file_path.read_text()
+            doc = _format_directory_doc(directory_path, rel, content)
+            if doc:
+                docs.append(doc)
+
+    if not docs:
+        return None, label
+    manifest = "\n---\n".join(doc.strip() for doc in docs if doc.strip())
+    return (manifest or None), label
+
+
+def render_helm_source(
+    commit: str,
+    app: str,
+    metadata: dict,
+    namespace: str,
+    source: dict,
+    *,
+    sources: List[dict],
+    alias_cache: Dict[str, MaterializedRepo],
+    cleanup_paths: List[Path],
+    label: str,
+) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    helm_cfg = source.get("helm") or {}
+    release_name = helm_cfg.get("releaseName") or metadata.get("name", app)
+    chart = source.get("chart")
+    chart_path = source.get("path")
+    repo = source.get("repoURL")
+    version = source.get("targetRevision")
+    skip_crds = helm_cfg.get("skipCrds", False)
     value_refs = helm_cfg.get("valueFiles") or []
     if isinstance(value_refs, str):
         value_refs = [value_refs]
-    skip_crds = helm_cfg.get("skipCrds", False)
-    value_files, temp_dir = materialise_values(commit, list(value_refs))
+
+    ref_name = source.get("ref")
+    if ref_name and ref_name not in alias_cache:
+        alias_cache[ref_name] = materialize_repo_for_source(source, commit, cleanup_paths)
+
+    value_files, temp_dir = materialise_values(
+        commit,
+        list(value_refs),
+        alias_cache=alias_cache,
+        sources=sources,
+        cleanup_paths=cleanup_paths,
+    )
     chart_temp_dir: Optional[Path] = None
-    chart_label = chart or chart_path
+    descriptor = chart or chart_path or label
     try:
         chart_arg = chart
         repo_arg = repo
         allow_version_flag = True
         if not chart_arg:
             if chart_path:
-                chart_dir, chart_temp_dir = materialise_chart_from_repo(repo or "", chart_path, version)
+                chart_dir, chart_temp_dir = materialise_chart_from_repo(
+                    repo or "",
+                    chart_path,
+                    version,
+                    local_commit=commit if is_local_repo(repo) else None,
+                )
                 ensure_chart_dependencies(chart_dir)
                 chart_arg = str(chart_dir)
                 repo_arg = None
@@ -333,14 +626,113 @@ def render_state(commit: str, app: str) -> RenderedState:
             if vf.is_file():
                 args.extend(["-f", str(vf)])
         result = run(args)
-    except HelmDiffError as exc:
-        return RenderedState(None, chart_label, version, str(exc))
+    except HelmDiffError:
+        raise
     finally:
         if temp_dir:
             shutil.rmtree(temp_dir, ignore_errors=True)
         if chart_temp_dir:
             shutil.rmtree(chart_temp_dir, ignore_errors=True)
-    return RenderedState(result.stdout, chart_label, version, None)
+    return result.stdout, descriptor, version
+
+
+def render_state(commit: str, app: str) -> RenderedState:
+    app_path = APPS_ROOT / app / "application.yaml"
+    raw_app = git_read(commit, app_path)
+    if raw_app is None:
+        return RenderedState(None, None, None, None)
+    data = parse_application(raw_app)
+    metadata = data.get("metadata", {})
+    spec = data.get("spec", {})
+    namespace = (spec.get("destination") or {}).get("namespace", "default")
+
+    sources = spec.get("sources")
+    if isinstance(sources, dict):
+        sources = [sources]
+    if not sources:
+        legacy = spec.get("source")
+        sources = [legacy] if isinstance(legacy, dict) else []
+    if not sources:
+        return RenderedState(None, None, None, "No sources defined in application.yaml")
+
+    cleanup_paths: List[Path] = []
+    alias_cache: Dict[str, MaterializedRepo] = {}
+    manifests: List[str] = []
+    chart_entries: List[tuple[Optional[str], Optional[str]]] = []
+
+    try:
+        for idx, source in enumerate(sources):
+            if not isinstance(source, dict):
+                continue
+            kind = classify_source_kind(source)
+            label = source.get("ref") or source.get("name") or source.get("chart") or source.get("path") or f"source-{idx + 1}"
+            if kind == "value-only":
+                ref_name = source.get("ref")
+                if ref_name and ref_name not in alias_cache:
+                    alias_cache[ref_name] = materialize_repo_for_source(source, commit, cleanup_paths)
+                continue
+            if kind == "helm":
+                manifest, descriptor, version = render_helm_source(
+                    commit,
+                    app,
+                    metadata,
+                    namespace,
+                    source,
+                    sources=sources,
+                    alias_cache=alias_cache,
+                    cleanup_paths=cleanup_paths,
+                    label=label,
+                )
+                if manifest:
+                    manifests.append(manifest.strip())
+                chart_entries.append((descriptor, version))
+                continue
+            if kind == "directory":
+                manifest, descriptor = render_directory_source(
+                    commit,
+                    source,
+                    alias_cache=alias_cache,
+                    cleanup_paths=cleanup_paths,
+                    label=label,
+                )
+                if manifest:
+                    manifests.append(manifest.strip())
+                chart_entries.append((descriptor, None))
+                continue
+    except HelmDiffError as exc:
+        chart_label = []
+        for name, version in chart_entries:
+            if name and version:
+                chart_label.append(f"{name}@{version}")
+            elif name:
+                chart_label.append(name)
+            elif version:
+                chart_label.append(f"version {version}")
+        label_text = " + ".join(chart_label) if chart_label else "multi-source"
+        return RenderedState(None, label_text or None, None, str(exc))
+    finally:
+        for path in cleanup_paths:
+            shutil.rmtree(path, ignore_errors=True)
+
+    combined_manifest = "\n---\n".join(doc for doc in manifests if doc)
+    if not chart_entries:
+        chart_label = None
+        version_label = None
+    elif len(chart_entries) == 1:
+        chart_label = chart_entries[0][0]
+        version_label = chart_entries[0][1]
+    else:
+        parts = []
+        for name, version in chart_entries:
+            if name and version:
+                parts.append(f"{name}@{version}")
+            elif name:
+                parts.append(name)
+            elif version:
+                parts.append(f"version {version}")
+        chart_label = " + ".join(parts) if parts else "multi-source"
+        version_label = None
+    return RenderedState(combined_manifest or None, chart_label, version_label, None)
 
 
 def build_entries(app: str, base_state: RenderedState, head_state: RenderedState) -> List[CommentEntry]:
