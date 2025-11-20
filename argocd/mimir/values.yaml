@@ -62,9 +62,6 @@ metaMonitoring:
   serviceMonitor:
     enabled: true
 
-  dashboards:
-    enabled: true
-
   prometheusRule:
     enabled: true
     mimirAlerts: true
