@@ -302,12 +302,6 @@ alloy:
         forward_to = [prometheus.remote_write.default.receiver]
       }
 
-      prometheus.scrape "scrape_blackbox" {
-        targets    = prometheus.exporter.blackbox.blackbox_exporter.targets
-        forward_to = [prometheus.remote_write.default.receiver]
-        scrape_interval = "30s"
-      }
-
 controller:
   type: 'deployment'
 
