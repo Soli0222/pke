@@ -292,6 +292,11 @@ alloy:
         }
       }
 
+      // Process Probes from Prometheus Operator
+      prometheus.operator.probes "probes" {
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
 controller:
   type: 'deployment'
 
