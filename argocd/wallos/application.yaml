@@ -10,7 +10,7 @@ spec:
   sources:
     - chart: wallos
       repoURL: https://soli0222.github.io/helm-charts
-      targetRevision: 0.1.2
+      targetRevision: 0.1.3
       helm:
         valueFiles:
           - $values/argocd/wallos/values.yaml
