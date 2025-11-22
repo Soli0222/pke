@@ -291,11 +291,6 @@ alloy:
           enabled = false  // Don't cluster self-monitoring
         }
       }
-
-      // Blackbox Exporter configuration
-      prometheus.exporter.blackbox "blackbox_exporter" {
-        config = "{ modules: { http_2xx: { prober: http, timeout: 5s } } }"  // config is required
-      }
   
       // Process Probes from Prometheus Operator
       prometheus.operator.probes "probes" {
