@@ -2,16 +2,16 @@ applications:
   - name: misskey-polestar
     targets:
       - https://mi.soli0222.com
-      - https://summaly.soli0222.com
+      - https://summaly.soli0222.com/health
   - name: spotify-nowplaying
     targets:
-      - https://spn.soli0222.com
+      - https://spn.soli0222.com/status
   - name: navidrome
     targets:
       - https://navidrome.pstr.space
-  - name: note-tweet-connector
-    targets:
-      - https://ntc.pstr.space
+  # - name: note-tweet-connector
+  #   targets:
+  #     - https://ntc.pstr.space
   - name: external-services
     targets:
       - https://misskey.io
