@@ -2,15 +2,21 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: prometheus-blackbox-exporter
-  namespace: prometheus-blackbox-exporter
+  namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "4"
 spec:
   project: default
-  source:
-    chart: prometheus-blackbox-exporter
-    repoURL: https://prometheus-community.github.io/helm-charts
-    targetRevision: 11.4.2
+  sources:
+    - chart: prometheus-blackbox-exporter
+      repoURL: https://prometheus-community.github.io/helm-charts
+      targetRevision: 11.4.2
+      helm:
+        valueFiles:
+          - $values/argocd/prometheus-blackbox-exporter/values.yaml
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: prometheus-blackbox-exporter
