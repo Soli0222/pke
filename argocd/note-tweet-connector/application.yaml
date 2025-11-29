@@ -10,7 +10,7 @@ spec:
   sources:
     - chart: note-tweet-connector
       repoURL: https://soli0222.github.io/helm-charts
-      targetRevision: 1.0.1
+      targetRevision: 1.0.2
       helm:
         valueFiles:
           - $values/argocd/note-tweet-connector/values.yaml
