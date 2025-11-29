@@ -14,6 +14,9 @@ ingress:
         - ntc.pstr.space
       secretName: ntc.pstr.space-dns01
 
-onePassword:
-  enabled: true
-  itemPath: "vaults/Kubernetes/items/note-tweet-connector-secret"
+monitoring:
+  serviceMonitor:
+    enabled: true
+
+  prometheusRule:
+    enabled: true
