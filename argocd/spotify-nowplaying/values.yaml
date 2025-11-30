@@ -3,7 +3,7 @@ ingress:
   className: traefik-external
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
-    external-dns.alpha.kubernetes.io/target: 157.7.66.200
+    external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
   hosts:
     - host: spn.soli0222.com
       paths:
@@ -14,16 +14,17 @@ ingress:
         - spn.soli0222.com
       secretName: spn.soli0222.com-dns01
 
-onePassword:
-  enabled: true
-  itemPath: "vaults/Kubernetes/items/spotify-nowplaying-secret"
-
 env:
-  - name: PORT
-    value: "8080"
   - name: SERVER_URI
     value: "mi.soli0222.com"
   - name: SPOTIFY_REDIRECT_URI_NOTE
     value: "https://spn.soli0222.com/note/callback"
   - name: SPOTIFY_REDIRECT_URI_TWEET
     value: "https://spn.soli0222.com/tweet/callback"
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+
+  prometheusRule:
+    enabled: true

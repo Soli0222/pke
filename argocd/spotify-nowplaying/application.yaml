@@ -10,13 +10,16 @@ spec:
   sources:
     - chart: spotify-nowplaying
       repoURL: https://soli0222.github.io/helm-charts
-      targetRevision: 1.0.1
+      targetRevision: 2.0.0
       helm:
         valueFiles:
           - $values/argocd/spotify-nowplaying/values.yaml
     - repoURL: https://github.com/Soli0222/pke.git
       targetRevision: HEAD
       ref: values
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      path: argocd/spotify-nowplaying/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: spotify-nowplaying
