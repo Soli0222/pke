@@ -1,0 +1,42 @@
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+persistence:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  hosts:
+    - host: registry.str08.net
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: registry.str08.net-dns01
+      hosts:
+        - registry.str08.net
+
+config:
+  storage:
+    s3:
+      region: APAC
+      bucket: registry-str08-net
+      regionendpoint: https://e334a8146ecc36d6c72387c7e99630ee.r2.cloudflarestorage.com
+    cache:
+      blobdescriptor: redis
+  redis:
+      - registry-valkey:6379
+
+secrets:
+  existingSecret: "registry-s3-credentials"
+
+serviceMonitor:
+  enabled: true

@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: registry
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  sources:
+    - chart: distribution
+      repoURL: https://soli0222.github.io/helm-charts
+      targetRevision: 0.1.0
+      helm:
+        valueFiles:
+          - $values/argocd/registry/values.yaml
+    - chart: valkey
+      repoURL: https://valkey.io/valkey-helm
+      targetRevision: 0.8.1
+      helm:
+        releaseName: registry-valkey
+        valueFiles:
+          - $values/argocd/registry/valkey-values.yaml
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      path: argocd/registry/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: registry
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
