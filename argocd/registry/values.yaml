@@ -33,6 +33,7 @@ config:
     cache:
       blobdescriptor: redis
   redis:
+    addrs:
       - registry-valkey:6379
 
 secrets:
