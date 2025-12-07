@@ -1,9 +1,10 @@
+tty: true
+
 metrics:
   enabled: true
 
 driver:
   kind: modern_ebpf
-
   kubernetes:
     enabled: true
 
