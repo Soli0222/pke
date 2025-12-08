@@ -5,6 +5,16 @@ prometheus.scrape "nodeexporter" {
   forward_to = [prometheus.remote_write.mimir.receiver]
 }
 
+prometheus.exporter.cadvisor "cadvisor" {
+  enabled_metrics         = ["cpu", "memory"]
+  store_container_labels  = true
+}
+
+prometheus.scrape "cadvisor" {
+  targets    = prometheus.exporter.cadvisor.cadvisor.targets
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
 prometheus.remote_write "mimir" {
   endpoint {
     url = "{{ mimir_endpoint }}"
