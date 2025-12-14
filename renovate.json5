@@ -65,6 +65,7 @@
         'manager:github-actions',
       ],
       separateMinorPatch: true,
+      automerge: true,
     },
     {
       matchManagers: [
