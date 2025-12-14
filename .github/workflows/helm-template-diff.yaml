@@ -20,12 +20,12 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v4.3.1
         with:
           version: v3.14.4
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.1.0
         with:
           python-version: '3.x'
 
@@ -43,14 +43,14 @@ jobs:
 
       - name: Upload diff artifact
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: helm-diff-comments
           path: helm-diff-comments
 
       - name: Sync PR comments
         if: always()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v8.0.0
         env:
           COMMENT_MANIFEST: ${{ steps.render.outputs.comment_manifest }}
         with:
