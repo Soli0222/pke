@@ -16,7 +16,7 @@ spec:
           - $values/argocd/registry/values.yaml
     - chart: valkey
       repoURL: https://valkey.io/valkey-helm
-      targetRevision: 0.8.1
+      targetRevision: 0.9.1
       helm:
         releaseName: registry-valkey
         valueFiles:
