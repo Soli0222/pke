@@ -48,6 +48,10 @@ services:
       interval: 5s
       retries: 20
 
+volumes:
+  valkey:
+  pgdata:
+
 networks:
   internal_network:
     internal: true
