@@ -73,8 +73,8 @@ dbSlaves:
 #───┘ Redis configuration └─────────────────────────────────────
 
 redis:
-  host: {{ misskey.valkey.host | default('valkey') }}
-  port: {{ misskey.valkey.port | default(6379) }}
+  host: {{ misskey.redis.host | default('redis') }}
+  port: {{ misskey.redis.port | default(6379) }}
   #family: 0  # 0=Both, 4=IPv4, 6=IPv6
   #pass: example-pass
   #prefix: example-prefix

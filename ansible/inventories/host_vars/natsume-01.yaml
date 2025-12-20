@@ -14,9 +14,9 @@ misskey:
     image: ghcr.io/soli0222/misskey:2025.12.1-psr.9.9
     url: https://mi.soli0222.com
 
-  valkey:
-    image: valkey/valkey:9.0.0-alpine3.22
-    host: valkey
+  redis:
+    image: redis:7-alpine
+    host: redis
     port: 6379
 
   db:

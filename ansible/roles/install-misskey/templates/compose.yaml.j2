@@ -4,11 +4,11 @@ services:
     restart: always
     links:
       - db
-      - valkey
+      - redis
     depends_on:
       db:
         condition: service_healthy
-      valkey:
+      redis:
         condition: service_healthy
     ports:
       - "3000:3000"
@@ -20,15 +20,15 @@ services:
     volumes:
       - /etc/misskey:/misskey/.config:ro
 
-  valkey:
+  redis:
     restart: always
-    image: {{ misskey.valkey.image }}
+    image: {{ misskey.redis.image }}
     networks:
       - internal_network
     volumes:
-      - valkey:/data
+      - redis:/data
     healthcheck:
-      test: "valkey-cli ping"
+      test: "redis-cli ping"
       interval: 5s
       retries: 20
 
@@ -42,14 +42,14 @@ services:
       - /etc/misskey/docker.env
     volumes:
       - /etc/misskey/postgresql.conf:/etc/postgresql/postgresql.conf:ro
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"
       interval: 5s
       retries: 20
 
 volumes:
-  valkey:
+  redis:
   pgdata:
 
 networks:
