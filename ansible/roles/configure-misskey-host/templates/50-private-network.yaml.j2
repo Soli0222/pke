@@ -1,0 +1,6 @@
+network:
+  version: 2
+  ethernets:
+    {{ network.private.interface }}:
+      addresses:
+        - {{ network.private.address }}/{{ network.private.subnet }}

@@ -1,0 +1,8 @@
+- name: Install Misskey
+  become: true
+  hosts: misskey
+  roles:
+    - configure-misskey-host
+    - install-certbot
+    - install-nginx
+    - install-misskey

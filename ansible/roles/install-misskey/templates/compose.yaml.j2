@@ -1,0 +1,54 @@
+services:
+  web:
+    image: {{ misskey.web.image }}
+    restart: always
+    links:
+      - db
+      - valkey
+    depends_on:
+      db:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    networks:
+      - internal_network
+      - external_network
+    env_file:
+      - /etc/misskey/docker.env
+    volumes:
+      - /etc/misskey:/misskey/.config:ro
+
+  valkey:
+    restart: always
+    image: {{ misskey.valkey.image }}
+    networks:
+      - internal_network
+    volumes:
+      - valkey:/data
+    healthcheck:
+      test: "valkey-cli ping"
+      interval: 5s
+      retries: 20
+
+  db:
+    restart: always
+    image: {{ misskey.db.image }}
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - internal_network
+    env_file:
+      - /etc/misskey/docker.env
+    volumes:
+      - /etc/misskey/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"
+      interval: 5s
+      retries: 20
+
+networks:
+  internal_network:
+    internal: true
+  external_network:

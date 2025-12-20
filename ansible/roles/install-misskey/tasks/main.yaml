@@ -1,0 +1,51 @@
+- name: Retrieve DB Password from 1Password
+  ansible.builtin.set_fact:
+    misskey_db_pass: "{{ lookup('community.general.onepassword', 'Polestar DB', field='password', vault='Personal') }}"
+
+- name: Create /etc/misskey directory
+  ansible.builtin.file:
+    path: /etc/misskey
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create misskey configuration file
+  ansible.builtin.template:
+    src: default.yml.j2
+    dest: /etc/misskey/default.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create misskey docker.env file
+  ansible.builtin.template:
+    src: docker.env.j2
+    dest: /etc/misskey/docker.env
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Create PostgreSQL configuration file
+  ansible.builtin.template:
+    src: postgresql.conf.j2
+    dest: /etc/misskey/postgresql.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create Docker Compose file for Misskey
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: /etc/misskey/docker-compose.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Start Misskey services with Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: /etc/misskey
+    files:
+      - docker-compose.yaml
+    state: present
+    recreate: always
