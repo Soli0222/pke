@@ -41,4 +41,4 @@
     --dns-cloudflare --dns-cloudflare-credentials /etc/cloudflare/cloudflare.ini
     --dns-cloudflare-propagation-seconds 60
     --server https://acme-v02.api.letsencrypt.org/directory
-    -d {{ certbod.domain }} -d *.{{ certbot.domain }}
+    -d {{ certbot.domain }} -d *.{{ certbot.domain }}
