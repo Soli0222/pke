@@ -5,4 +5,5 @@
     - configure-misskey-host
     - install-certbot
     - install-nginx
+    - install-docker
     - install-misskey
