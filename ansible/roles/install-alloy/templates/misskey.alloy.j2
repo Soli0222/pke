@@ -1,25 +1,9 @@
-prometheus.exporter.postgres "misskey_db" {
-  data_source_names = ["postgresql://{{ misskey_db_user }}:{{ misskey_db_pass }}@localhost:5432/misskey?sslmode=disable"]
-}
-
 prometheus.scrape "misskey_db" {
-  targets    = prometheus.exporter.postgres.misskey_db.targets
+  targets    = [{"__address__" = "localhost:9187", "instance" = "{{ ansible_hostname }}"}]
   forward_to = [prometheus.remote_write.mimir.receiver]
-}
-
-prometheus.exporter.process "processexporter" {
-}
-
-prometheus.scrape "processexporter" {
-  targets    = prometheus.exporter.process.processexporter.targets
-  forward_to = [prometheus.remote_write.mimir.receiver]
-}
-
-prometheus.exporter.redis "redisexporter" {
-  redis_addr = "localhost:6379"
 }
 
 prometheus.scrape "redisexporter" {
-  targets    = prometheus.exporter.redis.redisexporter.targets
+  targets    = [{"__address__" = "localhost:9121", "instance" = "{{ ansible_hostname }}"}]
   forward_to = [prometheus.remote_write.mimir.receiver]
 }
