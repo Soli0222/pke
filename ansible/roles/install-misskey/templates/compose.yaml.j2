@@ -1,0 +1,86 @@
+services:
+  web:
+    image: {{ misskey.web.image }}
+    restart: always
+    links:
+      - db
+      - redis
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    networks:
+      - internal_network
+      - external_network
+    env_file:
+      - /etc/misskey/docker.env
+    volumes:
+      - /etc/misskey:/misskey/.config:ro
+
+  redis:
+    restart: always
+    image: {{ misskey.redis.image }}
+    networks:
+      - internal_network
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: "redis-cli ping"
+      interval: 5s
+      retries: 20
+
+  db:
+    restart: always
+    image: {{ misskey.db.image }}
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - internal_network
+    env_file:
+      - /etc/misskey/docker.env
+    volumes:
+      - /etc/misskey/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"
+      interval: 5s
+      retries: 20
+
+  redis_exporter:
+    restart: always
+    image: {{ redis_exporter.image }}
+    networks:
+      - internal_network
+      - external_network
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+
+  db_exporter:
+    restart: always
+    image: {{ db_exporter.image }}
+    networks:
+      - internal_network
+      - external_network
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "9187:9187"
+    env_file:
+      - /etc/misskey/db_exporter.env
+
+volumes:
+  redis:
+  pgdata:
+
+networks:
+  internal_network:
+    internal: true
+  external_network:

@@ -1,0 +1,25 @@
+- name: Install unzip
+  package:
+    name: unzip
+    state: present
+
+- name: Download rclone
+  get_url:
+    url: https://downloads.rclone.org/rclone-current-linux-amd64.zip
+    dest: /tmp/rclone-current-linux-amd64.zip
+
+- name: Extract rclone
+  unarchive:
+    src: /tmp/rclone-current-linux-amd64.zip
+    dest: /tmp
+    remote_src: yes
+
+- name: Copy rclone to /usr/bin/
+  shell: cp /tmp/rclone-*-linux-amd64/rclone /usr/bin/
+
+- name: Set ownership and permissions
+  file:
+    path: /usr/bin/rclone
+    owner: root
+    group: root
+    mode: '0755'

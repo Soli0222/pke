@@ -28,11 +28,39 @@ loki.source.journal "read"  {
   relabel_rules = loki.relabel.journal.rules
 }
 
+{% if docker is defined and docker.enabled | default(false) %}
+// Docker container log collection
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "docker_containers" {
+  targets = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container_name"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service_name"
+  }
+}
+
+loki.source.docker "containers" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.containers.targets
+  labels        = {"origin" = "docker"}
+  relabel_rules = discovery.relabel.docker_containers.rules
+  forward_to    = [loki.relabel.add_host_label.receiver]
+}
+{% endif %}
 
 local.file_match "local_files" {
   path_targets = [
     {"__path__" = "/var/log/*.log"},
-    {"__path__" = "/var/log/nginx/*.log"},
   ]
   sync_period = "5s"
 }
@@ -42,24 +70,6 @@ loki.relabel "add_origin_file_label" {
   rule {
     target_label = "origin"
     replacement  = "file"
-  }
-  rule {
-    source_labels = ["__path__"]
-    regex         = "/var/log/nginx/access\\.log"
-    target_label  = "log_type"
-    replacement   = "nginx_access"
-  }
-  rule {
-    source_labels = ["__path__"]
-    regex         = "/var/log/nginx/error\\.log"
-    target_label  = "log_type"
-    replacement   = "nginx_error"
-  }
-  rule {
-    source_labels = ["__path__"]
-    regex         = "/var/log/nginx/.*\\.log"
-    target_label  = "service"
-    replacement   = "nginx"
   }
 }
 

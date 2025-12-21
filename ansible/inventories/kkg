@@ -68,9 +68,11 @@ kkg-wk3
 [external]
 conohav2-1
 xserver-1
+natsume-01
 
 [misskey]
 xserver-1
+natsume-01
 
 [tailscale-internal]
 kkg-lb1

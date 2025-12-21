@@ -1,0 +1,94 @@
+- name: Retrieve DB Password from 1Password
+  ansible.builtin.set_fact:
+    misskey_db_pass: "{{ lookup('community.general.onepassword', 'Polestar DB', field='password', vault='Personal') }}"
+
+- name: Retrieve base64 encoded rclone.conf from 1Password 
+  ansible.builtin.set_fact:
+    rclone_conf_b64: "{{ lookup('community.general.onepassword', 'rclone onedrive', field='rclone.conf', vault='Personal') }}"
+
+- name: Create /etc/misskey directory
+  ansible.builtin.file:
+    path: /etc/misskey
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create misskey configuration file
+  ansible.builtin.template:
+    src: default.yml.j2
+    dest: /etc/misskey/default.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create misskey docker.env file
+  ansible.builtin.template:
+    src: docker.env.j2
+    dest: /etc/misskey/docker.env
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Create PostgreSQL configuration file
+  ansible.builtin.template:
+    src: postgresql.conf.j2
+    dest: /etc/misskey/postgresql.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create db_exporter.env file
+  ansible.builtin.template:
+    src: db_exporter.env.j2
+    dest: /etc/misskey/db_exporter.env
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Create Docker Compose file for Misskey
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: /etc/misskey/docker-compose.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create rclone directory
+  ansible.builtin.file:
+    path: /home/{{ username }}/.config/rclone
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: '0775'
+
+- name: Decode and write rclone.conf
+  ansible.builtin.copy:
+    content: "{{ rclone_conf_b64 | b64decode }}"
+    dest: /home/{{ username }}/.config/rclone/rclone.conf
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: '0664'
+
+- name: Create backup script
+  ansible.builtin.template:
+    src: backup.sh.j2
+    dest: /etc/misskey/backup.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Set up cron job for Misskey backup
+  ansible.builtin.cron:
+    name: "Misskey Backup"
+    minute: "30"
+    hour: "3"
+    job: "/etc/misskey/backup.sh"
+
+- name: Start Misskey services with Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: /etc/misskey
+    files:
+      - docker-compose.yaml
+    state: present
+    recreate: always

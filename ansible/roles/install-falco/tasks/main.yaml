@@ -1,0 +1,49 @@
+- name: Install apt-transport-https and curl
+  apt:
+    name:
+      - apt-transport-https
+      - curl
+    state: present
+    update_cache: yes
+
+- name: Add Falco GPG key
+  ansible.builtin.shell: >
+    curl -fsSL https://falco.org/repo/falcosecurity-packages.asc | 
+    gpg --dearmor -o /usr/share/keyrings/falco-archive-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/falco-archive-keyring.gpg
+
+- name: Add Falco APT repository
+  ansible.builtin.copy:
+    content: "deb [signed-by=/usr/share/keyrings/falco-archive-keyring.gpg] https://download.falco.org/packages/deb stable main\n"
+    dest: /etc/apt/sources.list.d/falcosecurity.list
+    mode: '0644'
+
+- name: Install Falco
+  apt:
+    name: falco
+    state: present
+    update_cache: yes
+  environment:
+    FALCO_DRIVER_CHOICE: modern_ebpf
+    FALCO_FRONTEND: noninteractive
+
+- name: Enable Falco metrics
+  ansible.builtin.lineinfile:
+    path: /etc/falco/falco.yaml
+    regexp: '^\s*metrics:\s*enabled:\s*false'
+    line: '  enabled: true'
+    state: present
+    
+- name: Enable Falco prometheus metrics
+  ansible.builtin.lineinfile:
+    path: /etc/falco/falco.yaml
+    regexp: '^\s*prometheus_metrics_enabled:\s*false'
+    line: '  prometheus_metrics_enabled: true'
+    state: present
+
+- name: Restart Falco service
+  ansible.builtin.systemd:
+    name: falco
+    state: restarted
+    enabled: yes

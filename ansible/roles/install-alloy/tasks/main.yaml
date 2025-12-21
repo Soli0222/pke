@@ -18,6 +18,22 @@
     state: present
     update_cache: yes
 
+- name: Create /etc/systemd/system/alloy.service.d directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/alloy.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create systemd override file for Alloy
+  ansible.builtin.template:
+    src: override.conf.j2
+    dest: /etc/systemd/system/alloy.service.d/override.conf
+    owner: root
+    group: root
+    mode: '0644'
+
 - block:
   - name: Retrieve TLS certificate from 1Password
     ansible.builtin.set_fact:
@@ -73,16 +89,6 @@
     src: loki.alloy.j2
     dest: /etc/alloy/loki.alloy
     mode: '0644'
-
-- name: Retrieve Misskey DB User from 1Password
-  ansible.builtin.set_fact:
-    misskey_db_user: "{{ lookup('community.general.onepassword', 'Misskey DB', field='username', vault='Personal') }}"
-  when: inventory_hostname in groups['external'] and inventory_hostname in groups['misskey']
-
-- name: Retrieve Misskey DB Password from 1Password
-  ansible.builtin.set_fact:
-    misskey_db_pass: "{{ lookup('community.general.onepassword', 'Misskey DB', field='password', vault='Personal') }}"
-  when: inventory_hostname in groups['external'] and inventory_hostname in groups['misskey']
 
 - name: Configure Prometheus for Misskey
   ansible.builtin.template:

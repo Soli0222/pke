@@ -1,0 +1,44 @@
+- name: Retrieve Cloudflare Email from 1Password
+  ansible.builtin.set_fact:
+    cloudflare_email: "{{ lookup('community.general.onepassword', 'Cloudflare', field='username', vault='Personal') }}"
+
+- name: Retrieve Cloudflare API Key from 1Password
+  ansible.builtin.set_fact:
+    cloudflare_api_key: "{{ lookup('community.general.onepassword', 'Cloudflare', field='Global API Key', vault='Personal') }}"
+
+- name: Retrieve Certbot Email from 1Password
+  ansible.builtin.set_fact:
+    certbot_email: "{{ lookup('community.general.onepassword', 'Cloudflare', field='certbot mail', vault='Personal') }}"
+
+- name: Create Cloudflare directory
+  ansible.builtin.file:
+    path: /etc/cloudflare
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Create Cloudflare API credentials file
+  ansible.builtin.template:
+    src: cloudflare.ini.j2
+    dest: /etc/cloudflare/cloudflare.ini
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Install certbot and certbot-dns-cloudflare
+  become: true
+  ansible.builtin.apt:
+    name:
+      - certbot
+      - python3-certbot-dns-cloudflare
+    state: present
+
+- name: Obtain or renew SSL certificates with Certbot
+  become: true
+  ansible.builtin.command: >
+    certbot certonly -n --agree-tos --email {{ certbot_email }}
+    --dns-cloudflare --dns-cloudflare-credentials /etc/cloudflare/cloudflare.ini
+    --dns-cloudflare-propagation-seconds 60
+    --server https://acme-v02.api.letsencrypt.org/directory
+    -d {{ certbot.domain }} -d *.{{ certbot.domain }}

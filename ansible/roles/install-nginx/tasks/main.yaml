@@ -1,0 +1,87 @@
+- name: Install dependencies
+  become: true
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg2
+      - lsb-release
+      - ubuntu-keyring
+    state: present
+    update_cache: true
+
+- name: Download nginx signing key
+  become: true
+  ansible.builtin.shell: |
+    curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+  args:
+    creates: /usr/share/keyrings/nginx-archive-keyring.gpg
+
+- name: Verify nginx signing key
+  ansible.builtin.command: gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
+  changed_when: false
+
+- name: Add nginx repository
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/ubuntu {{ ansible_distribution_release }} nginx"
+    filename: nginx
+    state: present
+
+- name: Set nginx package priority
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/99nginx
+    content: |
+      Package: *
+      Pin: origin nginx.org
+      Pin: release o=nginx
+      Pin-Priority: 900
+    mode: '0644'
+
+- name: Update apt cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install nginx
+  become: true
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+
+- name: Find existing conf files in conf.d
+  become: true
+  ansible.builtin.find:
+    paths: /etc/nginx/conf.d
+    patterns: "*.conf"
+  register: existing_conf_files
+
+- name: Disable conf files except misskey.conf
+  become: true
+  ansible.builtin.command:
+    cmd: mv {{ item.path }} {{ item.path }}.disabled
+    creates: "{{ item.path }}.disabled"
+  loop: "{{ existing_conf_files.files }}"
+  when: item.path != '/etc/nginx/conf.d/misskey.conf'
+
+- name: Deploy nginx.conf
+  become: true
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    mode: '0644'
+
+- name: Deploy misskey.conf
+  become: true
+  ansible.builtin.template:
+    src: misskey.conf.j2
+    dest: /etc/nginx/conf.d/misskey.conf
+    mode: '0644'
+
+- name: Start and enable nginx
+  become: true
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+    enabled: true

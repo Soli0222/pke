@@ -1,0 +1,11 @@
+- name: Install Misskey
+  become: true
+  hosts: misskey
+  roles:
+    - configure-misskey-host
+    - install-falco
+    - install-rclone
+    - install-certbot
+    - install-nginx
+    - install-docker
+    - install-misskey
