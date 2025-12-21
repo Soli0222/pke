@@ -1,0 +1,6 @@
+#!/bin/sh
+
+TODAY="`date +%Y%m%d%H%M`"
+docker exec misskey-db-1 pg_dump -Fc -U misskey-soli -d misskey > /tmp/misskey_$TODAY.dump
+rclone move /tmp/misskey_$TODAY.dump onedrive:polestar_backup
+rclone delete --min-age 30d onedrive:polestar_backup --include "misskey_*.dump"
