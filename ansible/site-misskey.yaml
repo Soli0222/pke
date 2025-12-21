@@ -2,10 +2,10 @@
   become: true
   hosts: misskey
   roles:
-    # - configure-misskey-host
+    - configure-misskey-host
     - install-falco
-    # - install-rclone
-    # - install-certbot
-    # - install-nginx
-    # - install-docker
-    # - install-misskey
+    - install-rclone
+    - install-certbot
+    - install-nginx
+    - install-docker
+    - install-misskey

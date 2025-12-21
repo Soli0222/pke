@@ -85,10 +85,10 @@
     hour: "3"
     job: "/etc/misskey/backup.sh"
 
-# - name: Start Misskey services with Docker Compose
-#   community.docker.docker_compose_v2:
-#     project_src: /etc/misskey
-#     files:
-#       - docker-compose.yaml
-#     state: present
-#     recreate: always
+- name: Start Misskey services with Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: /etc/misskey
+    files:
+      - docker-compose.yaml
+    state: present
+    recreate: always
