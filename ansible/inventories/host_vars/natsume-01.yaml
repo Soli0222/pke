@@ -55,3 +55,9 @@ misskey:
 
   # IP address family used for outgoing request (ipv4, ipv6 or dual)
   outgoingAddressFamily: dual
+
+redis_exporter:
+  image: oliver006/redis_exporter:v1.80.1
+
+db_exporter:
+  image: quay.io/prometheuscommunity/postgres-exporter:v0.18.1

@@ -48,6 +48,34 @@ services:
       interval: 5s
       retries: 20
 
+  redis_exporter:
+    restart: always
+    image: {{ redis_exporter.image }}
+    networks:
+      - internal_network
+      - external_network
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+
+  db_exporter:
+    restart: always
+    image: {{ db_exporter.image }}
+    networks:
+      - internal_network
+      - external_network
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "9187:9187"
+    env_file:
+      - /etc/misskey/db_exporter.env
+
 volumes:
   redis:
   pgdata:

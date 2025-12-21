@@ -34,6 +34,14 @@
     group: root
     mode: '0644'
 
+- name: Create db_exporter.env file
+  ansible.builtin.template:
+    src: db_exporter.env.j2
+    dest: /etc/misskey/db_exporter.env
+    owner: root
+    group: root
+    mode: '0600'
+
 - name: Create Docker Compose file for Misskey
   ansible.builtin.template:
     src: compose.yaml.j2
