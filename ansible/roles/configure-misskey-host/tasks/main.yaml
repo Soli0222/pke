@@ -22,10 +22,12 @@
   ansible.builtin.command: netplan apply
   changed_when: false
 
-- name: Install UFW
+- name: Install UFW and Cron
   become: true
   ansible.builtin.apt:
-    name: ufw
+    name: 
+     - ufw
+     - cron
     state: present
     update_cache: true
 

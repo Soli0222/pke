@@ -3,6 +3,7 @@
   hosts: misskey
   roles:
     - configure-misskey-host
+    - install-rclone
     - install-certbot
     - install-nginx
     - install-docker
