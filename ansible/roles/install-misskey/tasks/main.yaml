@@ -2,10 +2,6 @@
   ansible.builtin.set_fact:
     misskey_db_pass: "{{ lookup('community.general.onepassword', 'Polestar DB', field='password', vault='Personal') }}"
 
-- name: Retrieve base64 encoded rclone.conf from 1Password 
-  ansible.builtin.set_fact:
-    rclone_conf_b64: "{{ lookup('community.general.onepassword', 'rclone onedrive', field='rclone.conf', vault='Personal') }}"
-
 - name: Create /etc/misskey directory
   ansible.builtin.file:
     path: /etc/misskey
@@ -46,6 +42,12 @@
     group: root
     mode: '0600'
 
+- name: Calculate config hashes for change detection
+  ansible.builtin.set_fact:
+    misskey_config_hash: "{{ (lookup('template', 'default.yml.j2') + lookup('template', 'docker.env.j2')) | hash('sha256') | truncate(12, True, '') }}"
+    db_config_hash: "{{ (lookup('template', 'postgresql.conf.j2') + lookup('template', 'docker.env.j2')) | hash('sha256') | truncate(12, True, '') }}"
+    db_exporter_config_hash: "{{ lookup('template', 'db_exporter.env.j2') | hash('sha256') | truncate(12, True, '') }}"
+
 - name: Create Docker Compose file for Misskey
   ansible.builtin.template:
     src: compose.yaml.j2
@@ -53,22 +55,6 @@
     owner: root
     group: root
     mode: '0644'
-
-- name: Create rclone directory
-  ansible.builtin.file:
-    path: /home/{{ username }}/.config/rclone
-    state: directory
-    owner: "{{ username }}"
-    group: "{{ username }}"
-    mode: '0775'
-
-- name: Decode and write rclone.conf
-  ansible.builtin.copy:
-    content: "{{ rclone_conf_b64 | b64decode }}"
-    dest: /home/{{ username }}/.config/rclone/rclone.conf
-    owner: "{{ username }}"
-    group: "{{ username }}"
-    mode: '0664'
 
 - name: Create backup script
   ansible.builtin.template:
@@ -91,4 +77,4 @@
     files:
       - docker-compose.yaml
     state: present
-    recreate: always
+    recreate: auto

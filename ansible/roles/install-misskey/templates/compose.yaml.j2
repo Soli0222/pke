@@ -17,6 +17,8 @@ services:
       - external_network
     env_file:
       - /etc/misskey/docker.env
+    environment:
+      CONFIG_HASH: {{ misskey_config_hash }}
     volumes:
       - /etc/misskey:/misskey/.config:ro
 
@@ -40,6 +42,8 @@ services:
       - internal_network
     env_file:
       - /etc/misskey/docker.env
+    environment:
+      CONFIG_HASH: {{ db_config_hash }}
     volumes:
       - /etc/misskey/postgresql.conf:/etc/postgresql/postgresql.conf:ro
       - pgdata:/var/lib/postgresql
@@ -75,6 +79,8 @@ services:
       - "9187:9187"
     env_file:
       - /etc/misskey/db_exporter.env
+    environment:
+      CONFIG_HASH: {{ db_exporter_config_hash }}
 
 volumes:
   redis:
