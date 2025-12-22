@@ -23,3 +23,19 @@
     owner: root
     group: root
     mode: '0755'
+
+- name: Create rclone directory
+  ansible.builtin.file:
+    path: /home/{{ username }}/.config/rclone
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: '0775'
+
+- name: Decode and write rclone.conf
+  ansible.builtin.copy:
+    content: "{{ rclone_conf_b64 | b64decode }}"
+    dest: /home/{{ username }}/.config/rclone/rclone.conf
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: '0664'
