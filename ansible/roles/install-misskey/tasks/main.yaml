@@ -71,6 +71,12 @@
     hour: "3"
     job: "/etc/misskey/backup.sh"
 
+- name: Pull latest images
+  community.docker.docker_compose_v2_pull:
+    project_src: /etc/misskey
+    files:
+      - docker-compose.yaml
+
 - name: Start Misskey services with Docker Compose
   community.docker.docker_compose_v2:
     project_src: /etc/misskey
