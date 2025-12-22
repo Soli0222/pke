@@ -1,3 +1,7 @@
+- name: Retrieve base64 encoded rclone.conf from 1Password 
+  ansible.builtin.set_fact:
+    rclone_conf_b64: "{{ lookup('community.general.onepassword', 'rclone onedrive', field='rclone.conf', vault='Personal') }}"
+
 - name: Install unzip
   package:
     name: unzip
