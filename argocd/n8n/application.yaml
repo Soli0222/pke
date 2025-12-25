@@ -10,7 +10,7 @@ spec:
   sources:
     - repoURL: https://github.com/8gears/n8n-helm-chart.git
       path: charts/n8n
-      targetRevision: 1.1.0
+      targetRevision: 2.0.1
       helm:
         releaseName: n8n
         valueFiles:
