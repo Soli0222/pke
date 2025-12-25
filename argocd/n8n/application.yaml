@@ -8,8 +8,8 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://github.com/8gears/n8n-helm-chart.git
-      path: charts/n8n
+    - repoURL: oci://8gears.container-registry.com/library/n8n
+      path: .
       targetRevision: 2.0.1
       helm:
         releaseName: n8n
