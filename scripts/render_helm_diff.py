@@ -133,6 +133,55 @@ def export_local_repo_subpath(commit: str, subpath: str) -> tuple[Path, Path]:
     return chart_dir, checkout_root
 
 
+def is_oci_repo(repo_url: Optional[str]) -> bool:
+    return (repo_url or "").startswith("oci://")
+
+
+def pull_oci_chart(repo_url: str, version: Optional[str]) -> tuple[Path, Path]:
+    if not repo_url:
+        raise HelmDiffError("repoURL is required when pulling an OCI chart")
+    
+    # OCI URLs in ArgoCD might be "oci://registry/org" with chart in "chart" field,
+    # OR "oci://registry/org/chart" if it's a direct reference? 
+    # materialize_repo_for_source is usually called for "ref" sources (values files).
+    # If "ref" is an OCI repo, it implies we want to peek into the chart package.
+    
+    checkout_root = Path(tempfile.mkdtemp(prefix="helm-oci-"))
+    repo_dir = checkout_root / "repo"
+    repo_dir.mkdir()
+    
+    # "helm pull oci://registry/repo/chart --version 1.2.3 --untar --untardir ..."
+    # Problem: "repo_url" here might be just the registry root if it came from repoURL?
+    # Actually, for `source.ref`, the `repoURL` likely points to the chart location itself if it's OCI,
+    # because you can't really "clone" a whole registry.
+    
+    # Assume repo_url is the full path to the chart for now.
+    args = ["helm", "pull", repo_url, "--untar", "--untardir", str(repo_dir)]
+    if version and version not in {"", "HEAD"}:
+         args.extend(["--version", version])
+         
+    result = run(args, check=False)
+    if result.returncode != 0:
+        # If repo_url was just the registry, we might lack the chart name.
+        # But materialize_repo_for_source doesn't take a chart name arg.
+        # If this is for a "ref", the user must provide the full OCI URL to the chart.
+        raise HelmDiffError(f"Failed to pull OCI chart {repo_url}: {result.stderr or result.stdout}")
+        
+    # When untarred, it creates a subdirectory with the chart name.
+    # We want repo_dir to be the root where we can find files.
+    # But files inside will be in <chart-name>/...
+    # Let's see what's inside.
+    children = list(repo_dir.iterdir())
+    if len(children) == 1 and children[0].is_dir():
+        # Move contents up or just return this as root?
+        # returning this as root means relative paths must include chart name?
+        # Git clone returns root of repo. OCI pull returns root containing chart dir.
+        # If I want to access "values.yaml", it's usually inside the chart dir.
+        return children[0], checkout_root
+        
+    return repo_dir, checkout_root
+
+
 def materialize_repo_for_source(
     source: dict,
     commit: str,
@@ -148,6 +197,19 @@ def materialize_repo_for_source(
             repo_url=repo_url,
             target_revision=target_revision,
         )
+    
+    if is_oci_repo(repo_url):
+        repo_dir, checkout_root = pull_oci_chart(repo_url, target_revision)
+        cleanup_paths.append(checkout_root)
+        return MaterializedRepo(
+            kind="remote",
+            commit=None,
+            root=repo_dir,
+            repo_url=repo_url,
+            target_revision=target_revision,
+            cleanup_path=checkout_root,
+        )
+
     repo_dir, checkout_root = clone_repo(repo_url or "", target_revision)
     cleanup_paths.append(checkout_root)
     return MaterializedRepo(
@@ -609,6 +671,14 @@ def render_helm_source(
                 allow_version_flag = False
             else:
                 raise HelmDiffError("Chart name is missing in application.yaml")
+        
+        # OCI Support for Helm Template
+        if repo_arg and is_oci_repo(repo_arg):
+             # For OCI, we merge repoURL and chart name: oci://registry/fw/chart
+             # And we MUST NOT pass --repo
+             chart_arg = f"{repo_arg.rstrip('/')}/{chart_arg}"
+             repo_arg = None
+
         args = [
             "helm",
             "template",
