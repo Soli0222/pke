@@ -4,7 +4,7 @@ ansible_user: ubuntu
 ansible_ssh_private_key_file: /Users/soli/.ssh/id_ed25519
 
 # Software Versions
-containerd_version: "2.2.0"
+containerd_version: "2.2.1"
 runc_version: "1.4.0"
 cni_plugins_version: "1.9.0"
 kubernetes_version: 1.35.0
