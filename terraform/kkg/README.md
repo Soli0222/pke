@@ -100,15 +100,15 @@ terraform destroy
 - **用途**: HAProxy + Keepalived
 
 ### Control Plane
-- **メモリ**: 6GB
+- **メモリ**: 6GB (cp1は32GB, cp2/cp3は16GB)
 - **CPU**: 8コア
-- **ディスク**: 50GB
+- **ディスク**: 100GB (cp1/cp2/cp3ともに)
 - **用途**: Kubernetes API Server, etcd, Controller Manager, Scheduler
 
 ### Worker Node
-- **メモリ**: 11GB（worker_largeは16GB）
+- **メモリ**: 11GB
 - **CPU**: 8コア
-- **ディスク**: 50GB（worker_largeは100GB）
+- **ディスク**: 50GB
 - **用途**: アプリケーション実行
 
 ## ネットワーク構成

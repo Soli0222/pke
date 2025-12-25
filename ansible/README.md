@@ -142,10 +142,10 @@ ansible_ssh_private_key_file: /Users/soli/.ssh/id_ed25519
 username: ubuntu
 
 # Software Versions
-containerd_version: "2.1.4"
-runc_version: "1.3.0"
-cni_plugins_version: "1.7.1"
-kubernetes_version: 1.33.3
+containerd_version: "2.2.1"
+runc_version: "1.4.0"
+cni_plugins_version: "1.9.0"
+kubernetes_version: 1.35.0
 
 # Network Configuration
 pod_network_cidr: 10.26.0.0/16
@@ -337,10 +337,10 @@ ansible-playbook -i inventories/kkg site.yaml --start-at-task="タスク名"
 `inventories/group_vars/internal.yaml`で以下のバージョンを管理：
 
 ```yaml
-containerd_version: "2.1.4"      # containerdバージョン
-runc_version: "1.3.0"            # runcバージョン
-cni_plugins_version: "1.7.1"     # CNI Pluginsバージョン
-kubernetes_version: 1.33.3        # Kubernetesバージョン
+containerd_version: "2.2.1"      # containerdバージョン
+runc_version: "1.4.0"            # runcバージョン
+cni_plugins_version: "1.9.0"     # CNI Pluginsバージョン
+kubernetes_version: 1.35.0        # Kubernetesバージョン
 ```
 
 ### 監視設定
