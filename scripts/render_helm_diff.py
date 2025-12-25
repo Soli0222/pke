@@ -349,6 +349,9 @@ def ensure_chart_dependencies(chart_dir: Path) -> None:
     if not chart_dir.is_dir():
         raise HelmDiffError(f"Chart directory does not exist: {chart_dir}")
     result = run(["helm", "dependency", "build", str(chart_dir)], check=False)
+    if result.returncode == 0:
+        return
+    result = run(["helm", "dependency", "update", str(chart_dir)], check=False)
     if result.returncode != 0:
         raise HelmDiffError(
             "Failed to build chart dependencies:\n" + (result.stderr or result.stdout or "unknown error")
