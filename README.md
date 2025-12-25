@@ -26,9 +26,9 @@
 ##### Kubernetesコントロールプレーン
 | VM名     | CPU | メモリ | ディスク | IPアドレス     | ホストマシン |
 |----------|-----|--------|----------|---------------|-------------|
-| kkg-cp1  | 8   | 6GB    | 50GB     | 192.168.20.13 | kkg-pve3    |
-| kkg-cp2  | 8   | 6GB    | 50GB     | 192.168.20.14 | kkg-pve4    |
-| kkg-cp3  | 8   | 6GB    | 50GB     | 192.168.20.15 | kkg-pve3    |
+| kkg-cp1  | 8   | 32GB   | 100GB    | 192.168.20.13 | kkg-pve3    |
+| kkg-cp2  | 8   | 16GB   | 100GB    | 192.168.20.14 | kkg-pve4    |
+| kkg-cp3  | 8   | 16GB   | 100GB    | 192.168.20.15 | kkg-pve4    |
 
 ##### Kubernetesワーカーノード
 | VM名     | CPU | メモリ | ディスク | IPアドレス     | ホストマシン |
@@ -41,7 +41,8 @@
 
 - `terraform/` Proxmox 上に VM 群をプロビジョニング。詳細は `terraform/kkg/README.md`。Tailscale ACL 管理は `terraform/tailscale/README.md`。
 - `ansible/` VM の OS 設定、containerd、Kubernetes、LB（HAProxy/Keepalived）、監視エージェント、Tailscale などを自動化。詳細は `ansible/README.md`。
-- `helmfile/` クラスター上のプラットフォーム/アプリ群を Helmfile でデプロイ（Cilium, cert-manager, Traefik, 1Password Connect, external-dns, Cloudflare Tunnel, Mimir, Loki, Grafana, MinIO ほか）。詳細は `helmfile/README.md`。
+- `helmfile/` クラスターのブートストラップ（Cilium, 1Password Connect, ArgoCD）。詳細は `helmfile/README.md`。
+- `argocd/` アプリケーションとプラットフォームコンポーネントのGitOps管理（ArgoCD App of Apps）。
 - `vps/` VPSサーバー上のアプリケーション設定（Misskey など）。
 
 ## エンドツーエンド手順（概要）
@@ -52,34 +53,37 @@
 2. 基本セットアップ（OS・Kubernetes・LB 構築）
    - `ansible/site.yaml` で全自動、または `site-all.yaml` → `site-lb.yaml` → `site-k8s.yaml` の順に実行
    - バージョンやネットワークは `ansible/inventories/group_vars/internal.yaml` で管理
-   - 現在のKubernetesバージョン: 1.33.3、containerdバージョン: 2.1.4
-3. プラットフォーム/アプリのデプロイ（基盤コンポーネント + カスタムアプリケーション）
-   - `helmfile/helmfile.yaml` を適用
-   - 1Password Connect、Cloudflare、cert-manager、DNS などの事前準備は `helmfile/README.md` を参照
-4. 追加VPSアプリ
+   - 現在のKubernetesバージョン: 1.35.0、containerdバージョン: 2.2.1
+3. ブートストラップ（CNI & GitOps基盤）
+   - `helmfile/helmfile.yaml` を適用して Cilium, 1Password Connect, ArgoCD をデプロイ
+   - 詳細は `helmfile/README.md` を参照
+4. アプリケーション同期（GitOps）
+   - ArgoCDが `argocd/` ディレクトリの設定に基づき、その他の全コンポーネント（Cert Manager, Traefik, 監視スタック等）とアプリケーションを自動同期
+5. 追加VPSアプリ
    - `vps/` 配下のVPSアプリケーション設定を適用
 
 ## 主要コンポーネント（抜粋）
 
 ### 基盤インフラ・ネットワーク
-- ネットワーク/CNI: Cilium (v1.18.1)
-- Ingress/Proxy: Traefik (v37.0.0)
-- 証明書/DNS: cert-manager (v1.18.2), external-dns (v1.18.0)（Cloudflare）
-- シークレット: 1Password Connect (v2.0.3)（OnePasswordItem CRD）
+- ネットワーク/CNI: Cilium (v1.18.5)
+- GitOps: ArgoCD
+- Ingress/Proxy: Traefik (ArgoCD管理)
+- 証明書/DNS: cert-manager, external-dns (ArgoCD管理)
+- シークレット: 1Password Connect (v2.1.1)
 
-### 監視・オブザーバビリティ
-- メトリクス: Mimir Distributed (v5.8.0)（長期保存・分析）
-- ログ: Loki (v6.37.0)（集約・検索）
-- 可視化: Grafana (v9.3.4)
-- 監視エージェント: Alloy (v1.2.1)
-- アップタイム監視: Uptime Kuma (v2.22.0)
+### 監視・オブザーバビリティ（ArgoCD管理）
+- メトリクス: Mimir Distributed
+- ログ: Loki
+- 可視化: Grafana
+- 監視エージェント: Alloy
+- アップタイム監視: Uptime Kuma
 
-### ストレージ・データ
-- 永続ストレージ: NFS Subdir External Provisioner (v4.0.18)
-- オブジェクトストレージ: MinIO（Operator v7.1.1/Tenant v7.1.1）
+### ストレージ・データ（ArgoCD管理）
+- 永続ストレージ: NFS Subdir External Provisioner
+- オブジェクトストレージ: MinIO（Operator/Tenant）
 
 ### 外部接続・セキュリティ
-- Zero Trust アクセス: Cloudflare Tunnel Ingress Controller (v0.0.18)
+- Zero Trust アクセス: Cloudflare Tunnel Ingress Controller
 
 ## 参照
 

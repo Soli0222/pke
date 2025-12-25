@@ -111,8 +111,6 @@ resource "proxmox_vm_qemu" "vms" {
     ignore_changes = [
       network.0.macaddr,
       smbios,
-      disks,
-      memory,
       clone,
       tags,
     ]

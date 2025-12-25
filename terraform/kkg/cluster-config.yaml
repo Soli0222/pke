@@ -31,28 +31,22 @@ cluster:
 # VMのタイプ別設定
 vm_types:
   control_plane:
-    memory: 6144
+    memory: 16384
     cpu_cores: 8
     cpu_sockets: 1
-    disk_size: "50G"
+    disk_size: "100G"
+
+  control_plane_large:
+    memory: 32768
+    cpu_cores: 8
+    cpu_sockets: 1
+    disk_size: "100G"
   
   load_balancer:
     memory: 2048
     cpu_cores: 8
     cpu_sockets: 1
     disk_size: "20G"
-  
-  worker:
-    memory: 11264
-    cpu_cores: 8
-    cpu_sockets: 1
-    disk_size: "50G"
-  
-  worker_large:
-    memory: 16384
-    cpu_cores: 8
-    cpu_sockets: 1
-    disk_size: "100G"
 
 # 個別VM設定
 vms:
@@ -72,7 +66,7 @@ vms:
   # Control Plane Nodes
   - name: "kkg-cp1"
     vmid: 2013
-    type: "control_plane"
+    type: "control_plane_large"
     target_node: "kkg-pve3"
     ip: "192.168.20.13"
     
@@ -85,24 +79,5 @@ vms:
   - name: "kkg-cp3"
     vmid: 2015
     type: "control_plane"
-    target_node: "kkg-pve3"
+    target_node: "kkg-pve4"
     ip: "192.168.20.15"
-  
-  # Worker Nodes
-  - name: "kkg-wk1"
-    vmid: 2016
-    type: "worker"
-    target_node: "kkg-pve4"
-    ip: "192.168.20.16"
-    
-  - name: "kkg-wk2"
-    vmid: 2017
-    type: "worker"
-    target_node: "kkg-pve4"
-    ip: "192.168.20.17"
-    
-  - name: "kkg-wk3"
-    vmid: 2018
-    type: "worker_large"
-    target_node: "kkg-pve3"
-    ip: "192.168.20.18"

@@ -4,7 +4,7 @@
 
 ## 概要
 
-- provider: `tailscale/tailscale` (main.tf では `0.21.1` を指定)
+- provider: `tailscale/tailscale` (main.tf では `0.24.0` を指定)
 - ACL は `resource "tailscale_acl" "main"` で管理されています。
 
 ## 前提条件
