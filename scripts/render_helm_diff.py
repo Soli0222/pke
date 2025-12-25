@@ -104,7 +104,7 @@ def clone_repo(repo_url: str, revision: Optional[str]) -> tuple[Path, Path]:
         fetch_result = run(fetch_cmd, check=False)
         if fetch_result.returncode != 0:
             run(["git", "-C", str(repo_dir), "fetch", "origin", revision])
-        run(["git", "-C", str(repo_dir), "checkout", revision])
+        run(["git", "-C", str(repo_dir), "checkout", "FETCH_HEAD"])
     return repo_dir, checkout_root
 
 
