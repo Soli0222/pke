@@ -1,0 +1,21 @@
+config:
+  feeds:
+  - https://www.youtube.com/feeds/videos.xml?channel_id=UCRcLAVTbmx2-iNcXSsupdNA
+  - https://www.youtube.com/feeds/videos.xml?channel_id=UCiA-trSZfB0i92V_-dyDqBw
+  - https://www.youtube.com/feeds/videos.xml?channel_id=UCtC3B1n4XMiJmrDtu1Ni5qw
+  - https://www.youtube.com/feeds/videos.xml?channel_id=UCt30jJgChL8qeT9VPadidSw
+  interval: 10s
+
+  existingSecret: "rss-fetcher-webhooks"
+
+externalValkey:
+  host: "rss-fetcher-valkey"
+  port: 6379
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+valkey:
+  enabled: false
