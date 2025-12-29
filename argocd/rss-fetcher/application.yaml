@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rss-fetcher
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  sources:
+    - chart: rss-fetcher
+      repoURL: https://soli0222.github.io/helm-charts
+      targetRevision: 0.1.0
+      helm:
+        valueFiles:
+          - $values/argocd/rss-fetcher/values.yaml
+    - chart: valkey
+      repoURL: https://valkey.io/valkey-helm
+      targetRevision: 0.9.2
+      helm:
+        releaseName: rss-fetcher-valkey
+        valueFiles:
+          - $values/argocd/rss-fetcher/valkey-values.yaml
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      path: argocd/rss-fetcher/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rss-fetcher
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
