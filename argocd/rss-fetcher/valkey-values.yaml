@@ -20,7 +20,7 @@ replica:
 dataStorage:
   enabled: true
   requestedSize: 1Gi
-  className: ""  # デフォルトのStorageClassを使用
+  className: ""
 
 metrics:
   enabled: true
