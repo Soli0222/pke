@@ -1,9 +1,11 @@
 config:
   feeds:
-  - https://www.youtube.com/feeds/videos.xml?channel_id=UCRcLAVTbmx2-iNcXSsupdNA
-  - https://www.youtube.com/feeds/videos.xml?channel_id=UCiA-trSZfB0i92V_-dyDqBw
-  - https://www.youtube.com/feeds/videos.xml?channel_id=UCtC3B1n4XMiJmrDtu1Ni5qw
-  - https://www.youtube.com/feeds/videos.xml?channel_id=UCt30jJgChL8qeT9VPadidSw
+  - https://www.youtube.com/feeds/videos.xml?channel_id=UCRcLAVTbmx2-iNcXSsupdNA # 来栖夏芽
+  - https://www.youtube.com/feeds/videos.xml?channel_id=UCiA-trSZfB0i92V_-dyDqBw # 倉持めると
+  - https://www.youtube.com/feeds/videos.xml?channel_id=UCtC3B1n4XMiJmrDtu1Ni5qw # 七瀬すず菜
+  - https://www.youtube.com/feeds/videos.xml?channel_id=UCt30jJgChL8qeT9VPadidSw # しぐれうい
+  - https://www.youtube.com/feeds/videos.xml?channel_id=UCjIHV9sLF2yrYH2ClgPAzSg # [Alexandros]
+  - https://www.youtube.com/feeds/videos.xml?channel_id=UCGQ4RBrN9wZJ1j6oOJ2KTFw # 山口一郎
   interval: 10s
 
   existingSecret: "rss-fetcher-webhooks"
