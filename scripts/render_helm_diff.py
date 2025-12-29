@@ -264,7 +264,7 @@ def detect_changed_apps(base: str, head: str, files: Iterable[Path]) -> List[str
             continue
         app = path.parts[1]
         leaf = path.parts[2]
-        if leaf == "values.yaml":
+        if leaf.endswith("values.yaml"):
             apps.add(app)
         elif leaf == "application.yaml" and target_revision_changed(base, head, path):
             apps.add(app)

@@ -14,8 +14,13 @@ initResources:
     cpu: 100m
     memory: 128Mi
 
+replica:
+  enabled: false
+
 dataStorage:
   enabled: true
+  requestedSize: 1Gi
+  className: ""
 
 metrics:
   enabled: true
