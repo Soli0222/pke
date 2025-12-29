@@ -20,7 +20,7 @@ replica:
 dataStorage:
   enabled: true
   requestedSize: 1Gi
-  persistentVolumeClaimName: "rss-fetcher-valkey"
+  className: ""  # デフォルトのStorageClassを使用
 
 metrics:
   enabled: true
