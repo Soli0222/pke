@@ -7,6 +7,13 @@ metadata:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   project: default
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: registry-distribution-http-secret
+      namespace: registry
+      jsonPointers:
+        - /data/http-secret
   sources:
     - chart: distribution
       repoURL: https://soli0222.github.io/helm-charts
