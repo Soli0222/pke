@@ -3,3 +3,9 @@ apiService:
 
 tls:
   type: cert-manager
+
+metrics:
+  enabled: true
+
+serviceMonitor:
+  enabled: true
