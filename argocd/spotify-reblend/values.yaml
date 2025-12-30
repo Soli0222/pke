@@ -1,0 +1,37 @@
+config:
+  spotifyRedirectUri: "https://reblend.pstr.space/callback"
+
+  # If existingSecret is set, it will be used for Spotify credentials.
+  # The existing secret must have keys: SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET.
+  existingSecret: "spotify-reblend-secret"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "traefik-external"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+  hosts:
+    - host: reblend.pstr.space
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+   - secretName: reblend.pstr.space-dns01
+     hosts:
+       - reblend.pstr.space
+
+postgres:
+  enabled: false
+
+externalPostgres:
+  host: "reblend-cluster-rw"
+  port: 5432
+  username: "reblend"
+  database: "reblend"
+  
+  auth:
+    existingSecret: "reblend-cluster-app"
+    secretKey: "password"
