@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: misskey-summarizer
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  sources:
+    - chart: misskey-summarizer
+      repoURL: https://soli0222.github.io/helm-charts
+      targetRevision: 0.1.0
+      helm:
+        valueFiles:
+          - $values/argocd/misskey-summarizer/values.yaml
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      path: argocd/misskey-summarizer/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: misskey-summarizer
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
