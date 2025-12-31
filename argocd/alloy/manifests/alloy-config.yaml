@@ -44,6 +44,12 @@ data:
       }
     }
 
+    // Read Slack webhook URL from Secret
+    remote.kubernetes.secret "slack_webhook" {
+      namespace = "alloy"
+      name      = "alertmanager-slack-webhook"
+    }
+
     // Mimir alerts endpoint for AlertmanagerConfig resources
     mimir.alerts.kubernetes "default" {
       address = "https://mimir.str08.net"
@@ -51,17 +57,26 @@ data:
         "X-Scope-OrgID" = ["anonymous"],
       }
       
-      // Global Alertmanager configuration
+      // Global Alertmanager configuration with Slack receiver
       global_config = `
         global:
           resolve_timeout: 5m
+          slack_api_url: ` + remote.kubernetes.secret.slack_webhook.data["api-url"] + `
         route:
-          receiver: "null"
+          receiver: slack_webhook
+          group_by: ['alertname']
           group_wait: 30s
           group_interval: 5m
-          repeat_interval: 4h
+          repeat_interval: 12h
         receivers:
-          - name: "null"
+          - name: slack_webhook
+            slack_configs:
+              - channel: '#alert'
+                title: 'Alert: {{ .GroupLabels.alertname }}'
+                text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+                send_resolved: true
+                username: 'Alertmanager'
+                icon_emoji: ':warning:'
         `
       
       // Select all AlertmanagerConfig resources (empty selector)
@@ -170,7 +185,7 @@ data:
       }
       
       clustering {
-        enabled = false  // Disable clustering for node metrics to avoid duplicates
+        enabled = true
       }
     }
 
@@ -189,7 +204,7 @@ data:
       }
       
       clustering {
-        enabled = false  // Disable clustering for cAdvisor to avoid duplicates
+        enabled = true
       }
     }
 
@@ -282,15 +297,6 @@ data:
         replacement = "/var/log/pods/$1_$2_$3/$4/*.log"
       }
 
-      // Override log path for CRI-O runtimes
-      rule {
-        source_labels = ["container_runtime", "__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
-        action = "replace"
-        target_label = "__path__"
-        separator = ";"
-        regex = "cri-o;([^;]+);([^;]+);([^;]+);([^;]+)"
-        replacement = "/var/log/pods/$1_$2_$3/$4/*.log"
-      }
     }
 
     // Collect pod logs with automatic Kubernetes labels
@@ -322,11 +328,15 @@ data:
       metrics_path = "/metrics"
       
       clustering {
-        enabled = false  // Don't cluster self-monitoring
+        enabled = true
       }
     }
 
     // Process Probes from Prometheus Operator
     prometheus.operator.probes "probes" {
       forward_to = [prometheus.remote_write.default.receiver]
+      
+      clustering {
+        enabled = true
+      }
     }
