@@ -3,8 +3,8 @@ alloy:
     create: false
     name: alloy-config
     key: config.alloy
-    stabilityLevel: experimental
-    enableReporting: false
+  stabilityLevel: experimental
+  enableReporting: false
 
 controller:
   type: 'deployment'
