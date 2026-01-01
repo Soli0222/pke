@@ -1,2 +1,8 @@
+cronjob:
+  schedule: "0 23 * * *"
+
+args:
+  - "--discord"
+
 secrets:
   existingSecret: "misskey-summarizer-secret"
