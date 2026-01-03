@@ -1,8 +1,10 @@
 cronjob:
-  schedule: "0 23 * * *"
+  schedule: "30 22 * * *"
 
 args:
+  - "--last24h"
   - "--discord"
+  - "--output=none"
 
 secrets:
   existingSecret: "misskey-summarizer-secret"
