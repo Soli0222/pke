@@ -4,7 +4,7 @@ cronjob:
 args:
   - "--last24h"
   - "--discord"
-  - "--output none"
+  - "--output=none"
 
 secrets:
   existingSecret: "misskey-summarizer-secret"
