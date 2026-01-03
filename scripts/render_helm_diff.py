@@ -345,19 +345,35 @@ def materialise_chart_from_repo(
     return chart_dir, checkout_root
 
 
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "app"
+
+
 def ensure_chart_dependencies(chart_dir: Path) -> None:
     if not chart_dir.is_dir():
         raise HelmDiffError(f"Chart directory does not exist: {chart_dir}")
+
+    # Add any dependency repositories before building
+    chart_yaml = chart_dir / "Chart.yaml"
+    if chart_yaml.is_file():
+        try:
+            chart_data = yaml.safe_load(chart_yaml.read_text())
+            dependencies = chart_data.get("dependencies") or []
+            for dep in dependencies:
+                repo_url = dep.get("repository")
+                if repo_url and repo_url.startswith("https://"):
+                    # Use a deterministic repo name based on the URL
+                    repo_name = slugify(repo_url.replace("https://", "").rstrip("/"))
+                    run(["helm", "repo", "add", repo_name, repo_url], check=False)
+        except yaml.YAMLError:
+            pass  # Ignore YAML errors, let helm dependency build handle them
+
     result = run(["helm", "dependency", "build", str(chart_dir)], check=False)
     if result.returncode != 0:
         raise HelmDiffError(
             "Failed to build chart dependencies:\n" + (result.stderr or result.stdout or "unknown error")
         )
-
-
-def slugify(value: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
-    return slug or "app"
 
 
 def extract_diff_preview(body: str, limit: int) -> str:
