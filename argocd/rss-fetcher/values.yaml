@@ -6,6 +6,7 @@ config:
   - https://www.youtube.com/feeds/videos.xml?channel_id=UCt30jJgChL8qeT9VPadidSw # しぐれうい
   - https://www.youtube.com/feeds/videos.xml?channel_id=UCjIHV9sLF2yrYH2ClgPAzSg # [Alexandros]
   - https://www.youtube.com/feeds/videos.xml?channel_id=UCGQ4RBrN9wZJ1j6oOJ2KTFw # 山口一郎
+  - https://github.com/azooKey/azooKey-Desktop/releases.atom # azooKey-Desktop
   interval: 10s
 
   existingSecret: "rss-fetcher-webhooks"
