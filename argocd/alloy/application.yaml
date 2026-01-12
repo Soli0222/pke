@@ -10,7 +10,7 @@ spec:
   sources:
     - chart: alloy
       repoURL: https://grafana.github.io/helm-charts
-      targetRevision: 1.5.1
+      targetRevision: 1.5.2
       helm:
         valueFiles:
           - $values/argocd/alloy/values.yaml
