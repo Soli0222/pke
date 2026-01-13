@@ -15,6 +15,19 @@ http {
     include       /etc/nginx/mime.types;
     default_type  application/octet-stream;
 
+    # Cloudflare IP ranges (IPv4)
+{% for ip in cloudflare_ipv4_ranges %}
+    set_real_ip_from {{ ip }};
+{% endfor %}
+
+    # Cloudflare IP ranges (IPv6)
+{% for ip in cloudflare_ipv6_ranges %}
+    set_real_ip_from {{ ip }};
+{% endfor %}
+
+    # Use CF-Connecting-IP header to get real client IP
+    real_ip_header CF-Connecting-IP;
+
     log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
                       '$status $body_bytes_sent "$http_referer" '
                       '"$http_user_agent" "$http_x_forwarded_for"';

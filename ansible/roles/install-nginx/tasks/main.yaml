@@ -65,6 +65,31 @@
   loop: "{{ existing_conf_files.files }}"
   when: item.path != '/etc/nginx/conf.d/misskey.conf'
 
+- name: Fetch Cloudflare IPv4 ranges
+  ansible.builtin.uri:
+    url: https://www.cloudflare.com/ips-v4/
+    return_content: true
+  register: cloudflare_ipv4_response
+  delegate_to: localhost
+  run_once: true
+  check_mode: false
+  become: false
+
+- name: Fetch Cloudflare IPv6 ranges
+  ansible.builtin.uri:
+    url: https://www.cloudflare.com/ips-v6/
+    return_content: true
+  register: cloudflare_ipv6_response
+  delegate_to: localhost
+  run_once: true
+  check_mode: false
+  become: false
+
+- name: Set Cloudflare IP ranges facts
+  ansible.builtin.set_fact:
+    cloudflare_ipv4_ranges: "{{ cloudflare_ipv4_response.content.split('\n') | select('match', '^[0-9]') | list }}"
+    cloudflare_ipv6_ranges: "{{ cloudflare_ipv6_response.content.split('\n') | select('match', '^[0-9a-fA-F]') | list }}"
+
 - name: Deploy nginx.conf
   become: true
   ansible.builtin.template:
