@@ -10,7 +10,7 @@ spec:
   sources:
     - chart: spotify-reblend
       repoURL: https://soli0222.github.io/helm-charts
-      targetRevision: 0.1.1
+      targetRevision: 0.1.2
       helm:
         valueFiles:
           - $values/argocd/spotify-reblend/values.yaml
