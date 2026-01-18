@@ -14,13 +14,14 @@ ingress:
         - spn.soli0222.com
       secretName: spn.soli0222.com-dns01
 
-env:
-  - name: SERVER_URI
-    value: "mi.soli0222.com"
-  - name: SPOTIFY_REDIRECT_URI_NOTE
-    value: "https://spn.soli0222.com/note/callback"
-  - name: SPOTIFY_REDIRECT_URI_TWEET
-    value: "https://spn.soli0222.com/tweet/callback"
+
+config:
+  baseUrl: "https://spn.soli0222.com"
+  serverUri: "mi.soli0222.com"
+  twitterEnabled: "true"
+  twitterRequireMisskey: "true"
+  twitterAllowedHosts: "mi.soli0222.com"
+  existingSecret: "spotify-nowplaying-secret"
 
 monitoring:
   serviceMonitor:
@@ -28,3 +29,16 @@ monitoring:
 
   prometheusRule:
     enabled: true
+
+postgres:
+  enabled: false
+
+externalPostgres:
+  host: "spn-cluster-rw"
+  port: 5432
+  username: "spn"
+  database: "spn"
+
+  auth:
+    existingSecret: "spn-cluster-app"
+    secretKey: "password"
