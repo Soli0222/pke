@@ -26,7 +26,7 @@ jobs:
           repositories: '${{ github.event.repository.name }}'
 
       - name: Checkout
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6.0.2
 
       - name: Self-hosted Renovate
         uses: renovatebot/github-action@v44.2.5
