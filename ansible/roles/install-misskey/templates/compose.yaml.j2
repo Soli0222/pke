@@ -11,7 +11,7 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     networks:
       - internal_network
       - external_network
@@ -62,7 +62,7 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "9121:9121"
+      - "127.0.0.1:9121:9121"
     environment:
       REDIS_ADDR: "redis://redis:6379"
 
@@ -76,7 +76,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "9187:9187"
+      - "127.0.0.1:9187:9187"
     env_file:
       - /etc/misskey/db_exporter.env
     environment:
