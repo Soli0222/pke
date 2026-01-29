@@ -61,6 +61,12 @@
       - docker-compose-plugin
     state: present
 
+- name: copy Docker daemon configuration
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+
 - name: Restart Docker service
   systemd:
     name: docker
