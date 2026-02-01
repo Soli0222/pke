@@ -9,7 +9,7 @@ loki:
   config:
     compactor:
       retention_enabled: true
-    limits:
+    limits_config:
       retention_period: "60d"
   schemaConfig:
     configs:
