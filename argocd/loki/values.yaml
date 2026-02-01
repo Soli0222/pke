@@ -6,6 +6,11 @@ global:
         name: minio-secrets
 
 loki:
+  config:
+    compactor:
+      retention_enabled: true
+    limits:
+      retention_period: "60d"
   schemaConfig:
     configs:
       - from: "2024-04-01"
