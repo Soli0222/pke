@@ -31,7 +31,7 @@ loki:
   limits_config:
     allow_structured_metadata: true
     volume_enabled: true
-    retention_period: 672h # 28 days retention
+    retention_period: 60d
     # Query performance settings
     query_timeout: 120s
     max_query_series: 10000
@@ -51,6 +51,9 @@ loki:
   querier:
     max_concurrent: 4
     query_ingesters_within: 3h
+  compactor:
+    retention_enabled: true
+    delete_request_store: s3
 
   storage:
     type: s3

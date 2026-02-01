@@ -30,6 +30,7 @@ mimir:
         bucket_name: mimir-ruler
 
     limits:
+      compactor_blocks_retention_period: "60d" 
       max_global_series_per_user: 1000000
       ingestion_rate: 50000
       ingestion_burst_size: 1000000
