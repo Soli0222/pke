@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: emoji-service
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - chart: emoji-renderer
+      repoURL: https://soli0222.github.io/helm-charts
+      targetRevision: 0.1.1
+      helm:
+        valueFiles:
+          - $values/argocd/emoji-service/values.emoji-renderer.yaml
+    - chart: emoji-bot-gateway
+      repoURL: https://soli0222.github.io/helm-charts
+      targetRevision: 0.1.1
+      helm:
+        valueFiles:
+          - $values/argocd/emoji-service/values.emoji-bot-gateway.yaml
+    - chart: valkey
+      repoURL: https://valkey.io/valkey-helm
+      targetRevision: 0.9.3
+      helm:
+        releaseName: emoji-bot-gateway-valkey
+        valueFiles:
+          - $values/argocd/emoji-service/valkey.values.yaml
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      path: argocd/emoji-service/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: emoji-service
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
