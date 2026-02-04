@@ -28,7 +28,7 @@ spec:
       helm:
         releaseName: emoji-bot-gateway-valkey
         valueFiles:
-          - $values/argocd/emoji-service/valkey.values.yaml
+          - $values/argocd/emoji-service/values.valkey.yaml
     - repoURL: https://github.com/Soli0222/pke.git
       targetRevision: HEAD
       ref: values
