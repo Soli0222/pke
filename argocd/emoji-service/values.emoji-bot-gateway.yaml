@@ -1,5 +1,6 @@
 config:
   misskeyHost: "mi.soli0222.com"
+  rendererBaseUrl: "http://emoji-service-emoji-renderer:8109"
   existingSecret: "emoji-bot-gateway-secret"
 
 valkey:
