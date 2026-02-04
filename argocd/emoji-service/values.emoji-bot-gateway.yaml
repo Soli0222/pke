@@ -1,0 +1,13 @@
+config:
+  misskeyHost: "mi.soli0222.com"
+  existingSecret: "emoji-bot-gateway-secret"
+
+valkey:
+  enabled: false
+
+externalValkey:
+  host: "emoji-bot-gateway-valkey"
+
+metrics:
+  serviceMonitor:
+    enabled: true
