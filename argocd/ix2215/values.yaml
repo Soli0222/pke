@@ -1,0 +1,28 @@
+extraArgs:
+  - "--config.file=/run/secrets/snmp-exporter/snmp.yml"
+
+extraSecretMounts:
+  - name: snmp-config
+    mountPath: /run/secrets/snmp-exporter
+    secretName: snmp-exporter-config
+    readOnly: true
+    defaultMode: 420
+
+serviceMonitor:
+  enabled: true
+  path: /snmp
+  scrapeTimeout: 30s
+  module:
+    - ix2215_full
+  auth:
+    - ix2215_v3
+  honorLabels: true
+  params:
+    - name: ix2215
+      target: 192.168.20.1
+      module:
+        - ix2215_full
+      auth:
+        - ix2215_v3
+      interval: 60s
+      scrapeTimeout: 30s
