@@ -19,6 +19,9 @@ spec:
     - repoURL: https://github.com/Soli0222/pke.git
       targetRevision: HEAD
       ref: values
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      path: argocd/ix2215/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: ix2215
