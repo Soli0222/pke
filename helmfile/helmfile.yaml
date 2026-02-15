@@ -23,6 +23,15 @@ releases:
           - "kube-system"
           - "-f"
           - "manifests/cilium/default-pool.yaml"
+      - events: ["postsync"]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "kube-system"
+          - "-f"
+          - "manifests/cilium/bgp.yaml"
       - events: ["preuninstall"]
         showlogs: true
         command: "kubectl"
@@ -32,6 +41,16 @@ releases:
           - "kube-system"
           - "-f"
           - "manifests/cilium/default-pool.yaml"
+          - "--ignore-not-found=true"
+      - events: ["preuninstall"]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "kube-system"
+          - "-f"
+          - "manifests/cilium/bgp.yaml"
           - "--ignore-not-found=true"
 
   - name: connect

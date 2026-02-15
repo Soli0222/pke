@@ -1,0 +1,56 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPClusterConfig
+metadata:
+  name: bgp-cluster
+spec:
+  nodeSelector:
+    matchLabels: {}
+  bgpInstances:
+    - name: ix2215-peer
+      localASN: 65001
+      peers:
+        - name: ix2215
+          peerASN: 65000
+          peerAddress: 192.168.20.1
+          peerConfigRef:
+            name: ix2215-peer-config
+        - name: lb1
+          peerASN: 65002
+          peerAddress: 192.168.20.11
+          peerConfigRef:
+            name: ix2215-peer-config
+        - name: lb2
+          peerASN: 65002
+          peerAddress: 192.168.20.12
+          peerConfigRef:
+            name: ix2215-peer-config
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPPeerConfig
+metadata:
+  name: ix2215-peer-config
+spec:
+  timers:
+    holdTimeSeconds: 90
+    keepAliveTimeSeconds: 30
+  families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: bgp
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: lb-advertisement
+  labels:
+    advertise: bgp
+spec:
+  advertisements:
+    - advertisementType: Service
+      service:
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchLabels: {}
