@@ -1,0 +1,20 @@
+frr version 10.3
+frr defaults traditional
+hostname {{ inventory_hostname }}
+!
+router bgp {{ frr_local_asn }}
+ no bgp ebgp-requires-policy
+{% for peer in frr_bgp_peers %}
+ neighbor {{ peer.address }} remote-as {{ peer.remote_asn }}
+ neighbor {{ peer.address }} description {{ peer.name }}
+{% endfor %}
+ !
+ address-family ipv4 unicast
+{% for peer in frr_bgp_peers %}
+  neighbor {{ peer.address }} activate
+  neighbor {{ peer.address }} route-map DENY-ALL out
+{% endfor %}
+ exit-address-family
+!
+route-map DENY-ALL deny 10
+!
