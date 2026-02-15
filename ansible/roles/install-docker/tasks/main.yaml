@@ -1,17 +1,3 @@
-- name: Remove Docker and related packages
-  apt:
-    name:
-      - docker.io
-      - docker-compose
-      - docker-compose-v2
-      - docker-doc
-      - podman-docker
-      - containerd
-      - runc
-    state: absent
-    purge: yes
-    autoremove: yes
-
 - name: Update apt cache
   apt:
     update_cache: yes
