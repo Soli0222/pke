@@ -1,376 +1,262 @@
 # PKE Ansible Automation
 
-このディレクトリには、高可用性Kubernetesクラスターのセットアップと管理を自動化するAnsibleプレイブックとロールが含まれています。
+Kubernetes クラスター（kkg）および外部サーバーのセットアップと管理を自動化する Ansible プレイブックとロールです。
 
 ## 概要
 
-PKE Ansibleは以下のコンポーネントを自動化します：
+```mermaid
+flowchart TB
+    subgraph "Internal Cluster (kkg)"
+        direction TB
+        ALL[site-all.yaml<br/>全VM基本設定] --> LB[site-lb.yaml<br/>LB構成]
+        ALL --> K8S[site-k8s.yaml<br/>K8sクラスター構築]
+        ALL --> MON[site-monitoring.yaml<br/>監視エージェント]
+        ALL --> TS[site-tailscale.yaml<br/>Tailscale]
+    end
 
-- **ロードバランサー**: HAProxy + Keepalived による高可用性LB
-- **Kubernetesクラスター**: containerd ランタイムを使用したマルチマスター構成
+    subgraph "External Servers"
+        MISSKEY[site-misskey.yaml<br/>Misskey構築]
+        FRR[install-frr.yaml<br/>FRR/BGP]
+        SQUID[install-squid.yaml<br/>Squid Proxy]
+    end
+
+    SITE[site.yaml] --> ALL
+```
+
+### 自動化対象
+
+- **ロードバランサー**: HAProxy + Keepalived + FRR/BGP による高可用性 LB
+- **Kubernetes クラスター**: containerd ランタイムを使用したマルチマスター構成
 - **ベースシステム**: セキュリティ設定、システム最適化、必要パッケージのインストール
 - **監視**: Alloy エージェントの配布
+- **ネットワーク**: Tailscale、FRR/BGP
+- **外部サーバー**: Misskey、Docker、Nginx、certbot 等
 
 ## ディレクトリ構造
 
 ```
 ansible/
 ├── ansible.cfg                 # Ansible設定ファイル
-├── site.yaml                   # メインプレイブック
-├── site-all.yaml              # 全VM基本設定
-├── site-lb.yaml               # ロードバランサー設定
-├── site-k8s.yaml              # Kubernetesクラスター設定
-├── site-monitoring.yaml       # 監視エージェント設定
-├── site-tailscale.yaml        # Tailscaleネットワーク設定
-├── upgrade-k8s.yaml           # Kubernetesアップグレード
-├── upgrade-containerd.yaml    # containerdアップグレード
-├── venv/                       # Python仮想環境（任意）
+├── site.yaml                   # メインプレイブック（全内部VM）
+├── site-all.yaml               # 全VM基本設定
+├── site-lb.yaml                # ロードバランサー設定
+├── site-k8s.yaml               # Kubernetesクラスター設定
+├── site-monitoring.yaml        # 監視エージェント設定
+├── site-tailscale.yaml         # Tailscaleネットワーク設定
+├── site-misskey.yaml           # Misskeyサーバー構築
+├── install-frr.yaml            # FRR/BGPインストール
+├── install-squid.yaml          # Squid Proxyインストール
+├── upgrade-k8s.yaml            # Kubernetesアップグレード
+├── upgrade-containerd.yaml     # containerdアップグレード
+├── upgrade-misskey.yaml        # Misskeyアップグレード
 │
 ├── inventories/
 │   ├── kkg                     # メインインベントリファイル
 │   ├── group_vars/
-│   │   ├── all.yaml           # Tailscale・外部アクセス設定
-│   │   ├── internal.yaml      # 内部クラスター設定
-│   │   ├── external.yaml      # 外部ノード設定
-│   │   └── lb.yml             # ロードバランサーグループ設定
+│   │   ├── all.yaml            # グローバル設定
+│   │   ├── internal.yaml       # 内部クラスター設定
+│   │   ├── external.yaml       # 外部ノード設定
+│   │   └── lb.yml              # ロードバランサーグループ設定
 │   └── host_vars/
-│       ├── kkg-lb1.yml        # lb1固有設定
-│       └── kkg-lb2.yml        # lb2固有設定
+│       ├── kkg-lb1.yml         # lb1固有設定
+│       ├── kkg-lb2.yml         # lb2固有設定
+│       └── natsume-01.yaml     # Misskeyサーバー固有設定
 │
 └── roles/
-    ├── all-vm-config/          # 全VM共通設定
-    ├── init-cp-kubernetes/     # Kubernetesクラスター初期化
-    ├── install-alloy/          # Alloy監視エージェント
-    ├── install-containerd/     # containerdコンテナランタイム
-    ├── install-haproxy/        # HAProxyロードバランサー
+    ├── all-vm-config/               # 全VM共通設定
     ├── configure-iptables-for-external/ # 外部接続iptables設定
-    ├── configure-tailscale/     # Tailscale設定
-    ├── init-cp-kubernetes/     # Kubernetesクラスター初期化
-    ├── install-alloy/          # Alloy監視エージェント
-    ├── install-containerd/     # containerdコンテナランタイム
-    ├── install-haproxy/        # HAProxyロードバランサー
-    ├── install-keepalived/     # Keepalived高可用性
-    ├── install-kubernetes/     # Kubernetesコンポーネント
-    ├── install-tailscale/      # Tailscaleネットワーキング
-    ├── join-cp-kubernetes/     # コントロールプレーン参加
-    ├── join-wk-kubernetes/     # ワーカーノード参加
-    └── upgrade-kubernetes/     # Kubernetesアップグレード
+    ├── configure-misskey-host/      # Misskeyホスト設定
+    ├── configure-tailscale/         # Tailscale設定
+    ├── init-cp-kubernetes/          # Kubernetesクラスター初期化
+    ├── install-alloy/               # Alloy監視エージェント
+    ├── install-certbot/             # Let's Encrypt証明書
+    ├── install-containerd/          # containerdコンテナランタイム
+    ├── install-docker/              # Docker
+    ├── install-falco/               # Falcoセキュリティ
+    ├── install-frr/                 # FRR/BGPルーティング
+    ├── install-haproxy/             # HAProxyロードバランサー
+    ├── install-keepalived/          # Keepalived高可用性
+    ├── install-kubernetes/          # Kubernetesコンポーネント
+    ├── install-misskey/             # Misskeyインストール
+    ├── install-nginx/               # Nginx Webサーバー
+    ├── install-rclone/              # Rcloneストレージ同期
+    ├── install-squid/               # Squid Proxy
+    ├── install-tailscale/           # Tailscaleネットワーキング
+    ├── join-cp-kubernetes/          # コントロールプレーン参加
+    ├── join-wk-kubernetes/          # ワーカーノード参加
+    └── upgrade-kubernetes/          # Kubernetesアップグレード
 ```
-
-## プレイブック詳細
-
-### メインプレイブック
-
-- **`site.yaml`**: すべてのプレイブックを順次実行するマスタープレイブック
-- **`site-all.yaml`**: 全VMの基本設定（システム設定、パッケージ、セキュリティ）
-- **`site-lb.yaml`**: ロードバランサーの設定（HAProxy + Keepalived）
-- **`site-k8s.yaml`**: Kubernetesクラスターの構築
-
-### 専用プレイブック
-
-- **`site-monitoring.yaml`**: 監視エージェント（Alloy）の配布
-- **`site-tailscale.yaml`**: Tailscaleネットワークの設定・管理
-- **`upgrade-k8s.yaml`**: Kubernetesのアップグレード
-- **`upgrade-containerd.yaml`**: containerd（必要に応じてrunc/CNI含む）のアップグレード
-
-## ロール詳細
-
-| ロール | 説明 | 対象ホスト |
-|--------|------|------------|
-| `all-vm-config` | カーネルモジュール、sysctl、パッケージ更新 | all |
-| `install-containerd` | containerdコンテナランタイムのインストール | k8s |
-| `install-kubernetes` | kubelet、kubeadm、kubectlのインストール | k8s |
-| `init-cp-kubernetes` | Kubernetesクラスターの初期化 | k8s-cp-leader |
-| `join-cp-kubernetes` | 追加コントロールプレーンノードの参加 | k8s-cp-follower |
-| `join-wk-kubernetes` | ワーカーノードの参加 | k8s-wk |
-| `install-haproxy` | HAProxyロードバランサーの設定 | lb |
-| `install-keepalived` | Keepalived高可用性の設定 | lb |
-| `install-alloy` | Alloy監視エージェントの配布 | all |
-| `install-tailscale` | Tailscaleネットワーキングのインストール | 指定ノード |
-| `configure-tailscale` | Tailscaleの設定・管理 | 指定ノード |
-| `configure-iptables-for-external` | 外部接続用iptables設定 | 指定ノード |
-| `upgrade-kubernetes` | Kubernetesコンポーネントのアップグレード | k8s |
 
 ## インベントリ構造
 
-### ホストグループ定義
+```mermaid
+graph TB
+    subgraph "Internal Hosts"
+        subgraph "lb"
+            LB1["kkg-lb1 (192.168.20.11)"]
+            LB2["kkg-lb2 (192.168.20.12)"]
+        end
+        subgraph "k8s-cp"
+            CP1["kkg-cp1 (192.168.20.13)<br/>Leader"]
+            CP2["kkg-cp2 (192.168.20.14)"]
+            CP3["kkg-cp3 (192.168.20.15)"]
+        end
+    end
 
-```ini
-[all]
-kkg-lb1 ansible_host=192.168.20.11
-kkg-lb2 ansible_host=192.168.20.12
-kkg-cp1 ansible_host=192.168.20.13
-kkg-cp2 ansible_host=192.168.20.14
-kkg-cp3 ansible_host=192.168.20.15
-kkg-wk1 ansible_host=192.168.20.16
-kkg-wk2 ansible_host=192.168.20.17
-kkg-wk3 ansible_host=192.168.20.18
-
-[lb]              # ロードバランサーノード
-[k8s]             # 全Kubernetesノード
-[k8s-cp]          # コントロールプレーンノード
-[k8s-cp-leader]   # コントロールプレーンリーダー
-[k8s-cp-follower] # コントロールプレーンフォロワー
-[k8s-wk]          # ワーカーノード
+    subgraph "External Hosts"
+        CONOHA["conohav2-1"]
+        XSERVER["xserver-1"]
+        NATSUME["natsume-01"]
+    end
 ```
 
-### 設計原則
+### ホストグループ定義
 
-#### 1. DRY (Don't Repeat Yourself)
-- IPアドレスは各ホストで一度だけ定義
-- HAProxyバックエンドは`k8s-cp`グループから動的生成
-- Keepalivedピアは`lb`グループから自動検出
+| グループ | ホスト | 用途 |
+|---------|-------|------|
+| `internal` | kkg-lb1, lb2, cp1, cp2, cp3 | 内部クラスターノード |
+| `lb` | kkg-lb1, kkg-lb2 | ロードバランサー |
+| `lb-leader` | kkg-lb1 | LBリーダー |
+| `k8s` | kkg-cp1, cp2, cp3 | 全Kubernetesノード |
+| `k8s-cp` | kkg-cp1, cp2, cp3 | コントロールプレーン |
+| `k8s-cp-leader` | kkg-cp1 | CPリーダー |
+| `k8s-cp-follower` | kkg-cp2, cp3 | CPフォロワー |
+| `external` | conohav2-1, xserver-1, natsume-01 | 外部サーバー |
+| `misskey` | xserver-1, natsume-01 | Misskeyサーバー |
+| `tailscale-internal` | kkg-lb1, kkg-lb2 | Tailscale内部ノード |
+| `tailscale-external` | conohav2-1 | Tailscale外部ノード |
 
-#### 2. 分離された設定
-- **グローバル設定**: `group_vars/all.yml`
-- **グループ固有設定**: `group_vars/<group>.yml`
-- **ホスト固有設定**: `host_vars/<hostname>.yml`
+## ロール一覧
 
-#### 3. 動的変数生成
-- HAProxyバックエンドサーバーリストを手動維持する必要なし
-- ホストを追加/削除すると自動的にロードバランサー設定に反映
+| ロール | 説明 | 対象 |
+|--------|------|------|
+| `all-vm-config` | カーネルモジュール、sysctl、パッケージ更新 | internal |
+| `install-containerd` | containerd コンテナランタイム | k8s |
+| `install-kubernetes` | kubelet、kubeadm、kubectl | k8s |
+| `init-cp-kubernetes` | Kubernetes クラスター初期化 | k8s-cp-leader |
+| `join-cp-kubernetes` | コントロールプレーン参加 | k8s-cp-follower |
+| `join-wk-kubernetes` | ワーカーノード参加 | k8s-wk |
+| `install-haproxy` | HAProxy ロードバランサー | lb |
+| `install-keepalived` | Keepalived 高可用性 | lb |
+| `install-frr` | FRR/BGP ルーティング | lb |
+| `install-alloy` | Alloy 監視エージェント | internal |
+| `install-tailscale` | Tailscale インストール | tailscale-* |
+| `configure-tailscale` | Tailscale 設定 | tailscale-* |
+| `configure-iptables-for-external` | 外部接続用 iptables | external |
+| `install-docker` | Docker エンジン | misskey |
+| `install-nginx` | Nginx Web サーバー | external |
+| `install-certbot` | Let's Encrypt 証明書 | external |
+| `install-misskey` | Misskey インストール | misskey |
+| `configure-misskey-host` | Misskey ホスト設定 | misskey |
+| `install-rclone` | Rclone ストレージ同期 | external |
+| `install-squid` | Squid Proxy | 指定ノード |
+| `install-falco` | Falco セキュリティ | 指定ノード |
+| `upgrade-kubernetes` | Kubernetes アップグレード | k8s |
 
 ## 主要な設定変数
 
-### グローバル変数 (group_vars/internal.yaml)
+### 内部クラスター設定 (group_vars/internal.yaml)
 
 ```yaml
-# Global Ansible Configuration
-ansible_port: 22
-ansible_user: ubuntu
-ansible_ssh_private_key_file: /Users/soli/.ssh/id_ed25519
-username: ubuntu
-
-# Software Versions
+# ソフトウェアバージョン
 containerd_version: "2.2.1"
 runc_version: "1.4.0"
 cni_plugins_version: "1.9.0"
-kubernetes_version: 1.35.0
+kubernetes_version: 1.35.1
 
-# Network Configuration
+# ネットワーク
 pod_network_cidr: 10.26.0.0/16
-
-# Infrastructure Configuration
-cluster_name: kkg
-base_network: 192.168.20
-
-# Network Addressing Scheme
-# .10 = Load Balancer VIP
-# .11-.12 = Load Balancers  
-# .13-.15 = Control Plane Nodes
-# .16-.18 = Worker Nodes
-
-# Derived Variables  
 lb_virtual_ip: "192.168.20.10"
 controlplane_endpoint: "192.168.20.10:6443"
 
-# Mimir Configuration
+# 監視
 mimir_endpoint: "https://mimir.str08.net/api/v1/push"
-mimir_org_id: anonymous
-
-# Loki Configuration
-loki_endpoint: "https://loki.str08.net/loki/api/v1/push"
-loki_org_id: fake
+loki_endpoint: "https://loki.str08.net/api/v1/push"
 ```
 
-### Tailscale・外部アクセス変数 (group_vars/all.yaml)
+### ロードバランサー設定 (group_vars/lb.yml)
 
 ```yaml
-# Alloy Configuration
-alloy_disable_reporting: true
-
-# Tailscale Configuration
-tailscale_advertise_routes: "192.168.21.101"
-```
-
-### ロードバランサー変数 (group_vars/lb.yml)
-
-```yaml
-# Load Balancer Configuration
 lb_interface: eth0
 lb_virtual_router_id: 10
 haproxy_backend_port: 6443
+
+# FRR BGP
+frr_local_asn: 65002
+frr_bgp_peers:
+  - { name: kkg-cp1, address: 192.168.20.13, remote_asn: 65001 }
+  - { name: kkg-cp2, address: 192.168.20.14, remote_asn: 65001 }
+  - { name: kkg-cp3, address: 192.168.20.15, remote_asn: 65001 }
 ```
 
-### ホスト固有変数 (host_vars/)
+### 外部サーバー設定 (group_vars/external.yaml)
 
 ```yaml
-# Keepalived Configuration
-keepalived_priority: 200  # kkg-lb1=200, kkg-lb2=100
-keepalived_state: MASTER  # kkg-lb1=MASTER, kkg-lb2=BACKUP
-```
-
-## ネットワークアドレス配置
-
-```
-192.168.20.10   - Load Balancer VIP
-192.168.20.11   - kkg-lb1 (MASTER)
-192.168.20.12   - kkg-lb2 (BACKUP)
-192.168.20.13   - kkg-cp1 (Control Plane Leader)
-192.168.20.14   - kkg-cp2 (Control Plane)
-192.168.20.15   - kkg-cp3 (Control Plane)
-192.168.20.16   - kkg-wk1 (Worker)
-192.168.20.17   - kkg-wk2 (Worker)
-192.168.20.18   - kkg-wk3 (Worker)
+tls_cert_path: "/etc/cert/pstr.space/tls.pem"
+tls_key_path: "/etc/cert/pstr.space/tls.key"
+mimir_endpoint: "https://mimir.pstr.space/api/v1/push"
+loki_endpoint: "https://loki.pstr.space/loki/api/v1/push"
 ```
 
 ## 使用方法
 
 ### 前提条件
 
-1. **Ansible環境**: Ansible 2.9以上
-2. **SSH接続**: 全ノードへのSSH鍵認証設定
-3. **権限**: sudo権限を持つユーザー
-4. **Python環境**: Python 3.8以上（仮想環境推奨）
-5. **ネットワーク**: 各ノード間の通信が可能であること
+- Ansible 2.9+
+- Python 3.8+（仮想環境推奨）
+- 全ノードへの SSH 鍵認証設定
+- sudo 権限を持つユーザー
 
-### 基本的な実行手順
-
-#### 1. 完全セットアップ
+### クラスター構築
 
 ```bash
-# すべてのコンポーネントをセットアップ
+# 全コンポーネントを一括セットアップ
 ansible-playbook -i inventories/kkg site.yaml
 
-# 特定のコンポーネントのみ
-ansible-playbook -i inventories/kkg site-lb.yaml      # ロードバランサーのみ
-ansible-playbook -i inventories/kkg site-k8s.yaml     # Kubernetesのみ
-ansible-playbook -i inventories/kkg site-monitoring.yaml # 監視のみ
-ansible-playbook -i inventories/kkg site-tailscale.yaml  # Tailscaleのみ
+# ステップバイステップ
+ansible-playbook -i inventories/kkg site-all.yaml        # 1. 基本設定
+ansible-playbook -i inventories/kkg site-lb.yaml         # 2. ロードバランサー
+ansible-playbook -i inventories/kkg site-k8s.yaml        # 3. Kubernetesクラスター
+ansible-playbook -i inventories/kkg site-monitoring.yaml # 4. 監視エージェント
+ansible-playbook -i inventories/kkg site-tailscale.yaml  # 5. Tailscale（必要に応じて）
 ```
 
-#### 2. ステップバイステップ実行
+### 外部サーバー
 
 ```bash
-# 1. 基本設定
-ansible-playbook -i inventories/kkg site-all.yaml
+# Misskeyサーバー構築
+ansible-playbook -i inventories/kkg site-misskey.yaml
 
-# 2. ロードバランサー設定
-ansible-playbook -i inventories/kkg site-lb.yaml
+# FRR/BGPインストール
+ansible-playbook -i inventories/kkg install-frr.yaml
 
-# 3. Kubernetesクラスター構築
-ansible-playbook -i inventories/kkg site-k8s.yaml
-
-# 4. 監視エージェント配布
-ansible-playbook -i inventories/kkg site-monitoring.yaml
-
-# 5. Tailscaleネットワーク設定（必要に応じて）
-ansible-playbook -i inventories/kkg site-tailscale.yaml
+# Squid Proxyインストール
+ansible-playbook -i inventories/kkg install-squid.yaml
 ```
 
-#### 3. アップグレード
+### アップグレード
 
 ```bash
-# Kubernetesのアップグレード
-ansible-playbook -i inventories/kkg upgrade-k8s.yaml
-
-# コンテナランタイム（containerd）のアップグレード
-ansible-playbook -i inventories/kkg upgrade-containerd.yaml
-```
-
-#### 4. 特定ロールの実行
-
-```bash
-# 特定のロールのみ実行
-ansible-playbook -i inventories/kkg site-k8s.yaml --tags "install-kubernetes"
-ansible-playbook -i inventories/kkg site-lb.yaml --tags "keepalived"
+ansible-playbook -i inventories/kkg upgrade-k8s.yaml         # Kubernetes
+ansible-playbook -i inventories/kkg upgrade-containerd.yaml   # containerd
+ansible-playbook -i inventories/kkg upgrade-misskey.yaml      # Misskey
 ```
 
 ### トラブルシューティング
-
-#### 接続確認
 
 ```bash
 # 全ホストへの接続確認
 ansible -i inventories/kkg all -m ping
 
-# 特定グループへの接続確認
-ansible -i inventories/kkg k8s -m ping
-ansible -i inventories/kkg lb -m ping
-```
-
-#### 設定確認
-
-```bash
-# インベントリ確認
-ansible-inventory -i inventories/kkg --list
-
-# 変数確認
-ansible -i inventories/kkg all -m debug -a "var=hostvars[inventory_hostname]"
-```
-
-#### ログ確認
-
-```bash
 # 詳細ログ付きで実行
 ansible-playbook -i inventories/kkg site.yaml -vvv
 
-# 特定のタスクのみ実行
+# 特定のタスクから再開
 ansible-playbook -i inventories/kkg site.yaml --start-at-task="タスク名"
 ```
 
-## カスタマイズガイド
+## 設計原則
 
-### 新しい環境への適用
-
-1. **インベントリファイルをコピー**: `inventories/kkg` → `inventories/new-env`
-2. **IPアドレスを更新**: 新しい環境のIPアドレスに変更
-3. **group_vars/internal.yamlを調整**: ネットワーク設定とバージョンを更新
-4. **SSH鍵パスを設定**: `ansible_ssh_private_key_file`を適切なパスに設定
-
-### スケールアウト
-
-#### ワーカーノード追加
-
-1. インベントリに新しいホストを追加
-2. `k8s`と`k8s-wk`グループに追加
-3. プレイブック実行（新しいノードのみが処理される）
-
-#### コントロールプレーン追加
-
-1. インベントリに新しいホストを追加
-2. `k8s`、`k8s-cp`、`k8s-cp-follower`グループに追加
-3. プレイブック実行
-
-### バージョン管理
-
-`inventories/group_vars/internal.yaml`で以下のバージョンを管理：
-
-```yaml
-containerd_version: "2.2.1"      # containerdバージョン
-runc_version: "1.4.0"            # runcバージョン
-cni_plugins_version: "1.9.0"     # CNI Pluginsバージョン
-kubernetes_version: 1.35.0        # Kubernetesバージョン
-```
-
-### 監視設定
-
-Alloy監視エージェントの設定：
-
-```yaml
-# Mimir Configuration
-mimir_endpoint: "https://mimir.str08.net/api/v1/push"
-mimir_org_id: anonymous
-
-# Alloy Configuration  
-alloy_disable_reporting: true
-```
-
-- **Mimir**: メトリクス収集とストレージ
-- **Alloy**: Grafana Alloyエージェントによる統合監視
-
-## セキュリティ考慮事項
-
-1. **SSH鍵管理**: 適切なSSH鍵のローテーション
-2. **sudo権限**: 最小権限の原則に従った設定
-3. **ファイアウォール**: 必要なポートのみ開放
-4. **定期更新**: セキュリティパッチの定期適用
-
-## 利点
-
-1. **保守性**: IPアドレス変更は1箇所のみ
-2. **スケーラビリティ**: ホスト追加時に設定ファイル変更不要
-3. **可読性**: 設定が論理的に分離されている
-4. **再利用性**: 他の環境への適用が容易
-5. **自動化**: 手動作業を最小限に抑制
-6. **一貫性**: 環境間での設定の一貫性を保証
+- **DRY**: IP アドレスは各ホストで一度だけ定義。HAProxy バックエンドは `k8s-cp` グループから動的生成
+- **分離された設定**: グローバル / グループ / ホスト固有の変数を適切に分離
+- **スケーラビリティ**: ホスト追加時にインベントリとグループへの追加のみで対応可能

@@ -1,124 +1,93 @@
 # Tailscale ACL Terraform Configuration
 
-このディレクトリは、Tailscale の ACL（Access Control List）を Terraform で管理する設定を含みます。
+Tailscale の ACL（Access Control List）を Terraform で管理する設定です。
 
 ## 概要
 
-- provider: `tailscale/tailscale` (main.tf では `0.24.0` を指定)
-- ACL は `resource "tailscale_acl" "main"` で管理されています。
+```mermaid
+graph LR
+    subgraph "Tailscale Network"
+        KKG["kkg-external<br/>tag:kkg-external"]
+        SVC["Services<br/>tag:service"]
+        OPS["Operations<br/>tag:operation"]
+    end
+
+    KKG -->|"access 192.168.21.101"| LBPool["Cilium LB Pool"]
+    OPS -->|"SSH (ubuntu)"| SVC
+```
+
+- **Provider**: tailscale/tailscale 0.27.0
+- **State Backend**: Cloudflare R2（S3 互換）
+  - Bucket: `tfstate`
+  - Key: `pke/tailscale/terraform.tfstate`
+
+## ACL 設定
+
+### タグ・グループ
+
+| タグ | Owner | 用途 |
+|------|-------|------|
+| `tag:kkg-external` | group:kkg | 外部からのクラスターアクセス |
+| `tag:service` | group:service | サービスノード |
+| `tag:operation` | group:operation | 運用ノード |
+
+### アクセス制御
+
+- **デフォルト ACL**: 全トラフィック許可（`*:* → accept`）
+- **Grants**: `tag:kkg-external` → `192.168.21.101/32`（全ポート）
+- **SSH**: `tag:operation` → `tag:service`（ubuntu ユーザー、check モード）
+
+## ファイル構成
+
+```
+terraform/tailscale/
+├── main.tf             # ACL定義（Provider, Backend, Resource）
+├── setup.sh            # 環境変数セットアップ（1Password連携）
+├── import_acl.sh       # 既存ACLインポートスクリプト
+└── README.md
+```
 
 ## 前提条件
 
-1. Tailscale API キー
-   - Tailscale 管理画面の API keys からキーを生成
-   - 環境変数 `TAILSCALE_API_KEY` に設定します。
+- Terraform CLI
+- Tailscale API キー
+- Cloudflare R2 認証情報（State Backend 用）
 
-   ```bash
-   export TAILSCALE_API_KEY="your-api-key-here"
-   ```
+## 使用方法
 
-   - 補助スクリプト `setup.sh` がリポジトリ内にあり、1Password CLI (`op`) を使ってキーをエクスポートする例を示しています（組織内で 1Password を使っている場合）。
+### 環境変数の設定
 
-2. Terraform（CLI）がインストールされていること
+```bash
+# 1Password CLI 連携（推奨）
+source setup.sh
 
-3. S3 バックエンド（Cloudflare R2）用の認証情報
-   - main.tf では Terraform の S3 backend を Cloudflare R2 エンドポイントへ向ける設定をしています。
-   - バックエンドにアクセスするために以下を設定してください：
-
-   ```bash
-   export AWS_ACCESS_KEY_ID="your-access-key"
-   export AWS_SECRET_ACCESS_KEY="your-secret-key"
-   ```
-
-   - main.tf の backend 設定（抜粋）:
-     - endpoint: https://e334a8146ecc36d6c72387c7e99630ee.r2.cloudflarestorage.com
-     - bucket: `tfstate`
-     - key: `pke/tailscale/terraform.tfstate`
-     - region: `auto` とし、各種検証スキップオプションが有効になっています。
-
-## セットアップと運用手順
+# または手動設定
+export TAILSCALE_API_KEY="your-api-key"
+export AWS_ACCESS_KEY_ID="your-r2-access-key"
+export AWS_SECRET_ACCESS_KEY="your-r2-secret-key"
+```
 
 ### 新規セットアップ
 
-1. 環境変数を設定（上記を参照）
-2. Terraform の初期化
-
 ```bash
 terraform init
-```
-
-3. 変更の確認
-
-```bash
 terraform plan
-```
-
-4. 適用
-
-```bash
 terraform apply
 ```
 
-### 既存 ACL の取り込み（推奨）
-
-付属の `import_acl.sh` を使うと、前提条件チェック、API 接続確認、`terraform init`、および `terraform import tailscale_acl.main acl` を自動で行います。
+### 既存 ACL のインポート
 
 ```bash
-export TAILSCALE_API_KEY="..."
-export AWS_ACCESS_KEY_ID="..."
-export AWS_SECRET_ACCESS_KEY="..."
+# 自動（前提条件チェック + API接続確認 + import）
 ./import_acl.sh
-```
 
-### 手動での import
-
-1. `TAILSCALE_API_KEY` をエクスポート
-2. `terraform init`
-3. ACL を import
-
-```bash
+# 手動
+terraform init
 terraform import tailscale_acl.main acl
+terraform plan
 ```
-
-4. `terraform plan` で差分を確認し、必要であれば `terraform apply` を実行してください。
-
-## ACL 設定について
-
-ACL の中身は `main.tf` の `acl = jsonencode(...)` で直接定義されています。主な構成要素:
-
-- tagOwners: `tag:k8s-operator`, `tag:k8s`, `tag:kkg-external` など
-- groups: `group:k8s-readers`, `group:prod`, `group:kkg`（例として GitHub ユーザー `Soli0222@github` が割り当てられています）
-- grants: Kubernetes 統合（impersonate 設定）や特定 IP へのアクセス許可
-- acls: デフォルトで全許可（`accept` のルールが1つあります）
-- ssh: SSH の `check` ルール（nonroot や root へのアクセス指定）
-
-実際の JSON は `main.tf` を確認してください。
 
 ## 注意事項
 
-- ACL の変更は慎重に行ってください。誤った設定は通信遮断を招く可能性があります。
-- API キーは機密情報です。適切に管理してください。
-- バックエンドの R2（S3）認証情報は安全に保管してください。
-
-## トラブルシューティング
-
-一般的なチェック項目:
-
-- `TAILSCALE_API_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` が設定されているか
-- `terraform` と `curl` が利用可能か
-- ネットワークから Tailscale API (`https://api.tailscale.com`) にアクセスできるか
-
-付属スクリプト `import_acl.sh` は上記チェックを行い、問題点を出力します。
-
-## リポジトリ内の主なファイル
-
-- `main.tf` - 実際の ACL を保持する Terraform 設定
-- `import_acl.sh` - 既存 ACL を Terraform state に import する補助スクリプト
-- `setup.sh` - 1Password (`op`) から環境変数をエクスポートする補助スクリプト（組織内利用向け）
-- `.terraform.lock.hcl` - プロバイダロックファイル
-- `.gitignore` - 無視設定
-
-## 変更履歴 / メモ
-
-- README を main.tf と実際のスクリプトに合わせて更新しました（Cloudflare R2 backend 設定、必要な環境変数、存在するスクリプトの一覧を反映）。
-
+- ACL の変更は慎重に行ってください。誤った設定は通信遮断を招く可能性があります
+- API キーおよび R2 認証情報は機密情報です。適切に管理してください
