@@ -43,3 +43,5 @@ config:
   scanner:
     schedule: "*/5 * * * *"
     purgeMissing: "always"
+  deezer:
+    language: "ja"
