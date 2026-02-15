@@ -1,0 +1,6 @@
+- name: FRR BGP Setup
+  hosts: lb
+  become: true
+  roles:
+    - install-docker
+    - install-frr

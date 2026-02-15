@@ -1,0 +1,56 @@
+- name: Create FRR configuration directory
+  ansible.builtin.file:
+    path: /etc/frr
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy FRR configuration file
+  ansible.builtin.template:
+    src: frr.conf.j2
+    dest: /etc/frr/frr.conf
+    owner: root
+    group: root
+    mode: '0640'
+  notify: restart frr
+
+- name: Deploy FRR daemons file
+  ansible.builtin.template:
+    src: daemons.j2
+    dest: /etc/frr/daemons
+    owner: root
+    group: root
+    mode: '0640'
+  notify: restart frr
+
+- name: Create empty vtysh.conf
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/frr/vtysh.conf
+    owner: root
+    group: root
+    mode: '0640'
+    force: false
+
+- name: Deploy FRR Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /etc/frr/docker-compose.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Pull FRR Docker image
+  community.docker.docker_compose_v2_pull:
+    project_src: /etc/frr
+    files:
+      - docker-compose.yml
+
+- name: Start FRR container with Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: /etc/frr
+    files:
+      - docker-compose.yml
+    state: present
+    recreate: auto

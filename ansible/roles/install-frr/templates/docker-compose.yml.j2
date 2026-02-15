@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+services:
+  frr:
+    image: quay.io/frrouting/frr:10.5.1
+    container_name: frr
+    restart: always
+    network_mode: host
+    privileged: true
+    volumes:
+      - /etc/frr:/etc/frr
