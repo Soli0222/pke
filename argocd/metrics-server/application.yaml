@@ -16,9 +16,9 @@ spec:
       jsonPointers:
         - /spec/insecureSkipTLSVerify
   sources:
-    - repoURL: https://github.com/kubernetes-sigs/metrics-server.git
-      targetRevision: master
-      path: charts/metrics-server
+    - chart: metrics-server
+      repoURL: https://kubernetes-sigs.github.io/metrics-server
+      targetRevision: 3.13.0
       helm:
         valueFiles:
           - $values/argocd/metrics-server/values.yaml
@@ -28,9 +28,8 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
+  syncPolicy: {}
+      # prune: true
+      # selfHeal: true
+    # syncOptions:
+    #   - CreateNamespace=true
