@@ -16,9 +16,9 @@ spec:
       jsonPointers:
         - /spec/insecureSkipTLSVerify
   sources:
-    - chart: metrics-server
-      repoURL: https://kubernetes-sigs.github.io/metrics-server
-      targetRevision: 3.13.0
+    - repoURL: https://github.com/kubernetes-sigs/metrics-server.git
+      targetRevision: master
+      path: charts/metrics-server
       helm:
         valueFiles:
           - $values/argocd/metrics-server/values.yaml
