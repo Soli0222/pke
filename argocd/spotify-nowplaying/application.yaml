@@ -12,7 +12,7 @@ spec:
   sources:
     - chart: spotify-nowplaying
       repoURL: https://soli0222.github.io/helm-charts
-      targetRevision: 3.0.1
+      targetRevision: 3.0.2
       helm:
         valueFiles:
           - $values/argocd/spotify-nowplaying/values.yaml
