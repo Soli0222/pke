@@ -1,0 +1,36 @@
+role: "Aggregator"
+
+service:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  ports:
+    - name: syslog
+      port: 1514
+      protocol: UDP
+      targetPort: 1514
+
+customConfig:
+  data_dir: /vector-data-dir
+  api:
+    enabled: true
+    address: 127.0.0.1:8686
+    playground: false
+  sources:
+    syslog:
+      type: socket
+      address: 0.0.0.0:1514
+      mode: udp
+      decoding:
+        codec: bytes
+  sinks:
+    loki:
+      type: loki
+      inputs: [syslog]
+      endpoint: http://loki-gateway.loki
+      path: /loki/api/v1/push
+      tenant_id: "fake"
+      encoding:
+        codec: json
+      labels:
+        source: syslog
+        host: ix2215-1
