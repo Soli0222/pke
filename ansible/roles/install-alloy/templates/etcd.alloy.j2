@@ -1,0 +1,4 @@
+prometheus.scrape "etcd" {
+  targets = [{"__address__" = "127.0.0.1:2381", "instance" = "{{ ansible_hostname }}", "job" = "etcd"}]
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}

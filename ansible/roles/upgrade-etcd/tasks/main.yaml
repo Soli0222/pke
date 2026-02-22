@@ -1,0 +1,56 @@
+---
+- name: Ensure etcd version is provided
+  assert:
+    that:
+      - etcd_version is defined
+      - etcd_version | length > 0
+
+- name: Download target etcd release archive
+  get_url:
+    url: "{{ etcd_download_url }}"
+    dest: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    mode: "0644"
+
+- name: Extract target etcd release archive
+  unarchive:
+    src: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    dest: /var/lib/etcd/downloads
+    remote_src: true
+    creates: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64"
+
+- name: Upgrade etcd binaries
+  copy:
+    src: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  loop:
+    - etcd
+    - etcdctl
+
+- name: Restart etcd service
+  systemd:
+    name: etcd
+    state: restarted
+    daemon_reload: true
+
+- name: Wait for etcd endpoint after restart
+  wait_for:
+    host: 127.0.0.1
+    port: 2379
+    state: started
+    timeout: 180
+
+- name: Validate etcd endpoint health after upgrade
+  command: >-
+    /usr/local/bin/etcdctl
+    --endpoints=https://127.0.0.1:2379
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    endpoint health
+  environment:
+    ETCDCTL_API: "3"
+  changed_when: false

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export ETCDCTL_API=3
+CERT_DIR="{{ etcd_pki_dir }}"
+
+/usr/local/bin/etcdctl \
+  --endpoints="https://127.0.0.1:2379" \
+  --cacert="${CERT_DIR}/ca.crt" \
+  --cert="${CERT_DIR}/healthcheck-client.crt" \
+  --key="${CERT_DIR}/healthcheck-client.key" \
+  defrag

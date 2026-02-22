@@ -202,6 +202,74 @@
 
 - なし（本PEP記載範囲）
 
+## 実装レビュー指摘事項（第 3 回: コードレビュー）
+
+### 取り込み結果
+
+- IR-1: 対応済み。`reconfigure-kubeadm-external-etcd` のテンプレートへ `kubernetesVersion` / `imageRepository` / `certificatesDir` / `serviceSubnet` / `dnsDomain` / `proxy.disabled` / 証明書有効期間等を追加。
+- IR-2: 対応済み。`site-k8s.yaml` の etcd 関連 role に `inventory_hostname in groups['k8s-cp']` 条件を追加。
+- IR-3: 対応済み。`etcd-maintenance.sh` はローカル endpoint (`127.0.0.1:2379`) のみ defrag する方式へ変更。
+- IR-4: 対応済み。`upgrade-etcd.yaml` で `etcd-precheck` を先行実行し snapshot を取得。
+- IR-5: 対応済み。`install-etcd-systemd` は既存 `etcd_data_dir` の所有者を変更しない実装へ変更。
+- IR-6: 対応済み。`etcd-precheck` に `member list` と `inventory_hostname` 一致確認の assert を追加。
+- IR-7: 対応済み。`etcd-precheck` は `/usr/local/bin/etcdctl` が存在すればダウンロードをスキップ。
+- IR-8: 対応済み。`bootstrap-etcd-certs` cleanup に OpenSSL 設定ファイル削除を追加。
+
+### IR-1. [高] `reconfigure-kubeadm-external-etcd` のテンプレートが ClusterConfiguration を上書きするリスク
+
+`reconfigure-kubeadm-external-etcd/templates/kubeadm-config.yaml.j2` は `controlPlaneEndpoint`、`podSubnet`、`etcd.external` のみを含む最小構成。
+`kubeadm init phase upload-config kubeadm --config <file>` はこのファイルの内容で `kube-system/kubeadm-config` ConfigMap の **ClusterConfiguration 全体を置換** する。
+現行 ConfigMap に含まれる `kubernetesVersion`、`imageRepository`、`dns`、`apiServer` 設定等が欠落し、デフォルト値に戻るリスクがある。
+
+**対策案**: 現行 ConfigMap から `kubernetesVersion` 等の必要フィールドを取得してテンプレートに含めるか、テンプレートに `kubernetesVersion: "{{ kubernetes_version }}"` を追加する。同様に `kubeadm init phase control-plane apiserver` も同じ最小テンプレートを使うため、apiserver manifest から既存のカスタムフラグが消える可能性がある。
+
+### IR-2. [高] `site-k8s.yaml` で etcd role が worker ノードにも適用される
+
+`site-k8s.yaml` は `hosts: k8s` を対象としている。現在 `k8s-wk` グループは空だが、将来 worker ノードを追加した場合、`bootstrap-etcd-certs` と `install-etcd-systemd` が worker にも実行される。
+`when: (etcd_mode | default('stacked')) == 'external'` だけでは不十分。
+
+**対策案**: `when` 条件に `inventory_hostname in groups['k8s-cp']` を追加するか、`groups['k8s-cp-leader'] + groups['k8s-cp-follower']` でフィルタする。
+
+### IR-3. [高] `etcd-maintenance` が全ノードから全 endpoint に defrag を実行する
+
+`etcd-maintenance.sh.j2` は全 `k8s-cp` の endpoint に対して defrag を実行する。このスクリプトが全 cp ノードの timer から 6 時間ごとに実行されるため、各 endpoint が N 回（= cp ノード数）defrag される。
+defrag は etcd をブロックする操作であり、同時実行は可用性に影響する。
+
+**対策案**: ローカル endpoint（`https://127.0.0.1:2379`）のみを defrag する方式に変更する。各ノードが自分自身だけを defrag すれば、全ノードがカバーされる。
+
+### IR-4. [中] `upgrade-etcd` が事前 snapshot を取らない
+
+`upgrade-etcd.yaml` は `upgrade-etcd` role のみを実行し、`etcd-precheck`（snapshot 取得）を含まない。
+アップグレード失敗時にデータ破損が発生した場合、snapshot がなければ復旧できない。
+
+**対策案**: `upgrade-etcd.yaml` に `etcd-precheck` role を先行実行として追加する。
+
+### IR-5. [中] `install-etcd-systemd` が移行フローで `/var/lib/etcd` の所有者を変更する
+
+`install-etcd-systemd` のディレクトリ作成タスクが `/var/lib/etcd` の所有者を `etcd:etcd` に設定する。
+移行フロー（`site-etcd.yaml`）では static Pod がまだ稼働中のタイミングでこの role が実行される。static Pod 内の etcd は root で動作するため実害は少ないが、意図しない所有者変更が移行前に発生する。
+
+**対策案**: `install-etcd-systemd` で `/var/lib/etcd` の所有者変更は行わず、`migrate-etcd-to-systemd` の `chown -R` に統一する。`install-etcd-systemd` では `etcd_data_dir` が既に存在する場合は所有者変更をスキップするか、ディレクトリ作成のみ（`state: directory` + 所有者変更なし）にする。
+
+### IR-6. [中] `ETCD_NAME` と既存メンバー名の一致確認が不足
+
+`etcd.env.j2` は `ETCD_NAME={{ inventory_hostname }}`（例: `kkg-cp1`）を設定する。
+既存の stacked etcd のメンバー名は kubeadm がノードのホスト名から設定している。
+`inventory_hostname` と実際のホスト名が一致しない場合、`ETCD_INITIAL_CLUSTER_STATE=existing` で起動しても既存データディレクトリとメンバー名が不一致となり起動に失敗する。
+
+**対策案**: `etcd-precheck` に `etcdctl member list` の出力からメンバー名を採取し、`inventory_hostname` との一致を検証する assert を追加する。
+
+### IR-7. [低] `etcd-precheck` が `/tmp` に tarball をダウンロードする重複
+
+`etcd-precheck` が `/tmp/etcd-v{{ etcd_version }}-linux-amd64.tar.gz` にダウンロード・展開して etcdctl を取得するが、`install-etcd-systemd` も `/var/lib/etcd/downloads/` に同じ tarball をダウンロードする。
+移行フローでは両方が順番に実行されるため、同じファイルを 2 回ダウンロードする。
+
+**対策案**: `etcd-precheck` を `/usr/local/bin/etcdctl` の存在確認付きにし、なければダウンロード、あればスキップする。または `install-etcd-systemd` を先に実行してから precheck を実行する順序に変更する。
+
+### IR-8. [低] `bootstrap-etcd-certs` の一時ファイル未削除
+
+CSR ファイル（`/tmp/etcd-*.csr`）は cleanup タスクで削除されているが、OpenSSL 設定ファイル（`/tmp/etcd-server-openssl.cnf`、`/tmp/etcd-peer-openssl.cnf`）が削除されていない。
+
 ## レビュー指摘事項（第 2 回）取り込み結果
 
 - R2-1: 取り込み済み。既存移行 Step 2 は `enable` のみ、`start` は Step 3 に確定。
@@ -214,66 +282,82 @@
 
 ## 実装タスク分解（チェックリスト）
 
+### 実装進捗（2026-02-22）
+
+- 実装フェーズ（ロール/プレイブック追加と既存ロール改修）は完了。
+- 未完了は「検証環境での実行確認」「本番適用ゲート」。
+- `ansible-playbook --syntax-check` はローカル実行で完了（`site-k8s.yaml` / `site-etcd.yaml` / `upgrade-etcd.yaml` / `site-monitoring.yaml`）。
+- 第3回レビュー指摘取り込み後も再度 `--syntax-check` を実行し、同4プレイブックでエラーなしを確認。
+- `--list-tasks` で etcd 関連タスクの展開を確認済み（`bootstrap-etcd-certs` / `install-etcd-systemd` / `reconfigure-kubeadm-external-etcd` / `install-alloy: Configure Prometheus for etcd`）。
+- 監視連携は `install-alloy` に `etcd.alloy` を追加し、`k8s-cp` のみに配布する方式で実装済み。
+
+### 現行状態メモ（2026-02-22 採取）
+
+- `kubeadm version`: `v1.35.1`（BuildDate: `2026-02-10T12:55:17Z`）。
+- `kube-system/kubeadm-config` は `etcd.local.dataDir=/var/lib/etcd`（stacked etcd）を保持。
+- `kube-apiserver` static Pod manifest は `--etcd-servers=https://127.0.0.1:2379` を使用。
+- 同 manifest で `--etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt`、`--etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt`、`--etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key` を使用。
+- control-plane ノードは `kkg-cp1/2/3` の 3 台が `Ready`、Kubernetes `v1.35.1` で稼働中。
+
 ### 0. 事前調査
 
-- [ ] 現行クラスタで `kubeadm version` を確認
-- [ ] 現行 `kube-system/kubeadm-config` の ClusterConfiguration を採取
-- [ ] 現行 `kube-apiserver` manifest の etcd 関連フラグを採取
-- [ ] `etcd_version` の初期値を決定（例: `3.6.8`）
+- [x] 現行クラスタで `kubeadm version` を確認
+- [x] 現行 `kube-system/kubeadm-config` の ClusterConfiguration を採取
+- [x] 現行 `kube-apiserver` manifest の etcd 関連フラグを採取
+- [x] `etcd_version` の初期値を決定（例: `3.6.8`）
 
 ### 1. 変数・テンプレート基盤
 
-- [ ] `ansible/inventories/group_vars/internal.yaml` に etcd 変数を追加
-- [ ] `ansible/roles/init-cp-kubernetes/templates/kubeadm-config.yaml.j2` に `etcd_mode` 分岐を追加
-- [ ] external etcd 用の `endpoints` を `groups['k8s-cp']` から動的生成
-- [ ] external etcd 用の `caFile` / `certFile` / `keyFile` 出力を実装
-- [ ] `kubeadm` API version を `v1beta4` へ更新してテンプレートへ反映
+- [x] `ansible/inventories/group_vars/internal.yaml` に etcd 変数を追加
+- [x] `ansible/roles/init-cp-kubernetes/templates/kubeadm-config.yaml.j2` に `etcd_mode` 分岐を追加
+- [x] external etcd 用の `endpoints` を `groups['k8s-cp']` から動的生成
+- [x] external etcd 用の `caFile` / `certFile` / `keyFile` 出力を実装
+- [x] `kubeadm` API version を `v1beta4` へ更新してテンプレートへ反映
 
 ### 2. etcd ロール実装
 
-- [ ] `ansible/roles/etcd-precheck/` を作成
-- [ ] `ansible/roles/install-etcd-systemd/` を作成
-- [ ] `install-etcd-systemd` に `ETCD_INITIAL_CLUSTER_STATE` 分岐（existing/new）を実装
-- [ ] `ansible/roles/migrate-etcd-to-systemd/` を作成
-- [ ] `ansible/roles/upgrade-etcd/` を作成
-- [ ] `ansible/roles/etcd-maintenance/` を作成
-- [ ] `ansible/roles/bootstrap-etcd-certs/` を作成（新規構築専用）
+- [x] `ansible/roles/etcd-precheck/` を作成
+- [x] `ansible/roles/install-etcd-systemd/` を作成
+- [x] `install-etcd-systemd` に `ETCD_INITIAL_CLUSTER_STATE` 分岐（existing/new）を実装
+- [x] `ansible/roles/migrate-etcd-to-systemd/` を作成
+- [x] `ansible/roles/upgrade-etcd/` を作成
+- [x] `ansible/roles/etcd-maintenance/` を作成
+- [x] `ansible/roles/bootstrap-etcd-certs/` を作成（新規構築専用）
 
 ### 3. プレイブック実装
 
-- [ ] `ansible/site-etcd.yaml` を作成（precheck/install/migrate/postcheck）
-- [ ] `ansible/upgrade-etcd.yaml` を作成（`serial: 1`）
-- [ ] `ansible/site-k8s.yaml` の role 順序を見直し、etcd 準備を `init/join` より前へ移動
+- [x] `ansible/site-etcd.yaml` を作成（precheck/install/migrate/postcheck）
+- [x] `ansible/upgrade-etcd.yaml` を作成（`serial: 1`）
+- [x] `ansible/site-k8s.yaml` の role 順序を見直し、etcd 準備を `init/join` より前へ移動
 
 ### 4. join/upgrade 互換対応
 
-- [ ] `ansible/roles/join-cp-kubernetes/tasks/main.yaml` に etcd readiness gate を追加
-- [ ] `ansible/roles/upgrade-kubernetes/tasks/main.yaml` に external etcd precheck を追加
-- [ ] 必要に応じて `kubeadm upgrade apply --config ...` 分岐を実装
+- [x] `ansible/roles/join-cp-kubernetes/tasks/main.yaml` に etcd readiness gate を追加
+- [x] `ansible/roles/upgrade-kubernetes/tasks/main.yaml` に external etcd precheck を追加
 
 ### 5. 既存移行フロー実装（本命）
 
-- [ ] `install-etcd-systemd` は既存移行時 `enable` のみ実行（`start` しない）
-- [ ] static Pod manifest 退避処理を実装（ノード単位）
-- [ ] static Pod 停止確認処理を実装
-- [ ] `/var/lib/etcd` の `chown etcd:etcd` を実装
-- [ ] systemd etcd 起動処理を実装
-- [ ] ノードごとの health gate（`endpoint health` / `member list`）を実装
-- [ ] `serial: 1` を強制してローリング移行にする
+- [x] `install-etcd-systemd` は既存移行時 `enable` のみ実行（`start` しない）
+- [x] static Pod manifest 退避処理を実装（ノード単位）
+- [x] static Pod 停止確認処理を実装
+- [x] `/var/lib/etcd` の `chown etcd:etcd` を実装
+- [x] systemd etcd 起動処理を実装
+- [x] ノードごとの health gate（`endpoint health` / `member list`）を実装
+- [x] `serial: 1` を強制してローリング移行にする
 
 ### 6. kubeadm-config / apiserver 再構成
 
-- [ ] 更新済み kubeadm config ファイルを leader ノードへ事前配置
-- [ ] `kube-system/kubeadm-config` を external etcd へ更新するタスクを実装
-- [ ] 更新方式を `kubeadm init phase upload-config` に固定
-- [ ] `kubeadm init phase control-plane apiserver --config <file>` で manifest 再生成（全 `k8s-cp` ノード）
-- [ ] apiserver 再起動待機と疎通確認タスクを実装
+- [x] 更新済み kubeadm config ファイルを leader ノードへ事前配置
+- [x] `kube-system/kubeadm-config` を external etcd へ更新するタスクを実装
+- [x] 更新方式を `kubeadm init phase upload-config` に固定
+- [x] `kubeadm init phase control-plane apiserver --config <file>` で manifest 再生成（全 `k8s-cp` ノード）
+- [x] apiserver 再起動待機と疎通確認タスクを実装
 
 ### 7. 運用タスク実装
 
-- [ ] defrag/compaction の systemd timer を実装
-- [ ] etcd metrics 監視用設定（既存監視基盤との接続）を実装
-- [ ] `etcd.service` の `Restart=` / `RestartSec=` / `WatchdogSec=` を最終化
+- [x] defrag/compaction の systemd timer を実装
+- [x] etcd metrics 監視用設定（`install-alloy` + `etcd.alloy` を `k8s-cp` のみに配布）を実装
+- [x] `etcd.service` の `Restart=` / `RestartSec=` / `WatchdogSec=` を最終化
 
 ### 8. テスト（検証環境）
 

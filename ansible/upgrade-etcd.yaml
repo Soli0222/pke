@@ -1,0 +1,15 @@
+---
+- name: Precheck before etcd upgrade
+  hosts: k8s-cp
+  become: true
+  roles:
+    - role: etcd-precheck
+      vars:
+        etcd_precheck_expect_static_pod: false
+
+- name: Upgrade etcd
+  hosts: k8s-cp
+  become: true
+  serial: 1
+  roles:
+    - upgrade-etcd

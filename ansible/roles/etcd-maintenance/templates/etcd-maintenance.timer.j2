@@ -1,0 +1,9 @@
+[Unit]
+Description=Run etcd maintenance every 6 hours
+
+[Timer]
+OnCalendar=*-*-* 00/6:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,93 @@
+---
+- name: Ensure etcd group exists
+  group:
+    name: etcd
+    system: true
+
+- name: Ensure etcd user exists
+  user:
+    name: etcd
+    group: etcd
+    shell: /usr/sbin/nologin
+    system: true
+    create_home: false
+
+- name: Check etcd data directory
+  stat:
+    path: "{{ etcd_data_dir }}"
+  register: etcd_data_dir_stat
+
+- name: Ensure etcd config directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ etcd_conf_dir }}"
+    - "/var/lib/etcd/downloads"
+
+- name: Ensure etcd data directory exists without mutating ownership on existing dir
+  file:
+    path: "{{ etcd_data_dir }}"
+    state: directory
+    owner: "{{ 'etcd' if not etcd_data_dir_stat.stat.exists else omit }}"
+    group: "{{ 'etcd' if not etcd_data_dir_stat.stat.exists else omit }}"
+    mode: "0700"
+
+- name: Download etcd release archive
+  get_url:
+    url: "{{ etcd_download_url }}"
+    dest: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    mode: "0644"
+
+- name: Extract etcd release archive
+  unarchive:
+    src: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    dest: /var/lib/etcd/downloads
+    remote_src: true
+    creates: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64"
+
+- name: Install etcd binaries
+  copy:
+    src: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  loop:
+    - etcd
+    - etcdctl
+
+- name: Render etcd environment file
+  template:
+    src: templates/etcd.env.j2
+    dest: "{{ etcd_conf_dir }}/etcd.env"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install etcd systemd service
+  template:
+    src: templates/etcd.service.j2
+    dest: /etc/systemd/system/etcd.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: true
+
+- name: Enable etcd service
+  systemd:
+    name: etcd
+    enabled: true
+
+- name: Start etcd service when requested
+  systemd:
+    name: etcd
+    state: started
+  when: etcd_install_start | default(true) | bool

@@ -97,6 +97,13 @@
     mode: '0644'
   when: inventory_hostname in groups['external'] and inventory_hostname in groups['misskey']
 
+- name: Configure Prometheus for etcd
+  ansible.builtin.template:
+    src: etcd.alloy.j2
+    dest: /etc/alloy/etcd.alloy
+    mode: '0644'
+  when: inventory_hostname in groups['k8s-cp']
+
 - name: Systemd Daemon Reload
   ansible.builtin.systemd:
     daemon_reload: yes

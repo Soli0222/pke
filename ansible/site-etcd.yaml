@@ -1,0 +1,36 @@
+---
+- name: Precheck for etcd migration
+  hosts: k8s-cp
+  become: true
+  roles:
+    - role: etcd-precheck
+      vars:
+        etcd_precheck_expect_static_pod: true
+
+- name: Install etcd systemd artifacts without starting service
+  hosts: k8s-cp
+  become: true
+  roles:
+    - role: install-etcd-systemd
+      vars:
+        etcd_cluster_state_mode: existing
+        etcd_install_start: false
+
+- name: Migrate etcd from static pod to systemd
+  hosts: k8s-cp
+  become: true
+  serial: 1
+  roles:
+    - migrate-etcd-to-systemd
+
+- name: Reconfigure kubeadm and apiserver for external etcd
+  hosts: k8s-cp
+  become: true
+  roles:
+    - reconfigure-kubeadm-external-etcd
+
+- name: Enable etcd maintenance timer
+  hosts: k8s-cp
+  become: true
+  roles:
+    - etcd-maintenance

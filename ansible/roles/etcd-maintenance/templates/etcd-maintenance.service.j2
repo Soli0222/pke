@@ -1,0 +1,8 @@
+[Unit]
+Description=Run etcd maintenance tasks
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/etcd-maintenance.sh

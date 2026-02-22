@@ -52,6 +52,29 @@
   debug:
     msg: "kubeadm version: {{ kubeadm_version.stdout }}"
 
+- name: Ensure etcd service is active before Kubernetes upgrade
+  command: systemctl is-active etcd
+  register: etcd_service_state
+  changed_when: false
+  when:
+    - (etcd_mode | default('stacked')) == 'external'
+    - inventory_hostname in groups['k8s-cp']
+
+- name: Validate local etcd endpoint health before Kubernetes upgrade
+  command: >-
+    /usr/local/bin/etcdctl
+    --endpoints=https://127.0.0.1:2379
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    endpoint health
+  environment:
+    ETCDCTL_API: "3"
+  changed_when: false
+  when:
+    - (etcd_mode | default('stacked')) == 'external'
+    - inventory_hostname in groups['k8s-cp']
+
 # Control plane leader upgrade
 - name: Upgrade control plane leader
   block:
