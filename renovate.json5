@@ -75,6 +75,7 @@
         'opencontainers/runc',
         'containernetworking/plugins',
         'kubernetes/kubernetes',
+        'etcd-io/etcd',
       ],
       commitMessageTopic: 'Infrastructure {{depName}}',
       groupName: 'Infrastructure components',
@@ -153,6 +154,18 @@
         'kubernetes_version:\\s*(?<currentValue>[^\\s]+)',
       ],
       depNameTemplate: 'kubernetes/kubernetes',
+      datasourceTemplate: 'github-releases',
+      versioningTemplate: 'semver',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/ansible/inventories/group_vars/.*\\.ya?ml$/',
+      ],
+      matchStrings: [
+        'etcd_version:\\s*"(?<currentValue>[^"]+)"',
+      ],
+      depNameTemplate: 'etcd-io/etcd',
       datasourceTemplate: 'github-releases',
       versioningTemplate: 'semver',
     },

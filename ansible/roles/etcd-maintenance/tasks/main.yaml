@@ -1,0 +1,32 @@
+---
+- name: Install etcd maintenance script
+  template:
+    src: templates/etcd-maintenance.sh.j2
+    dest: /usr/local/sbin/etcd-maintenance.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install etcd maintenance service unit
+  template:
+    src: templates/etcd-maintenance.service.j2
+    dest: /etc/systemd/system/etcd-maintenance.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install etcd maintenance timer unit
+  template:
+    src: templates/etcd-maintenance.timer.j2
+    dest: /etc/systemd/system/etcd-maintenance.timer
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable and start etcd maintenance timer
+  systemd:
+    name: etcd-maintenance.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: etcd_maintenance_enabled | default(true) | bool

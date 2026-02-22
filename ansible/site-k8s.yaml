@@ -4,6 +4,17 @@
   roles:
     - install-containerd
     - install-kubernetes
+    - role: bootstrap-etcd-certs
+      when:
+        - (etcd_mode | default('stacked')) == 'external'
+        - inventory_hostname in groups['k8s-cp']
+    - role: install-etcd-systemd
+      when:
+        - (etcd_mode | default('stacked')) == 'external'
+        - inventory_hostname in groups['k8s-cp']
+      vars:
+        etcd_cluster_state_mode: new
+        etcd_install_start: true
     - init-cp-kubernetes
     - join-cp-kubernetes
     - join-wk-kubernetes

@@ -21,6 +21,30 @@
   run_once: true
   delegate_to: localhost
 
+- name: Ensure etcd is active before joining control plane
+  command: systemctl is-active etcd
+  register: etcd_service_state
+  changed_when: false
+  retries: 12
+  delay: 5
+  until: etcd_service_state.stdout == "active"
+  when:
+    - (etcd_mode | default('stacked')) == 'external'
+    - "'k8s-cp-follower' in group_names"
+
+- name: Validate local etcd endpoint health before join
+  command: >-
+    /usr/local/bin/etcdctl
+    --endpoints=https://127.0.0.1:2379
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    endpoint health
+  changed_when: false
+  when:
+    - (etcd_mode | default('stacked')) == 'external'
+    - "'k8s-cp-follower' in group_names"
+
 - name: Join kubeadm control plane
   command: >
     {{ kubernetes_join }}

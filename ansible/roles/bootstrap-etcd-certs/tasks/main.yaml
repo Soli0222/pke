@@ -1,0 +1,124 @@
+---
+- name: Ensure PKI directories exist
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ etcd_pki_dir }}", mode: "0700" }
+    - { path: "/etc/kubernetes/pki", mode: "0755" }
+
+- name: Generate etcd CA key and certificate on leader
+  command: >-
+    openssl req -x509 -newkey rsa:4096 -sha256 -nodes
+    -keyout {{ etcd_pki_dir }}/ca.key
+    -out {{ etcd_pki_dir }}/ca.crt
+    -days 3650
+    -subj /CN=etcd-ca
+  args:
+    creates: "{{ etcd_pki_dir }}/ca.crt"
+  run_once: true
+  delegate_to: "{{ groups['k8s-cp-leader'][0] }}"
+
+- name: Read etcd CA certificate from leader
+  slurp:
+    src: "{{ etcd_pki_dir }}/ca.crt"
+  register: etcd_ca_crt_raw
+  run_once: true
+  delegate_to: "{{ groups['k8s-cp-leader'][0] }}"
+
+- name: Read etcd CA key from leader
+  slurp:
+    src: "{{ etcd_pki_dir }}/ca.key"
+  register: etcd_ca_key_raw
+  run_once: true
+  delegate_to: "{{ groups['k8s-cp-leader'][0] }}"
+
+- name: Store decoded CA material
+  set_fact:
+    etcd_ca_crt: "{{ etcd_ca_crt_raw.content | b64decode }}"
+    etcd_ca_key: "{{ etcd_ca_key_raw.content | b64decode }}"
+  run_once: true
+  delegate_to: localhost
+
+- name: Distribute etcd CA certificate
+  copy:
+    content: "{{ hostvars['localhost']['etcd_ca_crt'] }}"
+    dest: "{{ etcd_pki_dir }}/ca.crt"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Distribute etcd CA key
+  copy:
+    content: "{{ hostvars['localhost']['etcd_ca_key'] }}"
+    dest: "{{ etcd_pki_dir }}/ca.key"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Render OpenSSL config for etcd server certificate
+  template:
+    src: templates/server-openssl.cnf.j2
+    dest: /tmp/etcd-server-openssl.cnf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Render OpenSSL config for etcd peer certificate
+  template:
+    src: templates/peer-openssl.cnf.j2
+    dest: /tmp/etcd-peer-openssl.cnf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Generate etcd server certificate and key
+  shell: |
+    set -euo pipefail
+    openssl genrsa -out {{ etcd_pki_dir }}/server.key 2048
+    openssl req -new -key {{ etcd_pki_dir }}/server.key -out /tmp/etcd-server.csr -subj "/CN={{ inventory_hostname }}" -config /tmp/etcd-server-openssl.cnf
+    openssl x509 -req -in /tmp/etcd-server.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out {{ etcd_pki_dir }}/server.crt -days 3650 -sha256 -extensions v3_req -extfile /tmp/etcd-server-openssl.cnf
+  args:
+    creates: "{{ etcd_pki_dir }}/server.crt"
+
+- name: Generate etcd peer certificate and key
+  shell: |
+    set -euo pipefail
+    openssl genrsa -out {{ etcd_pki_dir }}/peer.key 2048
+    openssl req -new -key {{ etcd_pki_dir }}/peer.key -out /tmp/etcd-peer.csr -subj "/CN={{ inventory_hostname }}-peer" -config /tmp/etcd-peer-openssl.cnf
+    openssl x509 -req -in /tmp/etcd-peer.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out {{ etcd_pki_dir }}/peer.crt -days 3650 -sha256 -extensions v3_req -extfile /tmp/etcd-peer-openssl.cnf
+  args:
+    creates: "{{ etcd_pki_dir }}/peer.crt"
+
+- name: Generate etcd healthcheck client certificate and key
+  shell: |
+    set -euo pipefail
+    openssl genrsa -out {{ etcd_pki_dir }}/healthcheck-client.key 2048
+    openssl req -new -key {{ etcd_pki_dir }}/healthcheck-client.key -out /tmp/etcd-healthcheck.csr -subj "/CN=kube-etcd-healthcheck-client/O=system:masters"
+    openssl x509 -req -in /tmp/etcd-healthcheck.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out {{ etcd_pki_dir }}/healthcheck-client.crt -days 3650 -sha256
+  args:
+    creates: "{{ etcd_pki_dir }}/healthcheck-client.crt"
+
+- name: Generate apiserver etcd client certificate and key
+  shell: |
+    set -euo pipefail
+    openssl genrsa -out /etc/kubernetes/pki/apiserver-etcd-client.key 2048
+    openssl req -new -key /etc/kubernetes/pki/apiserver-etcd-client.key -out /tmp/apiserver-etcd-client.csr -subj "/CN=kube-apiserver-etcd-client/O=system:masters"
+    openssl x509 -req -in /tmp/apiserver-etcd-client.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out /etc/kubernetes/pki/apiserver-etcd-client.crt -days 3650 -sha256
+  args:
+    creates: /etc/kubernetes/pki/apiserver-etcd-client.crt
+
+- name: Cleanup temporary CSR files
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/etcd-server.csr
+    - /tmp/etcd-peer.csr
+    - /tmp/etcd-healthcheck.csr
+    - /tmp/apiserver-etcd-client.csr
+    - /tmp/etcd-server-openssl.cnf
+    - /tmp/etcd-peer-openssl.cnf

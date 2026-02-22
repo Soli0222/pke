@@ -1,0 +1,29 @@
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+clusterName: "{{ kubeadm_cluster_name | default('kubernetes') }}"
+kubernetesVersion: "{{ (kubernetes_version | string).startswith('v') | ternary(kubernetes_version, 'v' ~ (kubernetes_version | string)) }}"
+imageRepository: "{{ kubeadm_image_repository | default('registry.k8s.io') }}"
+certificatesDir: "{{ kubeadm_certificates_dir | default('/etc/kubernetes/pki') }}"
+caCertificateValidityPeriod: "{{ kubeadm_ca_certificate_validity_period | default('87600h0m0s') }}"
+certificateValidityPeriod: "{{ kubeadm_certificate_validity_period | default('8760h0m0s') }}"
+encryptionAlgorithm: "{{ kubeadm_encryption_algorithm | default('RSA-2048') }}"
+controlPlaneEndpoint: "{{ controlplane_endpoint }}"
+networking:
+  podSubnet: "{{ pod_network_cidr }}"
+  serviceSubnet: "{{ kubeadm_service_subnet | default('10.96.0.0/12') }}"
+  dnsDomain: "{{ kubeadm_dns_domain | default('cluster.local') }}"
+apiServer: {}
+controllerManager: {}
+scheduler: {}
+dns: {}
+proxy:
+  disabled: true
+etcd:
+  external:
+    endpoints:
+{% for host in groups['k8s-cp'] %}
+      - https://{{ hostvars[host]['ansible_host'] }}:2379
+{% endfor %}
+    caFile: "{{ etcd_pki_dir }}/ca.crt"
+    certFile: "{{ etcd_client_cert }}"
+    keyFile: "{{ etcd_client_key }}"

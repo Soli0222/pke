@@ -1,0 +1,99 @@
+---
+- name: Ensure precheck backup directory exists
+  file:
+    path: "{{ etcd_snapshot_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Check static pod manifest exists for migration
+  stat:
+    path: /etc/kubernetes/manifests/etcd.yaml
+  register: etcd_static_manifest
+  when: etcd_precheck_expect_static_pod | default(false) | bool
+
+- name: Ensure static pod manifest exists
+  assert:
+    that:
+      - etcd_static_manifest.stat.exists
+    fail_msg: "Expected /etc/kubernetes/manifests/etcd.yaml but file is missing"
+  when: etcd_precheck_expect_static_pod | default(false) | bool
+
+- name: Ensure required cert files exist
+  stat:
+    path: "{{ item }}"
+  register: etcd_cert_stats
+  loop:
+    - "{{ etcd_pki_dir }}/ca.crt"
+    - "{{ etcd_pki_dir }}/healthcheck-client.crt"
+    - "{{ etcd_pki_dir }}/healthcheck-client.key"
+
+- name: Validate required cert files
+  assert:
+    that:
+      - item.stat.exists
+    fail_msg: "Required certificate file missing: {{ item.stat.path }}"
+  loop: "{{ etcd_cert_stats.results }}"
+
+- name: Check local etcdctl binary
+  stat:
+    path: /usr/local/bin/etcdctl
+  register: etcdctl_local_binary
+
+- name: Download etcd release archive for precheck etcdctl
+  get_url:
+    url: "{{ etcd_download_url }}"
+    dest: "/tmp/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    mode: "0644"
+  when: not etcdctl_local_binary.stat.exists
+
+- name: Extract etcdctl for precheck
+  unarchive:
+    src: "/tmp/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    dest: /tmp
+    remote_src: true
+    creates: "/tmp/etcd-v{{ etcd_version }}-linux-amd64/etcdctl"
+  when: not etcdctl_local_binary.stat.exists
+
+- name: Set etcdctl command path for precheck
+  set_fact:
+    etcdctl_cmd: "{{ '/usr/local/bin/etcdctl' if etcdctl_local_binary.stat.exists else '/tmp/etcd-v' ~ etcd_version ~ '-linux-amd64/etcdctl' }}"
+
+- name: Check etcd endpoint health (local)
+  command: >-
+    {{ etcdctl_cmd }}
+    --endpoints=https://127.0.0.1:2379
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    endpoint health
+  changed_when: false
+
+- name: Get etcd member list
+  command: >-
+    {{ etcdctl_cmd }}
+    --endpoints=https://127.0.0.1:2379
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    member list
+  register: etcd_member_list
+  changed_when: false
+
+- name: Validate etcd member name matches inventory_hostname
+  assert:
+    that:
+      - inventory_hostname in etcd_member_list.stdout
+    fail_msg: "inventory_hostname={{ inventory_hostname }} was not found in etcd member list output"
+  when: etcd_precheck_expect_static_pod | default(false) | bool
+
+- name: Save etcd snapshot on control-plane leader
+  command: >-
+    {{ etcdctl_cmd }}
+    --endpoints=https://127.0.0.1:2379
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    snapshot save {{ etcd_snapshot_dir }}/snapshot-{{ ansible_date_time.iso8601_basic_short }}.db
+  when: inventory_hostname in groups['k8s-cp-leader']

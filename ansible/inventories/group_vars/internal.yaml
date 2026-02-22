@@ -8,6 +8,7 @@ containerd_version: "2.2.1"
 runc_version: "1.4.0"
 cni_plugins_version: "1.9.0"
 kubernetes_version: 1.35.1
+etcd_version: "3.6.8"
 
 # Network Configuration
 pod_network_cidr: 10.26.0.0/16
@@ -21,6 +22,21 @@ pod_network_cidr: 10.26.0.0/16
 # Derived Variables  
 lb_virtual_ip: "192.168.20.10"
 controlplane_endpoint: "192.168.20.10:6443"
+
+# etcd (systemd-managed external etcd mode)
+etcd_mode: external
+etcd_download_url: "https://github.com/etcd-io/etcd/releases/download/v{{ etcd_version }}/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+etcd_data_dir: /var/lib/etcd
+etcd_conf_dir: /etc/etcd
+etcd_pki_dir: /etc/kubernetes/pki/etcd
+etcd_client_cert: /etc/kubernetes/pki/apiserver-etcd-client.crt
+etcd_client_key: /etc/kubernetes/pki/apiserver-etcd-client.key
+etcd_initial_cluster_token: kkg-etcd-cluster
+etcd_cluster_state_mode: new
+etcd_snapshot_dir: /var/backups/etcd
+etcd_restart_sec: 5s
+etcd_watchdog_sec: 0
+etcd_maintenance_enabled: true
 
 # Mimir Configuration
 mimir_endpoint: "https://mimir.str08.net/api/v1/push"

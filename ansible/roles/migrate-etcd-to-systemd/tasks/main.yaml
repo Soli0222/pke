@@ -1,0 +1,71 @@
+---
+- name: Ensure manifest backup directory exists
+  file:
+    path: /etc/kubernetes/manifests/backup
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Move static etcd manifest out of kubelet manifests path
+  command: mv /etc/kubernetes/manifests/etcd.yaml /etc/kubernetes/manifests/backup/etcd.yaml
+  args:
+    creates: /etc/kubernetes/manifests/backup/etcd.yaml
+    removes: /etc/kubernetes/manifests/etcd.yaml
+
+- name: Wait for static etcd to stop listening on 2379
+  wait_for:
+    host: 127.0.0.1
+    port: 2379
+    state: stopped
+    timeout: 180
+
+- name: Ensure etcd data directory ownership
+  file:
+    path: "{{ etcd_data_dir }}"
+    owner: etcd
+    group: etcd
+    recurse: true
+
+- name: Start systemd etcd
+  systemd:
+    name: etcd
+    state: started
+    enabled: true
+  register: etcd_start_result
+  failed_when: false
+
+- name: Wait for systemd etcd to listen on 2379
+  wait_for:
+    host: 127.0.0.1
+    port: 2379
+    state: started
+    timeout: 180
+
+- name: Ensure systemd etcd is active after start
+  command: systemctl is-active etcd
+  register: etcd_active_check
+  changed_when: false
+  retries: 12
+  delay: 5
+  until: etcd_active_check.stdout == "active"
+
+- name: Check etcd endpoint health after migration
+  command: >-
+    /usr/local/bin/etcdctl
+    --endpoints=https://127.0.0.1:2379
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    endpoint health
+  changed_when: false
+
+- name: Check etcd member list after migration
+  command: >-
+    /usr/local/bin/etcdctl
+    --endpoints=https://127.0.0.1:2379
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    member list
+  changed_when: false

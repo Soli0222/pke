@@ -1,0 +1,37 @@
+---
+- name: Render updated kubeadm config for external etcd
+  template:
+    src: templates/kubeadm-config.yaml.j2
+    dest: /etc/kubernetes/kubeadm-config-external-etcd.yaml
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Upload kubeadm ClusterConfiguration to ConfigMap from leader
+  command: >-
+    kubeadm init phase upload-config kubeadm
+    --config /etc/kubernetes/kubeadm-config-external-etcd.yaml
+  when: inventory_hostname in groups['k8s-cp-leader']
+
+- name: Re-generate kube-apiserver manifest from kubeadm config
+  command: >-
+    kubeadm init phase control-plane apiserver
+    --config /etc/kubernetes/kubeadm-config-external-etcd.yaml
+
+- name: Wait for kube-apiserver readyz endpoint
+  command: curl -kfsS https://127.0.0.1:6443/readyz
+  register: apiserver_readyz
+  retries: 30
+  delay: 5
+  until: apiserver_readyz.rc == 0
+  changed_when: false
+
+- name: Verify etcd endpoint health after kube-apiserver regeneration
+  command: >-
+    /usr/local/bin/etcdctl
+    --endpoints=https://127.0.0.1:2379
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    endpoint health
+  changed_when: false
