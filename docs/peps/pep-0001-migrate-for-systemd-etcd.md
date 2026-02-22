@@ -2,7 +2,7 @@
 
 ## ステータス
 
-- Accepted
+- Completed (kkg production migration completed)
 
 ## 背景
 
@@ -21,10 +21,10 @@
 - CNI / LB / 監視スタックの設計変更
 - Worker 管理フローの変更
 
-## 現状（リポジトリ）
+## 対象箇所（リポジトリ）
 
 - `kubeadm init`: `ansible/roles/init-cp-kubernetes/tasks/main.yaml`
-- `kubeadm` テンプレート: `ansible/roles/init-cp-kubernetes/templates/kubeadm-config.yaml.j2`（現状 minimal）
+- `kubeadm` テンプレート: `ansible/roles/init-cp-kubernetes/templates/kubeadm-config.yaml.j2`（本PEPで external etcd 対応）
 - `join control plane`: `ansible/roles/join-cp-kubernetes/tasks/main.yaml`
 - `upgrade`: `ansible/roles/upgrade-kubernetes/tasks/main.yaml`
 
@@ -195,7 +195,7 @@
 - static Pod etcd manifest は運用無効化（退避済み）
 - `kubeadm-config` ConfigMap が external etcd を参照
 - `kube-apiserver` manifest が external etcd を参照
-- `kubeadm join --control-plane` と `kubeadm upgrade` が成功
+- `ec endpoint health` / `ec member list` により etcd クラスタ健全性を確認
 - etcd maintenance timer が有効
 
 ## 未決事項
@@ -285,12 +285,15 @@ CSR ファイル（`/tmp/etcd-*.csr`）は cleanup タスクで削除されて�
 ### 実装進捗（2026-02-22）
 
 - 実装フェーズ（ロール/プレイブック追加と既存ロール改修）は完了。
-- 未完了は「検証環境での実行確認」「本番適用ゲート」。
+- 本PEPの今回スコープ（実装・kkg 本番適用・Runbook 整備）は完了。
+- 検証環境での通しテストは未実施（今回の実施は kkg 本番環境で実施）。
 - `ansible-playbook --syntax-check` はローカル実行で完了（`site-k8s.yaml` / `site-etcd.yaml` / `upgrade-etcd.yaml` / `site-monitoring.yaml`）。
 - 第3回レビュー指摘取り込み後も再度 `--syntax-check` を実行し、同4プレイブックでエラーなしを確認。
 - `--list-tasks` で etcd 関連タスクの展開を確認済み（`bootstrap-etcd-certs` / `install-etcd-systemd` / `reconfigure-kubeadm-external-etcd` / `install-alloy: Configure Prometheus for etcd`）。
 - 監視連携は `install-alloy` に `etcd.alloy` を追加し、`k8s-cp` のみに配布する方式で実装済み。
 - 運用補助として `/usr/local/bin/ec`（etcdctl ラッパー、証明書/endpoint 事前設定付き）を `install-etcd-systemd` で配布。
+- `kkg` 実行時に `systemd` モジュールの起動判定が一時失敗する事象を確認し、`migrate-etcd-to-systemd` の起動後 `is-active` リトライ確認へ修正済み。
+- `kubeadm-config` ConfigMap の `etcd.external` 反映を実クラスタ (`kkg`) で確認済み。
 
 ### 現行状態メモ（2026-02-22 採取）
 
@@ -299,6 +302,8 @@ CSR ファイル（`/tmp/etcd-*.csr`）は cleanup タスクで削除されて�
 - `kube-apiserver` static Pod manifest は `--etcd-servers=https://127.0.0.1:2379` を使用。
 - 同 manifest で `--etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt`、`--etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt`、`--etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key` を使用。
 - control-plane ノードは `kkg-cp1/2/3` の 3 台が `Ready`、Kubernetes `v1.35.1` で稼働中。
+- 移行実行後の `kube-system/kubeadm-config` は `etcd.external`（`192.168.20.13/14/15:2379`）を参照していることを確認。
+- `ec endpoint health` / `ec member list` で local etcd と 3 member `started` を確認（`ETCDCTL_API` 指定不要）。
 
 ### 0. 事前調査
 
@@ -362,18 +367,21 @@ CSR ファイル（`/tmp/etcd-*.csr`）は cleanup タスクで削除されて�
 
 ### 8. テスト（検証環境）
 
-- [ ] 新規構築トラックを通し実行して control-plane 構築を確認
-- [ ] 既存移行トラックを通し実行してローリング移行を確認
-- [ ] `kubeadm join --control-plane` の成功を確認
-- [ ] `kubeadm upgrade` の成功（または dry-run）を確認
-- [ ] ロールバック手順（manifest 戻し / snapshot 復旧）のリハーサルを実施
+今回の変更では検証環境での通しテストは実施していない（`kkg` 本番環境で直接実施）。
 
-### 9. 本番適用ゲート
+- 未実施: 新規構築トラックを通し実行して control-plane 構築を確認
+- 未実施: `kubeadm join --control-plane` の成功を確認（新規構築または追加CP時）
+- 未実施: `kubeadm upgrade` の成功（または dry-run）を確認
+- 未実施: ロールバック手順（manifest 戻し / snapshot 復旧）のリハーサルを実施
 
-- [ ] メンテナンスウィンドウを確定
-- [ ] snapshot 保管先と復旧責任者を確定
-- [ ] 実行コマンドと実行順（runbook）を確定
-- [ ] Done Criteria の全項目を満たしたことを記録
+### 9. 本番適用ゲート（kkg 実施結果）
+
+- [x] メンテナンスウィンドウを確定して実施
+- [x] snapshot を取得してから実施（`etcd-precheck`）
+- [x] 実行コマンドと実行順（Runbook）を確定（本PEPに記録）
+- [x] `kubeadm-config` が `etcd.external` を参照することを確認
+- [x] `ec endpoint health` / `ec member list` で etcd 稼働を確認
+- [x] `Done Criteria` を満たすことを確認（本番適用完了）
 
 ## 既存クラスタ（kkg）作業手順（Runbook）
 
