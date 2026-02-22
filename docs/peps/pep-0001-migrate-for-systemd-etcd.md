@@ -290,6 +290,7 @@ CSR ファイル（`/tmp/etcd-*.csr`）は cleanup タスクで削除されて�
 - 第3回レビュー指摘取り込み後も再度 `--syntax-check` を実行し、同4プレイブックでエラーなしを確認。
 - `--list-tasks` で etcd 関連タスクの展開を確認済み（`bootstrap-etcd-certs` / `install-etcd-systemd` / `reconfigure-kubeadm-external-etcd` / `install-alloy: Configure Prometheus for etcd`）。
 - 監視連携は `install-alloy` に `etcd.alloy` を追加し、`k8s-cp` のみに配布する方式で実装済み。
+- 運用補助として `/usr/local/bin/ec`（etcdctl ラッパー、証明書/endpoint 事前設定付き）を `install-etcd-systemd` で配布。
 
 ### 現行状態メモ（2026-02-22 採取）
 
@@ -373,3 +374,103 @@ CSR ファイル（`/tmp/etcd-*.csr`）は cleanup タスクで削除されて�
 - [ ] snapshot 保管先と復旧責任者を確定
 - [ ] 実行コマンドと実行順（runbook）を確定
 - [ ] Done Criteria の全項目を満たしたことを記録
+
+## 既存クラスタ（kkg）作業手順（Runbook）
+
+対象:
+- Inventory: `ansible/inventories/kkg`
+- Control plane: `kkg-cp1`（leader）, `kkg-cp2`, `kkg-cp3`
+
+前提:
+- `ansible/inventories/group_vars/internal.yaml` の `etcd_mode: external` を維持
+- `etcd_version` は Renovate 管理（現状 `3.6.8`）
+- メンテナンスウィンドウ内で実施
+
+### 1. 事前確認
+
+1. 構文確認
+```bash
+cd /Users/soli/pke/ansible
+ansible-playbook -i inventories/kkg --syntax-check site-etcd.yaml
+ansible-playbook -i inventories/kkg --syntax-check site-monitoring.yaml
+```
+2. 対象ノード確認
+```bash
+kubectl get nodes -owide
+```
+3. 現行設定採取（監査ログ）
+```bash
+kubectl -n kube-system get cm kubeadm-config -oyaml
+sudo cat /etc/kubernetes/manifests/kube-apiserver.yaml
+```
+
+### 2. etcd 移行実行（stacked -> systemd）
+
+1. 移行プレイブック実行
+```bash
+cd /Users/soli/pke/ansible
+ansible-playbook -i inventories/kkg site-etcd.yaml
+```
+
+実行内容（自動）:
+- precheck + snapshot 取得
+- `install-etcd-systemd`（enable のみ）
+- `serial: 1` で cp ノードを順次切替
+- `kubeadm init phase upload-config --config ...`（leader）
+- `kubeadm init phase control-plane apiserver --config ...`（全 cp）
+- etcd maintenance timer 有効化
+
+### 3. 監視設定反映
+
+1. Alloy 設定反映
+```bash
+cd /Users/soli/pke/ansible
+ansible-playbook -i inventories/kkg site-monitoring.yaml
+```
+2. `k8s-cp` のみ `etcd.alloy` があることを確認
+```bash
+ansible -i inventories/kkg k8s-cp -b -m shell -a 'ls -l /etc/alloy/etcd.alloy'
+```
+
+### 4. 移行後確認
+
+1. kubeadm-config が external etcd 参照か確認
+```bash
+kubectl -n kube-system get cm kubeadm-config -oyaml
+```
+2. apiserver manifest が external etcd endpoint（cp IP:2379 群）参照か確認
+```bash
+ansible -i inventories/kkg k8s-cp -b -m shell -a \"grep -E -- '--etcd-servers|--etcd-cafile|--etcd-certfile|--etcd-keyfile' /etc/kubernetes/manifests/kube-apiserver.yaml\"
+```
+3. etcd systemd 稼働確認
+```bash
+ansible -i inventories/kkg k8s-cp -b -m shell -a 'systemctl is-active etcd && systemctl is-enabled etcd'
+```
+4. etcd ヘルス確認
+```bash
+ansible -i inventories/kkg k8s-cp -b -m shell -a '/usr/local/bin/etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key endpoint health'
+```
+5. ノード状態確認
+```bash
+kubectl get nodes
+```
+
+### 5. 障害時ロールバック（ノード単位）
+
+対象ノードで実施:
+```bash
+sudo systemctl stop etcd
+sudo cp /etc/kubernetes/manifests/backup/etcd.yaml /etc/kubernetes/manifests/etcd.yaml
+sudo systemctl restart kubelet
+```
+復帰後に `endpoint health` を確認し、次ノードへは進まない。
+
+### 6. 追加アップグレード運用
+
+etcd のみ更新する場合:
+```bash
+cd /Users/soli/pke/ansible
+ansible-playbook -i inventories/kkg upgrade-etcd.yaml
+```
+
+Kubernetes 更新時は、etcd 更新を先行してから `upgrade-k8s.yaml` を実施する。
