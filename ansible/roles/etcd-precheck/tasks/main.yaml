@@ -68,8 +68,6 @@
     --cert={{ etcd_pki_dir }}/healthcheck-client.crt
     --key={{ etcd_pki_dir }}/healthcheck-client.key
     endpoint health
-  environment:
-    ETCDCTL_API: "3"
   changed_when: false
 
 - name: Get etcd member list
@@ -80,8 +78,6 @@
     --cert={{ etcd_pki_dir }}/healthcheck-client.crt
     --key={{ etcd_pki_dir }}/healthcheck-client.key
     member list
-  environment:
-    ETCDCTL_API: "3"
   register: etcd_member_list
   changed_when: false
 
@@ -100,6 +96,4 @@
     --cert={{ etcd_pki_dir }}/healthcheck-client.crt
     --key={{ etcd_pki_dir }}/healthcheck-client.key
     snapshot save {{ etcd_snapshot_dir }}/snapshot-{{ ansible_date_time.iso8601_basic_short }}.db
-  environment:
-    ETCDCTL_API: "3"
   when: inventory_hostname in groups['k8s-cp-leader']

@@ -32,6 +32,8 @@
     name: etcd
     state: started
     enabled: true
+  register: etcd_start_result
+  failed_when: false
 
 - name: Wait for systemd etcd to listen on 2379
   wait_for:
@@ -39,6 +41,14 @@
     port: 2379
     state: started
     timeout: 180
+
+- name: Ensure systemd etcd is active after start
+  command: systemctl is-active etcd
+  register: etcd_active_check
+  changed_when: false
+  retries: 12
+  delay: 5
+  until: etcd_active_check.stdout == "active"
 
 - name: Check etcd endpoint health after migration
   command: >-
@@ -48,8 +58,6 @@
     --cert={{ etcd_pki_dir }}/healthcheck-client.crt
     --key={{ etcd_pki_dir }}/healthcheck-client.key
     endpoint health
-  environment:
-    ETCDCTL_API: "3"
   changed_when: false
 
 - name: Check etcd member list after migration
@@ -60,6 +68,4 @@
     --cert={{ etcd_pki_dir }}/healthcheck-client.crt
     --key={{ etcd_pki_dir }}/healthcheck-client.key
     member list
-  environment:
-    ETCDCTL_API: "3"
   changed_when: false

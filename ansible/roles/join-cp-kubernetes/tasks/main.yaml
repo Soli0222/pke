@@ -40,8 +40,6 @@
     --cert={{ etcd_pki_dir }}/healthcheck-client.crt
     --key={{ etcd_pki_dir }}/healthcheck-client.key
     endpoint health
-  environment:
-    ETCDCTL_API: "3"
   changed_when: false
   when:
     - (etcd_mode | default('stacked')) == 'external'

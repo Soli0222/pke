@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec /usr/local/bin/etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert={{ etcd_pki_dir }}/ca.crt \
+  --cert={{ etcd_pki_dir }}/healthcheck-client.crt \
+  --key={{ etcd_pki_dir }}/healthcheck-client.key \
+  "$@"

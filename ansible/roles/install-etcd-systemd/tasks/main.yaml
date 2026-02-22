@@ -36,6 +36,28 @@
     group: "{{ 'etcd' if not etcd_data_dir_stat.stat.exists else omit }}"
     mode: "0700"
 
+- name: Ensure etcd PKI directory is traversable by etcd group
+  file:
+    path: "{{ etcd_pki_dir }}"
+    state: directory
+    owner: root
+    group: etcd
+    mode: "0750"
+
+- name: Ensure etcd TLS files are readable by etcd service
+  file:
+    path: "{{ item }}"
+    state: file
+    owner: root
+    group: etcd
+    mode: "0640"
+  loop:
+    - "{{ etcd_pki_dir }}/ca.crt"
+    - "{{ etcd_pki_dir }}/server.crt"
+    - "{{ etcd_pki_dir }}/server.key"
+    - "{{ etcd_pki_dir }}/peer.crt"
+    - "{{ etcd_pki_dir }}/peer.key"
+
 - name: Download etcd release archive
   get_url:
     url: "{{ etcd_download_url }}"
@@ -76,6 +98,14 @@
     owner: root
     group: root
     mode: "0644"
+
+- name: Install ec wrapper command for etcdctl
+  template:
+    src: templates/ec-wrapper.sh.j2
+    dest: /usr/local/bin/ec
+    owner: root
+    group: root
+    mode: "0755"
 
 - name: Reload systemd daemon
   systemd:
