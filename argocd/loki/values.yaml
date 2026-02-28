@@ -138,3 +138,9 @@ monitoring:
     enabled: true
   serviceMonitor:
     enabled: true
+    relabelings:
+      - sourceLabels: [job]
+        regex: "(.+)/loki-(.+)"
+        replacement: "$1/$2"
+        targetLabel: job
+        action: replace
