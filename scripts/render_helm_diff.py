@@ -23,7 +23,12 @@ APPS_ROOT = Path("argocd")
 TARGET_PREFIX = "$values/"
 MAX_COMMENT_LENGTH = 64000  # Safety margin under GitHub's 65,536 character limit
 PREVIEW_CHAR_LIMIT = 4000
-DEFAULT_HELM_API_VERSIONS = ["monitoring.coreos.com/v1"]
+DEFAULT_HELM_API_VERSIONS = [
+    "monitoring.coreos.com/v1",
+    "monitoring.coreos.com/v1/ServiceMonitor",
+    "monitoring.coreos.com/v1/PrometheusRule",
+    "monitoring.coreos.com/v1/PodMonitor",
+]
 VALUE_REF_PATTERN = re.compile(r"^\$(?P<ref>[^/]+)/(?P<path>.+)$")
 
 
