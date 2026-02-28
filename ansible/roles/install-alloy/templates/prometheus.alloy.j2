@@ -6,14 +6,23 @@ prometheus.scrape "nodeexporter" {
 }
 
 prometheus.exporter.cadvisor "cadvisor" {
-  enabled_metrics             = ["cpu", "memory"]
-  store_container_labels      = true
-  raw_cgroup_prefix_allowlist = ["/system.slice"]
+  enabled_metrics        = ["cpu", "memory"]
+  store_container_labels = true
+}
+
+prometheus.relabel "cadvisor_system_only" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+
+  rule {
+    source_labels = ["id"]
+    regex         = "/system\\.slice.*"
+    action        = "keep"
+  }
 }
 
 prometheus.scrape "cadvisor" {
   targets    = prometheus.exporter.cadvisor.cadvisor.targets
-  forward_to = [prometheus.remote_write.mimir.receiver]
+  forward_to = [prometheus.relabel.cadvisor_system_only.receiver]
 }
 
 prometheus.remote_write "mimir" {
