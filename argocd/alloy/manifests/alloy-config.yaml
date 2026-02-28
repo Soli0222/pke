@@ -4,7 +4,10 @@ metadata:
   name: alloy-config
 data:
   config.alloy: |
-    // Loki write endpoint for logs
+    // ============================================================
+    // Endpoints
+    // ============================================================
+
     loki.write "default" {
       endpoint {
         url = "http://loki-gateway.loki/loki/api/v1/push"
@@ -14,7 +17,6 @@ data:
       }
     }
 
-    // Prometheus remote write endpoint for metrics
     prometheus.remote_write "default" {
       endpoint {
         url = "https://mimir.str08.net/api/v1/push"
@@ -22,42 +24,33 @@ data:
           "X-Scope-OrgID" = "anonymous",
         }
       }
-      
+
       external_labels = {
         cluster = "kkg",
       }
     }
 
-    // Mimir rules endpoint for PrometheusRule resources
+    // ============================================================
+    // Mimir Rules & Alerts (unchanged)
+    // ============================================================
+
     mimir.rules.kubernetes "default" {
       address = "https://mimir.str08.net"
       tenant_id = "anonymous"
-      
-      // Select all PrometheusRule resources (empty selector)
-      rule_selector {
-        match_labels = {}  // Monitor all PrometheusRule resources
-      }
-      
-      // Select namespaces where PrometheusRule resources are monitored
-      rule_namespace_selector {
-        match_labels = {}  // Monitor all namespaces
-      }
+      rule_selector { match_labels = {} }
+      rule_namespace_selector { match_labels = {} }
     }
 
-    // Read Slack webhook URL from Secret
     remote.kubernetes.secret "slack_webhook" {
       namespace = "alloy"
       name      = "alertmanager-slack-webhook"
     }
 
-    // Mimir alerts endpoint for AlertmanagerConfig resources
     mimir.alerts.kubernetes "default" {
       address = "https://mimir.str08.net"
       http_headers = {
         "X-Scope-OrgID" = ["anonymous"],
       }
-      
-      // Global Alertmanager configuration with Slack receiver
       global_config = `
         global:
           resolve_timeout: 5m
@@ -78,265 +71,200 @@ data:
                 username: 'Alertmanager'
                 icon_emoji: ':warning:'
         `
-      
-      // Select all AlertmanagerConfig resources (empty selector)
-      alertmanagerconfig_selector {
-        match_labels = {}  // Monitor all AlertmanagerConfig resources
-      }
-      
-      // Select namespaces where AlertmanagerConfig resources are monitored
-      alertmanagerconfig_namespace_selector {
-        match_labels = {}  // Monitor all namespaces
-      }
+      alertmanagerconfig_selector { match_labels = {} }
+      alertmanagerconfig_namespace_selector { match_labels = {} }
     }
 
-    // Kubernetes discovery for services
-    discovery.kubernetes "services" {
-      role = "service"
-    }
+    // ============================================================
+    // Discovery
+    // ============================================================
 
-    // Kubernetes discovery for pods
-    discovery.kubernetes "pods" {
-      role = "pod"
-    }
-
-    // Kubernetes discovery for nodes
     discovery.kubernetes "nodes" {
       role = "node"
     }
 
-    // Kubernetes discovery for PodMonitors
-    discovery.kubernetes "podmonitors" {
-      role = "podmonitor"
+    discovery.kubernetes "pods" {
+      role = "pod"
     }
 
-    // Kubernetes discovery for ServiceMonitors
-    discovery.kubernetes "servicemonitors" {
-      role = "servicemonitor"
-    }
-
-    // Kubernetes discovery for API server endpoints
     discovery.kubernetes "api_endpoints" {
       role = "endpoints"
     }
 
-    // Filter API server endpoints down to the default/kubernetes service
+    // ============================================================
+    // Metrics: Kubernetes API Server
+    // ============================================================
+
     discovery.relabel "kubernetes_api" {
       targets = discovery.kubernetes.api_endpoints.targets
 
       rule {
-        action = "keep"
+        action        = "keep"
         source_labels = ["__meta_kubernetes_service_name", "__meta_kubernetes_namespace"]
-        separator = ";"
-        regex = "kubernetes;default"
+        separator     = ";"
+        regex         = "kubernetes;default"
       }
-
       rule {
-        action = "keep"
+        action        = "keep"
         source_labels = ["__meta_kubernetes_endpoint_port_name"]
-        regex = "https"
+        regex         = "https"
       }
     }
 
-    // Normalize kubelet discovery targets to use the secured port
+    prometheus.scrape "kubernetes_api" {
+      targets         = discovery.relabel.kubernetes_api.output
+      forward_to      = [prometheus.remote_write.default.receiver]
+      scrape_interval = "30s"
+      metrics_path    = "/metrics"
+      clustering { enabled = true }
+    }
+
+    // ============================================================
+    // Metrics: Kubelet & cAdvisor
+    // ============================================================
+
     discovery.relabel "kubelet_targets" {
       targets = discovery.kubernetes.nodes.targets
 
       rule {
-        action = "replace"
+        action        = "replace"
         source_labels = ["__meta_kubernetes_node_address_InternalIP"]
-        target_label = "__address__"
-        regex = "(.+)"
-        replacement = "$1:10250"
+        target_label  = "__address__"
+        regex         = "(.+)"
+        replacement   = "$1:10250"
       }
-
+      // node label = node name (for joining with pod metrics)
       rule {
-        action = "replace"
+        action        = "replace"
         source_labels = ["__meta_kubernetes_node_name"]
-        target_label = "instance"
+        target_label  = "node"
+      }
+      // instance = node name (human-readable)
+      rule {
+        action        = "replace"
+        source_labels = ["__meta_kubernetes_node_name"]
+        target_label  = "instance"
       }
     }
 
-    // Scrape Kubernetes API server metrics
-    prometheus.scrape "kubernetes_api" {
-      targets = discovery.relabel.kubernetes_api.output
-      forward_to = [prometheus.remote_write.default.receiver]
-      
-      scrape_interval = "30s"
-      metrics_path = "/metrics"
-      
-      clustering {
-        enabled = true
-      }
-    }
-
-    // Scrape node metrics (kubelet)
     prometheus.scrape "kubernetes_nodes" {
-      targets = discovery.relabel.kubelet_targets.output
-      forward_to = [prometheus.remote_write.default.receiver]
-      
+      targets         = discovery.relabel.kubelet_targets.output
+      forward_to      = [prometheus.remote_write.default.receiver]
       scrape_interval = "30s"
-      metrics_path = "/metrics"
-      scheme = "https"
+      metrics_path    = "/metrics"
+      scheme          = "https"
       bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
       tls_config {
-        ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        ca_file              = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
         insecure_skip_verify = true
       }
-      
-      clustering {
-        enabled = true
-      }
+      clustering { enabled = true }
     }
 
-    // Scrape cAdvisor metrics
     prometheus.scrape "kubernetes_cadvisor" {
-      targets = discovery.relabel.kubelet_targets.output
-      forward_to = [prometheus.remote_write.default.receiver]
-      
+      targets         = discovery.relabel.kubelet_targets.output
+      forward_to      = [prometheus.remote_write.default.receiver]
       scrape_interval = "30s"
-      metrics_path = "/metrics/cadvisor"
-      scheme = "https"
+      metrics_path    = "/metrics/cadvisor"
+      scheme          = "https"
       bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
       tls_config {
-        ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        ca_file              = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
         insecure_skip_verify = true
       }
-      
-      clustering {
-        enabled = true
-      }
+      clustering { enabled = true }
     }
 
-    // Process PodMonitors
-    prometheus.operator.podmonitors "podmonitors" {
+    // ============================================================
+    // Metrics: Operator CRDs (ServiceMonitor / PodMonitor / Probe)
+    // ============================================================
+
+    prometheus.operator.servicemonitors "default" {
       forward_to = [prometheus.remote_write.default.receiver]
-      
-      clustering {
-        enabled = true
-      }
+      clustering { enabled = true }
     }
 
-    // Process ServiceMonitors
-    prometheus.operator.servicemonitors "servicemonitors" {
+    prometheus.operator.podmonitors "default" {
       forward_to = [prometheus.remote_write.default.receiver]
-      
-      clustering {
-        enabled = true
-      }
+      clustering { enabled = true }
     }
 
-    // Relabel pod discovery targets to add proper labels
+    prometheus.operator.probes "default" {
+      forward_to = [prometheus.remote_write.default.receiver]
+      clustering { enabled = true }
+    }
+
+    // ============================================================
+    // Metrics: Alloy self-monitoring
+    // ============================================================
+
+    prometheus.scrape "alloy_metrics" {
+      targets         = [{"__address__" = "localhost:12345"}]
+      forward_to      = [prometheus.remote_write.default.receiver]
+      scrape_interval = "15s"
+      metrics_path    = "/metrics"
+      clustering { enabled = true }
+    }
+
+    // ============================================================
+    // Logs: Pod logs with node label
+    // ============================================================
+
     discovery.relabel "pod_logs" {
       targets = discovery.kubernetes.pods.targets
 
-      // Label creation - "namespace" field from "__meta_kubernetes_namespace"
       rule {
         source_labels = ["__meta_kubernetes_namespace"]
-        action = "replace"
-        target_label = "namespace"
+        target_label  = "namespace"
       }
-
-      // Label creation - "pod" field from "__meta_kubernetes_pod_name"
       rule {
         source_labels = ["__meta_kubernetes_pod_name"]
-        action = "replace"
-        target_label = "pod"
+        target_label  = "pod"
       }
-
-      // Label creation - "container" field from "__meta_kubernetes_pod_container_name"
       rule {
         source_labels = ["__meta_kubernetes_pod_container_name"]
-        action = "replace"
-        target_label = "container"
+        target_label  = "container"
       }
-
-      // Label creation - "app" field from "__meta_kubernetes_pod_label_app_kubernetes_io_name"
       rule {
         source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
-        action = "replace"
-        target_label = "app"
+        target_label  = "app"
       }
-
-      // Label creation - "container_runtime" field from "__meta_kubernetes_pod_container_id"
+      // Add node name to pod logs
+      rule {
+        source_labels = ["__meta_kubernetes_pod_node_name"]
+        target_label  = "node"
+      }
       rule {
         source_labels = ["__meta_kubernetes_pod_container_id"]
-        action = "replace"
-        target_label = "container_runtime"
-        regex = "^(\\S+):\\/\\/.+$"
-        replacement = "$1"
+        target_label  = "container_runtime"
+        regex         = "^(\\S+):\\/\\/.+$"
+        replacement   = "$1"
       }
-
-      // Label creation - "job" field from namespace and pod name
       rule {
         source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name"]
-        action = "replace"
-        target_label = "job"
-        separator = ";"
-        regex = "([^;]+);([^;]+)"
-        replacement = "$1/$2"
+        separator     = "/"
+        target_label  = "job"
       }
-
-      // Default pod log path resolution
       rule {
         source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
-        action = "replace"
-        target_label = "__path__"
-        separator = ";"
-        regex = "([^;]+);([^;]+);([^;]+);([^;]+)"
-        replacement = "/var/log/pods/$1_$2_$3/$4/*.log"
+        separator     = ";"
+        regex         = "([^;]+);([^;]+);([^;]+);([^;]+)"
+        replacement   = "/var/log/pods/$1_$2_$3/$4/*.log"
+        target_label  = "__path__"
       }
-
-      // Override log path for containerd runtimes
-      rule {
-        source_labels = ["container_runtime", "__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
-        action = "replace"
-        target_label = "__path__"
-        separator = ";"
-        regex = "containerd;([^;]+);([^;]+);([^;]+);([^;]+)"
-        replacement = "/var/log/pods/$1_$2_$3/$4/*.log"
-      }
-
     }
 
-    // Collect pod logs with automatic Kubernetes labels
     loki.source.kubernetes "pod_logs" {
       targets    = discovery.relabel.pod_logs.output
       forward_to = [loki.process.pod_logs.receiver]
-      
-      clustering {
-        enabled = true
-      }
+      clustering { enabled = true }
     }
 
-    // Process logs and add cluster label
     loki.process "pod_logs" {
       stage.static_labels {
         values = {
           cluster = "kkg",
         }
       }
-
       forward_to = [loki.write.default.receiver]
-    }
-
-    // Scrape Alloy's own metrics
-    prometheus.scrape "alloy_metrics" {
-      targets = [{"__address__" = "localhost:12345"}]
-      forward_to = [prometheus.remote_write.default.receiver]
-      scrape_interval = "15s"
-      metrics_path = "/metrics"
-      
-      clustering {
-        enabled = true
-      }
-    }
-
-    // Process Probes from Prometheus Operator
-    prometheus.operator.probes "probes" {
-      forward_to = [prometheus.remote_write.default.receiver]
-      
-      clustering {
-        enabled = true
-      }
     }

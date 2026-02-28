@@ -1,3 +1,7 @@
+// ============================================================
+// Journal logs
+// ============================================================
+
 loki.relabel "journal" {
   forward_to = []
 
@@ -10,11 +14,11 @@ loki.relabel "journal" {
     target_label  = "runtime_scope"
   }
   rule {
-    source_labels = ["_journal_syslog_identifier"]
+    source_labels = ["__journal_syslog_identifier"]
     target_label  = "syslog_identifier"
   }
   rule {
-    source_labels = ["_journal_priority_keyword"]
+    source_labels = ["__journal_priority_keyword"]
     target_label  = "detected_level"
   }
   rule {
@@ -23,13 +27,16 @@ loki.relabel "journal" {
   }
 }
 
-loki.source.journal "read"  {
-  forward_to    = [loki.relabel.add_host_label.receiver]
+loki.source.journal "read" {
+  forward_to    = [loki.process.add_common_labels.receiver]
   relabel_rules = loki.relabel.journal.rules
 }
 
 {% if docker is defined and docker.enabled | default(false) %}
-// Docker container log collection
+// ============================================================
+// Docker container logs
+// ============================================================
+
 discovery.docker "containers" {
   host = "unix:///var/run/docker.sock"
 }
@@ -54,58 +61,62 @@ loki.source.docker "containers" {
   targets       = discovery.docker.containers.targets
   labels        = {"origin" = "docker"}
   relabel_rules = discovery.relabel.docker_containers.rules
-  forward_to    = [loki.relabel.add_host_label.receiver]
+  forward_to    = [loki.process.add_common_labels.receiver]
 }
 {% endif %}
 
-local.file_match "local_files" {
-  path_targets = [
-    {"__path__" = "/var/log/*.log"},
-  ]
-  sync_period = "5s"
-}
+// ============================================================
+// File logs
+// ============================================================
 
-loki.relabel "add_origin_file_label" {
-  forward_to = [loki.process.filter_logs.receiver]
-  rule {
-    target_label = "origin"
-    replacement  = "file"
-  }
+local.file_match "local_files" {
+  path_targets = [{"__path__" = "/var/log/*.log"}]
+  sync_period  = "5s"
 }
 
 loki.source.file "log_scrape" {
-  targets    = local.file_match.local_files.targets
-  forward_to = [loki.relabel.add_origin_file_label.receiver]
+  targets       = local.file_match.local_files.targets
+  forward_to    = [loki.process.filter_logs.receiver]
   tail_from_end = true
 }
 
 loki.process "filter_logs" {
   stage.drop {
-    source = ""
-    expression  = ".*Connection closed by authenticating user root"
+    expression          = ".*Connection closed by authenticating user root"
     drop_counter_reason = "noisy"
   }
-  forward_to = [loki.relabel.add_host_label.receiver]
-}
-
-loki.relabel "add_host_label" {
-  forward_to = [loki.write.endpoint.receiver]
-
-  rule {
-    target_label = "hostname"
-    replacement  = env("HOSTNAME")
+  stage.static_labels {
+    values = { origin = "file" }
   }
+  forward_to = [loki.process.add_common_labels.receiver]
 }
+
+// ============================================================
+// Common labels for all logs
+// ============================================================
+
+loki.process "add_common_labels" {
+  stage.static_labels {
+    values = {
+      cluster  = "kkg",
+      hostname = "{{ ansible_hostname }}",
+    }
+  }
+  forward_to = [loki.write.endpoint.receiver]
+}
+
+// ============================================================
+// Loki Write
+// ============================================================
 
 loki.write "endpoint" {
   endpoint {
-    url ="{{ loki_endpoint }}"
-
+    url = "{{ loki_endpoint }}"
 {%- if 'external' in group_names %}
 
     tls_config {
       cert_file = "{{ tls_cert_path }}"
-      key_file = "{{ tls_key_path }}"
+      key_file  = "{{ tls_key_path }}"
     }
 {%- endif %}
 
