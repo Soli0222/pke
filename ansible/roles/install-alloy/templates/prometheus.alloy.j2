@@ -6,8 +6,9 @@ prometheus.scrape "nodeexporter" {
 }
 
 prometheus.exporter.cadvisor "cadvisor" {
-  enabled_metrics         = ["cpu", "memory"]
-  store_container_labels  = true
+  enabled_metrics             = ["cpu", "memory"]
+  store_container_labels      = true
+  raw_cgroup_prefix_allowlist = ["/system.slice"]
 }
 
 prometheus.scrape "cadvisor" {
