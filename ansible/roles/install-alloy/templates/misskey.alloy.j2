@@ -1,14 +1,14 @@
 prometheus.scrape "misskey_db" {
-  targets    = [{"__address__" = "localhost:9187", "instance" = "{{ ansible_hostname }}"}]
-  forward_to = [prometheus.remote_write.mimir.receiver]
+  targets    = [{"__address__" = "localhost:9187", "job" = "postgres"}]
+  forward_to = [prometheus.relabel.add_common_labels.receiver]
 }
 
-prometheus.scrape "redisexporter" {
-  targets    = [{"__address__" = "localhost:9121", "instance" = "{{ ansible_hostname }}"}]
-  forward_to = [prometheus.remote_write.mimir.receiver]
+prometheus.scrape "redis_exporter" {
+  targets    = [{"__address__" = "localhost:9121", "job" = "redis"}]
+  forward_to = [prometheus.relabel.add_common_labels.receiver]
 }
 
 prometheus.scrape "falco" {
-  targets    = [{"__address__" = "localhost:8765", "instance" = "{{ ansible_hostname }}", "pod" = "{{ ansible_hostname }}"}]
-  forward_to = [prometheus.remote_write.mimir.receiver]
+  targets    = [{"__address__" = "localhost:8765", "job" = "falco"}]
+  forward_to = [prometheus.relabel.add_common_labels.receiver]
 }

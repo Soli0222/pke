@@ -1,17 +1,25 @@
-prometheus.exporter.unix "nodeexporter" {}
+// ============================================================
+// Node Exporter
+// ============================================================
 
-prometheus.scrape "nodeexporter" {
-  targets = prometheus.exporter.unix.nodeexporter.targets
-  forward_to = [prometheus.remote_write.mimir.receiver]
+prometheus.exporter.unix "node" {}
+
+prometheus.scrape "node" {
+  targets    = prometheus.exporter.unix.node.targets
+  forward_to = [prometheus.relabel.add_common_labels.receiver]
 }
 
-prometheus.exporter.cadvisor "cadvisor" {
+// ============================================================
+// System cAdvisor (system.slice only - k8s pods are NOT our responsibility)
+// ============================================================
+
+prometheus.exporter.cadvisor "system" {
   enabled_metrics        = ["cpu", "memory"]
   store_container_labels = true
 }
 
 prometheus.relabel "cadvisor_system_only" {
-  forward_to = [prometheus.remote_write.mimir.receiver]
+  forward_to = [prometheus.relabel.add_common_labels.receiver]
 
   rule {
     source_labels = ["id"]
@@ -20,15 +28,35 @@ prometheus.relabel "cadvisor_system_only" {
   }
 }
 
-prometheus.scrape "cadvisor" {
-  targets    = prometheus.exporter.cadvisor.cadvisor.targets
+prometheus.scrape "cadvisor_system" {
+  targets    = prometheus.exporter.cadvisor.system.targets
   forward_to = [prometheus.relabel.cadvisor_system_only.receiver]
 }
+
+// ============================================================
+// Common labels for all metrics
+// ============================================================
+
+prometheus.relabel "add_common_labels" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+
+  rule {
+    target_label = "cluster"
+    replacement  = "kkg"
+  }
+  rule {
+    target_label = "hostname"
+    replacement  = "{{ ansible_hostname }}"
+  }
+}
+
+// ============================================================
+// Remote Write
+// ============================================================
 
 prometheus.remote_write "mimir" {
   endpoint {
     url = "{{ mimir_endpoint }}"
-
 {%- if 'external' in group_names %}
 
     tls_config {
