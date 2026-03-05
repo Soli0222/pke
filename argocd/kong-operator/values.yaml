@@ -1,0 +1,5 @@
+global:
+  webhooks:
+    options:
+      certManager:
+        enabled: true
