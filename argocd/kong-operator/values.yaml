@@ -3,3 +3,6 @@ global:
     options:
       certManager:
         enabled: true
+
+gwapi-standard-crds:
+  enabled: false
