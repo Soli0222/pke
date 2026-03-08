@@ -9,10 +9,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    chart: traefik-crds
-    repoURL: https://traefik.github.io/charts
-    targetRevision: 1.14.0
+  sources:
+    - chart: traefik-crds
+      repoURL: https://traefik.github.io/charts
+      targetRevision: 1.14.0
+      helm:
+        valueFiles:
+          - $values/argocd/traefik-crds/values.yaml
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: traefik-crds
