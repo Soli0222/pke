@@ -14,7 +14,7 @@ docker:
 
 misskey:
   web:
-    image: ghcr.io/soli0222/misskey:2026.3.0-psr.9.10
+    image: ghcr.io/soli0222/misskey:2026.3.1-psr.9.10
     url: https://mi.soli0222.com
 
   redis:
