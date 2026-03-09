@@ -12,7 +12,7 @@ spec:
   sources:
     - chart: kong-operator
       repoURL: https://charts.konghq.com
-      targetRevision: 1.2.1
+      targetRevision: 1.2.2
       helm:
         valueFiles:
           - $values/argocd/kong-operator/values.yaml
