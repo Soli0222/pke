@@ -6,7 +6,7 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt
     external-dns.alpha.kubernetes.io/target: conohav2-1.pstr.space
     external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
-    traefik.ingress.kubernetes.io/router.tls.options: tempo-mtls@kubernetescrd
+    traefik.ingress.kubernetes.io/router.tls.options: tempo-tempo-mtls@kubernetescrd
 spec:
   ingressClassName: traefik-external
   tls:
@@ -17,66 +17,10 @@ spec:
     - host: "tempo.pstr.space"
       http:
         paths:
-          - path: /v1/traces
+          - path: /
             pathType: Prefix
             backend:
               service:
-                name: tempo-distributor
+                name: tempo-gateway
                 port:
-                  number: 4318
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: tempo-query-frontend
-                port:
-                  number: 3200
-          - path: /tempo
-            pathType: Prefix
-            backend:
-              service:
-                name: tempo-query-frontend
-                port:
-                  number: 3200
-          - path: /compactor/ring
-            pathType: Prefix
-            backend:
-              service:
-                name: tempo-compactor
-                port:
-                  number: 3200
-          - path: /distributor/ring
-            pathType: Prefix
-            backend:
-              service:
-                name: tempo-distributor
-                port:
-                  number: 3200
-          - path: /ingester/ring
-            pathType: Prefix
-            backend:
-              service:
-                name: tempo-distributor
-                port:
-                  number: 3200
-          - path: /metrics-generator/ring
-            pathType: Prefix
-            backend:
-              service:
-                name: tempo-distributor
-                port:
-                  number: 3200
-          - path: /flush
-            pathType: Prefix
-            backend:
-              service:
-                name: tempo-ingester
-                port:
-                  number: 3200
-          - path: /shutdown
-            pathType: Prefix
-            backend:
-              service:
-                name: tempo-ingester
-                port:
-                  number: 3200
+                  number: 80
