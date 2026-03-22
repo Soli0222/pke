@@ -2,8 +2,6 @@ global:
   extraEnvFrom:
     - secretRef:
         name: minio-secrets
-  extraArgs:
-    - "-config.expand-env=true"
 
 storage:
   trace:
@@ -18,6 +16,28 @@ storage:
 
 ingester:
   replicas: 3
+  extraArgs:
+    - "-config.expand-env=true"
+
+distributor:
+  extraArgs:
+    - "-config.expand-env=true"
+
+compactor:
+  extraArgs:
+    - "-config.expand-env=true"
+
+querier:
+  extraArgs:
+    - "-config.expand-env=true"
+
+queryFrontend:
+  extraArgs:
+    - "-config.expand-env=true"
+
+metricsGenerator:
+  extraArgs:
+    - "-config.expand-env=true"
 
 gateway:
   enabled: true
