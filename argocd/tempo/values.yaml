@@ -69,6 +69,13 @@ gateway:
           - tempo.str08.net
         secretName: tempo.str08.net-dns01
 
+traces:
+  otlp:
+    http:
+      enabled: true
+    grpc:
+      enabled: true
+
 metaMonitoring:
   serviceMonitor:
     enabled: true
