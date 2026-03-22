@@ -2,6 +2,8 @@ global:
   extraEnvFrom:
     - secretRef:
         name: minio-secrets
+  extraArgs:
+    - "-config.expand-env=true"
 
 storage:
   trace:
