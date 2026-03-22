@@ -1,0 +1,17 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tempo-mtls-client
+spec:
+  commonName: tempo-client
+  secretName: tempo-mtls-client-secret
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days
+  usages:
+    - client auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: tempo-mtls-ca-issuer
+    kind: Issuer
