@@ -57,7 +57,7 @@ releases:
     namespace: 1password
     createNamespace: true
     chart: 1password/connect
-    version: 2.4.0
+    version: 2.4.1
     needs:
       - kube-system/cilium
     values:
