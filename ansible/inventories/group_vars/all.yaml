@@ -1,4 +1,1 @@
 username: ubuntu
-
-# Tailscale Configuration
-tailscale_advertise_routes: "192.168.21.101"

@@ -1,6 +1,0 @@
----
-- name: restart iptables-persistent
-  systemd:
-    name: netfilter-persistent
-    state: restarted
-  become: true
