@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frpc-config
+  namespace: frpc
+data:
+  frpc.toml: |
+    serverAddr = "meruto-01.pstr.space"
+    serverPort = 7000
+
+    auth.token = "{{ .Envs.FRP_AUTH_TOKEN }}"
+
+    [[proxies]]
+    name = "web-https"
+    type = "tcpmux"
+    multiplexer = "httpconnect"
+    customDomains = ["*.pstr.space", "*.str08.net", "*.soli0222.com"]
+    localIP = "traefik-external.traefik-external.svc.cluster.local"
+    localPort = 443
+
+    [[proxies]]
+    name = "web-http"
+    type = "http"
+    customDomains = ["*.pstr.space", "*.str08.net", "*.soli0222.com"]
+    localIP = "traefik-external.traefik-external.svc.cluster.local"
+    localPort = 80
