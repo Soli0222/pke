@@ -1,0 +1,4 @@
+frps_version: "v0.68.0"
+frps_bind_port: 7000
+frps_vhost_http_port: 80
+frps_vhost_https_port: 443
