@@ -21,6 +21,10 @@ spec:
         - name: frpc
           image: ghcr.io/fatedier/frpc:v0.68.0
           args: ["-c", "/etc/frp/frpc.toml"]
+          ports:
+            - name: metrics
+              containerPort: 7400
+              protocol: TCP
           env:
             - name: TZ
               value: Asia/Tokyo

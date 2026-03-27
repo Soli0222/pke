@@ -3,5 +3,6 @@
   become: true
   roles:
     - configure-frp-host
+    - install-falco
     - install-docker
     - install-frp

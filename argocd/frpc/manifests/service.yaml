@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frpc-metrics
+  namespace: frpc
+  labels:
+    app: frpc
+spec:
+  selector:
+    app: frpc
+  ports:
+    - name: metrics
+      port: 7400
+      targetPort: metrics
+      protocol: TCP
