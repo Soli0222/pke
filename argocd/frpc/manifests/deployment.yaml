@@ -20,6 +20,8 @@ spec:
           image: ghcr.io/fatedier/frpc:v0.68.0
           args: ["-c", "/etc/frp/frpc.toml"]
           env:
+            - name: TZ
+              value: Asia/Tokyo
             - name: FRP_AUTH_TOKEN
               valueFrom:
                 secretKeyRef:

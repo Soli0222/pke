@@ -5,6 +5,8 @@ services:
     container_name: frps
     restart: always
     network_mode: host
+    environment:
+      TZ: Asia/Tokyo
     volumes:
       - /etc/frps/frps.toml:/etc/frp/frps.toml
     command: ["-c", "/etc/frp/frps.toml"]

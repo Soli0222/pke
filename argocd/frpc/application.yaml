@@ -16,9 +16,9 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: frpc
-  # syncPolicy:
-  #   automated:
-  #     prune: true
-  #     selfHeal: true
-  #   syncOptions:
-  #     - CreateNamespace=true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
