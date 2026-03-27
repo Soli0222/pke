@@ -5,8 +5,6 @@ kkg-lb2 ansible_host=192.168.20.12
 kkg-cp1 ansible_host=192.168.20.13
 kkg-cp2 ansible_host=192.168.20.14
 kkg-cp3 ansible_host=192.168.20.15
-conohav2-1 ansible_host=conohav2-1
-xserver-1 ansible_host=xserver-1
 
 [lb]
 kkg-lb1
@@ -40,17 +38,11 @@ kkg-cp2
 kkg-cp3
 
 [external]
-conohav2-1
-xserver-1
 natsume-01
+meruto-01
+
+[frp]
+meruto-01
 
 [misskey]
-xserver-1
 natsume-01
-
-[tailscale-internal]
-kkg-lb1
-kkg-lb2
-
-[tailscale-external]
-conohav2-1

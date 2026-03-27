@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+services:
+  frps:
+    image: ghcr.io/fatedier/frps:{{ frps_version }}
+    container_name: frps
+    restart: always
+    network_mode: host
+    volumes:
+      - /etc/frps/frps.toml:/etc/frp/frps.toml
+    command: ["-c", "/etc/frp/frps.toml"]

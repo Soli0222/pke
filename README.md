@@ -7,8 +7,7 @@
 ```mermaid
 graph TB
     subgraph Internet
-        CF[Cloudflare Tunnel]
-        TS[Tailscale]
+        FRP[frps<br/>meruto-01]
     end
 
     subgraph "Proxmox VE Cluster"
@@ -28,8 +27,7 @@ graph TB
     lb1 & lb2 --> VIP
     VIP --> cp1 & cp2 & cp3
 
-    CF --> VIP
-    TS --> lb1 & lb2
+    FRP --> Traefik
 
     subgraph "Kubernetes Workloads"
         ArgoCD
@@ -84,7 +82,7 @@ flowchart LR
 ```
 
 1. **Terraform** — Proxmox 上に VM を作成（`terraform/kkg/`）
-2. **Ansible** — OS 設定、containerd、Kubernetes、LB（HAProxy/Keepalived/FRR）、監視エージェント、Tailscale を自動化（`ansible/`）
+2. **Ansible** — OS 設定、containerd、Kubernetes、LB（HAProxy/Keepalived/FRR）、監視エージェント、frps を自動化（`ansible/`）
 3. **Helmfile** — Cilium、1Password Connect、ArgoCD のブートストラップ（`helmfile/`）
 4. **ArgoCD** — App of Apps パターンで全コンポーネント・アプリケーションを GitOps 管理（`argocd/`）
 
@@ -170,9 +168,8 @@ pke/
 
 | サーバー | 用途 |
 |---------|------|
-| xserver-1 | Misskey ホスティング |
+| meruto-01 | frps リバースプロキシ + Grafana Alloy |
 | natsume-01 | Misskey ホスティング（mi.soli0222.com） |
-| conohav2-1 | Tailscale 外部ノード |
 
 ## ネットワーク構成
 

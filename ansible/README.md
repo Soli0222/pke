@@ -11,13 +11,12 @@ flowchart TB
         ALL[site-all.yaml<br/>全VM基本設定] --> LB[site-lb.yaml<br/>LB構成]
         ALL --> K8S[site-k8s.yaml<br/>K8sクラスター構築]
         ALL --> MON[site-monitoring.yaml<br/>監視エージェント]
-        ALL --> TS[site-tailscale.yaml<br/>Tailscale]
     end
 
     subgraph "External Servers"
         MISSKEY[site-misskey.yaml<br/>Misskey構築]
         FRR[install-frr.yaml<br/>FRR/BGP]
-        SQUID[install-squid.yaml<br/>Squid Proxy]
+        FRP[install-frp.yaml<br/>frps リバースプロキシ]
     end
 
     SITE[site.yaml] --> ALL
@@ -29,7 +28,7 @@ flowchart TB
 - **Kubernetes クラスター**: containerd ランタイムを使用したマルチマスター構成
 - **ベースシステム**: セキュリティ設定、システム最適化、必要パッケージのインストール
 - **監視**: Alloy エージェントの配布
-- **ネットワーク**: Tailscale、FRR/BGP
+- **ネットワーク**: FRR/BGP、frp リバースプロキシ
 - **外部サーバー**: Misskey、Docker、Nginx、certbot 等
 
 ## ディレクトリ構造
@@ -42,10 +41,9 @@ ansible/
 ├── site-lb.yaml                # ロードバランサー設定
 ├── site-k8s.yaml               # Kubernetesクラスター設定
 ├── site-monitoring.yaml        # 監視エージェント設定
-├── site-tailscale.yaml         # Tailscaleネットワーク設定
 ├── site-misskey.yaml           # Misskeyサーバー構築
+├── install-frp.yaml            # frpsインストール
 ├── install-frr.yaml            # FRR/BGPインストール
-├── install-squid.yaml          # Squid Proxyインストール
 ├── upgrade-k8s.yaml            # Kubernetesアップグレード
 ├── upgrade-containerd.yaml     # containerdアップグレード
 ├── upgrade-misskey.yaml        # Misskeyアップグレード
@@ -64,15 +62,14 @@ ansible/
 │
 └── roles/
     ├── all-vm-config/               # 全VM共通設定
-    ├── configure-iptables-for-external/ # 外部接続iptables設定
     ├── configure-misskey-host/      # Misskeyホスト設定
-    ├── configure-tailscale/         # Tailscale設定
     ├── init-cp-kubernetes/          # Kubernetesクラスター初期化
     ├── install-alloy/               # Alloy監視エージェント
     ├── install-certbot/             # Let's Encrypt証明書
     ├── install-containerd/          # containerdコンテナランタイム
     ├── install-docker/              # Docker
     ├── install-falco/               # Falcoセキュリティ
+    ├── install-frp/                 # frpsリバースプロキシ
     ├── install-frr/                 # FRR/BGPルーティング
     ├── install-haproxy/             # HAProxyロードバランサー
     ├── install-keepalived/          # Keepalived高可用性
@@ -80,8 +77,6 @@ ansible/
     ├── install-misskey/             # Misskeyインストール
     ├── install-nginx/               # Nginx Webサーバー
     ├── install-rclone/              # Rcloneストレージ同期
-    ├── install-squid/               # Squid Proxy
-    ├── install-tailscale/           # Tailscaleネットワーキング
     ├── join-cp-kubernetes/          # コントロールプレーン参加
     ├── join-wk-kubernetes/          # ワーカーノード参加
     └── upgrade-kubernetes/          # Kubernetesアップグレード
@@ -104,8 +99,7 @@ graph TB
     end
 
     subgraph "External Hosts"
-        CONOHA["conohav2-1"]
-        XSERVER["xserver-1"]
+        MERUTO["meruto-01"]
         NATSUME["natsume-01"]
     end
 ```
@@ -121,10 +115,9 @@ graph TB
 | `k8s-cp` | kkg-cp1, cp2, cp3 | コントロールプレーン |
 | `k8s-cp-leader` | kkg-cp1 | CPリーダー |
 | `k8s-cp-follower` | kkg-cp2, cp3 | CPフォロワー |
-| `external` | conohav2-1, xserver-1, natsume-01 | 外部サーバー |
-| `misskey` | xserver-1, natsume-01 | Misskeyサーバー |
-| `tailscale-internal` | kkg-lb1, kkg-lb2 | Tailscale内部ノード |
-| `tailscale-external` | conohav2-1 | Tailscale外部ノード |
+| `external` | meruto-01, natsume-01 | 外部サーバー |
+| `frp` | meruto-01 | frps リバースプロキシ |
+| `misskey` | natsume-01 | Misskeyサーバー |
 
 ## ロール一覧
 
@@ -139,17 +132,14 @@ graph TB
 | `install-haproxy` | HAProxy ロードバランサー | lb |
 | `install-keepalived` | Keepalived 高可用性 | lb |
 | `install-frr` | FRR/BGP ルーティング | lb |
-| `install-alloy` | Alloy 監視エージェント | internal |
-| `install-tailscale` | Tailscale インストール | tailscale-* |
-| `configure-tailscale` | Tailscale 設定 | tailscale-* |
-| `configure-iptables-for-external` | 外部接続用 iptables | external |
-| `install-docker` | Docker エンジン | misskey |
+| `install-alloy` | Alloy 監視エージェント | all |
+| `install-frp` | frps リバースプロキシ | frp |
+| `install-docker` | Docker エンジン | misskey, frp |
 | `install-nginx` | Nginx Web サーバー | external |
 | `install-certbot` | Let's Encrypt 証明書 | external |
 | `install-misskey` | Misskey インストール | misskey |
 | `configure-misskey-host` | Misskey ホスト設定 | misskey |
 | `install-rclone` | Rclone ストレージ同期 | external |
-| `install-squid` | Squid Proxy | 指定ノード |
 | `install-falco` | Falco セキュリティ | 指定ノード |
 | `upgrade-kubernetes` | Kubernetes アップグレード | k8s |
 
@@ -218,7 +208,6 @@ ansible-playbook -i inventories/kkg site-all.yaml        # 1. 基本設定
 ansible-playbook -i inventories/kkg site-lb.yaml         # 2. ロードバランサー
 ansible-playbook -i inventories/kkg site-k8s.yaml        # 3. Kubernetesクラスター
 ansible-playbook -i inventories/kkg site-monitoring.yaml # 4. 監視エージェント
-ansible-playbook -i inventories/kkg site-tailscale.yaml  # 5. Tailscale（必要に応じて）
 ```
 
 ### 外部サーバー
@@ -227,11 +216,11 @@ ansible-playbook -i inventories/kkg site-tailscale.yaml  # 5. Tailscale（必要
 # Misskeyサーバー構築
 ansible-playbook -i inventories/kkg site-misskey.yaml
 
+# frpsインストール
+ansible-playbook -i inventories/kkg install-frp.yaml
+
 # FRR/BGPインストール
 ansible-playbook -i inventories/kkg install-frr.yaml
-
-# Squid Proxyインストール
-ansible-playbook -i inventories/kkg install-squid.yaml
 ```
 
 ### アップグレード
