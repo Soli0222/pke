@@ -15,8 +15,7 @@ data:
 
     [[proxies]]
     name = "web-https"
-    type = "tcpmux"
-    multiplexer = "httpconnect"
+    type = "https"
     customDomains = ["*.pstr.space", "*.str08.net", "*.soli0222.com"]
     localIP = "traefik-external.traefik-external.svc.cluster.local"
     localPort = 443
