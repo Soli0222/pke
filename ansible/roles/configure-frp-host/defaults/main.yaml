@@ -1,0 +1,4 @@
+frp_host_ufw_allow_ports:
+  - { port: '7000', proto: 'tcp' }
+  - { port: '80', proto: 'tcp' }
+  - { port: '443', proto: 'tcp' }

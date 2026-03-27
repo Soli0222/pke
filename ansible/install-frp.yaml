@@ -2,5 +2,6 @@
   hosts: frp
   become: true
   roles:
+    - configure-frp-host
     - install-docker
     - install-frp
