@@ -1,9 +1,0 @@
-apiVersion: traefik.io/v1alpha1
-kind: TLSOption
-metadata:
-  name: tempo-mtls
-spec:
-  clientAuth:
-    secretNames:
-      - tempo-mtls-ca-secret
-    clientAuthType: RequireAndVerifyClientCert
