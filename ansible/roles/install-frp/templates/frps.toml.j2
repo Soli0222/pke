@@ -5,6 +5,8 @@ tcpmuxHTTPConnectPort = {{ frps_tcpmux_httpconnect_port }}
 
 auth.token = "{{ frps_auth_token }}"
 
+custom404Page = "/etc/frp/404.html"
+
 webServer.addr = "127.0.0.1"
 webServer.port = {{ frps_webserver_port }}
 enablePrometheus = true

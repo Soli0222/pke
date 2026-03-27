@@ -12,7 +12,6 @@ data:
 
     webServer.addr = "0.0.0.0"
     webServer.port = 7400
-    enablePrometheus = true
 
     [[proxies]]
     name = "web-https"

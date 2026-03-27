@@ -9,4 +9,5 @@ services:
       TZ: Asia/Tokyo
     volumes:
       - /etc/frps/frps.toml:/etc/frp/frps.toml
+      - /etc/frps/404.html:/etc/frp/404.html:ro
     command: ["-c", "/etc/frp/frps.toml"]

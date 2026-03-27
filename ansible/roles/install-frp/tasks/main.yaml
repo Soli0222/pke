@@ -15,6 +15,14 @@
     mode: '0640'
   notify: restart frps
 
+- name: Deploy custom 404 page
+  ansible.builtin.copy:
+    src: 404.html
+    dest: /etc/frps/404.html
+    owner: root
+    group: root
+    mode: '0644'
+
 - name: Deploy frps Docker Compose file
   ansible.builtin.template:
     src: docker-compose.yml.j2
