@@ -1,6 +1,6 @@
 # TLS Configuration
-tls_cert_path: "/etc/cert/pstr.space/tls.pem"
-tls_key_path: "/etc/cert/pstr.space/tls.key"
+tls_cert_path: "/etc/cert/monitoring/tls.crt"
+tls_key_path: "/etc/cert/monitoring/tls.key"
 
 # Mimir Configuration
 mimir_endpoint: "https://mimir.pstr.space/api/v1/push"

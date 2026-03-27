@@ -37,15 +37,15 @@
 - block:
   - name: Retrieve TLS certificate from 1Password
     ansible.builtin.set_fact:
-      tls_cert_b64: "{{ lookup('community.general.onepassword', 'pstr.space mTLS', field='tls.pem', vault='Kubernetes') }}"
+      tls_cert_b64: "{{ lookup('community.general.onepassword', 'monitoring mTLS', field='tls.crt', vault='Kubernetes') }}"
 
   - name: Retrieve TLS private key from 1Password
     ansible.builtin.set_fact:
-      tls_key_b64: "{{ lookup('community.general.onepassword', 'pstr.space mTLS', field='tls.key', vault='Kubernetes') }}"
+      tls_key_b64: "{{ lookup('community.general.onepassword', 'monitoring mTLS', field='tls.key', vault='Kubernetes') }}"
 
   - name: Create certificate directory
     ansible.builtin.file:
-      path: /etc/cert/pstr.space
+      path: /etc/cert/monitoring
       state: directory
       mode: '0755'
       owner: alloy
@@ -54,7 +54,7 @@
   - name: Decode and save TLS certificate
     ansible.builtin.copy:
       content: "{{ tls_cert_b64 | b64decode }}"
-      dest: /etc/cert/pstr.space/tls.pem
+      dest: /etc/cert/monitoring/tls.crt
       mode: '0644'
       owner: alloy
       group: alloy
@@ -62,7 +62,7 @@
   - name: Decode and save TLS private key
     ansible.builtin.copy:
       content: "{{ tls_key_b64 | b64decode }}"
-      dest: /etc/cert/pstr.space/tls.key
+      dest: /etc/cert/monitoring/tls.key
       mode: '0600'
       owner: alloy
       group: alloy
