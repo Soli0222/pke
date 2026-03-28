@@ -36,15 +36,91 @@ mimir:
       ingestion_burst_size: 1000000
       out_of_order_time_window: "5m"
 
+alertmanager:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+distributor:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
 ingester:
   replicas: 3
   zoneAwareReplication:
     enabled: false
+  resources:
+    requests:
+      cpu: 150m
+      memory: 768Mi
+    limits:
+      memory: 1536Mi
+
+querier:
+  resources:
+    requests:
+      cpu: 150m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+query_frontend:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+query_scheduler:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+ruler:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+compactor:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+kafka:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1536Mi
+    limits:
+      memory: 3Gi
 
 store_gateway:
   replicas: 3
   zoneAwareReplication:
     enabled: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
 
 ingress:
   enabled: true
