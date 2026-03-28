@@ -1,8 +1,0 @@
-global:
-  webhooks:
-    options:
-      certManager:
-        enabled: true
-
-gwapi-standard-crds:
-  enabled: false
