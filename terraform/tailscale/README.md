@@ -16,7 +16,7 @@ graph LR
     OPS -->|"SSH (ubuntu)"| SVC
 ```
 
-- **Provider**: tailscale/tailscale 0.27.0
+- **Provider**: tailscale/tailscale 0.28.0
 - **State Backend**: Cloudflare R2（S3 互換）
   - Bucket: `tfstate`
   - Key: `pke/tailscale/terraform.tfstate`
