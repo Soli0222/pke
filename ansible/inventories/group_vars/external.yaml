@@ -9,3 +9,6 @@ mimir_org_id: anonymous
 # Loki Configuration
 loki_endpoint: "https://loki.pstr.space/loki/api/v1/push"
 loki_org_id: fake
+
+# Tempo Configuration
+tempo_endpoint: "https://tempo.pstr.space"

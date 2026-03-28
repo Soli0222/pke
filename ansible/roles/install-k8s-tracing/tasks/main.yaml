@@ -1,0 +1,52 @@
+---
+- name: Create kube-apiserver tracing configuration directory
+  ansible.builtin.file:
+    path: /etc/kubernetes/tracing
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render kube-apiserver tracing configuration
+  ansible.builtin.template:
+    src: apiserver-tracing.yaml.j2
+    dest: /etc/kubernetes/tracing/apiserver-tracing.yaml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Render kubeadm config for tracing
+  ansible.builtin.template:
+    src: kubeadm-config.yaml.j2
+    dest: /etc/kubernetes/kubeadm-config-tracing.yaml
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Re-generate kube-apiserver manifest from kubeadm config
+  ansible.builtin.command: >-
+    kubeadm init phase control-plane apiserver
+    --config /etc/kubernetes/kubeadm-config-tracing.yaml
+
+- name: Wait for kube-apiserver readyz endpoint
+  ansible.builtin.command: curl -kfsS https://127.0.0.1:6443/readyz
+  register: apiserver_readyz
+  retries: 30
+  delay: 5
+  until: apiserver_readyz.rc == 0
+  changed_when: false
+
+- name: Restart kubelet to pick up tracing config
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted
+
+- name: Verify etcd endpoint health after kube-apiserver regeneration
+  ansible.builtin.command: >-
+    /usr/local/bin/etcdctl
+    --endpoints=https://127.0.0.1:2379
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    endpoint health
+  changed_when: false

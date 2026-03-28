@@ -90,6 +90,14 @@
     dest: /etc/alloy/loki.alloy
     mode: '0644'
 
+- name: Configure Tempo
+  ansible.builtin.template:
+    src: tempo.alloy.j2
+    dest: /etc/alloy/tempo.alloy
+    owner: root
+    group: root
+    mode: '0644'
+
 - name: Configure Prometheus for Misskey
   ansible.builtin.template:
     src: misskey.alloy.j2
