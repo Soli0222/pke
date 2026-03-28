@@ -1,7 +1,0 @@
----
-- name: restart frr
-  community.docker.docker_compose_v2:
-    project_src: /etc/frr
-    files:
-      - docker-compose.yml
-    state: restarted

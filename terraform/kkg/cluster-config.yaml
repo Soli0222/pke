@@ -41,28 +41,9 @@ vm_types:
     cpu_cores: 8
     cpu_sockets: 1
     disk_size: "100G"
-  
-  load_balancer:
-    memory: 2048
-    cpu_cores: 8
-    cpu_sockets: 1
-    disk_size: "20G"
 
 # 個別VM設定
 vms:
-  # Load Balancer Nodes
-  - name: "kkg-lb1"
-    vmid: 2011
-    type: "load_balancer"
-    target_node: "kkg-pve3"
-    ip: "192.168.20.11"
-    
-  - name: "kkg-lb2"
-    vmid: 2012
-    type: "load_balancer"
-    target_node: "kkg-pve4"
-    ip: "192.168.20.12"
-
   # Control Plane Nodes
   - name: "kkg-cp1"
     vmid: 2013

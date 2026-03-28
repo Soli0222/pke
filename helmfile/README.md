@@ -58,14 +58,10 @@ graph TB
 
     subgraph "BGP Topology (ASN)"
         GW["iX2215 Gateway<br/>ASN 65000"]
-        LB1["kkg-lb1<br/>ASN 65002"]
-        LB2["kkg-lb2<br/>ASN 65002"]
         K8S["Kubernetes Nodes<br/>ASN 65001"]
     end
 
-    GW <-->|BGP| LB1 & LB2
     GW <-->|BGP| K8S
-    LB1 & LB2 -->|BGP| K8S
 
     subgraph "LB IP Pool"
         POOL["192.168.21.100 - 192.168.21.254"]
