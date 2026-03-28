@@ -15,7 +15,6 @@ pod_network_cidr: 10.26.0.0/16
 
 # Network Addressing Scheme
 # .10 = Load Balancer VIP
-# .11-.12 = Load Balancers  
 # .13-.15 = Control Plane Nodes
 # .16-.18 = Worker Nodes
 

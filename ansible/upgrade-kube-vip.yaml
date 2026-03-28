@@ -1,0 +1,7 @@
+---
+- name: Upgrade kube-vip
+  hosts: k8s-cp
+  become: true
+  serial: 1
+  roles:
+    - install-kube-vip

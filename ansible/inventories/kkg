@@ -1,17 +1,8 @@
 # Simplified inventory - variables moved to group_vars/ and host_vars/
 [all]
-kkg-lb1 ansible_host=192.168.20.11
-kkg-lb2 ansible_host=192.168.20.12
 kkg-cp1 ansible_host=192.168.20.13
 kkg-cp2 ansible_host=192.168.20.14
 kkg-cp3 ansible_host=192.168.20.15
-
-[lb]
-kkg-lb1
-kkg-lb2
-
-[lb-leader]
-kkg-lb1
 
 [k8s]
 kkg-cp1
@@ -31,8 +22,6 @@ kkg-cp2
 kkg-cp3
 
 [internal]
-kkg-lb1
-kkg-lb2
 kkg-cp1
 kkg-cp2
 kkg-cp3

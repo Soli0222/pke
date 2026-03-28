@@ -8,25 +8,21 @@ Proxmox VE 上に Kubernetes（KKG）クラスター用の VM を管理する Te
 graph TB
     subgraph "Proxmox VE Cluster"
         subgraph "kkg-pve3"
-            LB1["kkg-lb1<br/>VMID: 2011<br/>load_balancer"]
             CP1["kkg-cp1<br/>VMID: 2013<br/>control_plane_large"]
         end
         subgraph "kkg-pve4"
-            LB2["kkg-lb2<br/>VMID: 2012<br/>load_balancer"]
             CP2["kkg-cp2<br/>VMID: 2014<br/>control_plane"]
             CP3["kkg-cp3<br/>VMID: 2015<br/>control_plane"]
         end
     end
 
-    TPL["Ubuntu 24.04 Template<br/>VMID: 9003"] -.->|linked clone| LB1 & LB2 & CP1 & CP2 & CP3
+    TPL["Ubuntu 24.04 Template<br/>VMID: 9003"] -.->|linked clone| CP1 & CP2 & CP3
 ```
 
 ### 管理対象 VM
 
 | VM名 | VMID | タイプ | メモリ | CPU | ディスク | IPアドレス | ホスト |
 |------|------|--------|--------|-----|----------|-----------|--------|
-| kkg-lb1 | 2011 | load_balancer | 2GB | 8コア | 20GB | 192.168.20.11 | kkg-pve3 |
-| kkg-lb2 | 2012 | load_balancer | 2GB | 8コア | 20GB | 192.168.20.12 | kkg-pve4 |
 | kkg-cp1 | 2013 | control_plane_large | 32GB | 8コア | 100GB | 192.168.20.13 | kkg-pve3 |
 | kkg-cp2 | 2014 | control_plane | 16GB | 8コア | 100GB | 192.168.20.14 | kkg-pve4 |
 | kkg-cp3 | 2015 | control_plane | 16GB | 8コア | 100GB | 192.168.20.15 | kkg-pve4 |
@@ -68,7 +64,6 @@ terraform/kkg/
 |--------|--------|-----|----------|
 | control_plane | 16GB | 8コア×1ソケット | 100GB |
 | control_plane_large | 32GB | 8コア×1ソケット | 100GB |
-| load_balancer | 2GB | 8コア×1ソケット | 20GB |
 
 ### ネットワーク
 

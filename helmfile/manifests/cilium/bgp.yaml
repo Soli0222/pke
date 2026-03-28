@@ -14,16 +14,6 @@ spec:
           peerAddress: 192.168.20.1
           peerConfigRef:
             name: ix2215-peer-config
-        - name: lb1
-          peerASN: 65002
-          peerAddress: 192.168.20.11
-          peerConfigRef:
-            name: ix2215-peer-config
-        - name: lb2
-          peerASN: 65002
-          peerAddress: 192.168.20.12
-          peerConfigRef:
-            name: ix2215-peer-config
 ---
 apiVersion: cilium.io/v2
 kind: CiliumBGPPeerConfig

@@ -8,14 +8,13 @@ Kubernetes クラスター（kkg）および外部サーバーのセットアッ
 flowchart TB
     subgraph "Internal Cluster (kkg)"
         direction TB
-        ALL[site-all.yaml<br/>全VM基本設定] --> LB[site-lb.yaml<br/>LB構成]
+        ALL[site-all.yaml<br/>全VM基本設定]
         ALL --> K8S[site-k8s.yaml<br/>K8sクラスター構築]
         ALL --> MON[site-monitoring.yaml<br/>監視エージェント]
     end
 
     subgraph "External Servers"
         MISSKEY[site-misskey.yaml<br/>Misskey構築]
-        FRR[install-frr.yaml<br/>FRR/BGP]
         FRP[install-frp.yaml<br/>frps リバースプロキシ]
     end
 
@@ -24,11 +23,10 @@ flowchart TB
 
 ### 自動化対象
 
-- **ロードバランサー**: HAProxy + Keepalived + FRR/BGP による高可用性 LB
-- **Kubernetes クラスター**: containerd ランタイムを使用したマルチマスター構成
+- **Kubernetes クラスター**: containerd ランタイムを使用したマルチマスター構成（kube-vip による API VIP 管理）
 - **ベースシステム**: セキュリティ設定、システム最適化、必要パッケージのインストール
 - **監視**: Alloy エージェントの配布
-- **ネットワーク**: FRR/BGP、frp リバースプロキシ
+- **ネットワーク**: Cilium、frp リバースプロキシ
 - **外部サーバー**: Misskey、Docker、Nginx、certbot 等
 
 ## ディレクトリ構造
@@ -38,13 +36,12 @@ ansible/
 ├── ansible.cfg                 # Ansible設定ファイル
 ├── site.yaml                   # メインプレイブック（全内部VM）
 ├── site-all.yaml               # 全VM基本設定
-├── site-lb.yaml                # ロードバランサー設定
 ├── site-k8s.yaml               # Kubernetesクラスター設定
 ├── site-monitoring.yaml        # 監視エージェント設定
 ├── site-misskey.yaml           # Misskeyサーバー構築
 ├── install-frp.yaml            # frpsインストール
-├── install-frr.yaml            # FRR/BGPインストール
 ├── upgrade-k8s.yaml            # Kubernetesアップグレード
+├── upgrade-kube-vip.yaml       # kube-vipマニフェスト更新
 ├── upgrade-containerd.yaml     # containerdアップグレード
 ├── upgrade-misskey.yaml        # Misskeyアップグレード
 │
@@ -53,11 +50,8 @@ ansible/
 │   ├── group_vars/
 │   │   ├── all.yaml            # グローバル設定
 │   │   ├── internal.yaml       # 内部クラスター設定
-│   │   ├── external.yaml       # 外部ノード設定
-│   │   └── lb.yml              # ロードバランサーグループ設定
+│   │   └── external.yaml       # 外部ノード設定
 │   └── host_vars/
-│       ├── kkg-lb1.yml         # lb1固有設定
-│       ├── kkg-lb2.yml         # lb2固有設定
 │       └── natsume-01.yaml     # Misskeyサーバー固有設定
 │
 └── roles/
@@ -70,9 +64,7 @@ ansible/
     ├── install-docker/              # Docker
     ├── install-falco/               # Falcoセキュリティ
     ├── install-frp/                 # frpsリバースプロキシ
-    ├── install-frr/                 # FRR/BGPルーティング
-    ├── install-haproxy/             # HAProxyロードバランサー
-    ├── install-keepalived/          # Keepalived高可用性
+    ├── install-kube-vip/            # kube-vip static pod 配置
     ├── install-kubernetes/          # Kubernetesコンポーネント
     ├── install-misskey/             # Misskeyインストール
     ├── install-nginx/               # Nginx Webサーバー
@@ -87,10 +79,6 @@ ansible/
 ```mermaid
 graph TB
     subgraph "Internal Hosts"
-        subgraph "lb"
-            LB1["kkg-lb1 (192.168.20.11)"]
-            LB2["kkg-lb2 (192.168.20.12)"]
-        end
         subgraph "k8s-cp"
             CP1["kkg-cp1 (192.168.20.13)<br/>Leader"]
             CP2["kkg-cp2 (192.168.20.14)"]
@@ -108,9 +96,7 @@ graph TB
 
 | グループ | ホスト | 用途 |
 |---------|-------|------|
-| `internal` | kkg-lb1, lb2, cp1, cp2, cp3 | 内部クラスターノード |
-| `lb` | kkg-lb1, kkg-lb2 | ロードバランサー |
-| `lb-leader` | kkg-lb1 | LBリーダー |
+| `internal` | kkg-cp1, cp2, cp3 | 内部クラスターノード |
 | `k8s` | kkg-cp1, cp2, cp3 | 全Kubernetesノード |
 | `k8s-cp` | kkg-cp1, cp2, cp3 | コントロールプレーン |
 | `k8s-cp-leader` | kkg-cp1 | CPリーダー |
@@ -125,13 +111,11 @@ graph TB
 |--------|------|------|
 | `all-vm-config` | カーネルモジュール、sysctl、パッケージ更新 | internal |
 | `install-containerd` | containerd コンテナランタイム | k8s |
+| `install-kube-vip` | kube-vip static pod で API VIP を提供 | k8s-cp |
 | `install-kubernetes` | kubelet、kubeadm、kubectl | k8s |
 | `init-cp-kubernetes` | Kubernetes クラスター初期化 | k8s-cp-leader |
 | `join-cp-kubernetes` | コントロールプレーン参加 | k8s-cp-follower |
 | `join-wk-kubernetes` | ワーカーノード参加 | k8s-wk |
-| `install-haproxy` | HAProxy ロードバランサー | lb |
-| `install-keepalived` | Keepalived 高可用性 | lb |
-| `install-frr` | FRR/BGP ルーティング | lb |
 | `install-alloy` | Alloy 監視エージェント | all |
 | `install-frp` | frps リバースプロキシ | frp |
 | `install-docker` | Docker エンジン | misskey, frp |
@@ -164,21 +148,6 @@ mimir_endpoint: "https://mimir.str08.net/api/v1/push"
 loki_endpoint: "https://loki.str08.net/api/v1/push"
 ```
 
-### ロードバランサー設定 (group_vars/lb.yml)
-
-```yaml
-lb_interface: eth0
-lb_virtual_router_id: 10
-haproxy_backend_port: 6443
-
-# FRR BGP
-frr_local_asn: 65002
-frr_bgp_peers:
-  - { name: kkg-cp1, address: 192.168.20.13, remote_asn: 65001 }
-  - { name: kkg-cp2, address: 192.168.20.14, remote_asn: 65001 }
-  - { name: kkg-cp3, address: 192.168.20.15, remote_asn: 65001 }
-```
-
 ### 外部サーバー設定 (group_vars/external.yaml)
 
 ```yaml
@@ -205,9 +174,8 @@ ansible-playbook -i inventories/kkg site.yaml
 
 # ステップバイステップ
 ansible-playbook -i inventories/kkg site-all.yaml        # 1. 基本設定
-ansible-playbook -i inventories/kkg site-lb.yaml         # 2. ロードバランサー
-ansible-playbook -i inventories/kkg site-k8s.yaml        # 3. Kubernetesクラスター
-ansible-playbook -i inventories/kkg site-monitoring.yaml # 4. 監視エージェント
+ansible-playbook -i inventories/kkg site-k8s.yaml        # 2. Kubernetesクラスター
+ansible-playbook -i inventories/kkg site-monitoring.yaml # 3. 監視エージェント
 ```
 
 ### 外部サーバー
@@ -218,15 +186,13 @@ ansible-playbook -i inventories/kkg site-misskey.yaml
 
 # frpsインストール
 ansible-playbook -i inventories/kkg install-frp.yaml
-
-# FRR/BGPインストール
-ansible-playbook -i inventories/kkg install-frr.yaml
 ```
 
 ### アップグレード
 
 ```bash
 ansible-playbook -i inventories/kkg upgrade-k8s.yaml         # Kubernetes
+ansible-playbook -i inventories/kkg upgrade-kube-vip.yaml    # kube-vip
 ansible-playbook -i inventories/kkg upgrade-containerd.yaml   # containerd
 ansible-playbook -i inventories/kkg upgrade-misskey.yaml      # Misskey
 ```
@@ -246,6 +212,6 @@ ansible-playbook -i inventories/kkg site.yaml --start-at-task="タスク名"
 
 ## 設計原則
 
-- **DRY**: IP アドレスは各ホストで一度だけ定義。HAProxy バックエンドは `k8s-cp` グループから動的生成
+- **DRY**: IP アドレスは各ホストで一度だけ定義。Control Plane VIP は `controlplane_endpoint` と `lb_virtual_ip` に集約
 - **分離された設定**: グローバル / グループ / ホスト固有の変数を適切に分離
 - **スケーラビリティ**: ホスト追加時にインベントリとグループへの追加のみで対応可能

@@ -59,7 +59,6 @@ resource "tailscale_acl" "main" {
 
     "ssh" = [
       {
-        "action" = "check",
         "src"    = ["tag:operation"],
         "dst"    = ["tag:service"],
         "users"  = ["ubuntu"],
