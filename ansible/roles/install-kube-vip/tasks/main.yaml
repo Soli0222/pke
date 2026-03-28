@@ -1,0 +1,16 @@
+---
+- name: Ensure kubelet static pod manifest directory exists
+  ansible.builtin.file:
+    path: /etc/kubernetes/manifests
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install kube-vip static pod manifest
+  ansible.builtin.template:
+    src: kube-vip.yaml.j2
+    dest: /etc/kubernetes/manifests/kube-vip.yaml
+    owner: root
+    group: root
+    mode: "0644"

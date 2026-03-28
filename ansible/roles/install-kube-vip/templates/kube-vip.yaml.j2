@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-vip
+  namespace: kube-system
+spec:
+  hostNetwork: true
+  containers:
+    - name: kube-vip
+      image: "{{ kube_vip_image | default('ghcr.io/kube-vip/kube-vip:v1.1.1') }}"
+      imagePullPolicy: "{{ kube_vip_image_pull_policy | default('IfNotPresent') }}"
+      args:
+        - manager
+      env:
+        - name: vip_arp
+          value: "true"
+        - name: port
+          value: "{{ kube_vip_port | default('6443') | string }}"
+        - name: vip_interface
+          value: "{{ kube_vip_interface | default(ansible_default_ipv4.interface | default('eth0')) }}"
+        - name: vip_subnet
+          value: "{{ kube_vip_subnet | default('32') | string }}"
+        - name: cp_enable
+          value: "true"
+        - name: cp_namespace
+          value: kube-system
+        - name: vip_ddns
+          value: "false"
+        - name: svc_enable
+          value: "false"
+        - name: vip_leaderelection
+          value: "true"
+        - name: vip_leaseduration
+          value: "{{ kube_vip_lease_duration | default('5') | string }}"
+        - name: vip_renewdeadline
+          value: "{{ kube_vip_renew_deadline | default('3') | string }}"
+        - name: vip_retryperiod
+          value: "{{ kube_vip_retry_period | default('1') | string }}"
+        - name: address
+          value: "{{ kube_vip_address | default(lb_virtual_ip) }}"
+      securityContext:
+        capabilities:
+          add:
+            - NET_ADMIN
+            - NET_RAW
+            - SYS_TIME
+      volumeMounts:
+        - name: kubeconfig
+          mountPath: "{{ kube_vip_kubeconfig_path | default('/etc/kubernetes/admin.conf') }}"
+          readOnly: true
+  hostAliases:
+    - ip: 127.0.0.1
+      hostnames:
+        - kubernetes
+  volumes:
+    - name: kubeconfig
+      hostPath:
+        path: "{{ kube_vip_kubeconfig_path | default('/etc/kubernetes/admin.conf') }}"
+        type: File

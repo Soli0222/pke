@@ -4,6 +4,8 @@
   roles:
     - install-containerd
     - install-kubernetes
+    - role: install-kube-vip
+      when: inventory_hostname in groups['k8s-cp']
     - role: bootstrap-etcd-certs
       when:
         - (etcd_mode | default('stacked')) == 'external'
