@@ -5,10 +5,10 @@ ansible_ssh_private_key_file: /Users/soli/.ssh/id_ed25519
 
 # Software Versions
 containerd_version: "2.2.2"
-runc_version: "1.4.1"
+runc_version: "1.4.2"
 cni_plugins_version: "1.9.1"
 kubernetes_version: 1.35.3
-etcd_version: "3.6.9"
+etcd_version: "3.6.10"
 
 # Network Configuration
 pod_network_cidr: 10.26.0.0/16
