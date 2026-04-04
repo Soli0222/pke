@@ -1,0 +1,13 @@
+ingress:
+  enabled: true
+  ingressClassName: "traefik"
+  host: "renovate.str08.net"
+  tls:
+    - hosts:
+        - "renovate.str08.net"
+      secretName: "renovate.str08.net-dns01"
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
