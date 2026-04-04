@@ -11,7 +11,7 @@ spec:
   extraEnv:
     - name: NODE_OPTIONS
       value: "--max-old-space-size=4096"
-  image: renovate/renovate:latest
+  image: renovate/renovate:43.104.3
   parallelism: 2
   resources:
     requests:

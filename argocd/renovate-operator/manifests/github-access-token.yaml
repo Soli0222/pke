@@ -1,0 +1,13 @@
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: GithubAccessToken
+metadata:
+  name: github-auth-token
+  namespace: renovate-operator
+spec:
+  appID: "1792703"
+  installID: "81332389"
+  auth:
+    privateKey:
+      secretRef:
+        name: github-app-pem
+        key: pke-renovate.2026-04-04.private-key.pem
