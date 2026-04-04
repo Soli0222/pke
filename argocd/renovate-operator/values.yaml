@@ -6,6 +6,8 @@ ingress:
     - hosts:
         - "renovate.str08.net"
       secretName: "renovate.str08.net-dns01"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt"
 
 metrics:
   enabled: true
