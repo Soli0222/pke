@@ -4,13 +4,11 @@ metadata:
   name: renovate-github
   namespace: renovate-operator
 spec:
+  provider:
+    name: github
   discoverTopics:
     - "renovate"
   extraEnv:
-    - name: RENOVATE_PLATFORM
-      value: github
-    - name: RENOVATE_ENDPOINT
-      value: https://api.github.com/
     - name: NODE_OPTIONS
       value: "--max-old-space-size=4096"
   image: renovate/renovate:latest
