@@ -56,14 +56,20 @@ ansible/
 │
 └── roles/
     ├── all-vm-config/               # 全VM共通設定
+    ├── bootstrap-etcd-certs/        # etcd証明書ブートストラップ
+    ├── configure-frp-host/          # frpホスト設定
     ├── configure-misskey-host/      # Misskeyホスト設定
+    ├── etcd-maintenance/            # etcdメンテナンス
+    ├── etcd-precheck/               # etcdアップグレード前チェック
     ├── init-cp-kubernetes/          # Kubernetesクラスター初期化
     ├── install-alloy/               # Alloy監視エージェント
     ├── install-certbot/             # Let's Encrypt証明書
     ├── install-containerd/          # containerdコンテナランタイム
     ├── install-docker/              # Docker
+    ├── install-etcd-systemd/        # 外部etcd（systemd管理）
     ├── install-falco/               # Falcoセキュリティ
     ├── install-frp/                 # frpsリバースプロキシ
+    ├── install-k8s-tracing/         # Kubernetesトレーシング設定
     ├── install-kube-vip/            # kube-vip static pod 配置
     ├── install-kubernetes/          # Kubernetesコンポーネント
     ├── install-misskey/             # Misskeyインストール
@@ -71,6 +77,9 @@ ansible/
     ├── install-rclone/              # Rcloneストレージ同期
     ├── join-cp-kubernetes/          # コントロールプレーン参加
     ├── join-wk-kubernetes/          # ワーカーノード参加
+    ├── migrate-etcd-to-systemd/     # stacked→外部etcd移行
+    ├── reconfigure-kubeadm-external-etcd/ # kubeadm外部etcd再設定
+    ├── upgrade-etcd/                # etcdアップグレード
     └── upgrade-kubernetes/          # Kubernetesアップグレード
 ```
 
@@ -113,11 +122,15 @@ graph TB
 | `install-containerd` | containerd コンテナランタイム | k8s |
 | `install-kube-vip` | kube-vip static pod で API VIP を提供 | k8s-cp |
 | `install-kubernetes` | kubelet、kubeadm、kubectl | k8s |
+| `bootstrap-etcd-certs` | etcd 証明書ブートストラップ | k8s-cp |
+| `install-etcd-systemd` | 外部 etcd（systemd 管理） | k8s-cp |
 | `init-cp-kubernetes` | Kubernetes クラスター初期化 | k8s-cp-leader |
 | `join-cp-kubernetes` | コントロールプレーン参加 | k8s-cp-follower |
 | `join-wk-kubernetes` | ワーカーノード参加 | k8s-wk |
 | `install-alloy` | Alloy 監視エージェント | all |
+| `install-k8s-tracing` | Kubernetes トレーシング設定 | k8s |
 | `install-frp` | frps リバースプロキシ | frp |
+| `configure-frp-host` | frp ホスト設定 | frp |
 | `install-docker` | Docker エンジン | misskey, frp |
 | `install-nginx` | Nginx Web サーバー | external |
 | `install-certbot` | Let's Encrypt 証明書 | external |
@@ -126,6 +139,11 @@ graph TB
 | `install-rclone` | Rclone ストレージ同期 | external |
 | `install-falco` | Falco セキュリティ | 指定ノード |
 | `upgrade-kubernetes` | Kubernetes アップグレード | k8s |
+| `upgrade-etcd` | etcd アップグレード | k8s-cp |
+| `etcd-maintenance` | etcd デフラグ・スナップショット | k8s-cp |
+| `etcd-precheck` | etcd アップグレード前チェック | k8s-cp |
+| `migrate-etcd-to-systemd` | stacked → 外部 etcd 移行 | k8s-cp |
+| `reconfigure-kubeadm-external-etcd` | kubeadm 外部 etcd 再設定 | k8s-cp |
 
 ## 主要な設定変数
 
@@ -133,10 +151,11 @@ graph TB
 
 ```yaml
 # ソフトウェアバージョン
-containerd_version: "2.2.1"
-runc_version: "1.4.0"
-cni_plugins_version: "1.9.0"
-kubernetes_version: 1.35.1
+containerd_version: "2.2.2"
+runc_version: "1.4.1"
+cni_plugins_version: "1.9.1"
+kubernetes_version: 1.35.3
+etcd_version: "3.6.9"
 
 # ネットワーク
 pod_network_cidr: 10.26.0.0/16
@@ -146,6 +165,7 @@ controlplane_endpoint: "192.168.20.10:6443"
 # 監視
 mimir_endpoint: "https://mimir.str08.net/api/v1/push"
 loki_endpoint: "https://loki.str08.net/api/v1/push"
+tempo_endpoint: "https://tempo.str08.net"
 ```
 
 ### 外部サーバー設定 (group_vars/external.yaml)

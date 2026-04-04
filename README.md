@@ -7,36 +7,36 @@
 ```mermaid
 graph TB
     subgraph Internet
-        FRP[frps<br/>meruto-01]
+        FRPS[frps<br/>meruto-01]
     end
 
     subgraph "Proxmox VE Cluster"
         subgraph "kkg-pve3 (Ryzen 5 3400G / 32GB)"
-            lb1[kkg-lb1<br/>HAProxy + Keepalived<br/>192.168.20.11]
             cp1[kkg-cp1<br/>Control Plane Leader<br/>192.168.20.13]
         end
         subgraph "kkg-pve4 (Ryzen 3 3300X / 32GB)"
-            lb2[kkg-lb2<br/>HAProxy + Keepalived<br/>192.168.20.12]
             cp2[kkg-cp2<br/>Control Plane<br/>192.168.20.14]
             cp3[kkg-cp3<br/>Control Plane<br/>192.168.20.15]
         end
     end
 
-    VIP[VIP: 192.168.20.10]
+    VIP[API VIP: 192.168.20.10<br/>kube-vip]
 
-    lb1 & lb2 --> VIP
-    VIP --> cp1 & cp2 & cp3
+    cp1 & cp2 & cp3 --> VIP
 
-    FRP --> Traefik
+    FRPS --> FRPC
 
     subgraph "Kubernetes Workloads"
         ArgoCD
-        Traefik
-        Monitoring[Mimir / Loki / Grafana / Alloy]
+        FRPC[frpc]
+        TraefikExt[Traefik External<br/>外部向け]
+        Traefik[Traefik<br/>内部向け]
+        Monitoring[Mimir / Loki / Tempo / Grafana / Alloy]
         Apps[Applications]
     end
 
-    cp1 & cp2 & cp3 --> ArgoCD & Traefik & Monitoring & Apps
+    FRPC --> TraefikExt
+    cp1 & cp2 & cp3 --> ArgoCD & Traefik & TraefikExt & Monitoring & Apps
 ```
 
 ### kkgクラスタ（Proxmox VE × HA Kubernetes）
@@ -52,13 +52,6 @@ graph TB
 
 #### 仮想マシン構成
 
-##### ロードバランサ（HAProxy + Keepalived + FRR/BGP）
-
-| VM名     | CPU | メモリ | ディスク | IPアドレス     | ホストマシン |
-|----------|-----|--------|----------|---------------|-------------|
-| kkg-lb1  | 8   | 2GB    | 20GB     | 192.168.20.11 | kkg-pve3    |
-| kkg-lb2  | 8   | 2GB    | 20GB     | 192.168.20.12 | kkg-pve4    |
-
 ##### Kubernetesコントロールプレーン
 
 | VM名     | CPU | メモリ | ディスク | IPアドレス     | ホストマシン |
@@ -67,11 +60,13 @@ graph TB
 | kkg-cp2  | 8   | 16GB   | 100GB    | 192.168.20.14 | kkg-pve4    |
 | kkg-cp3  | 8   | 16GB   | 100GB    | 192.168.20.15 | kkg-pve4    |
 
+API VIP（192.168.20.10）は kube-vip が各コントロールプレーンノード上の Static Pod としてリーダー選出・ARP で提供します。
+
 ## デプロイメントパイプライン
 
 ```mermaid
 flowchart LR
-    A["1. Terraform<br/>VM作成"] --> B["2. Ansible<br/>OS・K8s・LB構築"]
+    A["1. Terraform<br/>VM作成"] --> B["2. Ansible<br/>OS・K8s構築"]
     B --> C["3. Helmfile<br/>CNI・シークレット・ArgoCD"]
     C --> D["4. ArgoCD<br/>全アプリ自動同期"]
 
@@ -82,7 +77,7 @@ flowchart LR
 ```
 
 1. **Terraform** — Proxmox 上に VM を作成（`terraform/kkg/`）
-2. **Ansible** — OS 設定、containerd、Kubernetes、LB（HAProxy/Keepalived/FRR）、監視エージェント、frps を自動化（`ansible/`）
+2. **Ansible** — OS 設定、containerd、Kubernetes、kube-vip、外部 etcd、監��エージェント、frps を自動化（`ansible/`）
 3. **Helmfile** — Cilium、1Password Connect、ArgoCD のブートストラップ（`helmfile/`）
 4. **ArgoCD** — App of Apps パターンで全コンポーネント・アプリケーションを GitOps 管理（`argocd/`）
 
@@ -95,7 +90,7 @@ pke/
 │   └── tailscale/      #   Tailscale ACL管理
 ├── ansible/            # 構成管理・自動化
 ├── helmfile/           # ブートストラップ（Cilium, 1Password, ArgoCD）
-├── argocd/             # GitOps アプリケーション定義（35+ アプリ）
+├── argocd/             # GitOps アプリケーション定義（39 アプリ）
 ├── scripts/            # CI/CDヘルパースクリプト
 ├── .github/            # GitHub Actions ワークフロー
 └── renovate.json5      # 依存関係自動更新設定
@@ -105,13 +100,13 @@ pke/
 
 | コンポーネント | バージョン |
 |---------------|-----------|
-| Kubernetes    | 1.35.1    |
-| containerd    | 2.2.1     |
-| runc          | 1.4.0     |
-| CNI Plugins   | 1.9.0     |
-| Cilium        | 1.19.0    |
-| 1Password Connect | 2.3.0 |
-| ArgoCD (Chart) | 9.4.2   |
+| Kubernetes    | 1.35.3    |
+| containerd    | 2.2.2     |
+| runc          | 1.4.1     |
+| CNI Plugins   | 1.9.1     |
+| Cilium        | 1.19.2    |
+| 1Password Connect | 2.4.1 |
+| ArgoCD (Chart) | 9.4.17  |
 | OS テンプレート | Ubuntu 24.04 |
 
 ## ArgoCD 管理コンポーネント
@@ -122,27 +117,32 @@ pke/
 |---------------|---------------|------|
 | Prometheus Operator CRDs | 24.0.1 | 監視CRD基盤 |
 | CloudNative-PG | 0.27.1 | PostgreSQLオペレーター |
-| Traefik CRDs | 1.11.1 | Ingress CRD |
-| cert-manager | v1.19.3 | 証明書管理 |
-| Falco | 8.0.0 | ランタイムセキュリティ |
+| Traefik CRDs | 1.16.0 | Ingress CRD |
+| cert-manager | v1.20.1 | 証明書管理 |
+| Falco | 8.0.1 | ランタイムセキュリティ |
 | MinIO Operator | 7.1.1 | オブジェクトストレージ |
 | NFS Subdir External Provisioner | 4.0.18 | 永続ストレージ |
 | external-dns | 1.20.0 | DNS自動管理 |
 | Metrics Server | 3.13.0 | リソースメトリクス |
-| Traefik | 39.0.1 | Ingress Controller |
+| Traefik | 39.0.7 | Ingress Controller |
+| Traefik External | 39.0.7 | 外部向けIngress Controller |
+| frpc | - | FRP クライアント（カスタムマニフェスト） |
+| kube-state-metrics | 7.2.2 | Kubernetesメトリクス |
 
 ### 監視・オブザーバビリティ（Wave 3-5）
 
 | コンポーネント | Chart Version | 用途 |
 |---------------|---------------|------|
 | Grafana | 10.5.15 | ダッシュボード |
-| Mimir Distributed | 6.0.5 | メトリクスストレージ |
-| Loki | 6.53.0 | ログ集約 |
-| Alloy | 1.6.0 | 監視エージェント |
-| Vector | 0.50.0 | ログ・オブザーバビリティ |
-| Uptime Kuma | 2.24.0 | アップタイム監視 |
-| Prometheus Blackbox Exporter | 11.8.0 | 外形監視 |
-| iX2215 SNMP Exporter | 9.12.0 | ネットワーク機器監視 |
+| Mimir Distributed | 6.0.6 | メトリクスストレージ |
+| Loki | 6.55.0 | ログ集約 |
+| Tempo Distributed | 1.61.3 | 分散トレーシング |
+| Alloy | 1.6.2 | 監視エージェント |
+| Vector | 0.51.0 | ログ・オブザーバビリティ |
+| Uptime Kuma | 4.0.0 | アップタイム監視 |
+| Prometheus Blackbox Exporter | 11.9.1 | 外形監視 |
+| Blackbox Exporter Probes | 1.0.0 | 外形監視プローブ定義 |
+| iX2215 SNMP Exporter | 9.13.1 | ネットワーク機器監視 |
 | MinIO Tenant | 7.1.1 | オブジェクトストレージ実体 |
 
 ### アプリケーション（Wave 2-3）
@@ -151,18 +151,19 @@ pke/
 |-----------------|---------------|------|
 | navidrome | 2.1.3 | 音楽ストリーミングサーバー |
 | komga | 1.0.4 | コミック・書籍サーバー |
-| wallos | 0.1.5 | サブスクリプション管理 |
+| wallos | 0.1.7 | サブスクリプション管理 |
 | daypassed-bot | 0.1.0 | 日付関連Bot |
 | mc-mirror-cronjob | 0.2.1 | MinecraftミラーCronJob |
 | mk-stream | 1.0.0 | ストリーミングサービス |
 | note-tweet-connector | 1.0.3 | Note投稿連携 |
-| spotify-nowplaying | 3.0.2 | Spotify再生状況表示 |
-| spotify-reblend | 0.1.3 | Spotifyリブレンド |
-| misskey-summarizer | 0.1.2 | Misskey要約 |
+| spotify-nowplaying | 3.0.3 | Spotify再生状況表示 |
+| spotify-reblend | 0.1.4 | Spotifyリブレンド |
 | summaly | 0.1.6 | URLプレビュー |
 | emoji-service | 0.1.1 | 絵文字サービス |
-| rss-fetcher | 0.1.2 | RSSフェッチャー |
+| rss-fetcher | 0.1.3 | RSSフェッチャー |
 | registry | 0.1.1 | コンテナレジストリ |
+| sui | 0.1.2 | スタートページ |
+| renovate-operator | 4.0.0 | 依存関係自動更新オペレーター |
 
 ### 外部サーバー（Ansible管理）
 
@@ -178,14 +179,9 @@ graph TB
     subgraph "192.168.20.0/23"
         GW["192.168.20.1<br/>Gateway / DNS<br/>(iX2215, ASN 65000)"]
 
-        subgraph "LB Segment"
-            VIP["192.168.20.10<br/>VIP (Keepalived)"]
-            LB1["192.168.20.11 kkg-lb1<br/>(ASN 65002)"]
-            LB2["192.168.20.12 kkg-lb2<br/>(ASN 65002)"]
-        end
-
-        subgraph "Control Plane Segment"
-            CP1["192.168.20.13 kkg-cp1<br/>(ASN 65001)"]
+        subgraph "Control Plane (ASN 65001)"
+            VIP["192.168.20.10<br/>API VIP (kube-vip)"]
+            CP1["192.168.20.13 kkg-cp1"]
             CP2["192.168.20.14 kkg-cp2"]
             CP3["192.168.20.15 kkg-cp3"]
         end
@@ -195,15 +191,14 @@ graph TB
         end
     end
 
-    GW <-->|BGP| LB1 & LB2
-    GW <-->|BGP| CP1
-    LB1 & LB2 -->|BGP| CP1
+    GW <-->|BGP| CP1 & CP2 & CP3
 ```
 
-- **Load Balancer VIP**: 192.168.20.10（HAProxy + Keepalived）
+- **API VIP**: 192.168.20.10（kube-vip、リーダー選出 + ARP）
 - **Pod Network CIDR**: 10.26.0.0/16
 - **Cilium LB IP Pool**: 192.168.21.100 - 192.168.21.254
-- **BGP**: Cilium BGP Control Plane + FRR（LB ↔ ルーター ↔ CP）
+- **BGP**: Cilium BGP Control Plane — 全ノード（ASN 65001）が iX2215（ASN 65000）と直接ピアリングし、LoadBalancer IP を広報
+- **外部公開**: Internet → frps（meruto-01） → frpc → traefik-external → ワークロード
 
 ## CI/CD
 
