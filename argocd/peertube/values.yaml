@@ -1,0 +1,80 @@
+server:
+  persistence:
+    enabled: true
+    storageClass: oky-synology-01
+    size: 200Gi
+
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+    hosts:
+      - peertube.str08.net
+    path: /
+    pathType: Prefix
+    tls: false
+    extraTls:
+      - hosts:
+          - peertube.str08.net
+        secretName: peertube.str08.net-dns01
+
+  config:
+    admin:
+      existingSecret: peertube-secret
+    secrets:
+      existingSecret: peertube-secret
+    raw: |
+      listen:
+        hostname:
+        port: {{ .Values.server.containerPort }}
+      trust_proxy:
+        - 'loopback'
+      webserver:
+        https: true
+        hostname: "{{- with .Values.server.ingress -}}{{- if and .enabled .hosts -}}{{ tpl (first .hosts) $ }}{{- end -}}{{- end -}}"
+        port: 443
+      log:
+        level: info
+      open_telemetry:
+        metrics:
+          enabled: {{ .Values.server.metricsService.create }}
+          playback_stats_interval: "15 seconds"
+          http_request_duration:
+            enabled: false
+          prometheus_exporter:
+            hostname: "0.0.0.0"
+            port: {{ .Values.server.metricsPort }}
+      admin:
+        email: admin@str08.net
+      instance:
+        name: PeerTube
+        short_description: PeerTube on str08.net
+      live:
+        enabled: false
+        rtmp:
+          enabled: true
+          hostname: 0.0.0.0
+          port: 31935
+        rtmps:
+          enabled: false
+          hostname: 0.0.0.0
+          port: 31936
+
+  externalPostgres:
+    hostname: peertube-cluster-rw
+    port: 5432
+    db: peertube
+    username: peertube
+    existingSecret: peertube-postgres-bridge
+
+  externalRedis:
+    hostname: peertube-valkey
+    port: 6379
+
+  metricsService:
+    create: true
+    port: 9091
+
+  serviceMonitor:
+    enabled: true
