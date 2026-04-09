@@ -1,5 +1,6 @@
 global:
   cluster: kkg
+  region: us
   lowDataMode: true
   customSecretName: "license-key"
   customSecretLicenseKey: "licenseKey"
