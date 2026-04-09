@@ -3,7 +3,7 @@ global:
   region: us
   lowDataMode: true
   customSecretName: "license-key"
-  customSecretLicenseKey: "licenseKey"
+  customSecretLicenseKey: "licensekey"
 
 kube-state-metrics:
   enabled: true
