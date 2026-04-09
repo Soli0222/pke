@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: newrelic
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - chart: nri-bundle
+      repoURL: https://helm-charts.newrelic.com
+      targetRevision: 6.0.47
+      helm:
+        valueFiles:
+          - $values/argocd/newrelic/values.yaml
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Soli0222/pke.git
+      targetRevision: HEAD
+      path: argocd/newrelic/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: newrelic
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
