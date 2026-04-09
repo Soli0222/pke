@@ -5,6 +5,8 @@ repositories:
     url: https://1password.github.io/connect-helm-charts/
   - name: argo
     url: https://argoproj.github.io/argo-helm
+  - name: newrelic
+    url: https://helm-charts.newrelic.com
 
 releases:
   - name: cilium
@@ -91,4 +93,35 @@ releases:
           - "argocd"
           - "-f"
           - "manifests/argocd/root-app.yaml"
+          - "--ignore-not-found=true"
+
+  - name: newrelic-bundle
+    namespace: newrelic
+    createNamespace: true
+    chart: newrelic/nri-bundle
+    version: 6.0.47
+    needs:
+      - kube-system/cilium
+      - 1password/connect
+    values:
+      - values/newrelic.gotmpl
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-n"
+          - "newrelic"
+          - "-f"
+          - "manifests/newrelic/onepassworditem.yaml"
+      - events: ["preuninstall"]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "delete"
+          - "-n"
+          - "newrelic"
+          - "-f"
+          - "manifests/newrelic/onepassworditem.yaml"
           - "--ignore-not-found=true"
