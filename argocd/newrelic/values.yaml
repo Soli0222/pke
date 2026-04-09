@@ -1,0 +1,34 @@
+global:
+  cluster: kkg
+  region: us
+  lowDataMode: true
+  customSecretName: "license-key"
+  customSecretLicenseKey: "licenseKey"
+
+kube-state-metrics:
+  enabled: true
+  image:
+    tag: v2.13.0
+
+kubeEvents:
+  enabled: true
+
+newrelic-prometheus-agent:
+  enabled: true
+  lowDataMode: true
+  config:
+    kubernetes:
+      integrations_filter:
+        enabled: false
+
+nr-ebpf-agent:
+  enabled: true
+
+k8s-agents-operator:
+  enabled: true
+
+logging:
+  enabled: true
+
+newrelic-logging:
+  lowDataMode: false
