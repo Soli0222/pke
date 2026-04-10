@@ -12,7 +12,7 @@ spec:
     - name: NODE_OPTIONS
       value: "--max-old-space-size=4096"
   image: renovate/renovate:43.104.3
-  parallelism: 6
+  parallelism: 3
   resources:
     requests:
       cpu: 100m
