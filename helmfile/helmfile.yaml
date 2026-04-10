@@ -99,7 +99,7 @@ releases:
     namespace: newrelic
     createNamespace: true
     chart: newrelic/nri-bundle
-    version: 6.0.47
+    version: 7.0.0
     needs:
       - kube-system/cilium
       - 1password/connect
