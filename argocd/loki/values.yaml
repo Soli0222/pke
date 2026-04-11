@@ -45,7 +45,7 @@ loki:
       admin: loki-admin
     s3:
       endpoint: ${S3_ENDPOINT}
-      region: minio-kkg-1
+      region: auto
       secretAccessKey: ${S3_SECRET_ACCESS_KEY}
       accessKeyId: ${S3_ACCESS_KEY_ID}
       s3ForcePathStyle: true

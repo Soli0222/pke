@@ -12,7 +12,7 @@ tempo:
         secret_key: "${S3_SECRET_ACCESS_KEY}"
         bucket: "tempo-traces"
         endpoint: "${S3_ENDPOINT}"
-        region: "minio-kkg-1"
+        region: "auto"
         forcepathstyle: true
       wal:
         path: /var/tempo/wal
