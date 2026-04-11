@@ -9,5 +9,13 @@ spec:
       app: oky-synology-01
   endpoints:
     - port: metrics
-      path: /metrics
+      path: /snmp
       interval: 30s
+      scrapeTimeout: 30s
+      params:
+        target:
+          - 192.168.20.250
+        module:
+          - synology
+        auth:
+          - public_v3
