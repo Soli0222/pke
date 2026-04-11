@@ -24,6 +24,12 @@ mimir:
         head_compaction_interval: 15m
         wal_replay_concurrency: 3
 
+    alertmanager:
+      data_dir: /data/alertmanager
+      sharding_ring:
+        kvstore:
+          store: memberlist
+
     alertmanager_storage:
       s3:
         bucket_name: mimir-alertmanager
