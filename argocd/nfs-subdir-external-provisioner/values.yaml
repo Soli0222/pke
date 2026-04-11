@@ -10,5 +10,5 @@ storageClass:
   name: oky-synology-01
   allowVolumeExpansion: true
   reclaimPolicy: Delete
+  onDelete: delete
   accessModes: ReadWriteMany
-
