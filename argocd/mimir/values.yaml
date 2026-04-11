@@ -1,25 +1,28 @@
-global:
-  extraEnvFrom:
-    - secretRef:
-        name: minio-secrets
-
-minio:
-  enabled: false
+envFrom:
+  - secretRef:
+      name: minio-secrets
 
 mimir:
-  structuredConfig:
+  config: |
+    target: all
+    multitenancy_enabled: false
+
     common:
       storage:
         backend: s3
         s3:
-          endpoint: "minio.str08.net"
-          region: "minio-kkg-1"
-          secret_access_key: "${S3_SECRET_ACCESS_KEY}"
-          access_key_id: "${S3_ACCESS_KEY_ID}"
+          endpoint: minio.str08.net
+          region: minio-kkg-1
+          access_key_id: ${S3_ACCESS_KEY_ID}
+          secret_access_key: ${S3_SECRET_ACCESS_KEY}
 
     blocks_storage:
       s3:
         bucket_name: mimir-blocks
+      tsdb:
+        dir: /data/tsdb
+        head_compaction_interval: 15m
+        wal_replay_concurrency: 3
 
     alertmanager_storage:
       s3:
@@ -29,117 +32,78 @@ mimir:
       s3:
         bucket_name: mimir-ruler
 
+    compactor:
+      data_dir: /data/compactor
+      sharding_ring:
+        kvstore:
+          store: memberlist
+
+    distributor:
+      ring:
+        kvstore:
+          store: memberlist
+
+    ingester:
+      ring:
+        replication_factor: {{ .Values.replicaCount }}
+        kvstore:
+          store: memberlist
+
+    store_gateway:
+      sharding_ring:
+        replication_factor: {{ .Values.replicaCount }}
+        kvstore:
+          store: memberlist
+
     limits:
-      compactor_blocks_retention_period: "60d" 
+      compactor_blocks_retention_period: 60d
       max_global_series_per_user: 1000000
       ingestion_rate: 50000
       ingestion_burst_size: 1000000
-      out_of_order_time_window: "5m"
+      out_of_order_time_window: 5m
 
-alertmanager:
-  resources:
-    requests:
-      cpu: 20m
-      memory: 64Mi
-    limits:
-      memory: 128Mi
+    memberlist:
+      bind_port: {{ .Values.memberlistService.port }}
+      abort_if_cluster_join_fails: false
+      join_members:
+        - dnssrv+{{ include "mimir.memberlistServiceName" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.memberlistService.port }}
 
-distributor:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      memory: 256Mi
+    server:
+      http_listen_port: {{ .Values.service.httpPort }}
+      grpc_listen_port: {{ .Values.service.grpcPort }}
+      log_level: info
 
-ingester:
-  replicas: 3
-  zoneAwareReplication:
-    enabled: false
-  resources:
-    requests:
-      cpu: 150m
-      memory: 768Mi
-    limits:
-      memory: 1536Mi
+ingresses:
+  - name: mimir
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+    hosts:
+      - host: mimir.str08.net
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+          - mimir.str08.net
+        secretName: mimir.str08.net-dns01
 
-querier:
-  resources:
-    requests:
-      cpu: 150m
-      memory: 512Mi
-    limits:
-      memory: 1Gi
+  - name: mimir-external
+    className: traefik-external
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+      external-dns.alpha.kubernetes.io/target: meruto-01.pstr.space
+      external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+      traefik.ingress.kubernetes.io/router.tls.options: cert-manager-monitoring-mtls@kubernetescrd
+    hosts:
+      - host: mimir.pstr.space
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+          - mimir.pstr.space
+        secretName: mimir.pstr.space-dns01
 
-query_frontend:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      memory: 512Mi
-
-query_scheduler:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 64Mi
-    limits:
-      memory: 128Mi
-
-ruler:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      memory: 256Mi
-
-compactor:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      memory: 256Mi
-
-kafka:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 1536Mi
-    limits:
-      memory: 3Gi
-
-store_gateway:
-  replicas: 3
-  zoneAwareReplication:
-    enabled: false
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      memory: 512Mi
-
-ingress:
+serviceMonitor:
   enabled: true
-  className: traefik
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-  ingressClassName: traefik
-  hosts:
-    - mimir.str08.net
-  tls:
-    - hosts:
-        - mimir.str08.net
-      secretName: mimir.str08.net-dns01
-
-metaMonitoring:
-  serviceMonitor:
-    enabled: true
-
-  prometheusRule:
-    enabled: true
-    mimirAlerts: true
-    mimirRules: true
