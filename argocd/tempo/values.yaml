@@ -1,81 +1,32 @@
-storage:
-  trace:
-    backend: s3
-    s3:
-      access_key: "${S3_ACCESS_KEY_ID}"
-      secret_key: "${S3_SECRET_ACCESS_KEY}"
-      bucket: "tempo-traces"
-      endpoint: "minio.str08.net"
-      region: "minio-kkg-1"
-      forcepathstyle: true
-
-ingester:
-  replicas: 3
+tempo:
   extraArgs:
     - "-config.expand-env=true"
   extraEnvFrom:
     - secretRef:
         name: minio-secrets
+  storage:
+    trace:
+      backend: s3
+      s3:
+        access_key: "${S3_ACCESS_KEY_ID}"
+        secret_key: "${S3_SECRET_ACCESS_KEY}"
+        bucket: "tempo-traces"
+        endpoint: "minio.str08.net"
+        region: "minio-kkg-1"
+        forcepathstyle: true
+      wal:
+        path: /var/tempo/wal
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
 
-distributor:
-  extraArgs:
-    - "-config.expand-env=true"
-  extraEnvFrom:
-    - secretRef:
-        name: minio-secrets
-
-compactor:
-  extraArgs:
-    - "-config.expand-env=true"
-  extraEnvFrom:
-    - secretRef:
-        name: minio-secrets
-
-querier:
-  extraArgs:
-    - "-config.expand-env=true"
-  extraEnvFrom:
-    - secretRef:
-        name: minio-secrets
-
-queryFrontend:
-  extraArgs:
-    - "-config.expand-env=true"
-  extraEnvFrom:
-    - secretRef:
-        name: minio-secrets
-
-metricsGenerator:
-  extraArgs:
-    - "-config.expand-env=true"
-  extraEnvFrom:
-    - secretRef:
-        name: minio-secrets
-
-gateway:
+persistence:
   enabled: true
-  ingress:
-    enabled: true
-    ingressClassName: traefik
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt
-    hosts:
-      - host: tempo.str08.net
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-      - hosts:
-          - tempo.str08.net
-        secretName: tempo.str08.net-dns01
+  size: 10Gi
 
-traces:
-  otlp:
-    http:
-      enabled: true
-    grpc:
-      enabled: true
-
-metaMonitoring:
-  serviceMonitor:
-    enabled: true
+serviceMonitor:
+  enabled: true

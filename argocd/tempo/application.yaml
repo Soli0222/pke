@@ -10,9 +10,9 @@ metadata:
 spec:
   project: default
   sources:
-    - chart: tempo-distributed
-      repoURL: https://grafana.github.io/helm-charts
-      targetRevision: 1.61.3
+    - chart: tempo
+      repoURL: https://grafana-community.github.io/helm-charts
+      targetRevision: 2.0.0
       helm:
         valueFiles:
           - $values/argocd/tempo/values.yaml

@@ -21,6 +21,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: tempo-gateway
+                name: tempo
                 port:
-                  number: 80
+                  number: 3200
