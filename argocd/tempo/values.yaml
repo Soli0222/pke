@@ -1,6 +1,6 @@
 tempo:
   extraArgs:
-    - "-config.expand-env=true"
+    config.expand-env: true
   extraEnvFrom:
     - secretRef:
         name: minio-secrets
