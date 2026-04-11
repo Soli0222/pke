@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: oky-synology-01
+  namespace: oky-synology-01
+spec:
+  selector:
+    matchLabels:
+      app: oky-synology-01
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
