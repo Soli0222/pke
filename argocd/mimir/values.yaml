@@ -61,6 +61,9 @@ mimir:
       ingestion_rate: 50000
       ingestion_burst_size: 1000000
       out_of_order_time_window: 5m
+      max_fetched_series_per_query: 50000
+      max_fetched_chunks_per_query: 2000000
+      max_query_parallelism: 14
 
     memberlist:
       bind_port: {{ .Values.memberlistService.port }}
@@ -104,6 +107,13 @@ ingresses:
       - hosts:
           - mimir.pstr.space
         secretName: mimir.pstr.space-dns01
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 1Gi
+  limits:
+    memory: 4Gi
 
 serviceMonitor:
   enabled: true
