@@ -4,7 +4,7 @@ envFrom:
 
 mimir:
   config: |
-    target: all
+    target: all,alertmanager,ruler
     multitenancy_enabled: false
 
     common:
