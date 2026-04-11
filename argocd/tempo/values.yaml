@@ -3,7 +3,7 @@ tempo:
     config.expand-env: true
   extraEnvFrom:
     - secretRef:
-        name: minio-secrets
+        name: r2-o11y-secret
   storage:
     trace:
       backend: s3
@@ -11,7 +11,7 @@ tempo:
         access_key: "${S3_ACCESS_KEY_ID}"
         secret_key: "${S3_SECRET_ACCESS_KEY}"
         bucket: "tempo-traces"
-        endpoint: "minio.str08.net"
+        endpoint: "${S3_ENDPOINT}"
         region: "minio-kkg-1"
         forcepathstyle: true
       wal:
