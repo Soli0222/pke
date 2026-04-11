@@ -26,7 +26,7 @@ customConfig:
     loki:
       type: loki
       inputs: [syslog]
-      endpoint: http://loki-gateway.loki
+      endpoint: http://loki.loki:3100
       path: /loki/api/v1/push
       tenant_id: "fake"
       encoding:
