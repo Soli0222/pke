@@ -24,7 +24,7 @@ spec:
           - $values/argocd/emoji-service/values.emoji-bot-gateway.yaml
     - chart: valkey
       repoURL: https://valkey.io/valkey-helm
-      targetRevision: 0.9.3
+      targetRevision: 0.9.4
       helm:
         releaseName: emoji-bot-gateway-valkey
         valueFiles:
