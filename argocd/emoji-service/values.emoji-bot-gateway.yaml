@@ -1,6 +1,3 @@
-image:
-  tag: "1.3.0-rc.2"
-
 config:
   misskeyHost: "mi.soli0222.com"
   rendererBaseUrl: "http://emoji-service-emoji-renderer:8109"
