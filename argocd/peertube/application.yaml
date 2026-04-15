@@ -10,10 +10,11 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://github.com/zendet/peertube-helm.git
-      targetRevision: main
-      path: .
+    - chart: peertube
+      repoURL: https://zendet.github.io/peertube-helm/
+      targetRevision: 0.1.2
       helm:
+        releaseName: peertube
         valueFiles:
           - $values/argocd/peertube/values.yaml
     - chart: valkey

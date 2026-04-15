@@ -3,6 +3,18 @@ server:
     enabled: true
     storageClass: oky-synology-01
     size: 200Gi
+  
+  container:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "512Mi"
+      limits:
+        cpu: "8"
+        memory: "8Gi"
+
+  nodeSelector:
+    kubernetes.io/hostname: kkg-cp1
 
   ingress:
     enabled: true
