@@ -18,7 +18,7 @@ spec:
           - $values/argocd/peertube/values.yaml
     - chart: valkey
       repoURL: https://valkey.io/valkey-helm
-      targetRevision: 0.9.3
+      targetRevision: 0.9.4
       helm:
         releaseName: peertube-valkey
         valueFiles:
