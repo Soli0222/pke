@@ -69,7 +69,7 @@ releases:
     namespace: argocd
     createNamespace: true
     chart: argo/argo-cd
-    version: 9.5.0
+    version: 9.5.1
     needs:
       - kube-system/cilium
     values:
