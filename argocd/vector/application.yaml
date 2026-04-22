@@ -12,7 +12,7 @@ spec:
   sources:
     - chart: vector
       repoURL: https://helm.vector.dev
-      targetRevision: 0.51.0
+      targetRevision: 0.52.0
       helm:
         valueFiles:
           - $values/argocd/vector/values.yaml
