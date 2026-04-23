@@ -1,0 +1,58 @@
+---
+- name: Retrieve S3 access key from 1Password
+  ansible.builtin.set_fact:
+    k3s_etcd_s3_access_key: "{{ lookup('community.general.onepassword', k3s_op_item, field=k3s_op_field_access_key, vault=k3s_op_vault) }}"
+
+- name: Retrieve S3 secret key from 1Password
+  ansible.builtin.set_fact:
+    k3s_etcd_s3_secret_key: "{{ lookup('community.general.onepassword', k3s_op_item, field=k3s_op_field_secret_key, vault=k3s_op_vault) }}"
+
+- name: Retrieve S3 endpoint from 1Password
+  ansible.builtin.set_fact:
+    k3s_etcd_s3_endpoint: "{{ lookup('community.general.onepassword', k3s_op_item, field=k3s_op_field_endpoint, vault=k3s_op_vault) }}"
+
+- name: Check installed k3s version
+  ansible.builtin.command: /usr/local/bin/k3s --version
+  register: k3s_installed_version
+  failed_when: false
+  changed_when: false
+
+- name: Ensure k3s config directory exists
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy k3s server config
+  ansible.builtin.template:
+    src: templates/config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart k3s
+
+- name: Download k3s install script
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s-install.sh
+    mode: "0700"
+    force: true
+  when: k3s_installed_version.rc != 0 or k3s_version not in k3s_installed_version.stdout
+
+- name: Install k3s
+  ansible.builtin.shell: /tmp/k3s-install.sh
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_SKIP_START: "true"
+  when: k3s_installed_version.rc != 0 or k3s_version not in k3s_installed_version.stdout
+  notify: Restart k3s
+
+- name: Enable and start k3s
+  ansible.builtin.systemd:
+    name: k3s
+    enabled: true
+    state: started
+    daemon_reload: true
