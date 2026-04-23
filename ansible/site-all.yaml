@@ -1,5 +1,0 @@
-- name: All VM Config
-  become: true
-  hosts: all
-  roles:
-    - all-vm-config

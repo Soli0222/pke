@@ -1,5 +1,0 @@
-- name: frps Upgrade
-  hosts: frp
-  become: true
-  roles:
-    - install-frp
