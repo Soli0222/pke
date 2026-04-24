@@ -1,7 +1,7 @@
 ---
 k3s_version: "v1.32.3+k3s1"
-k3s_bind_address: "127.0.0.1"
-k3s_cluster_init: true
+k3s_node_role: server
+k3s_bind_address: "{{ ansible_default_ipv4.address | default(ansible_host) }}"
 
 # kubeconfig permissions (0644 allows non-root read)
 k3s_write_kubeconfig_mode: "0600"
@@ -11,21 +11,16 @@ k3s_cluster_cidr: "10.9.0.0/16,fd00:10:9::/56"
 k3s_service_cidr: "10.7.0.0/16,fd00:10:7::/112"
 k3s_cluster_dns: "10.7.0.10,fd00:10:7::a"
 
-# Embedded etcd S3 snapshot settings
-k3s_etcd_s3: true
-k3s_etcd_s3_bucket: ""
-k3s_etcd_s3_region: "us-east-1"
-k3s_etcd_s3_folder: ""
-k3s_etcd_s3_endpoint_ca: ""
-k3s_etcd_s3_skip_ssl_verify: false
+k3s_disable_components:
+  - helm-controller
+  - traefik
 
-# 1Password lookup settings for S3 credentials
-# Override k3s_op_vault and k3s_op_item in group_vars/host_vars
-k3s_op_vault: "Kubernetes"
-k3s_op_item: "k3s etcd s3"
-k3s_op_field_access_key: "access_key"
-k3s_op_field_secret_key: "secret_key"
-k3s_op_field_endpoint: "endpoint"
+# External etcd datastore settings for k3s server.
+k3s_datastore_endpoint: ""
+k3s_datastore_cafile: /etc/etcd/pki/ca.crt
+k3s_datastore_certfile: /etc/etcd/pki/k3s-etcd-client.crt
+k3s_datastore_keyfile: /etc/etcd/pki/k3s-etcd-client.key
 
-k3s_etcd_snapshot_schedule_cron: "0 */6 * * *"
-k3s_etcd_snapshot_retention: 5
+# Agent settings. Store k3s_token in 1Password/group_vars or pass it explicitly.
+k3s_server_url: ""
+k3s_token: ""

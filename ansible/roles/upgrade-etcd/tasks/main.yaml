@@ -1,26 +1,47 @@
 ---
 - name: Ensure etcd version is provided
-  assert:
+  ansible.builtin.assert:
     that:
       - etcd_version is defined
       - etcd_version | length > 0
 
+- name: Ensure etcd download and snapshot directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ etcd_download_dir }}", mode: "0755" }
+    - { path: "{{ etcd_snapshot_dir }}", mode: "0700" }
+
+- name: Save pre-upgrade etcd snapshot
+  ansible.builtin.command: >-
+    /usr/local/bin/etcdctl
+    --endpoints=https://127.0.0.1:{{ etcd_client_port }}
+    --cacert={{ etcd_pki_dir }}/ca.crt
+    --cert={{ etcd_pki_dir }}/healthcheck-client.crt
+    --key={{ etcd_pki_dir }}/healthcheck-client.key
+    snapshot save {{ etcd_snapshot_dir }}/pre-upgrade-{{ etcd_version }}-{{ ansible_date_time.iso8601_basic_short }}.db
+  changed_when: true
+
 - name: Download target etcd release archive
-  get_url:
+  ansible.builtin.get_url:
     url: "{{ etcd_download_url }}"
-    dest: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    dest: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
     mode: "0644"
 
 - name: Extract target etcd release archive
-  unarchive:
-    src: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
-    dest: /var/lib/etcd/downloads
+  ansible.builtin.unarchive:
+    src: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    dest: "{{ etcd_download_dir }}"
     remote_src: true
-    creates: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64"
+    creates: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64/etcd"
 
 - name: Upgrade etcd binaries
-  copy:
-    src: "/var/lib/etcd/downloads/etcd-v{{ etcd_version }}-linux-amd64/{{ item }}"
+  ansible.builtin.copy:
+    src: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64/{{ item }}"
     dest: "/usr/local/bin/{{ item }}"
     owner: root
     group: root
@@ -31,24 +52,25 @@
     - etcdctl
 
 - name: Restart etcd service
-  systemd:
+  ansible.builtin.systemd:
     name: etcd
     state: restarted
     daemon_reload: true
 
 - name: Wait for etcd endpoint after restart
-  wait_for:
+  ansible.builtin.wait_for:
     host: 127.0.0.1
-    port: 2379
+    port: "{{ etcd_client_port }}"
     state: started
     timeout: 180
 
 - name: Validate etcd endpoint health after upgrade
-  command: >-
+  ansible.builtin.command: >-
     /usr/local/bin/etcdctl
-    --endpoints=https://127.0.0.1:2379
+    --endpoints=https://127.0.0.1:{{ etcd_client_port }}
     --cacert={{ etcd_pki_dir }}/ca.crt
     --cert={{ etcd_pki_dir }}/healthcheck-client.crt
     --key={{ etcd_pki_dir }}/healthcheck-client.key
     endpoint health
   changed_when: false
+

@@ -1,0 +1,7 @@
+---
+etcd_pki_dir: /etc/etcd/pki
+etcd_snapshot_dir: /var/lib/etcd/snapshots
+etcd_client_port: 2379
+etcd_snapshot_retention_days: 7
+etcd_maintenance_on_calendar: "*-*-* 00/6:00:00"
+

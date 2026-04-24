@@ -1,4 +1,3 @@
-cluster-init: {{ k3s_cluster_init | lower }}
 bind-address: "{{ k3s_bind_address }}"
 write-kubeconfig-mode: "{{ k3s_write_kubeconfig_mode }}"
 
@@ -7,26 +6,18 @@ service-cidr: "{{ k3s_service_cidr }}"
 cluster-dns: "{{ k3s_cluster_dns }}"
 
 disable:
-  - helm-controller
-  - traefik
+{% for component in k3s_disable_components %}
+  - {{ component }}
+{% endfor %}
 
-etcd-s3: {{ k3s_etcd_s3 | lower }}
-etcd-s3-bucket: "{{ k3s_etcd_s3_bucket }}"
-etcd-s3-region: "{{ k3s_etcd_s3_region }}"
-etcd-s3-access-key: "{{ k3s_etcd_s3_access_key }}"
-etcd-s3-secret-key: "{{ k3s_etcd_s3_secret_key }}"
-{% if k3s_etcd_s3_endpoint %}
-etcd-s3-endpoint: "{{ k3s_etcd_s3_endpoint }}"
-{% endif %}
-{% if k3s_etcd_s3_endpoint_ca %}
-etcd-s3-endpoint-ca: "{{ k3s_etcd_s3_endpoint_ca }}"
-{% endif %}
-{% if k3s_etcd_s3_skip_ssl_verify %}
-etcd-s3-skip-ssl-verify: true
-{% endif %}
-{% if k3s_etcd_s3_folder %}
-etcd-s3-folder: "{{ k3s_etcd_s3_folder }}"
+{% if k3s_node_role == "server" %}
+datastore-endpoint: "{{ k3s_datastore_endpoint }}"
+datastore-cafile: "{{ k3s_datastore_cafile }}"
+datastore-certfile: "{{ k3s_datastore_certfile }}"
+datastore-keyfile: "{{ k3s_datastore_keyfile }}"
 {% endif %}
 
-etcd-snapshot-schedule-cron: "{{ k3s_etcd_snapshot_schedule_cron }}"
-etcd-snapshot-retention: {{ k3s_etcd_snapshot_retention }}
+{% if k3s_node_role == "agent" %}
+server: "{{ k3s_server_url }}"
+token: "{{ k3s_token }}"
+{% endif %}

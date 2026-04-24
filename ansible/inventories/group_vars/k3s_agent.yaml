@@ -1,0 +1,4 @@
+---
+k3s_node_role: agent
+k3s_server_url: "https://{{ hostvars[groups['k3s_server'][0]].ansible_host | default(hostvars[groups['k3s_server'][0]].ansible_default_ipv4.address) }}:6443"
+

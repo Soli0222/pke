@@ -1,21 +1,51 @@
 ---
-- name: Retrieve S3 access key from 1Password
-  ansible.builtin.set_fact:
-    k3s_etcd_s3_access_key: "{{ lookup('community.general.onepassword', k3s_op_item, field=k3s_op_field_access_key, vault=k3s_op_vault) }}"
-
-- name: Retrieve S3 secret key from 1Password
-  ansible.builtin.set_fact:
-    k3s_etcd_s3_secret_key: "{{ lookup('community.general.onepassword', k3s_op_item, field=k3s_op_field_secret_key, vault=k3s_op_vault) }}"
-
-- name: Retrieve S3 endpoint from 1Password
-  ansible.builtin.set_fact:
-    k3s_etcd_s3_endpoint: "{{ lookup('community.general.onepassword', k3s_op_item, field=k3s_op_field_endpoint, vault=k3s_op_vault) }}"
-
 - name: Check installed k3s version
   ansible.builtin.command: /usr/local/bin/k3s --version
   register: k3s_installed_version
   failed_when: false
   changed_when: false
+
+- name: Validate k3s node role
+  ansible.builtin.assert:
+    that:
+      - k3s_node_role in ['server', 'agent']
+    fail_msg: "k3s_node_role must be either server or agent."
+
+- name: Validate external etcd settings for k3s server
+  ansible.builtin.assert:
+    that:
+      - k3s_datastore_endpoint | length > 0
+      - k3s_datastore_cafile | length > 0
+      - k3s_datastore_certfile | length > 0
+      - k3s_datastore_keyfile | length > 0
+    fail_msg: "k3s server requires external etcd datastore settings."
+  when: k3s_node_role == "server"
+
+- name: Validate k3s agent settings
+  ansible.builtin.assert:
+    that:
+      - k3s_server_url | length > 0
+      - k3s_token | length > 0
+    fail_msg: "k3s agent requires k3s_server_url and k3s_token."
+  when: k3s_node_role == "agent"
+
+- name: Check external etcd client certificate files
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: k3s_etcd_cert_stats
+  loop:
+    - "{{ k3s_datastore_cafile }}"
+    - "{{ k3s_datastore_certfile }}"
+    - "{{ k3s_datastore_keyfile }}"
+  when: k3s_node_role == "server"
+
+- name: Validate external etcd client certificate files
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: "Required k3s external etcd certificate file is missing: {{ item.stat.path }}"
+  loop: "{{ k3s_etcd_cert_stats.results }}"
+  when: k3s_node_role == "server"
 
 - name: Ensure k3s config directory exists
   ansible.builtin.file:
@@ -43,16 +73,17 @@
   when: k3s_installed_version.rc != 0 or k3s_version not in k3s_installed_version.stdout
 
 - name: Install k3s
-  ansible.builtin.shell: /tmp/k3s-install.sh
+  ansible.builtin.command: /tmp/k3s-install.sh
   environment:
     INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: "{{ k3s_node_role }}"
     INSTALL_K3S_SKIP_START: "true"
   when: k3s_installed_version.rc != 0 or k3s_version not in k3s_installed_version.stdout
   notify: Restart k3s
 
 - name: Enable and start k3s
   ansible.builtin.systemd:
-    name: k3s
+    name: "{{ 'k3s' if k3s_node_role == 'server' else 'k3s-agent' }}"
     enabled: true
     state: started
     daemon_reload: true

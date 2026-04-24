@@ -1,0 +1,236 @@
+---
+- name: Set etcd leader host
+  ansible.builtin.set_fact:
+    etcd_leader_host: "{{ groups['etcd'][0] }}"
+  run_once: true
+
+- name: Build etcd initial cluster string
+  ansible.builtin.set_fact:
+    etcd_initial_cluster: >-
+      {%- for host in groups['etcd'] -%}
+      {{ host }}=https://{{ hostvars[host].ansible_host | default(hostvars[host].ansible_default_ipv4.address) }}:{{ etcd_peer_port }}{{ "," if not loop.last else "" }}
+      {%- endfor -%}
+
+- name: Install etcd dependencies
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - openssl
+      - tar
+    state: present
+    update_cache: true
+
+- name: Ensure etcd directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ etcd_data_dir }}", mode: "0700" }
+    - { path: "{{ etcd_download_dir }}", mode: "0755" }
+    - { path: "{{ etcd_snapshot_dir }}", mode: "0700" }
+    - { path: "{{ etcd_pki_dir }}", mode: "0700" }
+
+- name: Download etcd release archive
+  ansible.builtin.get_url:
+    url: "{{ etcd_download_url }}"
+    dest: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    mode: "0644"
+
+- name: Extract etcd release archive
+  ansible.builtin.unarchive:
+    src: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    dest: "{{ etcd_download_dir }}"
+    remote_src: true
+    creates: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64/etcd"
+
+- name: Install etcd binaries
+  ansible.builtin.copy:
+    src: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  loop:
+    - etcd
+    - etcdctl
+  notify: Restart etcd
+
+- name: Generate etcd CA on leader
+  ansible.builtin.command: >-
+    openssl req -x509 -newkey rsa:4096 -sha256 -nodes
+    -keyout {{ etcd_pki_dir }}/ca.key
+    -out {{ etcd_pki_dir }}/ca.crt
+    -days 3650
+    -subj /CN=pke-etcd-ca
+  args:
+    creates: "{{ etcd_pki_dir }}/ca.crt"
+  delegate_to: "{{ groups['etcd'][0] }}"
+  run_once: true
+
+- name: Read etcd CA certificate from leader
+  ansible.builtin.slurp:
+    src: "{{ etcd_pki_dir }}/ca.crt"
+  register: etcd_ca_crt_raw
+  delegate_to: "{{ groups['etcd'][0] }}"
+  run_once: true
+
+- name: Read etcd CA key from leader
+  ansible.builtin.slurp:
+    src: "{{ etcd_pki_dir }}/ca.key"
+  register: etcd_ca_key_raw
+  delegate_to: "{{ groups['etcd'][0] }}"
+  run_once: true
+  no_log: true
+
+- name: Store decoded etcd CA material
+  ansible.builtin.set_fact:
+    etcd_ca_crt: "{{ etcd_ca_crt_raw.content | b64decode }}"
+    etcd_ca_key: "{{ etcd_ca_key_raw.content | b64decode }}"
+  run_once: true
+  no_log: true
+
+- name: Distribute etcd CA certificate
+  ansible.builtin.copy:
+    content: "{{ hostvars[groups['etcd'][0]].etcd_ca_crt }}"
+    dest: "{{ etcd_pki_dir }}/ca.crt"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Distribute etcd CA key
+  ansible.builtin.copy:
+    content: "{{ hostvars[groups['etcd'][0]].etcd_ca_key }}"
+    dest: "{{ etcd_pki_dir }}/ca.key"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Render OpenSSL config for etcd server certificate
+  ansible.builtin.template:
+    src: server-openssl.cnf.j2
+    dest: /tmp/etcd-server-openssl.cnf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Render OpenSSL config for etcd peer certificate
+  ansible.builtin.template:
+    src: peer-openssl.cnf.j2
+    dest: /tmp/etcd-peer-openssl.cnf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Generate etcd server certificate and key
+  ansible.builtin.shell: |
+    set -euo pipefail
+    openssl genrsa -out {{ etcd_pki_dir }}/server.key 2048
+    openssl req -new -key {{ etcd_pki_dir }}/server.key -out /tmp/etcd-server.csr -subj "/CN={{ inventory_hostname }}" -config /tmp/etcd-server-openssl.cnf
+    openssl x509 -req -in /tmp/etcd-server.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out {{ etcd_pki_dir }}/server.crt -days 3650 -sha256 -extensions v3_req -extfile /tmp/etcd-server-openssl.cnf
+  args:
+    creates: "{{ etcd_pki_dir }}/server.crt"
+    executable: /bin/bash
+  notify: Restart etcd
+
+- name: Generate etcd peer certificate and key
+  ansible.builtin.shell: |
+    set -euo pipefail
+    openssl genrsa -out {{ etcd_pki_dir }}/peer.key 2048
+    openssl req -new -key {{ etcd_pki_dir }}/peer.key -out /tmp/etcd-peer.csr -subj "/CN={{ inventory_hostname }}-peer" -config /tmp/etcd-peer-openssl.cnf
+    openssl x509 -req -in /tmp/etcd-peer.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out {{ etcd_pki_dir }}/peer.crt -days 3650 -sha256 -extensions v3_req -extfile /tmp/etcd-peer-openssl.cnf
+  args:
+    creates: "{{ etcd_pki_dir }}/peer.crt"
+    executable: /bin/bash
+  notify: Restart etcd
+
+- name: Generate etcd healthcheck client certificate and key
+  ansible.builtin.shell: |
+    set -euo pipefail
+    openssl genrsa -out {{ etcd_pki_dir }}/healthcheck-client.key 2048
+    openssl req -new -key {{ etcd_pki_dir }}/healthcheck-client.key -out /tmp/etcd-healthcheck.csr -subj "/CN=etcd-healthcheck-client/O=system:masters"
+    openssl x509 -req -in /tmp/etcd-healthcheck.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out {{ etcd_pki_dir }}/healthcheck-client.crt -days 3650 -sha256
+  args:
+    creates: "{{ etcd_pki_dir }}/healthcheck-client.crt"
+    executable: /bin/bash
+
+- name: Render OpenSSL config for k3s etcd client certificate
+  ansible.builtin.template:
+    src: k3s-client-openssl.cnf.j2
+    dest: /tmp/k3s-etcd-client-openssl.cnf
+    owner: root
+    group: root
+    mode: "0644"
+  delegate_to: "{{ groups['etcd'][0] }}"
+  run_once: true
+
+- name: Generate k3s etcd client certificate and key on leader
+  ansible.builtin.shell: |
+    set -euo pipefail
+    openssl genrsa -out {{ etcd_pki_dir }}/k3s-etcd-client.key 2048
+    openssl req -new -key {{ etcd_pki_dir }}/k3s-etcd-client.key -out /tmp/k3s-etcd-client.csr -config /tmp/k3s-etcd-client-openssl.cnf
+    openssl x509 -req -in /tmp/k3s-etcd-client.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out {{ etcd_pki_dir }}/k3s-etcd-client.crt -days 3650 -sha256
+  args:
+    creates: "{{ etcd_pki_dir }}/k3s-etcd-client.crt"
+    executable: /bin/bash
+  delegate_to: "{{ groups['etcd'][0] }}"
+  run_once: true
+
+- name: Read k3s etcd client certificate from leader
+  ansible.builtin.slurp:
+    src: "{{ item }}"
+  register: k3s_etcd_client_material
+  loop:
+    - "{{ etcd_pki_dir }}/ca.crt"
+    - "{{ etcd_pki_dir }}/k3s-etcd-client.crt"
+    - "{{ etcd_pki_dir }}/k3s-etcd-client.key"
+  delegate_to: "{{ groups['etcd'][0] }}"
+  run_once: true
+  no_log: true
+
+- name: Ensure etcd pki directory exists on k3s servers
+  ansible.builtin.file:
+    path: "{{ etcd_pki_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop: "{{ groups['k3s_server'] | default([]) }}"
+  loop_control:
+    loop_var: k3s_server_host
+  delegate_to: "{{ k3s_server_host }}"
+  run_once: true
+
+- name: Distribute k3s etcd client material to k3s servers
+  ansible.builtin.copy:
+    content: "{{ item.1.content | b64decode }}"
+    dest: "{{ item.1.source }}"
+    owner: root
+    group: root
+    mode: "{{ '0600' if item.1.source.endswith('.key') else '0644' }}"
+  loop: "{{ (groups['k3s_server'] | default([])) | product(k3s_etcd_client_material.results) | list }}"
+  delegate_to: "{{ item.0 }}"
+  run_once: true
+  no_log: true
+
+- name: Deploy etcd systemd service
+  ansible.builtin.template:
+    src: etcd.service.j2
+    dest: /etc/systemd/system/etcd.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart etcd
+
+- name: Enable and start etcd
+  ansible.builtin.systemd:
+    name: etcd
+    enabled: true
+    state: started
+    daemon_reload: true
+
