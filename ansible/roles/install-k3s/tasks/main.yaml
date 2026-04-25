@@ -11,6 +11,54 @@
       - k3s_node_role in ['server', 'agent']
     fail_msg: "k3s_node_role must be either server or agent."
 
+- name: Build k3s private IPv4 address list from netplan
+  ansible.builtin.set_fact:
+    k3s_private_ipv4_addresses: >-
+      {{
+        (
+          [k3s_private_ipv4_raw]
+          if k3s_private_ipv4_raw is string
+          else k3s_private_ipv4_raw
+        )
+        | select
+        | map('regex_replace', '/.*$', '')
+        | list
+      }}
+  vars:
+    k3s_private_ipv4_raw: "{{ ((network_netplan | default({})).private | default({})).ipv4 | default([]) }}"
+  when: k3s_use_private_netplan_address | bool
+
+- name: Build k3s private IPv6 address list from netplan
+  ansible.builtin.set_fact:
+    k3s_private_ipv6_addresses: >-
+      {{
+        (
+          [k3s_private_ipv6_raw]
+          if k3s_private_ipv6_raw is string
+          else k3s_private_ipv6_raw
+        )
+        | select
+        | map('regex_replace', '/.*$', '')
+        | list
+      }}
+  vars:
+    k3s_private_ipv6_raw: "{{ ((network_netplan | default({})).private | default({})).ipv6 | default([]) }}"
+  when: k3s_use_private_netplan_address | bool
+
+- name: Validate k3s private netplan addresses
+  ansible.builtin.assert:
+    that:
+      - k3s_private_ipv4_addresses | length > 0
+    fail_msg: "network_netplan.private.ipv4 must be set when k3s_use_private_netplan_address is true."
+  when: k3s_use_private_netplan_address | bool
+
+- name: Use private netplan addresses for k3s
+  ansible.builtin.set_fact:
+    k3s_bind_address: "{{ k3s_private_ipv4_addresses | first }}"
+    k3s_advertise_address: "{{ k3s_private_ipv4_addresses | first }}"
+    k3s_node_ip: "{{ (k3s_private_ipv4_addresses + k3s_private_ipv6_addresses) | join(',') }}"
+  when: k3s_use_private_netplan_address | bool
+
 - name: Validate external etcd settings for k3s server
   ansible.builtin.assert:
     that:
