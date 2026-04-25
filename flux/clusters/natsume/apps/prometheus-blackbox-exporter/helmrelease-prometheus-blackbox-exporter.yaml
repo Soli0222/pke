@@ -1,0 +1,38 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: prometheus-blackbox-exporter
+  namespace: prometheus-blackbox-exporter
+spec:
+  interval: 10m
+  releaseName: prometheus-blackbox-exporter
+  targetNamespace: prometheus-blackbox-exporter
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: prometheus-blackbox-exporter
+      version: 11.9.1
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-blackbox-exporter-repo
+        namespace: prometheus-blackbox-exporter
+      interval: 1h
+  values:
+    config:
+      modules:
+        http_2xx:
+          prober: http
+          timeout: 5s
+          http:
+            valid_http_versions:
+            - HTTP/1.1
+            - HTTP/2.0
+            follow_redirects: true
+            preferred_ip_protocol: ip4
+    serviceMonitor:
+      selfMonitor:
+        enabled: true

@@ -1,0 +1,8 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: summaly-repo
+  namespace: summaly
+spec:
+  interval: 1h
+  url: https://soli0222.github.io/helm-charts

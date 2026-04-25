@@ -9,21 +9,21 @@ flowchart LR
     subgraph "Helmfile Bootstrap"
         direction LR
         C["1. Cilium<br/>CNI / LB / BGP"] --> OP["2. 1Password Connect<br/>シークレット管理"]
-        OP --> A["3. ArgoCD<br/>GitOps エンジン"]
+        OP --> F["3. Flux Operator<br/>GitOps エンジン"]
     end
 
-    A -->|"root-app.yaml"| APPS["argocd/<br/>39 アプリケーション<br/>自動同期"]
+    F -->|"FluxInstance sync"| APPS["flux/clusters/natsume<br/>アプリケーション自動同期"]
 ```
 
-Helmfile の役割は以下のブートストラップコンポーネントのデプロイに限定されています。その他のアプリケーション・プラットフォームコンポーネントは ArgoCD が `argocd/` ディレクトリから自動管理します。
+Helmfile の役割は以下のブートストラップコンポーネントのデプロイに限定されています。その他のアプリケーション・プラットフォームコンポーネントは Flux が `flux/clusters/natsume` ディレクトリから自動管理します。
 
 ### 管理対象コンポーネント
 
 | 順序 | コンポーネント | Chart Version | 用途 |
 |------|---------------|---------------|------|
-| 1 | Cilium | 1.19.2 | CNI / NetworkPolicy / LoadBalancer (L2 + BGP) |
+| 1 | Cilium | 1.19.3 | CNI / NetworkPolicy / LoadBalancer (L2 + BGP) |
 | 2 | 1Password Connect | 2.4.1 | シークレット管理基盤 |
-| 3 | ArgoCD | 9.4.17 | GitOps CD エンジン |
+| 3 | Flux Operator | 0.48.0 | Flux CD 管理 |
 
 ## ディレクトリ構造
 
@@ -34,15 +34,11 @@ helmfile/
 │
 ├── values/
 │   ├── cilium.gotmpl               # Cilium CNI設定
-│   ├── 1password-connect.gotmpl    # 1Password Connect設定
-│   └── argocd.gotmpl               # ArgoCD設定
+│   └── 1password-connect.gotmpl    # 1Password Connect設定
 │
 └── manifests/
-    ├── argocd/
-    │   └── root-app.yaml           # ArgoCD App of Apps ルートアプリケーション
-    └── cilium/
-        ├── default-pool.yaml       # Cilium LoadBalancer IPPool
-        └── bgp.yaml                # BGP ClusterConfig / PeerConfig / Advertisement
+    └── flux/
+        └── fluxinstance.yaml       # Flux controller と Git sync 設定
 ```
 
 ## Cilium 設定詳細
@@ -101,27 +97,19 @@ export ONEPASSWORD_TOKEN="<your-token>"
 # 依存関係順に個別実行
 helmfile -l name=cilium apply    # 1. CNI
 helmfile -l name=connect apply   # 2. シークレット基盤
-helmfile -l name=argocd apply    # 3. GitOps基盤
+helmfile -l name=flux-operator apply # 3. GitOps基盤
 
 # または一括実行（依存関係は needs で定義済み）
 helmfile apply
 ```
 
-## ArgoCD デプロイ後
+## Flux デプロイ後
 
-ArgoCD デプロイ時に `manifests/argocd/root-app.yaml` が適用され、GitOps ループが開始します。`argocd/` ディレクトリ以下の全 `application.yaml` が自動的にクラスターに同期されます。
-
-### ArgoCD UI へのアクセス
-
-```bash
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-```
-
-ブラウザで `https://localhost:8080` にアクセス。初期パスワードは Secret `argocd-initial-admin-secret` に格納されています。
+Flux Operator デプロイ後に `manifests/flux/fluxinstance.yaml` が適用され、Flux controller と `flux/clusters/natsume` の Git 同期が開始します。
 
 ### ブートストラップの再実行
 
-Cilium や ArgoCD 自体のアップグレードが必要な場合は、再度 Helmfile を実行してください。
+Cilium や Flux Operator 自体のアップグレードが必要な場合は、再度 Helmfile を実行してください。
 
 ```bash
 helmfile apply

@@ -1,0 +1,57 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  interval: 10m
+  releaseName: traefik
+  targetNamespace: traefik
+  install:
+    createNamespace: false
+    crds: Skip
+  upgrade:
+    crds: Skip
+  chart:
+    spec:
+      chart: traefik
+      version: 39.0.8
+      sourceRef:
+        kind: HelmRepository
+        name: traefik-repo
+        namespace: traefik
+      interval: 1h
+  values:
+    deployment:
+      kind: DaemonSet
+    logs:
+      access:
+        enabled: true
+    metrics:
+      addInternals: true
+      prometheus:
+        serviceMonitor:
+          enabled: true
+    service:
+      spec:
+        externalTrafficPolicy: Local
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: traefik.str08.net
+    ingressClass:
+      enabled: true
+      isDefaultClass: true
+      name: traefik
+    providers:
+      kubernetesCRD:
+        ingressClass: traefik
+      kubernetesIngress:
+        ingressClass: traefik
+    ingressRoute:
+      dashboard:
+        enabled: true
+        matchRule: Host(`traefik.str08.net`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+        entryPoints:
+        - web
+        - websecure
+        tls:
+          secretName: traefik.str08.net-dns01

@@ -33,6 +33,8 @@ resource "tailscale_acl" "main" {
       "tag:kkg-external" = ["group:kkg"],
       "tag:service"      = ["group:service"],
       "tag:operation"    = ["group:operation"],
+      "tag:k8s-operator": [],
+      "tag:k8s": ["tag:k8s-operator"],
     }
 
     "groups" = {

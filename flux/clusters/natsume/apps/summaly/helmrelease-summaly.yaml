@@ -1,0 +1,39 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: summaly
+  namespace: summaly
+spec:
+  interval: 10m
+  releaseName: summaly
+  targetNamespace: summaly
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: summaly
+      version: 0.1.6
+      sourceRef:
+        kind: HelmRepository
+        name: summaly-repo
+        namespace: summaly
+      interval: 1h
+  values:
+    ingress:
+      enabled: true
+      className: traefik-external
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt
+        external-dns.alpha.kubernetes.io/target: meruto-01.pstr.space
+      hosts:
+      - host: summaly.soli0222.com
+        paths:
+        - path: "/"
+          pathType: Prefix
+      tls:
+      - hosts:
+        - summaly.soli0222.com
+        secretName: summaly.soli0222.com-dns01

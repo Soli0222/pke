@@ -1,0 +1,49 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-dns
+  namespace: external-dns
+spec:
+  interval: 10m
+  releaseName: external-dns
+  targetNamespace: external-dns
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: external-dns
+      version: 1.20.0
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns-repo
+        namespace: external-dns
+      interval: 1h
+  values:
+    env:
+    - name: CF_API_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: cloudflare-api-token
+          key: apiToken
+    managedRecordTypes:
+    - A
+    - AAAA
+    - CNAME
+    - TXT
+    sources:
+    - service
+    - ingress
+    - crd
+    - traefik-proxy
+    domainFilters:
+    - str08.net
+    - soli0222.com
+    - pstr.space
+    policy: sync
+    provider:
+      name: cloudflare
+    serviceMonitor:
+      enabled: true

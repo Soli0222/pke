@@ -1,0 +1,38 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: renovate-operator
+  namespace: renovate-operator
+spec:
+  interval: 10m
+  releaseName: renovate-operator
+  targetNamespace: renovate-operator
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: renovate-operator
+      version: 4.3.5
+      sourceRef:
+        kind: HelmRepository
+        name: renovate-operator-repo
+        namespace: renovate-operator
+      interval: 1h
+  values:
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      host: renovate.str08.net
+      tls:
+      - hosts:
+        - renovate.str08.net
+        secretName: renovate.str08.net-dns01
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true

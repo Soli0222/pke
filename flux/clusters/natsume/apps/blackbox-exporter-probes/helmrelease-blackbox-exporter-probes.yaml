@@ -1,0 +1,38 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: blackbox-exporter-probes
+  namespace: blackbox-exporter-probes
+spec:
+  interval: 10m
+  releaseName: blackbox-exporter-probes
+  targetNamespace: blackbox-exporter-probes
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: blackbox-exporter-probes
+      version: 1.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: blackbox-exporter-probes-repo
+        namespace: blackbox-exporter-probes
+      interval: 1h
+  values:
+    applications:
+    - name: misskey-polestar
+      targets:
+      - https://mi.soli0222.com
+      - https://summaly.soli0222.com/health
+    - name: spotify-nowplaying
+      targets:
+      - https://spn.soli0222.com/status
+    - name: navidrome
+      targets:
+      - https://navidrome.pstr.space
+    - name: conohav2-1
+      targets:
+      - https://conohav2-1.pstr.space

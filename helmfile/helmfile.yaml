@@ -3,10 +3,6 @@ repositories:
     url: https://helm.cilium.io/
   - name: 1password
     url: https://1password.github.io/connect-helm-charts/
-  - name: argo
-    url: https://argoproj.github.io/argo-helm
-  - name: newrelic
-    url: https://helm-charts.newrelic.com
 
 releases:
   - name: cilium
@@ -21,37 +17,31 @@ releases:
     createNamespace: true
     chart: 1password/connect
     version: 2.4.1
-    needs:
-      - kube-system/cilium
     values:
       - values/1password-connect.gotmpl
-
-  - name: argocd
-    namespace: argocd
-    createNamespace: true
-    chart: argo/argo-cd
-    version: 9.5.2
     needs:
       - kube-system/cilium
-    values:
-      - values/argocd.gotmpl
+
+  - name: flux-operator
+    namespace: flux-system
+    createNamespace: true
+    chart: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator
+    version: 0.48.0
+    needs:
+      - kube-system/cilium
     hooks:
       - events: ["postsync"]
         showlogs: true
         command: "kubectl"
         args:
           - "apply"
-          - "-n"
-          - "argocd"
           - "-f"
-          - "manifests/argocd/root-app.yaml"
+          - "manifests/flux/fluxinstance.yaml"
       - events: ["preuninstall"]
         showlogs: true
         command: "kubectl"
         args:
           - "delete"
-          - "-n"
-          - "argocd"
           - "-f"
-          - "manifests/argocd/root-app.yaml"
+          - "manifests/flux/fluxinstance.yaml"
           - "--ignore-not-found=true"

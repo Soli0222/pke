@@ -1,4 +1,0 @@
-prometheus:
-  monitor:
-    enabled: true
-    honorLabels: true
