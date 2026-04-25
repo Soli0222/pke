@@ -49,4 +49,3 @@
     that:
       - inventory_hostname in etcd_member_list.stdout
     fail_msg: "inventory_hostname={{ inventory_hostname }} was not found in etcd member list output."
-

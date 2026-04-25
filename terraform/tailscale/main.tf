@@ -61,7 +61,7 @@ resource "tailscale_acl" "main" {
       {
         "src"    = ["tag:operation"],
         "dst"    = ["tag:service"],
-        "users"  = ["ubuntu"],
+        "users"  = ["ubuntu","soli"],
         "action" = "accept",
       },
     ]

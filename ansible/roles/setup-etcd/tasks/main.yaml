@@ -4,11 +4,37 @@
     etcd_leader_host: "{{ groups['etcd'][0] }}"
   run_once: true
 
+- name: Build etcd private IPv4 address list from netplan
+  ansible.builtin.set_fact:
+    etcd_private_ipv4_addresses: >-
+      {{
+        (
+          [etcd_private_ipv4_raw]
+          if etcd_private_ipv4_raw is string
+          else etcd_private_ipv4_raw
+        )
+        | select
+        | map('regex_replace', '/.*$', '')
+        | list
+      }}
+  vars:
+    etcd_private_ipv4_raw: "{{ ((network_netplan | default({})).private | default({})).ipv4 | default([]) }}"
+
+- name: Validate etcd private IPv4 address
+  ansible.builtin.assert:
+    that:
+      - etcd_private_ipv4_addresses | length > 0
+    fail_msg: "network_netplan.private.ipv4 must be set for etcd nodes."
+
+- name: Use private IPv4 address for etcd
+  ansible.builtin.set_fact:
+    etcd_private_ipv4_address: "{{ etcd_private_ipv4_addresses | first }}"
+
 - name: Build etcd initial cluster string
   ansible.builtin.set_fact:
     etcd_initial_cluster: >-
       {%- for host in groups['etcd'] -%}
-      {{ host }}=https://{{ hostvars[host].ansible_host | default(hostvars[host].ansible_default_ipv4.address) }}:{{ etcd_peer_port }}{{ "," if not loop.last else "" }}
+      {{ host }}=https://{{ hostvars[host].etcd_private_ipv4_address }}:{{ etcd_peer_port }}{{ "," if not loop.last else "" }}
       {%- endfor -%}
 
 - name: Install etcd dependencies
@@ -233,4 +259,3 @@
     enabled: true
     state: started
     daemon_reload: true
-

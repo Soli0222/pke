@@ -4,9 +4,8 @@ k3s_datastore_cafile: /etc/etcd/pki/ca.crt
 k3s_datastore_certfile: /etc/etcd/pki/k3s-etcd-client.crt
 k3s_datastore_keyfile: /etc/etcd/pki/k3s-etcd-client.key
 k3s_datastore_endpoint: >-
-  {{
-    groups['etcd']
-    | map('extract', hostvars, 'ansible_host')
-    | map('regex_replace', '^(.*)$', 'https://\\1:2379')
-    | join(',')
-  }}
+  {%- for host in groups['etcd'] -%}
+  {%- set private_ipv4 = ((hostvars[host].network_netplan | default({})).private | default({})).ipv4 | default([]) -%}
+  {%- set private_ipv4_list = ([private_ipv4] if private_ipv4 is string else private_ipv4) -%}
+  https://{{ private_ipv4_list | first | regex_replace('/.*$', '') }}:2379{{ "," if not loop.last else "" }}
+  {%- endfor -%}

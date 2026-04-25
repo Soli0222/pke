@@ -15,6 +15,4 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = {{ inventory_hostname }}
 DNS.2 = {{ ansible_host | default(inventory_hostname) }}
-{% if ansible_default_ipv4 is defined %}
-IP.1 = {{ ansible_default_ipv4.address }}
-{% endif %}
+IP.1 = {{ etcd_private_ipv4_address }}

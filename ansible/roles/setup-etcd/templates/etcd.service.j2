@@ -10,10 +10,10 @@ User=root
 ExecStart=/usr/local/bin/etcd \
   --name={{ inventory_hostname }} \
   --data-dir={{ etcd_data_dir }} \
-  --initial-advertise-peer-urls=https://{{ ansible_host | default(ansible_default_ipv4.address) }}:{{ etcd_peer_port }} \
-  --listen-peer-urls=https://{{ ansible_host | default(ansible_default_ipv4.address) }}:{{ etcd_peer_port }} \
-  --advertise-client-urls=https://{{ ansible_host | default(ansible_default_ipv4.address) }}:{{ etcd_client_port }} \
-  --listen-client-urls=https://127.0.0.1:{{ etcd_client_port }},https://{{ ansible_host | default(ansible_default_ipv4.address) }}:{{ etcd_client_port }} \
+  --initial-advertise-peer-urls=https://{{ etcd_private_ipv4_address }}:{{ etcd_peer_port }} \
+  --listen-peer-urls=https://{{ etcd_private_ipv4_address }}:{{ etcd_peer_port }} \
+  --advertise-client-urls=https://{{ etcd_private_ipv4_address }}:{{ etcd_client_port }} \
+  --listen-client-urls=https://127.0.0.1:{{ etcd_client_port }},https://{{ etcd_private_ipv4_address }}:{{ etcd_client_port }} \
   --listen-metrics-urls=http://127.0.0.1:{{ etcd_metrics_port }} \
   --initial-cluster={{ etcd_initial_cluster }} \
   --initial-cluster-state={{ etcd_cluster_state }} \
@@ -32,4 +32,3 @@ LimitNOFILE=40000
 
 [Install]
 WantedBy=multi-user.target
-
