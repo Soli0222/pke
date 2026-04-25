@@ -30,8 +30,7 @@ spec:
       - https://www.youtube.com/feeds/videos.xml?channel_id=UCt30jJgChL8qeT9VPadidSw
       - https://www.youtube.com/feeds/videos.xml?channel_id=UCjIHV9sLF2yrYH2ClgPAzSg
       - https://www.youtube.com/feeds/videos.xml?channel_id=UCGQ4RBrN9wZJ1j6oOJ2KTFw
-      - https://github.com/azooKey/azooKey-Desktop/releases.atom
-      interval: 10s
+      interval: 30s
       existingSecret: rss-fetcher-webhooks
     externalValkey:
       host: rss-fetcher-valkey

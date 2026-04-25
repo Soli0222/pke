@@ -24,10 +24,9 @@ spec:
   values:
     ingress:
       enabled: true
-      className: traefik-external
+      className: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt
-        external-dns.alpha.kubernetes.io/target: meruto-01.pstr.space
+        cert-manager.io/cluster-issuer: letsencrypt-http01
       hosts:
       - host: ntc.pstr.space
         paths:
@@ -36,7 +35,7 @@ spec:
       tls:
       - hosts:
         - ntc.pstr.space
-        secretName: ntc.pstr.space-dns01
+        secretName: ntc.pstr.space-http01
     monitoring:
       serviceMonitor:
         enabled: true

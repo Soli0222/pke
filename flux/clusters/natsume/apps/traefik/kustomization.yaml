@@ -4,4 +4,3 @@ resources:
 - namespace.yaml
 - helmrepository-traefik-repo.yaml
 - helmrelease-traefik.yaml
-- certificate.yaml

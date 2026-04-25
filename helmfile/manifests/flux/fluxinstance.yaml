@@ -24,7 +24,9 @@ spec:
     networkPolicy: true
     domain: cluster.local
   sync:
+    name: flux-system
     kind: GitRepository
     url: https://github.com/Soli0222/pke.git
     ref: refs/heads/main
     path: flux/clusters/natsume
+    interval: 1m

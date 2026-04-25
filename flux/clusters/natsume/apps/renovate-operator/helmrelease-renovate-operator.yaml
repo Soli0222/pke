@@ -24,14 +24,14 @@ spec:
   values:
     ingress:
       enabled: true
-      ingressClassName: traefik
+      ingressClassName: traefik-tailscale
       host: renovate.str08.net
       tls:
       - hosts:
         - renovate.str08.net
         secretName: renovate.str08.net-dns01
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt
+        cert-manager.io/cluster-issuer: letsencrypt-dns01
     metrics:
       enabled: true
       serviceMonitor:

@@ -4,7 +4,6 @@ resources:
 - kustomizations/cnpg.yaml
 - kustomizations/external-secrets-crds.yaml
 - kustomizations/prometheus-operator-crd.yaml
-- kustomizations/traefik-crds.yaml
 - kustomizations/cert-manager.yaml
 - kustomizations/daypassed-bot.yaml
 - kustomizations/external-dns.yaml

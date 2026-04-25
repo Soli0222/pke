@@ -24,10 +24,9 @@ spec:
   values:
     ingress:
       enabled: true
-      className: traefik-external
+      className: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt
-        external-dns.alpha.kubernetes.io/target: meruto-01.pstr.space
+        cert-manager.io/cluster-issuer: letsencrypt-http01
       hosts:
       - host: summaly.soli0222.com
         paths:
@@ -36,4 +35,4 @@ spec:
       tls:
       - hosts:
         - summaly.soli0222.com
-        secretName: summaly.soli0222.com-dns01
+        secretName: summaly.soli0222.com-http01

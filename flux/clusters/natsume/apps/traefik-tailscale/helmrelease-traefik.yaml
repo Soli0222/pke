@@ -1,17 +1,17 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: traefik
-  namespace: traefik
+  name: traefik-tailscale
+  namespace: traefik-tailscale
 spec:
   interval: 10m
-  releaseName: traefik
-  targetNamespace: traefik
+  releaseName: traefik-tailscale
+  targetNamespace: traefik-tailscale
   install:
     createNamespace: false
-    crds: Create
+    crds: Skip
   upgrade:
-    crds: CreateReplace
+    crds: Skip
   chart:
     spec:
       chart: traefik
@@ -19,7 +19,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: traefik-repo
-        namespace: traefik
+        namespace: traefik-tailscale
       interval: 1h
   values:
     deployment:
@@ -35,15 +35,16 @@ spec:
     service:
       spec:
         externalTrafficPolicy: Local
+        loadBalancerClass: "tailscale"
     ingressClass:
       enabled: true
-      isDefaultClass: true
-      name: traefik
+      isDefaultClass: false
+      name: traefik-tailscale
     providers:
       kubernetesCRD:
-        ingressClass: traefik
+        ingressClass: traefik-tailscale
       kubernetesIngress:
-        ingressClass: traefik
+        ingressClass: traefik-tailscale
     # ingressRoute:
     #   dashboard:
     #     enabled: false

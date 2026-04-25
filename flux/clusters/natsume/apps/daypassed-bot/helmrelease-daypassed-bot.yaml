@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: daypassed-bot
-      version: 0.1.0
+      version: 0.1.1
       sourceRef:
         kind: HelmRepository
         name: daypassed-bot-repo

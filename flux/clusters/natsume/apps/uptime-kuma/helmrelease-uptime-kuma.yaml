@@ -24,14 +24,13 @@ spec:
   values:
     volume:
       enabled: true
-      accessMode: ReadWriteMany
+      accessMode: ReadWriteOnce
       size: 4Gi
     ingress:
       enabled: true
-      className: traefik-external
+      className: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt
-        external-dns.alpha.kubernetes.io/target: meruto-01.pstr.space
+        cert-manager.io/cluster-issuer: letsencrypt-http01
       hosts:
       - host: status.pstr.space
         paths:
@@ -40,6 +39,6 @@ spec:
       tls:
       - hosts:
         - status.pstr.space
-        secretName: status.pstr.space-dns01
+        secretName: status.pstr.space-http01
     serviceMonitor:
       enabled: false
