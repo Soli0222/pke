@@ -9,7 +9,7 @@ ipam:
     clusterPoolIPv4MaskSize: 24
     clusterPoolIPv6PodCIDRList:
       - "fd00:10:1::/64"
-    clusterPoolIPv6MaskSize: 120
+    clusterPoolIPv6MaskSize: 80
 
 ipv4:
   enabled: true
@@ -30,3 +30,6 @@ kubeProxyReplacement: "false"
 
 ipMasqAgent:
   enabled: false
+
+operator:
+  replicas: 1
