@@ -5,6 +5,8 @@ k3s_use_private_netplan_address: true
 k3s_bind_address: "{{ ansible_default_ipv4.address | default(ansible_host) }}"
 k3s_advertise_address: "{{ k3s_bind_address }}"
 k3s_node_ip: "{{ k3s_bind_address }}"
+k3s_flannel_backend: none
+k3s_disable_network_policy: true
 
 # kubeconfig permissions (0644 allows non-root read)
 k3s_write_kubeconfig_mode: "0600"

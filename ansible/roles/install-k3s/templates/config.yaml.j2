@@ -1,5 +1,7 @@
 bind-address: "{{ k3s_bind_address }}"
 node-ip: "{{ k3s_node_ip }}"
+flannel-backend: "{{ k3s_flannel_backend }}"
+disable-network-policy: {{ k3s_disable_network_policy | bool | lower }}
 write-kubeconfig-mode: "{{ k3s_write_kubeconfig_mode }}"
 
 cluster-cidr: "{{ k3s_cluster_cidr }}"
