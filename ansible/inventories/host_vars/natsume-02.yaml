@@ -14,16 +14,14 @@ network_netplan:
     nameservers:
       - 192.168.20.1
       - 2606:4700:4700::1111
-    routes:
-      - to: 10.26.0.0/16
-        via: 192.168.20.254
+    routes: []
 
   private:
     device: ens7
     ipv4:
-      - 192.168.97.2/24
+      - 192.168.9.2/24
     ipv6:
-      - fd00:10:6::2/64
+      - fd00:192:168:9::2/64
     default_route: []
     nameservers: []
     routes: []

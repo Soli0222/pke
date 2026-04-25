@@ -1,0 +1,14 @@
+{% for server in general_configuration_chrony_servers %}
+server {{ server }} iburst
+{% endfor %}
+
+{% for network in general_configuration_chrony_allow_networks %}
+allow {{ network }}
+{% endfor %}
+
+driftfile /var/lib/chrony/chrony.drift
+makestep 1.0 3
+rtcsync
+keyfile /etc/chrony/chrony.keys
+ntsdumpdir /var/lib/chrony
+logdir /var/log/chrony
