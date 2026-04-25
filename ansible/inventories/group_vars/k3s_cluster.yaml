@@ -1,5 +1,5 @@
 ---
-k3s_version: "v1.32.3+k3s1"
+k3s_version: "v1.35.3+k3s1"
 k3s_bind_address: "{{ ansible_default_ipv4.address | default(ansible_host) }}"
 k3s_write_kubeconfig_mode: "0600"
 

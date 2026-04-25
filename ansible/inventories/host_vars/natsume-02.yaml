@@ -1,3 +1,29 @@
 ---
 ansible_host: natsume-02
 
+network_netplan:
+  global:
+    device: ens3
+    ipv4: 192.168.20.11/24
+    ipv6:
+      - 2001:db8::11/64
+    default_route:
+      - 192.168.20.1
+      - via: 2001:db8::1
+        on-link: true
+    nameservers:
+      - 192.168.20.1
+      - 2606:4700:4700::1111
+    routes:
+      - to: 10.26.0.0/16
+        via: 192.168.20.254
+
+  private:
+    device: ens7
+    ipv4:
+      - 192.168.97.2/24
+    ipv6:
+      - fd00:10:6::2/64
+    default_route: []
+    nameservers: []
+    routes: []

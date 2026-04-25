@@ -1,0 +1,56 @@
+---
+- name: Install ufw
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: true
+
+- name: Ensure IPv6 is enabled for ufw
+  ansible.builtin.lineinfile:
+    path: /etc/default/ufw
+    regexp: '^IPV6='
+    line: 'IPV6=yes'
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Validate ufw interface settings
+  ansible.builtin.assert:
+    that:
+      - ufw_global_interface | length > 0
+      - ufw_private_interface | length > 0
+    fail_msg: ufw_global_interface and ufw_private_interface must be set.
+
+- name: Reset ufw rules
+  community.general.ufw:
+    state: reset
+  when: ufw_reset_rules | bool
+
+- name: Set default incoming policy
+  community.general.ufw:
+    direction: incoming
+    policy: "{{ ufw_default_incoming_policy }}"
+
+- name: Set default outgoing policy
+  community.general.ufw:
+    direction: outgoing
+    policy: "{{ ufw_default_outgoing_policy }}"
+
+- name: Allow public HTTP and HTTPS on global interface
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    direction: in
+    interface: "{{ ufw_global_interface }}"
+    port: "{{ item }}"
+  loop: "{{ ufw_global_allowed_tcp_ports }}"
+
+- name: Allow all inbound traffic on private interface
+  community.general.ufw:
+    rule: allow
+    direction: in
+    interface: "{{ ufw_private_interface }}"
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled

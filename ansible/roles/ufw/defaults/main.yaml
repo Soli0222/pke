@@ -1,0 +1,11 @@
+---
+ufw_default_incoming_policy: deny
+ufw_default_outgoing_policy: allow
+ufw_reset_rules: true
+
+ufw_global_interface: "{{ ((network_netplan | default({})).global | default({})).device | default('') }}"
+ufw_private_interface: "{{ ((network_netplan | default({})).private | default({})).device | default('') }}"
+
+ufw_global_allowed_tcp_ports:
+  - "80"
+  - "443"
