@@ -54,10 +54,53 @@
 
 - name: Use private netplan addresses for k3s
   ansible.builtin.set_fact:
-    k3s_bind_address: "{{ k3s_private_ipv4_addresses | first }}"
+    k3s_bind_address: "{{ '0.0.0.0' if k3s_bind_all_interfaces | bool else k3s_private_ipv4_addresses | first }}"
     k3s_advertise_address: "{{ k3s_private_ipv4_addresses | first }}"
     k3s_node_ip: "{{ (k3s_private_ipv4_addresses + k3s_private_ipv6_addresses) | join(',') }}"
   when: k3s_use_private_netplan_address | bool
+
+- name: Get Tailscale IPv4 address
+  ansible.builtin.command: "{{ k3s_tailscale_cli_path }} ip -4"
+  register: k3s_tailscale_ipv4_result
+  changed_when: false
+  failed_when: false
+  when:
+    - k3s_node_role == "server"
+    - k3s_include_tailscale_tls_sans | bool
+
+- name: Get Tailscale status
+  ansible.builtin.command: "{{ k3s_tailscale_cli_path }} status --json"
+  register: k3s_tailscale_status_result
+  changed_when: false
+  failed_when: false
+  when:
+    - k3s_node_role == "server"
+    - k3s_include_tailscale_tls_sans | bool
+
+- name: Build k3s TLS SAN list
+  ansible.builtin.set_fact:
+    k3s_effective_tls_sans: >-
+      {{
+        (
+          k3s_tls_sans
+          + [inventory_hostname]
+          + ([ansible_host] if ansible_host is defined else [])
+          + ([k3s_tailscale_ipv4_result.stdout | trim]
+             if (k3s_tailscale_ipv4_result is defined
+                 and k3s_tailscale_ipv4_result.rc == 0
+                 and (k3s_tailscale_ipv4_result.stdout | trim | length) > 0)
+             else [])
+          + ([(k3s_tailscale_status_result.stdout | from_json).Self.DNSName | regex_replace('\.$', '')]
+             if (k3s_tailscale_status_result is defined
+                 and k3s_tailscale_status_result.rc == 0
+                 and ((k3s_tailscale_status_result.stdout | from_json).Self.DNSName | default('') | length) > 0)
+             else [])
+        )
+        | select
+        | unique
+        | list
+      }}
+  when: k3s_node_role == "server"
 
 - name: Validate external etcd settings for k3s server
   ansible.builtin.assert:

@@ -2,11 +2,15 @@
 k3s_version: "v1.35.3+k3s1"
 k3s_node_role: server
 k3s_use_private_netplan_address: true
+k3s_bind_all_interfaces: true
 k3s_bind_address: "{{ ansible_default_ipv4.address | default(ansible_host) }}"
 k3s_advertise_address: "{{ k3s_bind_address }}"
 k3s_node_ip: "{{ k3s_bind_address }}"
 k3s_flannel_backend: none
 k3s_disable_network_policy: true
+k3s_tls_sans: []
+k3s_include_tailscale_tls_sans: true
+k3s_tailscale_cli_path: tailscale
 
 # kubeconfig permissions (0644 allows non-root read)
 k3s_write_kubeconfig_mode: "0600"

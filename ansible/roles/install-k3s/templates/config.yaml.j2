@@ -15,6 +15,12 @@ disable:
 
 {% if k3s_node_role == "server" %}
 advertise-address: "{{ k3s_advertise_address }}"
+{% if k3s_effective_tls_sans | default([]) | length > 0 %}
+tls-san:
+{% for san in k3s_effective_tls_sans %}
+  - "{{ san }}"
+{% endfor %}
+{% endif %}
 datastore-endpoint: "{{ k3s_datastore_endpoint }}"
 datastore-cafile: "{{ k3s_datastore_cafile }}"
 datastore-certfile: "{{ k3s_datastore_certfile }}"

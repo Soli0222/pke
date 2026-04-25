@@ -10,4 +10,3 @@ k3s_cluster_dns: "10.2.0.10,fd00:10:2::a"
 k3s_disable_components:
   - helm-controller
   - traefik
-
