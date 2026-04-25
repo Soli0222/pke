@@ -6,3 +6,4 @@ resources:
 - helmrelease-alloy.yaml
 - alloy-config.yaml
 - onepassworditem.yaml
+- onepassworditem-grafana-cloud.yaml

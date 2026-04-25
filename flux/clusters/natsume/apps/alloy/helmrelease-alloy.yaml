@@ -36,9 +36,9 @@ spec:
     ingress:
       enabled: true
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt
+        cert-manager.io/cluster-issuer: letsencrypt-dns01
       faroPort: 12345
-      ingressClassName: traefik
+      ingressClassName: traefik-tailscale
       hosts:
       - alloy.str08.net
       tls:
