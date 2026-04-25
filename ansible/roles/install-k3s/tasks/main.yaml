@@ -45,6 +45,40 @@
     k3s_private_ipv6_raw: "{{ ((network_netplan | default({})).private | default({})).ipv6 | default([]) }}"
   when: k3s_use_private_netplan_address | bool
 
+- name: Build k3s global IPv4 address list from netplan
+  ansible.builtin.set_fact:
+    k3s_global_ipv4_addresses: >-
+      {{
+        (
+          [k3s_global_ipv4_raw]
+          if k3s_global_ipv4_raw is string
+          else k3s_global_ipv4_raw
+        )
+        | select
+        | map('regex_replace', '/.*$', '')
+        | list
+      }}
+  vars:
+    k3s_global_ipv4_raw: "{{ ((network_netplan | default({})).global | default({})).ipv4 | default([]) }}"
+  when: k3s_use_global_netplan_external_address | bool
+
+- name: Build k3s global IPv6 address list from netplan
+  ansible.builtin.set_fact:
+    k3s_global_ipv6_addresses: >-
+      {{
+        (
+          [k3s_global_ipv6_raw]
+          if k3s_global_ipv6_raw is string
+          else k3s_global_ipv6_raw
+        )
+        | select
+        | map('regex_replace', '/.*$', '')
+        | list
+      }}
+  vars:
+    k3s_global_ipv6_raw: "{{ ((network_netplan | default({})).global | default({})).ipv6 | default([]) }}"
+  when: k3s_use_global_netplan_external_address | bool
+
 - name: Validate k3s private netplan addresses
   ansible.builtin.assert:
     that:
@@ -58,6 +92,13 @@
     k3s_advertise_address: "{{ k3s_private_ipv4_addresses | first }}"
     k3s_node_ip: "{{ (k3s_private_ipv4_addresses + k3s_private_ipv6_addresses) | join(',') }}"
   when: k3s_use_private_netplan_address | bool
+
+- name: Use global netplan addresses for k3s external node IPs
+  ansible.builtin.set_fact:
+    k3s_node_external_ip: "{{ (k3s_global_ipv4_addresses + k3s_global_ipv6_addresses) | join(',') }}"
+  when:
+    - k3s_use_global_netplan_external_address | bool
+    - (k3s_global_ipv4_addresses + k3s_global_ipv6_addresses) | length > 0
 
 - name: Get Tailscale IPv4 address
   ansible.builtin.command: "{{ k3s_tailscale_cli_path }} ip -4"

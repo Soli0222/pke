@@ -9,3 +9,16 @@ ufw_private_interface: "{{ ((network_netplan | default({})).private | default({}
 ufw_global_allowed_tcp_ports:
   - "80"
   - "443"
+
+ufw_cluster_pod_cidrs: >-
+  {{
+    (k3s_cluster_cidr | default(''))
+    | split(',')
+    | map('trim')
+    | reject('equalto', '')
+    | list
+  }}
+
+ufw_cluster_allowed_tcp_ports:
+  - "6443"
+  - "10250"

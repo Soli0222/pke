@@ -51,6 +51,15 @@
     direction: in
     interface: "{{ ufw_private_interface }}"
 
+- name: Allow cluster pods to reach node control-plane services
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    direction: in
+    from_ip: "{{ item.0 }}"
+    port: "{{ item.1 }}"
+  loop: "{{ ufw_cluster_pod_cidrs | product(ufw_cluster_allowed_tcp_ports) | list }}"
+
 - name: Enable ufw
   community.general.ufw:
     state: enabled
