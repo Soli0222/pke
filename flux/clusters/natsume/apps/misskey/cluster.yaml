@@ -6,6 +6,11 @@ metadata:
 spec:
   instances: 1
   imageName: ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine:18
+  plugins:
+  - name: barman-cloud.cloudnative-pg.io
+    isWALArchiver: true
+    parameters:
+      barmanObjectName: misskey-backup-store
   storage:
     size: 100Gi
   bootstrap:
