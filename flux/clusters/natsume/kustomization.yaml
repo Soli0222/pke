@@ -2,6 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - kustomizations/cnpg.yaml
+- kustomizations/cnpg-backup-config.yaml
 - kustomizations/prometheus-operator-crd.yaml
 - kustomizations/cert-manager.yaml
 - kustomizations/cert-manager-config.yaml

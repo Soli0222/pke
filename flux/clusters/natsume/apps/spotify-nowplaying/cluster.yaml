@@ -5,6 +5,11 @@ metadata:
   namespace: spotify-nowplaying
 spec:
   instances: 1
+  plugins:
+  - name: barman-cloud.cloudnative-pg.io
+    isWALArchiver: true
+    parameters:
+      barmanObjectName: spn-backup-store
   storage:
     size: 5Gi
   bootstrap:
