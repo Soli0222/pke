@@ -1,6 +1,0 @@
-- name: Upgrade Containerd
-  hosts: k8s
-  become: true
-  serial: 1
-  roles:
-    - install-containerd

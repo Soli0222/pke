@@ -1,0 +1,14 @@
+---
+all:
+  children:
+    etcd:
+      hosts:
+        natsume-02:
+    k3s_cluster:
+      children:
+        k3s_server:
+          hosts:
+            natsume-02:
+        k3s_agent:
+          hosts: {}
+

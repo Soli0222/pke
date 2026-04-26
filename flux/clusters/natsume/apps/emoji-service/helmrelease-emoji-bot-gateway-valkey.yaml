@@ -1,0 +1,48 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: emoji-bot-gateway-valkey
+  namespace: emoji-service
+spec:
+  interval: 10m
+  releaseName: emoji-bot-gateway-valkey
+  targetNamespace: emoji-service
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: valkey
+      version: 0.9.4
+      sourceRef:
+        kind: HelmRepository
+        name: valkey-repo-3
+        namespace: emoji-service
+      interval: 1h
+  values:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    initResources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    replica:
+      enabled: false
+    dataStorage:
+      enabled: true
+      requestedSize: 1Gi
+      className: ''
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true

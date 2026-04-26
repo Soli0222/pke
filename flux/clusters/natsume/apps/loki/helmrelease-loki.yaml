@@ -1,0 +1,150 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: loki
+  namespace: loki
+spec:
+  interval: 10m
+  releaseName: loki
+  targetNamespace: loki
+  install:
+    createNamespace: false
+  chart:
+    spec:
+      chart: loki
+      version: 6.55.0
+      sourceRef:
+        kind: HelmRepository
+        name: loki-repo
+        namespace: loki
+      interval: 1h
+  values:
+    loki:
+      commonConfig:
+        replication_factor: 1
+      schemaConfig:
+        configs:
+          - from: "2024-04-01"
+            store: tsdb
+            object_store: s3
+            schema: v13
+            index:
+              prefix: loki_index_
+              period: 24h
+      pattern_ingester:
+        enabled: true
+      queryRange:
+        cache_results: false
+        max_retries: 3
+        parallelise_shardable_queries: false
+      frontend:
+        max_outstanding_per_tenant: 64
+        compress_responses: true
+        log_queries_longer_than: 10s
+      limits_config:
+        retention_period: 60d
+        query_timeout: 60s
+        split_queries_by_interval: 1h
+        max_query_series: 5000
+        max_query_parallelism: 4
+        max_concurrent_tail_requests: 5
+        max_label_value_length: 4096
+        max_label_names_per_series: 30
+        cardinality_limit: 10000
+        max_streams_per_user: 5000
+        ingestion_burst_size_mb: 8
+      querier:
+        max_concurrent: 2
+      compactor:
+        retention_enabled: true
+        delete_request_store: s3
+      storage:
+        type: s3
+        bucketNames:
+          chunks: loki-chunk
+          ruler: loki-ruler
+          admin: loki-admin
+        s3:
+          endpoint: ${S3_ENDPOINT}
+          region: auto
+          secretAccessKey: ${S3_SECRET_ACCESS_KEY}
+          accessKeyId: ${S3_ACCESS_KEY_ID}
+          s3ForcePathStyle: true
+          insecure: false
+          http_config: {}
+
+    deploymentMode: SingleBinary
+
+    lokiCanary:
+      enabled: false
+
+    test:
+      enabled: false
+
+    singleBinary:
+      replicas: 1
+      extraArgs:
+        - -config.expand-env=true
+      extraEnvFrom:
+        - secretRef:
+            name: r2-o11y-secret
+
+    backend:
+      replicas: 0
+    read:
+      replicas: 0
+    write:
+      replicas: 0
+    ingester:
+      replicas: 0
+    distributor:
+      replicas: 0
+    querier:
+      replicas: 0
+    queryFrontend:
+      replicas: 0
+    queryScheduler:
+      replicas: 0
+    compactor:
+      replicas: 0
+    indexGateway:
+      replicas: 0
+    patternIngester:
+      replicas: 0
+
+    chunksCache:
+      enabled: false
+    resultsCache:
+      enabled: false
+
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-http01
+        traefik.ingress.kubernetes.io/router.tls.options: cert-manager-monitoring-mtls@kubernetescrd
+      ingressClassName: traefik
+      hosts:
+        - loki.pstr.space
+      tls:
+        - hosts:
+            - loki.pstr.space
+          secretName: loki.pstr.space-http01
+
+    gateway:
+      enabled: false
+
+    minio:
+      enabled: false
+
+    monitoring:
+      rules:
+        enabled: true
+      serviceMonitor:
+        enabled: true
+        relabelings:
+          - sourceLabels: [job]
+            regex: "(.+)/loki-(.+)"
+            replacement: "$1/$2"
+            targetLabel: job
+            action: replace

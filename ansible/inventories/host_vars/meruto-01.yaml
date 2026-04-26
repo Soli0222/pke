@@ -1,4 +1,0 @@
-docker:
-  enabled: true
-
-frps_auth_token: "{{ lookup('community.general.onepassword', 'frp-token', field='token', vault='Kubernetes') }}"

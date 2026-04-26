@@ -1,0 +1,221 @@
+---
+- name: Check installed k3s version
+  ansible.builtin.command: /usr/local/bin/k3s --version
+  register: k3s_installed_version
+  failed_when: false
+  changed_when: false
+
+- name: Validate k3s node role
+  ansible.builtin.assert:
+    that:
+      - k3s_node_role in ['server', 'agent']
+    fail_msg: "k3s_node_role must be either server or agent."
+
+- name: Build k3s private IPv4 address list from netplan
+  ansible.builtin.set_fact:
+    k3s_private_ipv4_addresses: >-
+      {{
+        (
+          [k3s_private_ipv4_raw]
+          if k3s_private_ipv4_raw is string
+          else k3s_private_ipv4_raw
+        )
+        | select
+        | map('regex_replace', '/.*$', '')
+        | list
+      }}
+  vars:
+    k3s_private_ipv4_raw: "{{ ((network_netplan | default({})).private | default({})).ipv4 | default([]) }}"
+  when: k3s_use_private_netplan_address | bool
+
+- name: Build k3s private IPv6 address list from netplan
+  ansible.builtin.set_fact:
+    k3s_private_ipv6_addresses: >-
+      {{
+        (
+          [k3s_private_ipv6_raw]
+          if k3s_private_ipv6_raw is string
+          else k3s_private_ipv6_raw
+        )
+        | select
+        | map('regex_replace', '/.*$', '')
+        | list
+      }}
+  vars:
+    k3s_private_ipv6_raw: "{{ ((network_netplan | default({})).private | default({})).ipv6 | default([]) }}"
+  when: k3s_use_private_netplan_address | bool
+
+- name: Build k3s global IPv4 address list from netplan
+  ansible.builtin.set_fact:
+    k3s_global_ipv4_addresses: >-
+      {{
+        (
+          [k3s_global_ipv4_raw]
+          if k3s_global_ipv4_raw is string
+          else k3s_global_ipv4_raw
+        )
+        | select
+        | map('regex_replace', '/.*$', '')
+        | list
+      }}
+  vars:
+    k3s_global_ipv4_raw: "{{ ((network_netplan | default({})).global | default({})).ipv4 | default([]) }}"
+  when: k3s_use_global_netplan_external_address | bool
+
+- name: Build k3s global IPv6 address list from netplan
+  ansible.builtin.set_fact:
+    k3s_global_ipv6_addresses: >-
+      {{
+        (
+          [k3s_global_ipv6_raw]
+          if k3s_global_ipv6_raw is string
+          else k3s_global_ipv6_raw
+        )
+        | select
+        | map('regex_replace', '/.*$', '')
+        | list
+      }}
+  vars:
+    k3s_global_ipv6_raw: "{{ ((network_netplan | default({})).global | default({})).ipv6 | default([]) }}"
+  when: k3s_use_global_netplan_external_address | bool
+
+- name: Validate k3s private netplan addresses
+  ansible.builtin.assert:
+    that:
+      - k3s_private_ipv4_addresses | length > 0
+    fail_msg: "network_netplan.private.ipv4 must be set when k3s_use_private_netplan_address is true."
+  when: k3s_use_private_netplan_address | bool
+
+- name: Use private netplan addresses for k3s
+  ansible.builtin.set_fact:
+    k3s_bind_address: "{{ '0.0.0.0' if k3s_bind_all_interfaces | bool else k3s_private_ipv4_addresses | first }}"
+    k3s_advertise_address: "{{ k3s_private_ipv4_addresses | first }}"
+    k3s_node_ip: "{{ (k3s_private_ipv4_addresses + k3s_private_ipv6_addresses) | join(',') }}"
+  when: k3s_use_private_netplan_address | bool
+
+- name: Use global netplan addresses for k3s external node IPs
+  ansible.builtin.set_fact:
+    k3s_node_external_ip: "{{ (k3s_global_ipv4_addresses + k3s_global_ipv6_addresses) | join(',') }}"
+  when:
+    - k3s_use_global_netplan_external_address | bool
+    - (k3s_global_ipv4_addresses + k3s_global_ipv6_addresses) | length > 0
+
+- name: Get Tailscale IPv4 address
+  ansible.builtin.command: "{{ k3s_tailscale_cli_path }} ip -4"
+  register: k3s_tailscale_ipv4_result
+  changed_when: false
+  failed_when: false
+  when:
+    - k3s_node_role == "server"
+    - k3s_include_tailscale_tls_sans | bool
+
+- name: Get Tailscale status
+  ansible.builtin.command: "{{ k3s_tailscale_cli_path }} status --json"
+  register: k3s_tailscale_status_result
+  changed_when: false
+  failed_when: false
+  when:
+    - k3s_node_role == "server"
+    - k3s_include_tailscale_tls_sans | bool
+
+- name: Build k3s TLS SAN list
+  ansible.builtin.set_fact:
+    k3s_effective_tls_sans: >-
+      {{
+        (
+          k3s_tls_sans
+          + [inventory_hostname]
+          + ([ansible_host] if ansible_host is defined else [])
+          + ([k3s_tailscale_ipv4_result.stdout | trim]
+             if (k3s_tailscale_ipv4_result is defined
+                 and k3s_tailscale_ipv4_result.rc == 0
+                 and (k3s_tailscale_ipv4_result.stdout | trim | length) > 0)
+             else [])
+          + ([(k3s_tailscale_status_result.stdout | from_json).Self.DNSName | regex_replace('\.$', '')]
+             if (k3s_tailscale_status_result is defined
+                 and k3s_tailscale_status_result.rc == 0
+                 and ((k3s_tailscale_status_result.stdout | from_json).Self.DNSName | default('') | length) > 0)
+             else [])
+        )
+        | select
+        | unique
+        | list
+      }}
+  when: k3s_node_role == "server"
+
+- name: Validate external etcd settings for k3s server
+  ansible.builtin.assert:
+    that:
+      - k3s_datastore_endpoint | length > 0
+      - k3s_datastore_cafile | length > 0
+      - k3s_datastore_certfile | length > 0
+      - k3s_datastore_keyfile | length > 0
+    fail_msg: "k3s server requires external etcd datastore settings."
+  when: k3s_node_role == "server"
+
+- name: Validate k3s agent settings
+  ansible.builtin.assert:
+    that:
+      - k3s_server_url | length > 0
+      - k3s_token | length > 0
+    fail_msg: "k3s agent requires k3s_server_url and k3s_token."
+  when: k3s_node_role == "agent"
+
+- name: Check external etcd client certificate files
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: k3s_etcd_cert_stats
+  loop:
+    - "{{ k3s_datastore_cafile }}"
+    - "{{ k3s_datastore_certfile }}"
+    - "{{ k3s_datastore_keyfile }}"
+  when: k3s_node_role == "server"
+
+- name: Validate external etcd client certificate files
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: "Required k3s external etcd certificate file is missing: {{ item.stat.path }}"
+  loop: "{{ k3s_etcd_cert_stats.results }}"
+  when: k3s_node_role == "server"
+
+- name: Ensure k3s config directory exists
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy k3s server config
+  ansible.builtin.template:
+    src: templates/config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart k3s
+
+- name: Download k3s install script
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s-install.sh
+    mode: "0700"
+    force: true
+  when: k3s_installed_version.rc != 0 or k3s_version not in k3s_installed_version.stdout
+
+- name: Install k3s
+  ansible.builtin.command: /tmp/k3s-install.sh
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: "{{ k3s_node_role }}"
+    INSTALL_K3S_SKIP_START: "true"
+  when: k3s_installed_version.rc != 0 or k3s_version not in k3s_installed_version.stdout
+  notify: Restart k3s
+
+- name: Enable and start k3s
+  ansible.builtin.systemd:
+    name: "{{ 'k3s' if k3s_node_role == 'server' else 'k3s-agent' }}"
+    enabled: true
+    state: started
+    daemon_reload: true

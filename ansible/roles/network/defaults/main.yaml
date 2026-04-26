@@ -1,0 +1,25 @@
+---
+network_netplan_apply: true
+network_netplan_remove_existing: true
+network_netplan_disable_cloud_init: true
+network_netplan_config_file: /etc/netplan/99-pke-network.yaml
+network_netplan_renderer: networkd
+
+# Configure these from inventory host_vars/group_vars.
+# default_route accepts either a gateway string, a route mapping, or a list of
+# gateway strings/route mappings. Additional routes use netplan route keys.
+network_netplan:
+  global:
+    device: ""
+    ipv4: []
+    ipv6: []
+    default_route: []
+    nameservers: []
+    routes: []
+  private:
+    device: ""
+    ipv4: []
+    ipv6: []
+    default_route: []
+    nameservers: []
+    routes: []

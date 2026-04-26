@@ -2,10 +2,18 @@
 set -euo pipefail
 
 CERT_DIR="{{ etcd_pki_dir }}"
+SNAPSHOT_DIR="{{ etcd_snapshot_dir }}"
+RETENTION_DAYS="{{ etcd_snapshot_retention_days }}"
+ETCDCTL="/usr/local/bin/etcdctl --endpoints=https://127.0.0.1:{{ etcd_client_port }} --cacert=${CERT_DIR}/ca.crt --cert=${CERT_DIR}/healthcheck-client.crt --key=${CERT_DIR}/healthcheck-client.key"
 
-/usr/local/bin/etcdctl \
-  --endpoints="https://127.0.0.1:2379" \
-  --cacert="${CERT_DIR}/ca.crt" \
-  --cert="${CERT_DIR}/healthcheck-client.crt" \
-  --key="${CERT_DIR}/healthcheck-client.key" \
-  defrag
+mkdir -p "${SNAPSHOT_DIR}"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+${ETCDCTL} snapshot save "${SNAPSHOT_DIR}/snapshot-${timestamp}.db"
+
+revision="$(${ETCDCTL} endpoint status --write-out=json | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["Status"]["header"]["revision"])')"
+${ETCDCTL} compact "${revision}"
+${ETCDCTL} defrag
+
+find "${SNAPSHOT_DIR}" -type f -name "snapshot-*.db" -mtime "+${RETENTION_DAYS}" -delete
+

@@ -1,0 +1,37 @@
+---
+k3s_version: "v1.35.3+k3s1"
+k3s_node_role: server
+k3s_use_private_netplan_address: true
+k3s_use_global_netplan_external_address: true
+k3s_bind_all_interfaces: true
+k3s_bind_address: "{{ ansible_default_ipv4.address | default(ansible_host) }}"
+k3s_advertise_address: "{{ k3s_bind_address }}"
+k3s_node_ip: "{{ k3s_bind_address }}"
+k3s_node_external_ip: ""
+k3s_flannel_backend: none
+k3s_disable_network_policy: true
+k3s_tls_sans: []
+k3s_include_tailscale_tls_sans: true
+k3s_tailscale_cli_path: tailscale
+
+# kubeconfig permissions (0644 allows non-root read)
+k3s_write_kubeconfig_mode: "0600"
+
+# Dual-stack networking
+k3s_cluster_cidr: "10.1.0.0/16,fd00:10:1::/64"
+k3s_service_cidr: "10.2.0.0/16,fd00:10:2::/64"
+k3s_cluster_dns: "10.2.0.10,fd00:10:2::a"
+
+k3s_disable_components:
+  - helm-controller
+  - traefik
+
+# External etcd datastore settings for k3s server.
+k3s_datastore_endpoint: ""
+k3s_datastore_cafile: /etc/etcd/pki/ca.crt
+k3s_datastore_certfile: /etc/etcd/pki/k3s-etcd-client.crt
+k3s_datastore_keyfile: /etc/etcd/pki/k3s-etcd-client.key
+
+# Agent settings. Store k3s_token in 1Password/group_vars or pass it explicitly.
+k3s_server_url: ""
+k3s_token: ""

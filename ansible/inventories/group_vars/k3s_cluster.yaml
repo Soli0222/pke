@@ -1,0 +1,14 @@
+---
+k3s_version: "v1.35.3+k3s1"
+k3s_bind_address: "{{ ansible_default_ipv4.address | default(ansible_host) }}"
+k3s_write_kubeconfig_mode: "0600"
+
+k3s_cluster_cidr: "10.1.0.0/16,fd00:10:1::/64"
+k3s_service_cidr: "10.2.0.0/16,fd00:10:2::/64"
+k3s_cluster_dns: "10.2.0.10,fd00:10:2::a"
+
+general_configuration_mask_swap_units: true
+
+k3s_disable_components:
+  - helm-controller
+  - traefik

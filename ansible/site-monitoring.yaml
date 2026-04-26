@@ -1,5 +1,0 @@
-- name: Install Alloy
-  become: true
-  hosts: all
-  roles:
-    - install-alloy

@@ -1,5 +1,0 @@
-- name: Upgrade Misskey
-  become: true
-  hosts: misskey
-  roles:
-    - install-misskey

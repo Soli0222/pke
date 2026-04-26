@@ -1,0 +1,20 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: alloy
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: "./flux/clusters/natsume/apps/alloy"
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+  - name: cert-manager-config
+  - name: loki
+  - name: mimir
+  - name: prometheus-operator-crd
+  - name: traefik-tailscale

@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- namespace.yaml
+- helmrepository-emoji-renderer-repo.yaml
+- helmrelease-emoji-renderer.yaml
+- helmrepository-emoji-bot-gateway-repo-2.yaml
+- helmrelease-emoji-bot-gateway.yaml
+- helmrepository-valkey-repo-3.yaml
+- helmrelease-emoji-bot-gateway-valkey.yaml
+- onepassworditem.yaml

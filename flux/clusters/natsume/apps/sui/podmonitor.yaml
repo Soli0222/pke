@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  annotations:
+    cnpg.io/operatorVersion: 1.29.0
+  labels:
+    app.kubernetes.io/component: database
+    app.kubernetes.io/instance: sui-cluster
+    app.kubernetes.io/managed-by: cloudnative-pg
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: "18"
+    cnpg.io/cluster: sui-cluster
+  name: sui-cluster
+  namespace: sui
+spec:
+  podMetricsEndpoints:
+  - port: metrics
+  selector:
+    matchLabels:
+      cnpg.io/cluster: sui-cluster
+      cnpg.io/podRole: instance

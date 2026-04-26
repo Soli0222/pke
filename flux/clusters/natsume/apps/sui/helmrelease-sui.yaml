@@ -1,0 +1,47 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sui
+  namespace: sui
+spec:
+  interval: 10m
+  releaseName: sui
+  targetNamespace: sui
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: sui
+      version: 0.1.3
+      sourceRef:
+        kind: HelmRepository
+        name: sui-repo
+        namespace: sui
+      interval: 1h
+  values:
+    ingress:
+      enabled: true
+      className: traefik-tailscale
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-dns01
+      hosts:
+      - host: sui.str08.net
+        paths:
+        - path: "/"
+          pathType: Prefix
+      tls:
+      - secretName: sui.str08.net-dns01
+        hosts:
+        - sui.str08.net
+    postgresql:
+      enabled: false
+    externalPostgres:
+      host: sui-cluster-rw
+      port: 5432
+      database: sui
+      user: sui
+      existingSecret: sui-cluster-app
+      existingSecretKey: password

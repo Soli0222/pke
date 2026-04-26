@@ -71,14 +71,10 @@
         'custom.regex',
       ],
       matchDepNames: [
-        'containerd/containerd',
-        'opencontainers/runc',
-        'containernetworking/plugins',
-        'kubernetes/kubernetes',
         'etcd-io/etcd',
+        'k3s-io/k3s',
       ],
-      commitMessageTopic: 'Infrastructure {{depName}}',
-      groupName: 'Infrastructure components',
+      commitMessageTopic: 'Ansible {{depName}}',
       addLabels: [
         'manager:ansible-vars',
       ],
@@ -95,77 +91,29 @@
         'manager:argocd',
       ],
     },
-    {
-      matchManagers: [
-        'custom.regex',
-      ],
-      matchFileNames: [
-        'manifests/test/**/*.{yaml,yml}',
-      ],
-      commitMessageTopic: 'Test manifest {{depName}}',
-      addLabels: [
-        'manager:k8s-test',
-      ],
-    },
   ],
   customManagers: [
     {
       customType: 'regex',
       managerFilePatterns: [
-        '/ansible/inventories/group_vars/.*\\.ya?ml$/',
-      ],
-      matchStrings: [
-        'containerd_version:\\s*"(?<currentValue>[^"]+)"',
-      ],
-      depNameTemplate: 'containerd/containerd',
-      datasourceTemplate: 'github-releases',
-      versioningTemplate: 'semver',
-    },
-    {
-      customType: 'regex',
-      managerFilePatterns: [
-        '/ansible/inventories/group_vars/.*\\.ya?ml$/',
-      ],
-      matchStrings: [
-        'runc_version:\\s*"(?<currentValue>[^"]+)"',
-      ],
-      depNameTemplate: 'opencontainers/runc',
-      datasourceTemplate: 'github-releases',
-      versioningTemplate: 'semver',
-    },
-    {
-      customType: 'regex',
-      managerFilePatterns: [
-        '/ansible/inventories/group_vars/.*\\.ya?ml$/',
-      ],
-      matchStrings: [
-        'cni_plugins_version:\\s*"(?<currentValue>[^"]+)"',
-      ],
-      depNameTemplate: 'containernetworking/plugins',
-      datasourceTemplate: 'github-releases',
-      versioningTemplate: 'semver',
-    },
-    {
-      customType: 'regex',
-      managerFilePatterns: [
-        '/ansible/inventories/group_vars/.*\\.ya?ml$/',
-      ],
-      matchStrings: [
-        'kubernetes_version:\\s*(?<currentValue>[^\\s]+)',
-      ],
-      depNameTemplate: 'kubernetes/kubernetes',
-      datasourceTemplate: 'github-releases',
-      versioningTemplate: 'semver',
-    },
-    {
-      customType: 'regex',
-      managerFilePatterns: [
-        '/ansible/inventories/group_vars/.*\\.ya?ml$/',
+        '/ansible/(?:inventories/group_vars|roles/.+/defaults)/.*\\.ya?ml$/',
       ],
       matchStrings: [
         'etcd_version:\\s*"(?<currentValue>[^"]+)"',
       ],
       depNameTemplate: 'etcd-io/etcd',
+      datasourceTemplate: 'github-releases',
+      versioningTemplate: 'semver',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/ansible/(?:inventories/group_vars|roles/.+/defaults)/.*\\.ya?ml$/',
+      ],
+      matchStrings: [
+        'k3s_version:\\s*"(?<currentValue>[^"]+)"',
+      ],
+      depNameTemplate: 'k3s-io/k3s',
       datasourceTemplate: 'github-releases',
       versioningTemplate: 'semver',
     },
@@ -179,17 +127,6 @@
       ],
       datasourceTemplate: 'helm',
       registryUrlTemplate: '{{registryUrl}}',
-      versioningTemplate: 'semver',
-    },
-    {
-      customType: 'regex',
-      managerFilePatterns: [
-        '/manifests/test/.+\\.ya?ml$/',
-      ],
-      matchStrings: [
-        'image:\\s+(?<depName>[\\w./-]+):(?<currentValue>[\\w.-]+)',
-      ],
-      datasourceTemplate: 'docker',
       versioningTemplate: 'semver',
     },
   ],

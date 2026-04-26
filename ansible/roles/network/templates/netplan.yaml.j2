@@ -1,0 +1,83 @@
+# This file is managed by Ansible. Do not edit manually.
+network:
+  version: 2
+  renderer: {{ network_netplan_renderer }}
+  ethernets:
+{% for interface_name in ['global', 'private'] %}
+{% set interface = network_netplan[interface_name] | default({}) %}
+{% if interface.device | default('') | length > 0 %}
+{% set addresses = [] %}
+{% if interface.ipv4 is defined and interface.ipv4 is string and interface.ipv4 | length > 0 %}
+{% set _ = addresses.append(interface.ipv4) %}
+{% elif interface.ipv4 is defined and interface.ipv4 is sequence %}
+{% for address in interface.ipv4 %}
+{% set _ = addresses.append(address) %}
+{% endfor %}
+{% endif %}
+{% if interface.ipv6 is defined and interface.ipv6 is string and interface.ipv6 | length > 0 %}
+{% set _ = addresses.append(interface.ipv6) %}
+{% elif interface.ipv6 is defined and interface.ipv6 is sequence %}
+{% for address in interface.ipv6 %}
+{% set _ = addresses.append(address) %}
+{% endfor %}
+{% endif %}
+    {{ interface.device }}:
+      dhcp4: false
+      dhcp6: false
+{% if addresses | length > 0 %}
+      addresses:
+{% for address in addresses %}
+        - {{ address }}
+{% endfor %}
+{% endif %}
+{% if interface.nameservers is defined and interface.nameservers | length > 0 %}
+      nameservers:
+{% if interface.nameservers is mapping %}
+{{ interface.nameservers | to_nice_yaml(indent=8) | indent(8, true) }}
+{% else %}
+        addresses:
+{% for nameserver in interface.nameservers %}
+          - {{ nameserver }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% set default_route = interface.default_route | default([]) %}
+{% set routes = interface.routes | default([]) %}
+{% if default_route | length > 0 or routes | length > 0 %}
+      routes:
+{% if default_route is string %}
+        - to: default
+          via: {{ default_route }}
+{% elif default_route is mapping %}
+        - to: {{ default_route.to | default('default') }}
+{% for key, value in default_route.items() %}
+{% if key != 'to' %}
+          {{ key }}: {{ value }}
+{% endif %}
+{% endfor %}
+{% elif default_route is sequence %}
+{% for route in default_route %}
+{% if route is string %}
+        - to: default
+          via: {{ route }}
+{% elif route is mapping %}
+        - to: {{ route.to | default('default') }}
+{% for key, value in route.items() %}
+{% if key != 'to' %}
+          {{ key }}: {{ value }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% for route in routes %}
+        - to: {{ route.to }}
+{% for key, value in route.items() %}
+{% if key != 'to' %}
+          {{ key }}: {{ value }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endfor %}

@@ -1,0 +1,38 @@
+- name: Ensure Kubernetes modules are loaded on boot
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      br_netfilter
+      overlay
+
+- name: Load kernel module
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - br_netfilter
+    - overlay
+
+- name: Add sysctl conf
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/kubernetes.conf
+    state: present
+  loop:
+    - name: net.bridge.bridge-nf-call-iptables
+      value: "1"
+    - name: net.bridge.bridge-nf-call-ip6tables
+      value: "1"
+    - name: net.ipv4.ip_forward
+      value: "1"
+    - name: fs.inotify.max_user_instances
+      value: "8192"
+    - name: fs.inotify.max_user_watches
+      value: "524288"
+
+- name: Reload sysctl settings
+  ansible.builtin.command: sysctl --system

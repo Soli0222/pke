@@ -1,6 +1,0 @@
-- name: Enable Kubernetes tracing
-  hosts: k8s-cp
-  become: true
-  serial: 1
-  roles:
-    - install-k8s-tracing

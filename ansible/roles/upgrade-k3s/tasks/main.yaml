@@ -1,0 +1,41 @@
+---
+- name: Check installed k3s version
+  ansible.builtin.command: /usr/local/bin/k3s --version
+  register: k3s_installed_version
+  failed_when: false
+  changed_when: false
+
+- name: Stop when k3s is already target version
+  ansible.builtin.meta: end_host
+  when: k3s_installed_version.rc == 0 and k3s_version in k3s_installed_version.stdout
+
+- name: Download k3s install script
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s-install.sh
+    mode: "0700"
+    force: true
+
+- name: Install target k3s version
+  ansible.builtin.command: /tmp/k3s-install.sh
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: "{{ k3s_node_role }}"
+    INSTALL_K3S_SKIP_START: "true"
+  changed_when: true
+
+- name: Restart k3s service
+  ansible.builtin.systemd:
+    name: "{{ 'k3s' if k3s_node_role == 'server' else 'k3s-agent' }}"
+    state: restarted
+    enabled: true
+    daemon_reload: true
+
+- name: Wait for Kubernetes API on k3s server
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 6443
+    state: started
+    timeout: 180
+  when: k3s_node_role == "server"
+

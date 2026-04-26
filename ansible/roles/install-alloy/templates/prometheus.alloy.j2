@@ -42,7 +42,7 @@ prometheus.relabel "add_common_labels" {
 
   rule {
     target_label = "cluster"
-    replacement  = "kkg"
+    replacement  = "{{ cluster_name }}"
   }
   rule {
     target_label = "hostname"
@@ -57,13 +57,11 @@ prometheus.relabel "add_common_labels" {
 prometheus.remote_write "mimir" {
   endpoint {
     url = "{{ mimir_endpoint }}"
-{%- if 'external' in group_names %}
 
     tls_config {
       cert_file = "{{ tls_cert_path }}"
       key_file = "{{ tls_key_path }}"
     }
-{%- endif %}
 
     headers = {
       "X-Scope-OrgID" = "{{ mimir_org_id }}",

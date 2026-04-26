@@ -1,0 +1,60 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: spotify-nowplaying
+  namespace: spotify-nowplaying
+spec:
+  interval: 10m
+  releaseName: spotify-nowplaying
+  targetNamespace: spotify-nowplaying
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: spotify-nowplaying
+      version: 3.0.3
+      sourceRef:
+        kind: HelmRepository
+        name: spotify-nowplaying-repo
+        namespace: spotify-nowplaying
+      interval: 1h
+  values:
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-http01
+      hosts:
+      - host: spn.soli0222.com
+        paths:
+        - path: "/"
+          pathType: ImplementationSpecific
+      tls:
+      - hosts:
+        - spn.soli0222.com
+        secretName: spn.soli0222.com-http01
+    config:
+      baseUrl: https://spn.soli0222.com
+      serverUri: mi.soli0222.com
+      twitterEnabled: 'true'
+      twitterRequireMisskey: 'true'
+      twitterAllowedHosts: mi.soli0222.com
+      existingSecret: spotify-nowplaying-secret
+    monitoring:
+      serviceMonitor:
+        enabled: true
+      prometheusRule:
+        enabled: true
+    postgres:
+      enabled: false
+    externalPostgres:
+      host: spn-cluster-rw
+      port: 5432
+      username: spn
+      database: spn
+      auth:
+        existingSecret: spn-cluster-app
+        secretKey: password

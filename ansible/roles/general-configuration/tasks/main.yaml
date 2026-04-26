@@ -1,0 +1,81 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: "{{ general_configuration_apt_cache_valid_time }}"
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name: "{{ general_configuration_packages + general_configuration_chrony_packages }}"
+    state: present
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ general_configuration_timezone }}"
+
+- name: Deploy chrony configuration
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: /etc/chrony/chrony.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart chrony
+
+- name: Enable and start chrony
+  ansible.builtin.systemd:
+    name: chrony
+    enabled: true
+    state: started
+
+- name: Disable active swap
+  ansible.builtin.command: swapoff -a
+  when:
+    - general_configuration_disable_swap | bool
+    - ansible_swaptotal_mb | default(0) | int > 0
+
+- name: Disable swap entries in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^(\s*[^#\n]+\s+[^#\n]+\s+swap\s+[^#\n]+)$'
+    replace: '# \1'
+  when: general_configuration_disable_swap | bool
+
+- name: Find systemd swap units
+  ansible.builtin.command: systemctl list-unit-files --type=swap --no-legend --no-pager
+  register: general_configuration_swap_units
+  changed_when: false
+  when:
+    - general_configuration_disable_swap | bool
+    - general_configuration_mask_swap_units | bool
+
+- name: Mask systemd swap units
+  ansible.builtin.systemd:
+    name: "{{ item.split()[0] }}"
+    enabled: false
+    masked: true
+    state: stopped
+  loop: "{{ general_configuration_swap_units.stdout_lines | default([]) }}"
+  when:
+    - general_configuration_disable_swap | bool
+    - general_configuration_mask_swap_units | bool
+
+- name: Ensure journald configuration directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure journald limits
+  ansible.builtin.copy:
+    dest: /etc/systemd/journald.conf.d/10-pke.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Journal]
+      SystemMaxUse={{ general_configuration_journald_max_use }}
+      MaxFileSec={{ general_configuration_journald_max_file_sec }}
+  notify: Restart systemd-journald

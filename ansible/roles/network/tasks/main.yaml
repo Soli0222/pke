@@ -1,0 +1,56 @@
+---
+- name: Validate network_netplan interface devices
+  ansible.builtin.assert:
+    that:
+      - >-
+        network_netplan.global.device | default('') | length > 0
+        or network_netplan.private.device | default('') | length > 0
+    fail_msg: network_netplan.global.device or network_netplan.private.device must be set.
+
+- name: Ensure cloud-init configuration directory exists
+  ansible.builtin.file:
+    path: /etc/cloud/cloud.cfg.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: network_netplan_disable_cloud_init | bool
+
+- name: Disable cloud-init network configuration
+  ansible.builtin.copy:
+    dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      network: {config: disabled}
+  when: network_netplan_disable_cloud_init | bool
+
+- name: Render PKE netplan configuration
+  ansible.builtin.template:
+    src: netplan.yaml.j2
+    dest: "{{ network_netplan_config_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Apply netplan
+
+- name: Find existing netplan configuration files
+  ansible.builtin.find:
+    paths: /etc/netplan
+    patterns:
+      - "*.yaml"
+      - "*.yml"
+    file_type: file
+  register: network_netplan_existing_files
+  when: network_netplan_remove_existing | bool
+
+- name: Remove unmanaged netplan configuration files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ network_netplan_existing_files.files | default([]) }}"
+  when:
+    - network_netplan_remove_existing | bool
+    - item.path != network_netplan_config_file
+  notify: Apply netplan

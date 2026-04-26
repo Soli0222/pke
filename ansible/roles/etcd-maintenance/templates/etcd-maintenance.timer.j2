@@ -1,9 +1,10 @@
 [Unit]
-Description=Run etcd maintenance every 6 hours
+Description=Run etcd maintenance periodically
 
 [Timer]
-OnCalendar=*-*-* 00/6:00:00
+OnCalendar={{ etcd_maintenance_on_calendar }}
 Persistent=true
 
 [Install]
 WantedBy=timers.target
+

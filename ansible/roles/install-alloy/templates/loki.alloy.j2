@@ -98,7 +98,7 @@ loki.process "filter_logs" {
 loki.process "add_common_labels" {
   stage.static_labels {
     values = {
-      cluster  = "kkg",
+      cluster  = "{{ cluster_name }}",
       hostname = "{{ ansible_hostname }}",
     }
   }
@@ -112,13 +112,11 @@ loki.process "add_common_labels" {
 loki.write "endpoint" {
   endpoint {
     url = "{{ loki_endpoint }}"
-{%- if 'external' in group_names %}
 
     tls_config {
       cert_file = "{{ tls_cert_path }}"
       key_file  = "{{ tls_key_path }}"
     }
-{%- endif %}
 
     headers = {
       "X-Scope-OrgID" = "{{ loki_org_id }}",

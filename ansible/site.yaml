@@ -1,3 +1,0 @@
----
-- import_playbook: site-all.yaml
-- import_playbook: site-k8s.yaml
