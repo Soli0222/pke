@@ -2,7 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - namespace.yaml
-- helmrepository-alloy-repo.yaml
-- helmrelease-alloy.yaml
-- alloy-config.yaml
+- helmrepository-loki-repo.yaml
 - onepassworditem.yaml
+- helmrelease-loki.yaml

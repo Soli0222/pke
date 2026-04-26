@@ -25,5 +25,9 @@ resources:
 - kustomizations/uptime-kuma.yaml
 - kustomizations/mc-mirror-cronjob.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml
+- kustomizations/grafana.yaml
+- kustomizations/mimir.yaml
+- kustomizations/loki.yaml
+- kustomizations/tempo.yaml
 - kustomizations/alloy.yaml
 - kustomizations/blackbox-exporter-probes.yaml

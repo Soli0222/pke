@@ -1,0 +1,4 @@
+prometheus.scrape "etcd" {
+  targets    = [{"__address__" = "127.0.0.1:2381", "job" = "etcd", "instance" = "{{ ansible_hostname }}"}]
+  forward_to = [prometheus.relabel.add_common_labels.receiver]
+}

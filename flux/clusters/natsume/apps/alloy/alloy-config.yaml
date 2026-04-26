@@ -9,29 +9,20 @@ data:
     // Endpoints
     // ============================================================
 
-    remote.kubernetes.secret "grafana_cloud" {
-      namespace = "alloy"
-      name      = "grafana-cloud"
-    }
-
     loki.write "default" {
       endpoint {
-        url = convert.nonsensitive(remote.kubernetes.secret.grafana_cloud.data["loki-url"])
-
-        basic_auth {
-          username = convert.nonsensitive(remote.kubernetes.secret.grafana_cloud.data["loki-username"])
-          password = remote.kubernetes.secret.grafana_cloud.data["token"]
+        url = "http://loki.loki:3100/loki/api/v1/push"
+        headers = {
+          "X-Scope-OrgID" = "fake",
         }
       }
     }
 
     prometheus.remote_write "default" {
       endpoint {
-        url = convert.nonsensitive(remote.kubernetes.secret.grafana_cloud.data["prometheus-url"])
-
-        basic_auth {
-          username = convert.nonsensitive(remote.kubernetes.secret.grafana_cloud.data["prometheus-username"])
-          password = remote.kubernetes.secret.grafana_cloud.data["token"]
+        url = "http://mimir.mimir:8080/api/v1/push"
+        headers = {
+          "X-Scope-OrgID" = "anonymous",
         }
       }
 
@@ -45,11 +36,8 @@ data:
     // ============================================================
 
     mimir.rules.kubernetes "default" {
-      address = convert.nonsensitive(remote.kubernetes.secret.grafana_cloud.data["mimir-url"])
-      basic_auth {
-        username = convert.nonsensitive(remote.kubernetes.secret.grafana_cloud.data["prometheus-username"])
-        password = remote.kubernetes.secret.grafana_cloud.data["token"]
-      }
+      address = "http://mimir.mimir:8080"
+      tenant_id = "anonymous"
       rule_selector { match_labels = {} }
       rule_namespace_selector { match_labels = {} }
     }
@@ -60,10 +48,9 @@ data:
     }
 
     mimir.alerts.kubernetes "default" {
-      address = convert.nonsensitive(remote.kubernetes.secret.grafana_cloud.data["mimir-url"])
-      basic_auth {
-        username = convert.nonsensitive(remote.kubernetes.secret.grafana_cloud.data["prometheus-username"])
-        password = remote.kubernetes.secret.grafana_cloud.data["token"]
+      address = "http://mimir.mimir:8080"
+      http_headers = {
+        "X-Scope-OrgID" = ["anonymous"],
       }
       global_config = `
         global:

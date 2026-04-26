@@ -1,0 +1,56 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: grafana
+  namespace: grafana
+spec:
+  interval: 10m
+  releaseName: grafana
+  targetNamespace: grafana
+  install:
+    createNamespace: false
+  chart:
+    spec:
+      chart: grafana
+      version: 10.5.15
+      sourceRef:
+        kind: HelmRepository
+        name: grafana-repo
+        namespace: grafana
+      interval: 1h
+  values:
+    deploymentStrategy:
+      type: Recreate
+
+    admin:
+      existingSecret: grafana-admin
+      userKey: admin-user
+      passwordKey: admin-password
+
+    persistence:
+      type: pvc
+      enabled: true
+      accessModes:
+        - ReadWriteOnce
+      size: 10Gi
+
+    serviceMonitor:
+      enabled: true
+
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-http01
+        traefik.ingress.kubernetes.io/router.tls.options: cert-manager-monitoring-mtls@kubernetescrd
+      hosts:
+        - grafana.pstr.space
+      tls:
+        - secretName: grafana.pstr.space-http01
+          hosts:
+            - grafana.pstr.space
+
+    grafana.ini:
+      feature_toggles:
+        provisioning: true
+        kubernetesDashboards: true

@@ -1,0 +1,70 @@
+// ============================================================
+// Node Exporter
+// ============================================================
+
+prometheus.exporter.unix "node" {}
+
+prometheus.scrape "node" {
+  targets    = prometheus.exporter.unix.node.targets
+  forward_to = [prometheus.relabel.add_common_labels.receiver]
+}
+
+// ============================================================
+// System cAdvisor (system.slice only - k8s pods are NOT our responsibility)
+// ============================================================
+
+prometheus.exporter.cadvisor "system" {
+  enabled_metrics        = ["cpu", "memory"]
+  store_container_labels = true
+}
+
+prometheus.relabel "cadvisor_system_only" {
+  forward_to = [prometheus.relabel.add_common_labels.receiver]
+
+  rule {
+    source_labels = ["id"]
+    regex         = "/system\\.slice.*"
+    action        = "keep"
+  }
+}
+
+prometheus.scrape "cadvisor_system" {
+  targets    = prometheus.exporter.cadvisor.system.targets
+  forward_to = [prometheus.relabel.cadvisor_system_only.receiver]
+}
+
+// ============================================================
+// Common labels for all metrics
+// ============================================================
+
+prometheus.relabel "add_common_labels" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+
+  rule {
+    target_label = "cluster"
+    replacement  = "{{ cluster_name }}"
+  }
+  rule {
+    target_label = "hostname"
+    replacement  = "{{ ansible_hostname }}"
+  }
+}
+
+// ============================================================
+// Remote Write
+// ============================================================
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "{{ mimir_endpoint }}"
+
+    tls_config {
+      cert_file = "{{ tls_cert_path }}"
+      key_file = "{{ tls_key_path }}"
+    }
+
+    headers = {
+      "X-Scope-OrgID" = "{{ mimir_org_id }}",
+    }
+  }
+}

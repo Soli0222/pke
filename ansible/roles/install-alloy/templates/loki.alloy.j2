@@ -1,0 +1,125 @@
+// ============================================================
+// Journal logs
+// ============================================================
+
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+  rule {
+    source_labels = ["__journal__runtime_scope"]
+    target_label  = "runtime_scope"
+  }
+  rule {
+    source_labels = ["__journal_syslog_identifier"]
+    target_label  = "syslog_identifier"
+  }
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "detected_level"
+  }
+  rule {
+    target_label = "origin"
+    replacement  = "journal"
+  }
+}
+
+loki.source.journal "read" {
+  forward_to    = [loki.process.add_common_labels.receiver]
+  relabel_rules = loki.relabel.journal.rules
+}
+
+{% if docker is defined and docker.enabled | default(false) %}
+// ============================================================
+// Docker container logs
+// ============================================================
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "docker_containers" {
+  targets = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container_name"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service_name"
+  }
+}
+
+loki.source.docker "containers" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.containers.targets
+  labels        = {"origin" = "docker"}
+  relabel_rules = discovery.relabel.docker_containers.rules
+  forward_to    = [loki.process.add_common_labels.receiver]
+}
+{% endif %}
+
+// ============================================================
+// File logs
+// ============================================================
+
+local.file_match "local_files" {
+  path_targets = [{"__path__" = "/var/log/*.log"}]
+  sync_period  = "5s"
+}
+
+loki.source.file "log_scrape" {
+  targets       = local.file_match.local_files.targets
+  forward_to    = [loki.process.filter_logs.receiver]
+  tail_from_end = true
+}
+
+loki.process "filter_logs" {
+  stage.drop {
+    expression          = ".*Connection closed by authenticating user root"
+    drop_counter_reason = "noisy"
+  }
+  stage.static_labels {
+    values = { origin = "file" }
+  }
+  forward_to = [loki.process.add_common_labels.receiver]
+}
+
+// ============================================================
+// Common labels for all logs
+// ============================================================
+
+loki.process "add_common_labels" {
+  stage.static_labels {
+    values = {
+      cluster  = "{{ cluster_name }}",
+      hostname = "{{ ansible_hostname }}",
+    }
+  }
+  forward_to = [loki.write.endpoint.receiver]
+}
+
+// ============================================================
+// Loki Write
+// ============================================================
+
+loki.write "endpoint" {
+  endpoint {
+    url = "{{ loki_endpoint }}"
+
+    tls_config {
+      cert_file = "{{ tls_cert_path }}"
+      key_file  = "{{ tls_key_path }}"
+    }
+
+    headers = {
+      "X-Scope-OrgID" = "{{ loki_org_id }}",
+    }
+  }
+}
