@@ -13,10 +13,8 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-  - name: blackbox-exporter-probes
-  - name: grafana
+  - name: cert-manager-config
   - name: loki
-  - name: mc-mirror-cronjob
   - name: mimir
-  - name: prometheus-blackbox-exporter
-  - name: tempo
+  - name: prometheus-operator-crd
+  - name: traefik-tailscale

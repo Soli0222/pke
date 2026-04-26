@@ -148,13 +148,11 @@ Flux のクラスタ定義は `flux/clusters/natsume/` にあります。
 
 | 分類 | コンポーネント |
 |------|---------------|
-| 基盤 / CRD | `cnpg`, `cert-manager`, `external-secrets`, `prometheus-operator-crd` |
-| ネットワーク | `traefik`, `tailscale-operator`, `external-dns` |
+| 基盤 / CRD | `cnpg`, `cert-manager`, `cert-manager-config`, `external-secrets`, `prometheus-operator-crd` |
+| ネットワーク | `traefik`, `traefik-tailscale`, `tailscale-operator`, `external-dns` |
 | 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `uptime-kuma` |
 | アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `navidrome`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 | 運用 | `renovate-operator` |
-
-現行のルート `flux/clusters/natsume/kustomization.yaml` には `external-secrets-crds`, `traefik-crds`, `tempo` の Kustomization 参照がありますが、対応する `apps/` ディレクトリは現在のワークツリーにはありません。追加・復元する場合は `apps/<name>/kustomization.yaml` も合わせて用意してください。
 
 ## ネットワーク
 

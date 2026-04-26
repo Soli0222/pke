@@ -4,6 +4,3 @@ resources:
 - namespace.yaml
 - helmrepository-cert-manager-repo.yaml
 - helmrelease-cert-manager.yaml
-- clusterissuer.yaml
-- monitoring-mtls-ca.yaml
-- monitoring-mtls-client-cert.yaml

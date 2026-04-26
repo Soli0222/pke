@@ -1,14 +1,18 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: external-secrets-crds
+  name: traefik-tailscale
   namespace: flux-system
 spec:
   interval: 10m
-  path: "./flux/clusters/natsume/apps/external-secrets-crds"
+  path: "./flux/clusters/natsume/apps/traefik-tailscale"
   prune: true
   wait: true
   timeout: 10m
   sourceRef:
     kind: GitRepository
     name: flux-system
+  dependsOn:
+  - name: prometheus-operator-crd
+  - name: tailscale-operator
+  - name: traefik

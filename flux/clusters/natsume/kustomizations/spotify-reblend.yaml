@@ -13,10 +13,7 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-  - name: daypassed-bot
-  - name: external-dns
-  - name: external-secrets
-  - name: kube-state-metrics
-  - name: mk-stream
-  - name: tailscale-operator
+  - name: cert-manager-config
+  - name: cnpg
+  - name: prometheus-operator-crd
   - name: traefik

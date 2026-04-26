@@ -13,14 +13,4 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-  - name: emoji-service
-  - name: navidrome
-  - name: note-tweet-connector
-  - name: registry
-  - name: renovate-operator
-  - name: rss-fetcher
-  - name: spotify-nowplaying
-  - name: spotify-reblend
-  - name: sui
-  - name: summaly
-  - name: uptime-kuma
+  - name: prometheus-operator-crd

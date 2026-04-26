@@ -1,11 +1,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: tempo
+  name: cert-manager-config
   namespace: flux-system
 spec:
   interval: 10m
-  path: "./flux/clusters/natsume/apps/tempo"
+  path: "./flux/clusters/natsume/apps/cert-manager-config"
   prune: true
   wait: true
   timeout: 10m
@@ -14,6 +14,4 @@ spec:
     name: flux-system
   dependsOn:
   - name: cert-manager
-  - name: external-dns
-  - name: external-secrets
   - name: traefik

@@ -13,7 +13,4 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-  - name: cnpg
-  - name: external-secrets-crds
   - name: prometheus-operator-crd
-  - name: traefik-crds

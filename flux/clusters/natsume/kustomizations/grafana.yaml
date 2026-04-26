@@ -13,6 +13,6 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-  - name: cert-manager
-  - name: external-secrets
+  - name: cert-manager-config
+  - name: prometheus-operator-crd
   - name: traefik
