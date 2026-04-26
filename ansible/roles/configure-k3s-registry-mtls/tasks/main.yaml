@@ -1,0 +1,93 @@
+---
+- name: Validate k3s registry mTLS settings
+  ansible.builtin.assert:
+    that:
+      - k3s_node_role in ['server', 'agent']
+      - k3s_registry_mtls_host | length > 0
+      - k3s_registry_mtls_endpoint | length > 0
+      - k3s_registry_mtls_onepassword_item | length > 0
+      - k3s_registry_mtls_onepassword_vault | length > 0
+      - k3s_registry_mtls_cert_dir | length > 0
+      - k3s_registry_mtls_cert_path | length > 0
+      - k3s_registry_mtls_key_path | length > 0
+    fail_msg: "k3s registry mTLS settings are incomplete."
+  when: k3s_registry_mtls_enabled | bool
+
+- name: Retrieve registry mTLS certificate from 1Password
+  ansible.builtin.set_fact:
+    k3s_registry_mtls_cert_b64: "{{ lookup('community.general.onepassword', pke_natsume_mtls, field='tls.crt', vault='Kubernetes') }}"
+  when: k3s_registry_mtls_enabled | bool
+
+- name: Retrieve registry mTLS private key from 1Password
+  ansible.builtin.set_fact:
+    k3s_registry_mtls_key_b64: "{{ lookup('community.general.onepassword', pke_natsume_mtls, field='tls.key', vault='Kubernetes') }}"
+  when: k3s_registry_mtls_enabled | bool
+
+- name: Retrieve registry server CA from 1Password
+  ansible.builtin.set_fact:
+    k3s_registry_mtls_ca_b64: "{{ lookup('community.general.onepassword', pke_natsume_mtls, field='ca.crt', vault='Kubernetes') }}"
+  when:
+    - k3s_registry_mtls_enabled | bool
+    - k3s_registry_mtls_ca_path | length > 0
+    - k3s_registry_mtls_ca_onepassword_field | length > 0
+
+- name: Ensure registry mTLS certificate directory exists
+  ansible.builtin.file:
+    path: "{{ k3s_registry_mtls_cert_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: k3s_registry_mtls_enabled | bool
+
+- name: Ensure k3s config directory exists
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: k3s_registry_mtls_enabled | bool
+
+- name: Decode and save registry mTLS certificate
+  ansible.builtin.copy:
+    content: "{{ k3s_registry_mtls_cert_b64 | b64decode }}"
+    dest: "{{ k3s_registry_mtls_cert_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart k3s for registry mTLS
+  when: k3s_registry_mtls_enabled | bool
+
+- name: Decode and save registry mTLS private key
+  ansible.builtin.copy:
+    content: "{{ k3s_registry_mtls_key_b64 | b64decode }}"
+    dest: "{{ k3s_registry_mtls_key_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart k3s for registry mTLS
+  when: k3s_registry_mtls_enabled | bool
+
+- name: Decode and save registry server CA
+  ansible.builtin.copy:
+    content: "{{ k3s_registry_mtls_ca_b64 | b64decode }}"
+    dest: "{{ k3s_registry_mtls_ca_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart k3s for registry mTLS
+  when:
+    - k3s_registry_mtls_enabled | bool
+    - k3s_registry_mtls_ca_path | length > 0
+    - k3s_registry_mtls_ca_onepassword_field | length > 0
+
+- name: Configure k3s registries.yaml
+  ansible.builtin.template:
+    src: registries.yaml.j2
+    dest: /etc/rancher/k3s/registries.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart k3s for registry mTLS
+  when: k3s_registry_mtls_enabled | bool

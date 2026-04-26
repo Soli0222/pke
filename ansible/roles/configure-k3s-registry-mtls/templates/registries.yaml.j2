@@ -1,0 +1,13 @@
+mirrors:
+  "{{ k3s_registry_mtls_host }}":
+    endpoint:
+      - "{{ k3s_registry_mtls_endpoint }}"
+
+configs:
+  "{{ k3s_registry_mtls_host }}":
+    tls:
+      cert_file: "{{ k3s_registry_mtls_cert_path }}"
+      key_file: "{{ k3s_registry_mtls_key_path }}"
+{% if k3s_registry_mtls_ca_path | length > 0 %}
+      ca_file: "{{ k3s_registry_mtls_ca_path }}"
+{% endif %}
