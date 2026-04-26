@@ -12,12 +12,12 @@ spec:
     - name: NODE_OPTIONS
       value: "--max-old-space-size=4096"
   image: renovate/renovate:43.104.3
-  parallelism: 3
+  parallelism: 1
   resources:
     requests:
       cpu: 100m
       memory: 512Mi
     limits:
       memory: 6Gi
-  schedule: "0 * * * *"
+  schedule: "0 */6 * * *"
   secretRef: renovate-secret
