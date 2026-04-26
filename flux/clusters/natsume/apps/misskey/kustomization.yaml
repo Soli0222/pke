@@ -6,4 +6,7 @@ resources:
 - helmrepository-valkey-repo.yaml
 - helmrelease-misskey-valkey.yaml
 - cluster.yaml
+- objectstore.yaml
+- scheduledbackup.yaml
+- onepassworditem-cnpg-backup.yaml
 - helmrelease-misskey.yaml
