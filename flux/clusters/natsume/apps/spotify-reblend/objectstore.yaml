@@ -6,7 +6,7 @@ metadata:
 spec:
   retentionPolicy: 30d
   configuration:
-    destinationPath: s3://cnpg-backup/reblend-cluster/
+    destinationPath: s3://cnpg-backup/
     endpointURL: ${CNPG_BACKUP_ENDPOINT_URL}
     s3Credentials:
       accessKeyId:
