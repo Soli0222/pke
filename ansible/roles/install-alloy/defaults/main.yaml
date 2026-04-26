@@ -12,7 +12,7 @@ loki_org_id: fake
 
 # Paths written by this role after reading the PKE natsume mTLS item from
 # 1Password.
-mtls_onepassword_item: pke-natsume mTLS
+mtls_onepassword_item: pke_natsume_mtls
 tls_cert_dir: /etc/cert/pke-natsume
 tls_cert_path: "{{ tls_cert_dir }}/tls.crt"
 tls_key_path: "{{ tls_cert_dir }}/tls.key"

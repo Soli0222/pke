@@ -15,17 +15,17 @@
 
 - name: Retrieve registry mTLS certificate from 1Password
   ansible.builtin.set_fact:
-    k3s_registry_mtls_cert_b64: "{{ lookup('community.general.onepassword', pke_natsume_mtls, field='tls.crt', vault='Kubernetes') }}"
+    k3s_registry_mtls_cert_b64: "{{ lookup('community.general.onepassword', k3s_registry_mtls_onepassword_item, field='tls.crt', vault=k3s_registry_mtls_onepassword_vault) }}"
   when: k3s_registry_mtls_enabled | bool
 
 - name: Retrieve registry mTLS private key from 1Password
   ansible.builtin.set_fact:
-    k3s_registry_mtls_key_b64: "{{ lookup('community.general.onepassword', pke_natsume_mtls, field='tls.key', vault='Kubernetes') }}"
+    k3s_registry_mtls_key_b64: "{{ lookup('community.general.onepassword', k3s_registry_mtls_onepassword_item, field='tls.key', vault=k3s_registry_mtls_onepassword_vault) }}"
   when: k3s_registry_mtls_enabled | bool
 
 - name: Retrieve registry server CA from 1Password
   ansible.builtin.set_fact:
-    k3s_registry_mtls_ca_b64: "{{ lookup('community.general.onepassword', pke_natsume_mtls, field='ca.crt', vault='Kubernetes') }}"
+    k3s_registry_mtls_ca_b64: "{{ lookup('community.general.onepassword', k3s_registry_mtls_onepassword_item, field=k3s_registry_mtls_ca_onepassword_field, vault=k3s_registry_mtls_onepassword_vault) }}"
   when:
     - k3s_registry_mtls_enabled | bool
     - k3s_registry_mtls_ca_path | length > 0
