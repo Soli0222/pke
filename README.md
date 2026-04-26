@@ -62,7 +62,6 @@ pke/
 ├── helmfile/            # Cilium, 1Password Connect, Flux Operator のブートストラップ
 ├── flux/                # Flux CD で同期するクラスタアプリケーション定義
 ├── terraform/tailscale/ # Tailscale ACL 管理
-├── scripts/             # 運用・移行・CI 補助スクリプト
 ├── .github/             # GitHub Actions
 └── renovate.json5       # 依存関係自動更新設定
 ```
