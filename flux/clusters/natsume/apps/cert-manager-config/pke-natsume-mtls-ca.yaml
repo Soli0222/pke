@@ -1,42 +1,42 @@
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: monitoring-mtls-selfsigned
+  name: pke-natsume-mtls-selfsigned
 spec:
   selfSigned: {}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: monitoring-mtls-ca
+  name: pke-natsume-mtls-ca
   namespace: cert-manager
 spec:
   isCA: true
-  commonName: monitoring-mtls-ca
-  secretName: monitoring-mtls-ca-secret
+  commonName: pke-natsume-mtls-ca
+  secretName: pke-natsume-mtls-ca-secret
   duration: 87600h # 10 years
   privateKey:
     algorithm: ECDSA
     size: 256
   issuerRef:
-    name: monitoring-mtls-selfsigned
+    name: pke-natsume-mtls-selfsigned
     kind: ClusterIssuer
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: monitoring-mtls-ca-issuer
+  name: pke-natsume-mtls-ca-issuer
 spec:
   ca:
-    secretName: monitoring-mtls-ca-secret
+    secretName: pke-natsume-mtls-ca-secret
 ---
 apiVersion: traefik.io/v1alpha1
 kind: TLSOption
 metadata:
-  name: monitoring-mtls
+  name: pke-natsume-mtls
   namespace: cert-manager
 spec:
   clientAuth:
     secretNames:
-      - monitoring-mtls-ca-secret
+      - pke-natsume-mtls-ca-secret
     clientAuthType: RequireAndVerifyClientCert

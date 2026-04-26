@@ -99,9 +99,12 @@ pke/
 | Playbook | 用途 |
 |----------|------|
 | `ansible/site-k3s.yaml` | ノード初期設定、ネットワーク、UFW、external etcd、K3s 構築 |
+| `ansible/configure-k3s-registry-mtls.yaml` | K3s containerd の private registry mTLS 設定 |
 | `ansible/install-alloy.yaml` | Grafana Alloy 導入 |
 | `ansible/upgrade-k3s.yaml` | K3s アップグレード |
 | `ansible/upgrade-etcd.yaml` | etcd アップグレード |
+
+`ansible/configure-k3s-registry-mtls.yaml` は新規クラスタ構築のデッドロックを避けるため、`site-k3s.yaml` には含めません。K3s、Flux、`registry.str08.net`、mTLS client 証明書の準備後に単独で実行します。
 
 ### Roles
 
@@ -115,6 +118,7 @@ pke/
 | `etcd-maintenance` | etcd snapshot などの保守 |
 | `etcd-precheck` | etcd ヘルスチェック |
 | `install-k3s` | K3s server / agent 導入 |
+| `configure-k3s-registry-mtls` | K3s containerd の private registry mTLS 設定 |
 | `install-alloy` | Grafana Alloy 導入 |
 | `upgrade-k3s` | K3s アップグレード |
 | `upgrade-etcd` | etcd アップグレード |
@@ -148,7 +152,7 @@ Flux のクラスタ定義は `flux/clusters/natsume/` にあります。
 | 分類 | コンポーネント |
 |------|---------------|
 | 基盤 / CRD | `cnpg`, `cert-manager`, `cert-manager-config`, `external-secrets`, `prometheus-operator-crd` |
-| ネットワーク | `traefik`, `traefik-tailscale`, `tailscale-operator`, `external-dns` |
+| ネットワーク | `traefik`, `tailscale-operator`, `external-dns` |
 | 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `uptime-kuma` |
 | アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `navidrome`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 | 運用 | `renovate-operator` |

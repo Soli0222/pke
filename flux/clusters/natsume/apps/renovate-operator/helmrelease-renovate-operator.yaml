@@ -24,14 +24,15 @@ spec:
   values:
     ingress:
       enabled: true
-      ingressClassName: traefik-tailscale
+      ingressClassName: traefik
       host: renovate.str08.net
       tls:
       - hosts:
         - renovate.str08.net
-        secretName: renovate.str08.net-dns01
+        secretName: renovate.str08.net-http01
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
+        cert-manager.io/cluster-issuer: letsencrypt-http01
+        traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
     metrics:
       enabled: true
       serviceMonitor:

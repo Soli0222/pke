@@ -13,7 +13,6 @@ resources:
 - kustomizations/mk-stream.yaml
 - kustomizations/tailscale-operator.yaml
 - kustomizations/traefik.yaml
-- kustomizations/traefik-tailscale.yaml
 - kustomizations/emoji-service.yaml
 - kustomizations/navidrome.yaml
 - kustomizations/note-tweet-connector.yaml

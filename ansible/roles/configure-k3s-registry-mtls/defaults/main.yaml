@@ -1,0 +1,16 @@
+---
+k3s_registry_mtls_enabled: true
+k3s_registry_mtls_host: registry.str08.net
+k3s_registry_mtls_endpoint: "https://{{ k3s_registry_mtls_host }}"
+
+k3s_registry_mtls_onepassword_item: pke_natsume_mtls
+k3s_registry_mtls_onepassword_vault: Kubernetes
+
+k3s_registry_mtls_cert_dir: /etc/rancher/k3s/registry-certs/pke-natsume
+k3s_registry_mtls_cert_path: "{{ k3s_registry_mtls_cert_dir }}/tls.crt"
+k3s_registry_mtls_key_path: "{{ k3s_registry_mtls_cert_dir }}/tls.key"
+
+# Leave empty when the registry server certificate chains to the node trust
+# store, such as Let's Encrypt. Set this when using a private server CA.
+k3s_registry_mtls_ca_path: ""
+k3s_registry_mtls_ca_onepassword_field: ""

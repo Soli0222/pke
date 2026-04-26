@@ -122,7 +122,7 @@ spec:
       className: traefik
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-http01
-        traefik.ingress.kubernetes.io/router.tls.options: cert-manager-monitoring-mtls@kubernetescrd
+        traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
       ingressClassName: traefik
       hosts:
         - loki.pstr.space
