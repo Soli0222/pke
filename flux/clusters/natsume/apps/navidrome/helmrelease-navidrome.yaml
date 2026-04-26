@@ -22,30 +22,15 @@ spec:
         namespace: navidrome
       interval: 1h
   values:
+    replicaCount: 1
     persistence:
-      data:
-        existingClaim: ''
-        storageClass: oky-synology-01
-        size: 10Gi
-        accessModes:
-        - ReadWriteOnce
       music:
-        createPv: true
-        storageClass: "-"
-        size: 500Gi
-        accessModes:
-        - ReadOnlyMany
-        nfs:
-          server: 192.168.20.250
-          path: "/volume1/music"
-          mountOptions:
-          - nfsvers=4.1
+        size: 100Gi
     ingress:
       enabled: true
-      className: traefik-external
+      className: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt
-        external-dns.alpha.kubernetes.io/target: meruto-01.pstr.space
+        cert-manager.io/cluster-issuer: letsencrypt-http01
         external-dns.alpha.kubernetes.io/cloudflare-proxied: 'true'
       hosts:
       - host: navidrome.pstr.space
@@ -55,7 +40,7 @@ spec:
       tls:
       - hosts:
         - navidrome.pstr.space
-        secretName: navidrome.pstr.space-dns01
+        secretName: navidrome.pstr.space-http01
     serviceMonitor:
       enabled: true
     config:

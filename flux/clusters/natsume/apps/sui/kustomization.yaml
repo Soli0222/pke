@@ -5,3 +5,4 @@ resources:
 - helmrepository-sui-repo.yaml
 - helmrelease-sui.yaml
 - cluster.yaml
+- podmonitor.yaml

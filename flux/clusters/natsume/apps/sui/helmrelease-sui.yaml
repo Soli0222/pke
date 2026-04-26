@@ -24,9 +24,9 @@ spec:
   values:
     ingress:
       enabled: true
-      className: traefik
+      className: traefik-tailscale
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt
+        cert-manager.io/cluster-issuer: letsencrypt-dns01
       hosts:
       - host: sui.str08.net
         paths:

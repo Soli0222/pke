@@ -6,3 +6,4 @@ resources:
 - helmrelease-spotify-reblend.yaml
 - cluster.yaml
 - onepassworditem.yaml
+- podmonitor.yaml

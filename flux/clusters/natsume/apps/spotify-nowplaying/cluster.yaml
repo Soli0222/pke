@@ -2,8 +2,9 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: spn-cluster
+  namespace: spotify-nowplaying
 spec:
-  instances: 3
+  instances: 1
   storage:
     size: 5Gi
   bootstrap:
