@@ -11,7 +11,6 @@ resources:
 - kustomizations/external-secrets.yaml
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/mk-stream.yaml
-- kustomizations/tailscale-operator.yaml
 - kustomizations/traefik.yaml
 - kustomizations/emoji-service.yaml
 - kustomizations/navidrome.yaml

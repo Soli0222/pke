@@ -44,16 +44,3 @@ spec:
         ingressClass: traefik
       kubernetesIngress:
         ingressClass: traefik
-    # ingressRoute:
-    #   dashboard:
-    #     enabled: false
-    #     annotations:
-    #       kubernetes.io/ingress.class: tailscale
-    #       external-dns.alpha.kubernetes.io/hostname: traefik.str08.net
-    #       cert-manager.io/cluster-issuer: letsencrypt-dns01
-    #     matchRule: Host(`traefik.str08.net`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
-    #     entryPoints:
-    #     - web
-    #     - websecure
-    #     tls:
-    #       secretName: traefik.str08.net-dns01
