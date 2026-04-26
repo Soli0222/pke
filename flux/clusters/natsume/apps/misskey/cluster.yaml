@@ -1,0 +1,14 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: misskey-cluster
+  namespace: misskey
+spec:
+  instances: 1
+  imageName: ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine:18
+  storage:
+    size: 100Gi
+  bootstrap:
+    initdb:
+      database: misskey
+      owner: misskey

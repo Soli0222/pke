@@ -13,6 +13,7 @@ resources:
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/longhorn.yaml
 - kustomizations/mk-stream.yaml
+- kustomizations/misskey.yaml
 - kustomizations/traefik.yaml
 - kustomizations/emoji-service.yaml
 - kustomizations/navidrome.yaml
