@@ -16,4 +16,4 @@ spec:
   - name: cert-manager-config
   - name: external-secrets
   - name: prometheus-operator-crd
-  - name: traefik-tailscale
+  - name: traefik

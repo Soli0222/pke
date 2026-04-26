@@ -37,8 +37,9 @@ spec:
       enabled: true
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-dns01
+        traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
       faroPort: 12345
-      ingressClassName: traefik-tailscale
+      ingressClassName: traefik
       hosts:
       - alloy.str08.net
       tls:

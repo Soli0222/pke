@@ -148,7 +148,7 @@ Flux のクラスタ定義は `flux/clusters/natsume/` にあります。
 | 分類 | コンポーネント |
 |------|---------------|
 | 基盤 / CRD | `cnpg`, `cert-manager`, `cert-manager-config`, `external-secrets`, `prometheus-operator-crd` |
-| ネットワーク | `traefik`, `traefik-tailscale`, `tailscale-operator`, `external-dns` |
+| ネットワーク | `traefik`, `tailscale-operator`, `external-dns` |
 | 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `uptime-kuma` |
 | アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `navidrome`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 | 運用 | `renovate-operator` |

@@ -15,4 +15,4 @@ spec:
   dependsOn:
   - name: cert-manager-config
   - name: prometheus-operator-crd
-  - name: traefik-tailscale
+  - name: traefik

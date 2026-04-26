@@ -24,16 +24,17 @@ spec:
   values:
     ingress:
       enabled: true
-      className: traefik-tailscale
+      className: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
+        cert-manager.io/cluster-issuer: letsencrypt-http01
+        traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
       hosts:
       - host: sui.str08.net
         paths:
         - path: "/"
           pathType: Prefix
       tls:
-      - secretName: sui.str08.net-dns01
+      - secretName: sui.str08.net-http01
         hosts:
         - sui.str08.net
     postgresql:

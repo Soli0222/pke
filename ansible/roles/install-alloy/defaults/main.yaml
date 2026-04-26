@@ -1,7 +1,7 @@
 ---
 cluster_name: natsume
 # Remote observability endpoints. The external endpoints are protected by
-# monitoring mTLS certificates managed by cert-manager/1Password.
+# PKE natsume mTLS certificates managed by cert-manager/1Password.
 mimir_endpoint: https://mimir.pstr.space/api/v1/push
 loki_endpoint: https://loki.pstr.space/loki/api/v1/push
 
@@ -10,10 +10,12 @@ loki_endpoint: https://loki.pstr.space/loki/api/v1/push
 mimir_org_id: anonymous
 loki_org_id: fake
 
-# Paths written by this role after reading the monitoring mTLS item from
+# Paths written by this role after reading the PKE natsume mTLS item from
 # 1Password.
-tls_cert_path: /etc/cert/monitoring/tls.crt
-tls_key_path: /etc/cert/monitoring/tls.key
+mtls_onepassword_item: pke-natsume mTLS
+tls_cert_dir: /etc/cert/pke-natsume
+tls_cert_path: "{{ tls_cert_dir }}/tls.crt"
+tls_key_path: "{{ tls_cert_dir }}/tls.key"
 
 # Optional Docker log collection. Enable this per host/group where Docker is
 # present and container logs should be sent to Loki.

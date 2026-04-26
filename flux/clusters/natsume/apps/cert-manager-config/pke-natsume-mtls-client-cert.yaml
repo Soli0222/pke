@@ -1,12 +1,12 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: monitoring-mtls-client
+  name: pke-natsume-mtls-client
   namespace: cert-manager
 spec:
-  commonName: monitoring-client
-  secretName: monitoring-mtls-client-secret
-  duration: 8760h # 1 year
+  commonName: pke-natsume-client
+  secretName: pke-natsume-mtls-client-secret
+  duration: 43800h # 5 year
   renewBefore: 720h # 30 days
   usages:
     - client auth
@@ -14,5 +14,5 @@ spec:
     algorithm: ECDSA
     size: 256
   issuerRef:
-    name: monitoring-mtls-ca-issuer
+    name: pke-natsume-mtls-ca-issuer
     kind: ClusterIssuer

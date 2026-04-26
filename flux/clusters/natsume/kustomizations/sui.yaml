@@ -21,4 +21,4 @@ spec:
   - name: cnpg
   - name: cnpg-backup-config
   - name: prometheus-operator-crd
-  - name: traefik-tailscale
+  - name: traefik

@@ -17,4 +17,4 @@ spec:
   - name: loki
   - name: mimir
   - name: prometheus-operator-crd
-  - name: traefik-tailscale
+  - name: traefik
