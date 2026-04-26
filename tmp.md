@@ -69,7 +69,7 @@ scp <old_redis_host>:/path/to/dump.rdb ./dump.rdb
 CNPG の primary Pod 名を取得する。
 
 ```bash
-export DEST_CONTEXT="natsume@soli"
+export DEST_CONTEXT="default"
 export NAMESPACE="misskey"
 export CLUSTER="misskey-cluster"
 export DATABASE="misskey"
