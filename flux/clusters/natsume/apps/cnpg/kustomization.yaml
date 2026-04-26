@@ -4,3 +4,4 @@ resources:
 - namespace.yaml
 - helmrepository-cloudnative-pg-repo.yaml
 - helmrelease-cnpg.yaml
+- helmrelease-plugin-barman-cloud.yaml

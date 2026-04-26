@@ -6,4 +6,7 @@ resources:
 - helmrelease-spotify-nowplaying.yaml
 - cluster.yaml
 - onepassworditem.yaml
+- objectstore.yaml
+- scheduledbackup.yaml
+- onepassworditem-cnpg-backup.yaml
 - podmonitor.yaml
