@@ -33,6 +33,10 @@ spec:
         serviceMonitor:
           enabled: true
     service:
+      ipFamilyPolicy: RequireDualStack
+      ipFamilies:
+      - IPv4
+      - IPv6
       spec:
         externalTrafficPolicy: Local
     ingressClass:
