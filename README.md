@@ -1,221 +1,198 @@
 # Polestar Kubernetes Engine (PKE)
 
-オンプレミスの Kubernetes プラットフォーム **Polestar Kubernetes Engine (PKE)** をコードで構築・運用するためのリポジトリです。
+**Polestar Kubernetes Engine (PKE)** は、K3s クラスタと周辺アプリケーションをコードで構築・運用するためのリポジトリです。
+
+現在の中心は `natsume-02` 上の K3s + external etcd 構成です。クラスタ初期構築は Ansible、CNI と GitOps 基盤のブートストラップは Helmfile、クラスタアプリケーションの継続同期は Flux CD で管理します。
 
 ## アーキテクチャ概要
 
 ```mermaid
-graph TB
-    subgraph Internet
-        FRPS[frps<br/>meruto-01]
+flowchart TB
+    subgraph Host["natsume-02"]
+        OS["Ubuntu / systemd"]
+        ETCD["external etcd"]
+        K3S["K3s server"]
+        CILIUM["Cilium"]
+        FLUX["Flux Operator / Flux controllers"]
     end
 
-    subgraph "Proxmox VE Cluster"
-        subgraph "kkg-pve3 (Ryzen 5 3400G / 32GB)"
-            cp1[kkg-cp1<br/>Control Plane Leader<br/>192.168.20.13]
-        end
-        subgraph "kkg-pve4 (Ryzen 3 3300X / 32GB)"
-            cp2[kkg-cp2<br/>Control Plane<br/>192.168.20.14]
-            cp3[kkg-cp3<br/>Control Plane<br/>192.168.20.15]
-        end
+    subgraph GitOps["flux/clusters/natsume"]
+        BASE["Kustomizations"]
+        APPS["HelmRelease / Kustomize manifests"]
     end
 
-    VIP[API VIP: 192.168.20.10<br/>kube-vip]
-
-    cp1 & cp2 & cp3 --> VIP
-
-    FRPS --> FRPC
-
-    subgraph "Kubernetes Workloads"
-        ArgoCD
-        FRPC[frpc]
-        TraefikExt[Traefik External<br/>外部向け]
-        Traefik[Traefik<br/>内部向け]
-        Monitoring[Mimir / Loki / Tempo / Grafana / Alloy]
-        Apps[Applications]
+    subgraph Apps["Cluster applications"]
+        TRAEFIK["Traefik"]
+        SECRETS["1Password Connect / External Secrets"]
+        OBS["Grafana / Mimir / Loki / Alloy"]
+        SVC["Application workloads"]
     end
 
-    FRPC --> TraefikExt
-    cp1 & cp2 & cp3 --> ArgoCD & Traefik & TraefikExt & Monitoring & Apps
+    OS --> ETCD
+    ETCD --> K3S
+    K3S --> CILIUM
+    CILIUM --> FLUX
+    FLUX --> BASE
+    BASE --> APPS
+    APPS --> TRAEFIK
+    APPS --> SECRETS
+    APPS --> OBS
+    APPS --> SVC
 ```
-
-### kkgクラスタ（Proxmox VE × HA Kubernetes）
-
-物理ノード 2 台の Proxmox VE クラスタ上に、HA 構成の Kubernetes クラスターを運用しています。
-
-#### ハードウェア構成
-
-| ホスト名  | CPU             | メモリ | ストレージ | IPアドレス    |
-|-----------|-----------------|--------|-----------|---------------|
-| kkg-pve3  | Ryzen 5 3400G   | 32GB   | 512GB SSD | 192.168.20.4  |
-| kkg-pve4  | Ryzen 3 3300X   | 32GB   | 512GB SSD | 192.168.20.5  |
-
-#### 仮想マシン構成
-
-##### Kubernetesコントロールプレーン
-
-| VM名     | CPU | メモリ | ディスク | IPアドレス     | ホストマシン |
-|----------|-----|--------|----------|---------------|-------------|
-| kkg-cp1  | 8   | 32GB   | 100GB    | 192.168.20.13 | kkg-pve3    |
-| kkg-cp2  | 8   | 16GB   | 100GB    | 192.168.20.14 | kkg-pve4    |
-| kkg-cp3  | 8   | 16GB   | 100GB    | 192.168.20.15 | kkg-pve4    |
-
-API VIP（192.168.20.10）は kube-vip が各コントロールプレーンノード上の Static Pod としてリーダー選出・ARP で提供します。
 
 ## デプロイメントパイプライン
 
 ```mermaid
 flowchart LR
-    A["1. Terraform<br/>VM作成"] --> B["2. Ansible<br/>OS・K8s構築"]
-    B --> C["3. Helmfile<br/>CNI・シークレット・ArgoCD"]
-    C --> D["4. ArgoCD<br/>全アプリ自動同期"]
-
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style C fill:#e8f5e9
-    style D fill:#fff3e0
+    A["1. Ansible<br/>OS / network / etcd / K3s"] --> B["2. Helmfile<br/>Cilium / 1Password / Flux"]
+    B --> C["3. Flux CD<br/>cluster apps"]
+    D["Terraform<br/>Tailscale ACL"] -. independent .-> C
 ```
 
-1. **Terraform** — Proxmox 上に VM を作成（`terraform/kkg/`）
-2. **Ansible** — OS 設定、containerd、Kubernetes、kube-vip、外部 etcd、監��エージェント、frps を自動化（`ansible/`）
-3. **Helmfile** — Cilium、1Password Connect、ArgoCD のブートストラップ（`helmfile/`）
-4. **ArgoCD** — App of Apps パターンで全コンポーネント・アプリケーションを GitOps 管理（`argocd/`）
+1. **Ansible**: `ansible/site-k3s.yaml` で OS 設定、ネットワーク、UFW、external etcd、K3s server / agent を構築します。
+2. **Helmfile**: `helmfile/helmfile.yaml` で Cilium、1Password Connect、Flux Operator を導入します。
+3. **Flux CD**: `helmfile/manifests/flux/fluxinstance.yaml` が `flux/clusters/natsume` を同期し、クラスタアプリケーションを GitOps 管理します。
+4. **Terraform**: `terraform/tailscale/` で Tailscale ACL を管理します。クラスタ構築パイプラインとは独立しています。
 
 ## リポジトリ構成
 
 ```
 pke/
-├── terraform/          # インフラプロビジョニング
-│   ├── kkg/            #   Proxmox VM管理
-│   └── tailscale/      #   Tailscale ACL管理
-├── ansible/            # 構成管理・自動化
-├── helmfile/           # ブートストラップ（Cilium, 1Password, ArgoCD）
-├── argocd/             # GitOps アプリケーション定義（39 アプリ）
-├── scripts/            # CI/CDヘルパースクリプト
-├── .github/            # GitHub Actions ワークフロー
-└── renovate.json5      # 依存関係自動更新設定
+├── ansible/             # OS・ネットワーク・external etcd・K3s・Alloy の構成管理
+├── helmfile/            # Cilium, 1Password Connect, Flux Operator のブートストラップ
+├── flux/                # Flux CD で同期するクラスタアプリケーション定義
+├── terraform/tailscale/ # Tailscale ACL 管理
+├── scripts/             # 運用・移行・CI 補助スクリプト
+├── .github/             # GitHub Actions
+└── renovate.json5       # 依存関係自動更新設定
 ```
 
-## 現在のバージョン
+## 現行バージョン
 
 | コンポーネント | バージョン |
 |---------------|-----------|
-| Kubernetes    | 1.35.3    |
-| containerd    | 2.2.2     |
-| runc          | 1.4.1     |
-| CNI Plugins   | 1.9.1     |
-| Cilium        | 1.19.2    |
-| 1Password Connect | 2.4.1 |
-| ArgoCD (Chart) | 9.4.17  |
-| OS テンプレート | Ubuntu 24.04 |
+| K3s | `v1.35.3+k3s1` |
+| etcd | `3.6.10` |
+| Cilium | `1.19.3` |
+| 1Password Connect | `2.4.1` |
+| Flux Operator | `0.48.0` |
+| Flux distribution | `2.x` |
+| Tailscale Terraform provider | `0.28.0` |
 
-## ArgoCD 管理コンポーネント
+## Ansible
 
-### 基盤・ネットワーク（Wave 0-2）
+### インベントリ
 
-| コンポーネント | Chart Version | 用途 |
-|---------------|---------------|------|
-| Prometheus Operator CRDs | 24.0.1 | 監視CRD基盤 |
-| CloudNative-PG | 0.27.1 | PostgreSQLオペレーター |
-| Traefik CRDs | 1.16.0 | Ingress CRD |
-| cert-manager | v1.20.1 | 証明書管理 |
-| Falco | 8.0.1 | ランタイムセキュリティ |
-| MinIO Operator | 7.1.1 | オブジェクトストレージ |
-| NFS Subdir External Provisioner | 4.0.18 | 永続ストレージ |
-| external-dns | 1.20.0 | DNS自動管理 |
-| Metrics Server | 3.13.0 | リソースメトリクス |
-| Traefik | 39.0.7 | Ingress Controller |
-| Traefik External | 39.0.7 | 外部向けIngress Controller |
-| frpc | - | FRP クライアント（カスタムマニフェスト） |
-| kube-state-metrics | 7.2.2 | Kubernetesメトリクス |
+| パス | 内容 |
+|------|------|
+| `ansible/inventories/hosts.yaml` | ホストグループ定義 |
+| `ansible/inventories/group_vars/all.yaml` | 共通変数 |
+| `ansible/inventories/group_vars/etcd.yaml` | etcd 変数 |
+| `ansible/inventories/group_vars/k3s_cluster.yaml` | K3s クラスタ共通変数 |
+| `ansible/inventories/group_vars/k3s_server.yaml` | K3s server 変数 |
+| `ansible/inventories/group_vars/k3s_agent.yaml` | K3s agent 変数 |
+| `ansible/inventories/host_vars/natsume-02.yaml` | natsume-02 のネットワーク設定 |
 
-### 監視・オブザーバビリティ（Wave 3-5）
+現行の `hosts.yaml` では `natsume-02` が `etcd` と `k3s_server` を兼ねています。`k3s_agent` は空です。
 
-| コンポーネント | Chart Version | 用途 |
-|---------------|---------------|------|
-| Grafana | 10.5.15 | ダッシュボード |
-| Mimir Distributed | 6.0.6 | メトリクスストレージ |
-| Loki | 6.55.0 | ログ集約 |
-| Tempo Distributed | 1.61.3 | 分散トレーシング |
-| Alloy | 1.6.2 | 監視エージェント |
-| Vector | 0.51.0 | ログ・オブザーバビリティ |
-| Uptime Kuma | 4.0.0 | アップタイム監視 |
-| Prometheus Blackbox Exporter | 11.9.1 | 外形監視 |
-| Blackbox Exporter Probes | 1.0.0 | 外形監視プローブ定義 |
-| iX2215 SNMP Exporter | 9.13.1 | ネットワーク機器監視 |
-| MinIO Tenant | 7.1.1 | オブジェクトストレージ実体 |
+### Playbook
 
-### アプリケーション（Wave 2-3）
+| Playbook | 用途 |
+|----------|------|
+| `ansible/site-k3s.yaml` | ノード初期設定、ネットワーク、UFW、external etcd、K3s 構築 |
+| `ansible/install-alloy.yaml` | Grafana Alloy 導入 |
+| `ansible/upgrade-k3s.yaml` | K3s アップグレード |
+| `ansible/upgrade-etcd.yaml` | etcd アップグレード |
 
-| アプリケーション | Chart Version | 用途 |
-|-----------------|---------------|------|
-| navidrome | 2.1.3 | 音楽ストリーミングサーバー |
-| komga | 1.0.4 | コミック・書籍サーバー |
-| wallos | 0.1.7 | サブスクリプション管理 |
-| daypassed-bot | 0.1.0 | 日付関連Bot |
-| mc-mirror-cronjob | 0.2.1 | MinecraftミラーCronJob |
-| mk-stream | 1.0.0 | ストリーミングサービス |
-| note-tweet-connector | 1.0.3 | Note投稿連携 |
-| spotify-nowplaying | 3.0.3 | Spotify再生状況表示 |
-| spotify-reblend | 0.1.4 | Spotifyリブレンド |
-| summaly | 0.1.6 | URLプレビュー |
-| emoji-service | 0.1.1 | 絵文字サービス |
-| rss-fetcher | 0.1.3 | RSSフェッチャー |
-| registry | 0.1.1 | コンテナレジストリ |
-| sui | 0.1.2 | スタートページ |
-| renovate-operator | 4.0.0 | 依存関係自動更新オペレーター |
+### Roles
 
-### 外部サーバー（Ansible管理）
+| Role | 用途 |
+|------|------|
+| `general-configuration` | 基本 OS 設定 |
+| `network` | Netplan 設定 |
+| `sysctl` | カーネルパラメータ |
+| `ufw` | Firewall 設定 |
+| `setup-etcd` | external etcd の導入 |
+| `etcd-maintenance` | etcd snapshot などの保守 |
+| `etcd-precheck` | etcd ヘルスチェック |
+| `install-k3s` | K3s server / agent 導入 |
+| `install-alloy` | Grafana Alloy 導入 |
+| `upgrade-k3s` | K3s アップグレード |
+| `upgrade-etcd` | etcd アップグレード |
 
-| サーバー | 用途 |
-|---------|------|
-| meruto-01 | frps リバースプロキシ + Grafana Alloy |
-| natsume-01 | Misskey ホスティング（mi.soli0222.com） |
+## Helmfile Bootstrap
 
-## ネットワーク構成
+`helmfile/helmfile.yaml` は K3s 構築後に必要な基盤コンポーネントを導入します。
 
-```mermaid
-graph TB
-    subgraph "192.168.20.0/23"
-        GW["192.168.20.1<br/>Gateway / DNS<br/>(iX2215, ASN 65000)"]
+| Release | Namespace | Version | 用途 |
+|---------|-----------|---------|------|
+| `cilium` | `kube-system` | `1.19.3` | CNI |
+| `connect` | `1password` | `2.4.1` | 1Password Connect |
+| `flux-operator` | `flux-system` | `0.48.0` | Flux Operator |
 
-        subgraph "Control Plane (ASN 65001)"
-            VIP["192.168.20.10<br/>API VIP (kube-vip)"]
-            CP1["192.168.20.13 kkg-cp1"]
-            CP2["192.168.20.14 kkg-cp2"]
-            CP3["192.168.20.15 kkg-cp3"]
-        end
+Flux Operator の postsync hook は `helmfile/manifests/flux/fluxinstance.yaml` を適用します。`FluxInstance` は `https://github.com/Soli0222/pke.git` の `main` ブランチから `flux/clusters/natsume` を 1 分間隔で同期します。
 
-        subgraph "Cilium LB IP Pool"
-            LBPool["192.168.21.100 - 192.168.21.254"]
-        end
-    end
+## Flux CD
 
-    GW <-->|BGP| CP1 & CP2 & CP3
-```
+Flux のクラスタ定義は `flux/clusters/natsume/` にあります。
 
-- **API VIP**: 192.168.20.10（kube-vip、リーダー選出 + ARP）
-- **Pod Network CIDR**: 10.26.0.0/16
-- **Cilium LB IP Pool**: 192.168.21.100 - 192.168.21.254
-- **BGP**: Cilium BGP Control Plane — 全ノード（ASN 65001）が iX2215（ASN 65000）と直接ピアリングし、LoadBalancer IP を広報
-- **外部公開**: Internet → frps（meruto-01） → frpc → traefik-external → ワークロード
+| パス | 内容 |
+|------|------|
+| `flux/clusters/natsume/kustomization.yaml` | Flux Kustomization 一覧のルート |
+| `flux/clusters/natsume/kustomizations/*.yaml` | アプリごとの Flux `Kustomization` |
+| `flux/clusters/natsume/apps/<app>/` | アプリごとの Namespace、HelmRepository、HelmRelease、追加 manifest |
 
-## CI/CD
+各 Flux `Kustomization` は基本的に `interval: 10m`, `prune: true`, `wait: true` で管理し、依存関係は `dependsOn` で表現します。
 
-- **Renovate**: Helm chart、Ansible バージョン、GitHub Actions、Terraform の依存関係を自動更新
-- **GitHub Actions**:
-  - `helm-template-diff.yaml` — PR で ArgoCD アプリの Helm テンプレート差分を自動レビュー
-  - `lint-gha-workflows.yaml` — GitHub Actions ワークフローの Lint
+### 管理コンポーネント
 
-## 注意事項
+| 分類 | コンポーネント |
+|------|---------------|
+| 基盤 / CRD | `cnpg`, `cert-manager`, `external-secrets`, `prometheus-operator-crd` |
+| ネットワーク | `traefik`, `tailscale-operator`, `external-dns` |
+| 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `uptime-kuma` |
+| アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `navidrome`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
+| 運用 | `renovate-operator` |
 
-- シークレット（Cloudflare/1Password など）は 1Password Vault に保管し、`helmfile/` の手順に従って参照してください
-- バージョンアップは Ansible の `upgrade-*.yaml` を使用できます（Kubernetes / containerd）
-- Terraform 状態ファイルは Cloudflare R2 に保存されます
+現行のルート `flux/clusters/natsume/kustomization.yaml` には `external-secrets-crds`, `traefik-crds`, `tempo` の Kustomization 参照がありますが、対応する `apps/` ディレクトリは現在のワークツリーにはありません。追加・復元する場合は `apps/<name>/kustomization.yaml` も合わせて用意してください。
 
-## 参照
+## ネットワーク
 
-- [terraform/kkg/README.md](terraform/kkg/README.md) — Proxmox VM 管理
-- [terraform/tailscale/README.md](terraform/tailscale/README.md) — Tailscale ACL 管理
-- [ansible/README.md](ansible/README.md) — 構成管理・自動化
-- [helmfile/README.md](helmfile/README.md) — ブートストラップ
+| 項目 | 値 |
+|------|----|
+| 現行ノード | `natsume-02` |
+| Public IPv4 | `133.18.115.105/23` |
+| Public IPv6 | `2406:8c00:0:3452:133:18:115:105/64` |
+| Private IPv4 | `192.168.9.2/24` |
+| Private IPv6 | `fd00:192:168:9::2/64` |
+| Pod CIDR | `10.1.0.0/16`, `fd00:10:1::/64` |
+| Service CIDR | `10.2.0.0/16`, `fd00:10:2::/64` |
+| Cluster DNS | `10.2.0.10`, `fd00:10:2::a` |
+
+K3s built-in の `traefik` と `helm-controller` は無効化しています。Ingress と Helm release は Flux 側で管理します。
+
+## Terraform
+
+`terraform/tailscale/` は Tailscale ACL を管理します。
+
+- Provider: `tailscale/tailscale` `0.28.0`
+- State backend: Cloudflare R2 の S3 互換 backend
+- 認証情報: `TAILSCALE_API_KEY` などの環境変数で注入
+- 補助スクリプト: `setup.sh`, `import_acl.sh`
+
+## CI/CD と Renovate
+
+- Renovate は Terraform、Helmfile、Helm values、Ansible、GitHub Actions、custom regex を対象に依存関係を更新します。
+- `renovate.json5` には K3s と etcd の Ansible 変数を追跡する custom manager があります。
+- GitHub Actions:
+  - `.github/workflows/lint-gha-workflows.yaml`: actionlint による workflow lint
+  - `.github/workflows/helm-template-diff.yaml`: 旧 Argo CD 構成向けの Helm template diff workflow
+
+`helm-template-diff.yaml` と Renovate の一部 custom manager は `argocd/**` を参照しており、Flux 移行後の現行構成とはずれがあります。Flux の HelmRelease を対象にする場合は workflow と Renovate regex の更新が必要です。
+
+## 運用メモ
+
+- シークレットは 1Password / External Secrets / `OnePasswordItem` の既存パターンに合わせ、平文 Secret をコミットしないでください。
+- K3s と etcd のアップグレードは `ansible/upgrade-k3s.yaml` と `ansible/upgrade-etcd.yaml` を使います。
+- 新しい Flux アプリを追加する場合は `apps/<app>/`、`kustomizations/<app>.yaml`、ルート `kustomization.yaml` の 3 箇所をそろえてください。
+- Terraform state は Cloudflare R2 backend に保存されます。
