@@ -33,6 +33,3 @@ spec:
     - name: navidrome
       targets:
       - https://navidrome.pstr.space
-    - name: conohav2-1
-      targets:
-      - https://conohav2-1.pstr.space
