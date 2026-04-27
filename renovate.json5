@@ -15,6 +15,7 @@
   enabledManagers: [
     'ansible',
     'ansible-galaxy',
+    'flux',
     'github-actions',
     'helmfile',
     'helm-requirements',
@@ -41,6 +42,15 @@
       commitMessageTopic: 'Helm chart {{depName}}',
       addLabels: [
         'manager:helm',
+      ],
+    },
+    {
+      matchManagers: [
+        'flux',
+      ],
+      commitMessageTopic: 'Flux {{depName}}',
+      addLabels: [
+        'manager:flux',
       ],
     },
     {
@@ -79,18 +89,6 @@
         'manager:ansible-vars',
       ],
     },
-    {
-      matchManagers: [
-        'custom.regex',
-      ],
-      matchFileNames: [
-        'argocd/**/application.yaml',
-      ],
-      commitMessageTopic: 'Argo CD chart {{depName}}',
-      addLabels: [
-        'manager:argocd',
-      ],
-    },
   ],
   customManagers: [
     {
@@ -115,18 +113,6 @@
       ],
       depNameTemplate: 'k3s-io/k3s',
       datasourceTemplate: 'github-releases',
-      versioningTemplate: 'semver',
-    },
-    {
-      customType: 'regex',
-      managerFilePatterns: [
-        '/argocd/.+/application\\.ya?ml$/',
-      ],
-      matchStrings: [
-        '(?m)^\\s+-\\s+chart:\\s+(?<depName>[A-Za-z0-9_.\\-/]+)\\s*\\n^\\s+repoURL:\\s+(?<registryUrl>https?://[^\\s]+)\\s*\\n^\\s+targetRevision:\\s*(?<currentValue>[^\\s]+)',
-      ],
-      datasourceTemplate: 'helm',
-      registryUrlTemplate: '{{registryUrl}}',
       versioningTemplate: 'semver',
     },
   ],
