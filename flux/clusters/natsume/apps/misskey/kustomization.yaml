@@ -8,5 +8,6 @@ resources:
 - cluster.yaml
 - objectstore.yaml
 - scheduledbackup.yaml
+- podmonitor.yaml
 - onepassworditem-cnpg-backup.yaml
 - helmrelease-misskey.yaml
