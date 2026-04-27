@@ -1,0 +1,91 @@
+name: flux-diff
+
+on:
+  pull_request:
+    paths:
+      - "flux/**"
+      - ".github/workflows/flux-diff.yaml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        resource: [helmrelease, kustomization]
+    steps:
+      - name: Ensure Flux CLI
+        shell: bash
+        run: |
+          if ! command -v flux >/dev/null 2>&1; then
+            curl -fsSL https://fluxcd.io/install.sh | sudo bash
+          fi
+          flux --version
+
+      - name: Run flux-local diff
+        id: diff
+        uses: allenporter/flux-local/action/diff@8.2.0
+        with:
+          path: flux/clusters/natsume
+          resource: ${{ matrix.resource }}
+          live-branch: main
+          sources: flux-system=.
+          limit-bytes: 0
+
+      - name: Compose comment
+        id: comment
+        env:
+          DIFF: ${{ steps.diff.outputs.diff }}
+          RESOURCE: ${{ matrix.resource }}
+          GH_TOKEN: ${{ secrets.FLUX_DIFF_GIST_TOKEN || secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # GitHub PR コメントは 65536 文字上限。コードフェンスや見出し分の余白を残す。
+          INLINE_LIMIT=60000
+          delimiter="$(openssl rand -hex 8)"
+
+          if [[ -z "${DIFF}" ]]; then
+            {
+              echo "message<<${delimiter}"
+              echo "_${RESOURCE} に差分はありません。_"
+              echo "${delimiter}"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          printf '%s' "${DIFF}" > diff.patch
+          size=$(wc -c < diff.patch)
+
+          if (( size <= INLINE_LIMIT )); then
+            {
+              echo "message<<${delimiter}"
+              echo "<details><summary>flux-local <code>${RESOURCE}</code> diff (${size} bytes)</summary>"
+              echo
+              echo '```diff'
+              cat diff.patch
+              echo '```'
+              echo "</details>"
+              echo "${delimiter}"
+            } >> "$GITHUB_OUTPUT"
+          else
+            gist_url=$(gh gist create diff.patch \
+              --desc "flux-local ${RESOURCE} diff for ${REPO}#${PR_NUMBER}" \
+              | tail -n1)
+            {
+              echo "message<<${delimiter}"
+              echo "flux-local \`${RESOURCE}\` diff は **${size} bytes** で 65536 字制限を超えるため Gist に退避しました: ${gist_url}"
+              echo "${delimiter}"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sticky PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: flux-diff/${{ matrix.resource }}
+          message: ${{ steps.comment.outputs.message }}
