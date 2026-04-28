@@ -1,18 +1,15 @@
 ---
 ansible_host: natsume-05
 
-longhorn_storage_devices:
-  - /dev/vda4
-
 network_netplan:
   global:
     device: ens3
-    ipv4: TBD
+    ipv4: 133.18.141.37/23
     ipv6:
-      - TBD
+      - 2406:8c00:0:3464:133:18:141:37/64
     default_route:
-      - TBD
-      - via: TBD
+      - 133.18.140.1
+      - via: 2406:8c00:0:3464::1
         on-link: true
     nameservers:
       - 1.1.1.1
