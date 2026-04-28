@@ -13,9 +13,56 @@
   vars:
     longhorn_storage_packages: >-
       {{
-        ['lvm2', 'open-iscsi', 'nfs-common', 'cryptsetup']
+        ['lvm2', 'open-iscsi', 'nfs-common', 'cryptsetup', 'parted']
         + (['xfsprogs'] if longhorn_storage_fstype == 'xfs' else [])
       }}
+
+- name: Prepare Longhorn partition on parent disk
+  when:
+    - longhorn_storage_parent_disk | length > 0
+    - (longhorn_storage_partition_number | int) > 0
+  block:
+    - name: Read existing partition table on parent disk
+      community.general.parted:
+        device: "{{ longhorn_storage_parent_disk }}"
+        unit: MiB
+      register: longhorn_parent_disk_info
+
+    - name: Determine whether Longhorn partition already exists
+      ansible.builtin.set_fact:
+        longhorn_partition_exists: >-
+          {{
+            longhorn_parent_disk_info.partitions
+            | selectattr('num', 'equalto', longhorn_storage_partition_number | int)
+            | list | length > 0
+          }}
+
+    - name: Determine start position for new Longhorn partition
+      ansible.builtin.set_fact:
+        longhorn_partition_start: >-
+          {{
+            (
+              [1] + (longhorn_parent_disk_info.partitions | map(attribute='end') | list)
+            ) | max | round(0, 'ceil') | int + 1
+          }}MiB
+      when: not longhorn_partition_exists
+
+    - name: Create Longhorn partition
+      community.general.parted:
+        device: "{{ longhorn_storage_parent_disk }}"
+        label: "{{ longhorn_storage_partition_label }}"
+        number: "{{ longhorn_storage_partition_number | int }}"
+        state: present
+        part_start: "{{ longhorn_partition_start }}"
+        part_end: "{{ longhorn_storage_partition_end }}"
+      when: not longhorn_partition_exists
+
+- name: Wait for Longhorn storage devices
+  ansible.builtin.wait_for:
+    path: "{{ item }}"
+    state: present
+    timeout: 30
+  loop: "{{ longhorn_storage_devices }}"
 
 - name: Enable and start iSCSI service
   ansible.builtin.systemd:

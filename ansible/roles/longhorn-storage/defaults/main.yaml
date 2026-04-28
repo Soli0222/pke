@@ -7,3 +7,8 @@ longhorn_storage_fstype: ext4
 longhorn_storage_mount_path: /var/lib/longhorn
 longhorn_storage_mount_opts: defaults
 longhorn_storage_mount_mode: "0700"
+
+longhorn_storage_parent_disk: ""
+longhorn_storage_partition_number: 0
+longhorn_storage_partition_label: gpt
+longhorn_storage_partition_end: "100%"
