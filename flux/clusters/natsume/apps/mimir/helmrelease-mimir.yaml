@@ -47,6 +47,8 @@ spec:
 
         alertmanager:
           data_dir: /data/alertmanager
+          persist_interval: 1h
+          poll_interval: 5m
           sharding_ring:
             kvstore:
               store: memberlist
