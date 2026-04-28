@@ -46,12 +46,17 @@ spec:
       - secretName: registry.str08.net-http01
         hosts:
         - registry.str08.net
+    env:
+      - name: REGISTRY_STORAGE_S3_REGIONENDPOINT
+        valueFrom:
+          secretKeyRef:
+            name: registry-s3-credentials
+            key: s3-endpoint
     config:
       storage:
         s3:
           region: APAC
           bucket: registry-str08-net
-          regionendpoint: https://e334a8146ecc36d6c72387c7e99630ee.r2.cloudflarestorage.com
           chunksize: 16777216
           multipartcopychunksize: 16777216
           multipartcopythresholdsize: 16777216
