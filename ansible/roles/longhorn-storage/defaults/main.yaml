@@ -1,0 +1,9 @@
+---
+longhorn_storage_devices: []
+longhorn_storage_vg_name: longhorn
+longhorn_storage_lv_name: data
+longhorn_storage_lv_size: 100%FREE
+longhorn_storage_fstype: ext4
+longhorn_storage_mount_path: /var/lib/longhorn
+longhorn_storage_mount_opts: defaults
+longhorn_storage_mount_mode: "0700"

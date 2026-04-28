@@ -1,0 +1,57 @@
+---
+- name: Validate Longhorn storage devices
+  ansible.builtin.assert:
+    that:
+      - longhorn_storage_devices | length > 0
+    fail_msg: "Set longhorn_storage_devices for {{ inventory_hostname }} before preparing Longhorn storage."
+
+- name: Install Longhorn storage dependencies
+  ansible.builtin.apt:
+    name: "{{ longhorn_storage_packages }}"
+    state: present
+    update_cache: true
+  vars:
+    longhorn_storage_packages: >-
+      {{
+        ['lvm2', 'open-iscsi', 'nfs-common', 'cryptsetup']
+        + (['xfsprogs'] if longhorn_storage_fstype == 'xfs' else [])
+      }}
+
+- name: Enable and start iSCSI service
+  ansible.builtin.systemd:
+    name: iscsid
+    enabled: true
+    state: started
+
+- name: Create Longhorn volume group
+  community.general.lvg:
+    vg: "{{ longhorn_storage_vg_name }}"
+    pvs: "{{ longhorn_storage_devices }}"
+
+- name: Create Longhorn logical volume
+  community.general.lvol:
+    vg: "{{ longhorn_storage_vg_name }}"
+    lv: "{{ longhorn_storage_lv_name }}"
+    size: "{{ longhorn_storage_lv_size }}"
+    shrink: false
+
+- name: Create Longhorn filesystem
+  community.general.filesystem:
+    fstype: "{{ longhorn_storage_fstype }}"
+    dev: "/dev/{{ longhorn_storage_vg_name }}/{{ longhorn_storage_lv_name }}"
+
+- name: Ensure Longhorn mount path exists
+  ansible.builtin.file:
+    path: "{{ longhorn_storage_mount_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ longhorn_storage_mount_mode }}"
+
+- name: Mount Longhorn storage
+  ansible.posix.mount:
+    path: "{{ longhorn_storage_mount_path }}"
+    src: "/dev/{{ longhorn_storage_vg_name }}/{{ longhorn_storage_lv_name }}"
+    fstype: "{{ longhorn_storage_fstype }}"
+    opts: "{{ longhorn_storage_mount_opts }}"
+    state: mounted

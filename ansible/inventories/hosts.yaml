@@ -7,6 +7,11 @@ all:
         natsume-03:
         natsume-04:
         natsume-05:
+    longhorn_storage:
+      hosts:
+        natsume-03:
+        natsume-04:
+        natsume-05:
     k3s_cluster:
       children:
         k3s_server:

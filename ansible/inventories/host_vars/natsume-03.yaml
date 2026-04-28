@@ -1,6 +1,9 @@
 ---
 ansible_host: natsume-03
 
+longhorn_storage_devices:
+  - /dev/vda4
+
 network_netplan:
   global:
     device: ens3

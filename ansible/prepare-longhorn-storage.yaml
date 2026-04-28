@@ -1,0 +1,6 @@
+---
+- name: Prepare Longhorn storage volumes
+  hosts: longhorn_storage
+  become: true
+  roles:
+    - longhorn-storage
