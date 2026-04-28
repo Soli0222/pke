@@ -55,9 +55,15 @@ spec:
         ingestion_burst_size_mb: 8
       querier:
         max_concurrent: 2
+      ingester:
+        chunk_target_size: 3145728
+        chunk_idle_period: 1h
+        max_chunk_age: 2h
+        chunk_encoding: snappy
       compactor:
         retention_enabled: true
         delete_request_store: s3
+        compaction_interval: 30m
       storage:
         type: s3
         bucketNames:

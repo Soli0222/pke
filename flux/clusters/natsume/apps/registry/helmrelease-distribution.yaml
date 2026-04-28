@@ -25,7 +25,7 @@ spec:
     resources:
       limits:
         cpu: 500m
-        memory: 512Mi
+        memory: 1Gi
       requests:
         cpu: 100m
         memory: 128Mi
@@ -52,8 +52,20 @@ spec:
           region: APAC
           bucket: registry-str08-net
           regionendpoint: https://e334a8146ecc36d6c72387c7e99630ee.r2.cloudflarestorage.com
+          chunksize: 16777216
+          multipartcopychunksize: 16777216
+          multipartcopythresholdsize: 16777216
         cache:
           blobdescriptor: redis
+        maintenance:
+          uploadpurging:
+            enabled: true
+            age: 168h
+            interval: 72h
+          readonly:
+            enabled: false
+        redirect:
+          disable: false
       redis:
         addrs:
         - registry-valkey:6379
