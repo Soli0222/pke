@@ -4,11 +4,16 @@ all:
     etcd:
       hosts:
         natsume-02:
+        natsume-03:
+        natsume-04:
+        natsume-05:
     k3s_cluster:
       children:
         k3s_server:
           hosts:
             natsume-02:
+            natsume-03:
+            natsume-04:
+            natsume-05:
         k3s_agent:
           hosts: {}
-
