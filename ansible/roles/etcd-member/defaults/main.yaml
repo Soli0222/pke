@@ -1,0 +1,5 @@
+---
+etcd_member_action: add
+etcd_member_leader_host: "{{ groups['etcd'][0] }}"
+etcd_member_etcdctl_endpoint: "https://127.0.0.1:{{ etcd_client_port }}"
+etcd_member_stop_removed_service: true

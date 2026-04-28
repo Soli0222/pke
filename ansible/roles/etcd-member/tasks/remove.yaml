@@ -1,0 +1,83 @@
+---
+- name: Validate remove target
+  ansible.builtin.assert:
+    that:
+      - etcd_member_host != inventory_hostname
+    fail_msg: "Run remove-etcd-member.yaml from a surviving etcd member, not from the member being removed."
+
+- name: Get current etcd member list
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/etcdctl
+      - "--endpoints={{ etcd_member_etcdctl_endpoint }}"
+      - "--cacert={{ etcd_pki_dir }}/ca.crt"
+      - "--cert={{ etcd_pki_dir }}/healthcheck-client.crt"
+      - "--key={{ etcd_pki_dir }}/healthcheck-client.key"
+      - member
+      - list
+      - -w
+      - json
+  environment:
+    ETCDCTL_API: "3"
+  register: etcd_member_list_before_remove
+  changed_when: false
+
+- name: Resolve member id to remove
+  ansible.builtin.set_fact:
+    etcd_member_remove_matches: >-
+      {{
+        ((etcd_member_list_before_remove.stdout | from_json).members | default([]))
+        | selectattr('name', 'equalto', etcd_member_host)
+        | list
+      }}
+
+- name: Validate member exists
+  ansible.builtin.assert:
+    that:
+      - etcd_member_remove_matches | length == 1
+    fail_msg: "Expected exactly one etcd member named {{ etcd_member_host }}."
+
+- name: Remove target member from etcd cluster
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/etcdctl
+      - "--endpoints={{ etcd_member_etcdctl_endpoint }}"
+      - "--cacert={{ etcd_pki_dir }}/ca.crt"
+      - "--cert={{ etcd_pki_dir }}/healthcheck-client.crt"
+      - "--key={{ etcd_pki_dir }}/healthcheck-client.key"
+      - member
+      - remove
+      - "{{ '%x' | format(etcd_member_remove_matches[0].ID | int) }}"
+  environment:
+    ETCDCTL_API: "3"
+  register: etcd_member_remove
+  changed_when: true
+
+- name: Stop removed etcd service
+  ansible.builtin.systemd:
+    name: etcd
+    enabled: false
+    state: stopped
+  delegate_to: "{{ etcd_member_host }}"
+  when: etcd_member_stop_removed_service | bool
+
+- name: Get updated etcd member list
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/etcdctl
+      - "--endpoints={{ etcd_member_etcdctl_endpoint }}"
+      - "--cacert={{ etcd_pki_dir }}/ca.crt"
+      - "--cert={{ etcd_pki_dir }}/healthcheck-client.crt"
+      - "--key={{ etcd_pki_dir }}/healthcheck-client.key"
+      - member
+      - list
+      - -w
+      - table
+  environment:
+    ETCDCTL_API: "3"
+  register: etcd_member_list_after_remove
+  changed_when: false
+
+- name: Show updated etcd member list
+  ansible.builtin.debug:
+    var: etcd_member_list_after_remove.stdout_lines

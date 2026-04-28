@@ -1,0 +1,14 @@
+---
+- name: Validate etcd member action
+  ansible.builtin.assert:
+    that:
+      - etcd_member_action in ['add', 'remove']
+    fail_msg: "etcd_member_action must be either add or remove."
+
+- name: Run etcd member add
+  ansible.builtin.include_tasks: add.yaml
+  when: etcd_member_action == "add"
+
+- name: Run etcd member remove
+  ansible.builtin.include_tasks: remove.yaml
+  when: etcd_member_action == "remove"
