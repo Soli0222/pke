@@ -23,6 +23,11 @@
     'custom.regex',
     'terraform',
   ],
+  flux: {
+    managerFilePatterns: [
+      '/(^|/)flux/.+\\.ya?ml$/',
+    ],
+  },
   packageRules: [
     {
       matchManagers: [
