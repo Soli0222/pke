@@ -142,24 +142,32 @@ ping <private-ip>
 curl -k https://<private-ip>:2379/health
 ```
 
-4. Longhorn 用 LV/PV を作成し、永続 mount する。
+4. Longhorn 用 partition / LV / PV を作成し、永続 mount する。
 
-新規 node の Longhorn 用 block device が確定したら、各 host_vars に `longhorn_storage_devices` を設定する。
+OS installer で `/dev/vda3` までを root/OS 用 LVM PV (約 100GB) として切り、`/dev/vda` の残り領域は未割り当てのままにしておく。Longhorn 用 partition (`/dev/vda4`) と VG/LV/filesystem/mount は Ansible 側で作成する。
+
+`longhorn_storage` group の共通設定は `ansible/inventories/group_vars/longhorn_storage.yaml` に置く。
 
 ```yaml
+longhorn_storage_parent_disk: /dev/vda
+longhorn_storage_partition_number: 4
 longhorn_storage_devices:
   - /dev/vda4
 ```
 
-`/dev/vda4` は、OS installer で `/dev/vda3` を root/OS 用 100GB LVM PV とし、残り領域を Longhorn 用 partition にした場合の想定値。実行前に各 node の `lsblk` で `/dev/vda4` が未使用の Longhorn 用領域であることを確認する。
-
-その後、Longhorn 用 VG/LV/filesystem/mount を作成する。
+実行前に各 node の `lsblk` で、`/dev/vda4` が存在しないか、もしくは存在する場合は未使用の Longhorn 用領域であることを確認する。partition 4 が既に存在する場合、role は data 保護のため再作成しない。
 
 ```text
 ansible-playbook -i ansible/inventories/hosts.yaml ansible/prepare-longhorn-storage.yaml
 ```
 
-この playbook は `longhorn_storage` group の `natsume-03/04/05` のみを対象にする。
+この playbook は `longhorn_storage` group の `natsume-03/04/05` のみを対象にする。role は次を順に行う。
+
+- 必要 package (`lvm2`, `open-iscsi`, `nfs-common`, `cryptsetup`, `parted`, xfs 利用時は `xfsprogs`) の install
+- `longhorn_storage_parent_disk` 上に `longhorn_storage_partition_number` の partition を、既存 partition の末尾以降から `100%` まで作成 (既存ならスキップ)
+- `iscsid` の enable/start
+- VG / LV / filesystem の作成
+- `/var/lib/longhorn` への mount
 
 ## Phase 3: Expand external etcd cluster
 

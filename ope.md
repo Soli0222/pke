@@ -20,7 +20,7 @@ kubectl apply -k flux/clusters/natsume/apps/longhorn
 - global 側 inbound は `80/tcp`, `443/tcp` のみ。
 - k3s / etcd / Cilium / Longhorn などの cluster internal traffic は private 側で完結させる。
 - `ansible/inventories/host_vars/natsume-03.yaml` から `natsume-05.yaml` の global `TBD` を実値に置き換える。
-- `/dev/vda4` が Longhorn 用の未使用 partition であることを各 node で確認する。
+- 各 node の `/dev/vda` で、`/dev/vda3` までが OS installer により利用済みで、残り領域が未割り当てになっていることを確認する。`/dev/vda4` が既に存在する場合は、未使用の Longhorn 用領域であることを確認する (data がある partition は role が上書きしないが、人間側でも確認する)。
 - etcd snapshot を取得済み。
 - Ansible 実行前に repository root で venv を有効化する。
 
@@ -101,13 +101,22 @@ global 側は `80/tcp`, `443/tcp` 以外を開けない。
 
 ## 3. Prepare Longhorn host storage
 
-各 node で `/dev/vda4` が未使用の Longhorn 用 partition であることを確認する。
+各 node の `/dev/vda` の状態を確認する。`/dev/vda4` が存在しない、もしくは既存でも未使用領域であることを確認する。
 
 ```text
 lsblk
+sudo parted /dev/vda print free
 ```
 
-Longhorn 用 VG/LV/filesystem/mount と必要 package を準備する。
+Longhorn 用 partition / VG / LV / filesystem / mount と必要 package を Ansible で準備する。`prepare-longhorn-storage.yaml` は次を順に行う。
+
+- 必要 package (`lvm2`, `open-iscsi`, `nfs-common`, `cryptsetup`, `parted` 等) の install
+- `longhorn_storage_parent_disk` 上で `longhorn_storage_partition_number` の partition を未割り当て領域から `100%` まで作成 (既存ならスキップ)
+- `iscsid` の enable/start
+- VG (`longhorn`) / LV (`data`, `100%FREE`) / ext4 filesystem の作成
+- `/var/lib/longhorn` への mount
+
+partition / device の値は `ansible/inventories/group_vars/longhorn_storage.yaml` で `/dev/vda` + partition `4` を default にしている。disk geometry が異なる node を追加する場合は host_vars 側で override する。
 
 ```text
 ansible-playbook -i ansible/inventories/hosts.yaml ansible/prepare-longhorn-storage.yaml \
@@ -117,8 +126,8 @@ ansible-playbook -i ansible/inventories/hosts.yaml ansible/prepare-longhorn-stor
 確認:
 
 ```text
-findmnt /var/lib/longhorn
 lsblk
+findmnt /var/lib/longhorn
 systemctl status iscsid
 ```
 
