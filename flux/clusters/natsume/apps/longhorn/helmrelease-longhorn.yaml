@@ -23,7 +23,7 @@ spec:
       interval: 1h
   values:
     persistence:
-      defaultClass: false
+      defaultClass: true
       defaultClassReplicaCount: 2
       defaultDataLocality: best-effort
       dataEngine: v1
