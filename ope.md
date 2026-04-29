@@ -419,6 +419,8 @@ Mimir/Loki は object storage 側のデータを正とし、local PVC は消失�
 
 Grafana、Uptime Kuma、Navidrome は停止コピーで Longhorn PVC に移す。SQLite や metadata の整合性を優先し、起動中コピーはしない。
 
+最終的な PVC 名は migration 前と同じにする。一時 Longhorn PVC へ退避し、旧 PVC を削除してから元の PVC 名で Longhorn PVC を作り直す。HelmRelease の `existingClaim` は使わない。
+
 対象 PVC を確認する。
 
 ```text
@@ -432,11 +434,12 @@ Grafana:
 ```text
 flux suspend helmrelease -n grafana grafana
 kubectl -n grafana scale deployment grafana --replicas=0
+kubectl patch pv "$(kubectl -n grafana get pvc grafana -o jsonpath='{.spec.volumeName}')" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: grafana-longhorn
+  name: grafana-longhorn-copy
   namespace: grafana
 spec:
   accessModes:
@@ -450,7 +453,7 @@ cat <<EOF | kubectl -n grafana apply -f -
 apiVersion: v1
 kind: Pod
 metadata:
-  name: grafana-pvc-copy
+  name: grafana-pvc-copy-to-longhorn
 spec:
   restartPolicy: Never
   containers:
@@ -470,12 +473,61 @@ spec:
       readOnly: true
   - name: new
     persistentVolumeClaim:
-      claimName: grafana-longhorn
+      claimName: grafana-longhorn-copy
 EOF
-kubectl -n grafana wait --for=condition=Ready pod/grafana-pvc-copy --timeout=120s
-kubectl -n grafana exec grafana-pvc-copy -- sh -c 'cd /old && tar cf - . | tar xf - -C /new && sync'
-kubectl -n grafana delete pod grafana-pvc-copy
-kubectl -n grafana patch helmrelease grafana --type=json -p='[{"op":"add","path":"/spec/values/persistence/existingClaim","value":"grafana-longhorn"}]'
+kubectl -n grafana wait --for=condition=Ready pod/grafana-pvc-copy-to-longhorn --timeout=120s
+kubectl -n grafana exec grafana-pvc-copy-to-longhorn -- sh -c 'cd /old && tar cf - . | tar xf - -C /new && sync'
+kubectl -n grafana delete pod grafana-pvc-copy-to-longhorn
+kubectl -n grafana delete pvc grafana
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana
+  namespace: grafana
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: grafana
+    meta.helm.sh/release-namespace: grafana
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
+EOF
+cat <<EOF | kubectl -n grafana apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grafana-pvc-copy-to-original
+spec:
+  restartPolicy: Never
+  containers:
+  - name: copy
+    image: alpine:3.20
+    command: ["sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: old
+      mountPath: /old
+      readOnly: true
+    - name: new
+      mountPath: /new
+  volumes:
+  - name: old
+    persistentVolumeClaim:
+      claimName: grafana-longhorn-copy
+      readOnly: true
+  - name: new
+    persistentVolumeClaim:
+      claimName: grafana
+EOF
+kubectl -n grafana wait --for=condition=Ready pod/grafana-pvc-copy-to-original --timeout=120s
+kubectl -n grafana exec grafana-pvc-copy-to-original -- sh -c 'cd /old && tar cf - . | tar xf - -C /new && sync'
+kubectl -n grafana delete pod grafana-pvc-copy-to-original
+kubectl -n grafana delete pvc grafana-longhorn-copy
 flux resume helmrelease -n grafana grafana
 kubectl -n grafana get pvc -o wide
 kubectl -n grafana get pods -o wide
@@ -486,11 +538,12 @@ Uptime Kuma:
 ```text
 flux suspend helmrelease -n uptime-kuma uptime-kuma
 kubectl -n uptime-kuma scale deployment uptime-kuma --replicas=0
+kubectl patch pv "$(kubectl -n uptime-kuma get pvc uptime-kuma-pvc -o jsonpath='{.spec.volumeName}')" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: uptime-kuma-longhorn
+  name: uptime-kuma-longhorn-copy
   namespace: uptime-kuma
 spec:
   accessModes:
@@ -524,12 +577,61 @@ spec:
       readOnly: true
   - name: new
     persistentVolumeClaim:
-      claimName: uptime-kuma-longhorn
+      claimName: uptime-kuma-longhorn-copy
 EOF
 kubectl -n uptime-kuma wait --for=condition=Ready pod/uptime-kuma-pvc-copy --timeout=120s
 kubectl -n uptime-kuma exec uptime-kuma-pvc-copy -- sh -c 'cd /old && tar cf - . | tar xf - -C /new && sync'
 kubectl -n uptime-kuma delete pod uptime-kuma-pvc-copy
-kubectl -n uptime-kuma patch helmrelease uptime-kuma --type=json -p='[{"op":"add","path":"/spec/values/volume/existingClaim","value":"uptime-kuma-longhorn"}]'
+kubectl -n uptime-kuma delete pvc uptime-kuma-pvc
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: uptime-kuma-pvc
+  namespace: uptime-kuma
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: uptime-kuma
+    meta.helm.sh/release-namespace: uptime-kuma
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 4Gi
+EOF
+cat <<EOF | kubectl -n uptime-kuma apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: uptime-kuma-pvc-copy-to-original
+spec:
+  restartPolicy: Never
+  containers:
+  - name: copy
+    image: alpine:3.20
+    command: ["sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: old
+      mountPath: /old
+      readOnly: true
+    - name: new
+      mountPath: /new
+  volumes:
+  - name: old
+    persistentVolumeClaim:
+      claimName: uptime-kuma-longhorn-copy
+      readOnly: true
+  - name: new
+    persistentVolumeClaim:
+      claimName: uptime-kuma-pvc
+EOF
+kubectl -n uptime-kuma wait --for=condition=Ready pod/uptime-kuma-pvc-copy-to-original --timeout=120s
+kubectl -n uptime-kuma exec uptime-kuma-pvc-copy-to-original -- sh -c 'cd /old && tar cf - . | tar xf - -C /new && sync'
+kubectl -n uptime-kuma delete pod uptime-kuma-pvc-copy-to-original
+kubectl -n uptime-kuma delete pvc uptime-kuma-longhorn-copy
 flux resume helmrelease -n uptime-kuma uptime-kuma
 kubectl -n uptime-kuma get pvc -o wide
 kubectl -n uptime-kuma get pods -o wide
@@ -540,11 +642,13 @@ Navidrome:
 ```text
 flux suspend helmrelease -n navidrome navidrome
 kubectl -n navidrome scale deployment navidrome --replicas=0
+kubectl patch pv "$(kubectl -n navidrome get pvc navidrome-data-pvc -o jsonpath='{.spec.volumeName}')" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+kubectl patch pv "$(kubectl -n navidrome get pvc navidrome-music-pvc -o jsonpath='{.spec.volumeName}')" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: navidrome-data-longhorn
+  name: navidrome-data-longhorn-copy
   namespace: navidrome
 spec:
   accessModes:
@@ -557,7 +661,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: navidrome-music-longhorn
+  name: navidrome-music-longhorn-copy
   namespace: navidrome
 spec:
   accessModes:
@@ -591,7 +695,7 @@ spec:
       readOnly: true
   - name: new
     persistentVolumeClaim:
-      claimName: navidrome-data-longhorn
+      claimName: navidrome-data-longhorn-copy
 EOF
 kubectl -n navidrome wait --for=condition=Ready pod/navidrome-data-pvc-copy --timeout=120s
 kubectl -n navidrome exec navidrome-data-pvc-copy -- sh -c 'cd /old && tar cf - . | tar xf - -C /new && sync'
@@ -620,20 +724,120 @@ spec:
       readOnly: true
   - name: new
     persistentVolumeClaim:
-      claimName: navidrome-music-longhorn
+      claimName: navidrome-music-longhorn-copy
 EOF
 kubectl -n navidrome wait --for=condition=Ready pod/navidrome-music-pvc-copy --timeout=120s
 kubectl -n navidrome exec navidrome-music-pvc-copy -- sh -c 'cd /old && tar cf - . | tar xf - -C /new && sync'
 kubectl -n navidrome delete pod navidrome-music-pvc-copy
-kubectl -n navidrome patch helmrelease navidrome --type=json -p='[{"op":"add","path":"/spec/values/persistence/data","value":{"enabled":true,"existingClaim":"navidrome-data-longhorn","size":"10Gi"}},{"op":"add","path":"/spec/values/persistence/music/existingClaim","value":"navidrome-music-longhorn"}]'
+kubectl -n navidrome delete pvc navidrome-data-pvc navidrome-music-pvc
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: navidrome-data-pvc
+  namespace: navidrome
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: navidrome
+    meta.helm.sh/release-namespace: navidrome
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: navidrome-music-pvc
+  namespace: navidrome
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: navidrome
+    meta.helm.sh/release-namespace: navidrome
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 100Gi
+EOF
+cat <<EOF | kubectl -n navidrome apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: navidrome-data-pvc-copy-to-original
+spec:
+  restartPolicy: Never
+  containers:
+  - name: copy
+    image: alpine:3.20
+    command: ["sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: old
+      mountPath: /old
+      readOnly: true
+    - name: new
+      mountPath: /new
+  volumes:
+  - name: old
+    persistentVolumeClaim:
+      claimName: navidrome-data-longhorn-copy
+      readOnly: true
+  - name: new
+    persistentVolumeClaim:
+      claimName: navidrome-data-pvc
+EOF
+kubectl -n navidrome wait --for=condition=Ready pod/navidrome-data-pvc-copy-to-original --timeout=120s
+kubectl -n navidrome exec navidrome-data-pvc-copy-to-original -- sh -c 'cd /old && tar cf - . | tar xf - -C /new && sync'
+kubectl -n navidrome delete pod navidrome-data-pvc-copy-to-original
+cat <<EOF | kubectl -n navidrome apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: navidrome-music-pvc-copy-to-original
+spec:
+  restartPolicy: Never
+  containers:
+  - name: copy
+    image: alpine:3.20
+    command: ["sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: old
+      mountPath: /old
+      readOnly: true
+    - name: new
+      mountPath: /new
+  volumes:
+  - name: old
+    persistentVolumeClaim:
+      claimName: navidrome-music-longhorn-copy
+      readOnly: true
+  - name: new
+    persistentVolumeClaim:
+      claimName: navidrome-music-pvc
+EOF
+kubectl -n navidrome wait --for=condition=Ready pod/navidrome-music-pvc-copy-to-original --timeout=120s
+kubectl -n navidrome exec navidrome-music-pvc-copy-to-original -- sh -c 'cd /old && tar cf - . | tar xf - -C /new && sync'
+kubectl -n navidrome delete pod navidrome-music-pvc-copy-to-original
+kubectl -n navidrome delete pvc navidrome-data-longhorn-copy navidrome-music-longhorn-copy
 flux resume helmrelease -n navidrome navidrome
 kubectl -n navidrome get pvc -o wide
 kubectl -n navidrome get pods -o wide
 ```
 
-このコピー後に HelmRelease values を新 PVC に向ける変更を Git にも反映する。上の `kubectl patch helmrelease ...` は live state の向け変えなので、PR merge 後に Flux が戻さないよう manifest 側も同じ値にする。
+期待:
 
-旧 PVC/PV はすぐ削除しない。一定期間、rollback 用に保持する。
+- 最終 PVC 名は migration 前と同じ。
+- 最終 PVC の `STORAGECLASS` が `longhorn`。
+- HelmRelease values に `existingClaim` を追加しない。
+
+旧 PVC は同名で作り直すため削除する。旧 local-path PV は `Retain` に変更してから PVC を削除するため、一定期間 rollback 用に保持される。rollback しない判断ができるまでは Released PV と node 上の実データを消さない。
 
 ## 13. Migrate CNPG clusters to Longhorn
 
