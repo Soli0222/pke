@@ -235,29 +235,18 @@
   delegate_to: "{{ etcd_member_leader_host }}"
   when: not etcd_target_member_exists | bool
 
-- name: Get updated etcd member list
-  ansible.builtin.command:
-    argv:
-      - /usr/local/bin/etcdctl
-      - "--endpoints={{ etcd_member_etcdctl_endpoint }}"
-      - "--cacert={{ etcd_pki_dir }}/ca.crt"
-      - "--cert={{ etcd_pki_dir }}/healthcheck-client.crt"
-      - "--key={{ etcd_pki_dir }}/healthcheck-client.key"
-      - member
-      - list
-      - -w
-      - json
-  environment:
-    ETCDCTL_API: "3"
-  register: etcd_member_list_after
-  changed_when: false
-  delegate_to: "{{ etcd_member_leader_host }}"
-
 - name: Build existing-cluster initial cluster string
   ansible.builtin.set_fact:
     etcd_initial_cluster: >-
-      {%- for member in (((etcd_member_list_after.stdout | from_json).members | default([])) | sort(attribute='name')) -%}
-      {{ member.name }}={{ member.peerURLs[0] }}{{ "," if not loop.last else "" }}
+      {%- set members = [] -%}
+      {%- for member in (((etcd_member_list_before.stdout | from_json).members | default([])) | sort(attribute='name')) -%}
+      {%- set _ = members.append(member.name ~ "=" ~ member.peerURLs[0]) -%}
+      {%- endfor -%}
+      {%- if not etcd_target_member_exists | bool -%}
+      {%- set _ = members.append(etcd_member_host ~ "=https://" ~ etcd_private_ipv4_address ~ ":" ~ etcd_peer_port) -%}
+      {%- endif -%}
+      {%- for member in members | sort -%}
+      {{ member }}{{ "," if not loop.last else "" }}
       {%- endfor -%}
     etcd_cluster_state: existing
 
@@ -293,4 +282,22 @@
   retries: 20
   delay: 3
   until: etcd_new_endpoint_health.rc == 0
+  delegate_to: "{{ etcd_member_leader_host }}"
+
+- name: Get updated etcd member list
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/etcdctl
+      - "--endpoints={{ etcd_member_etcdctl_endpoint }}"
+      - "--cacert={{ etcd_pki_dir }}/ca.crt"
+      - "--cert={{ etcd_pki_dir }}/healthcheck-client.crt"
+      - "--key={{ etcd_pki_dir }}/healthcheck-client.key"
+      - member
+      - list
+      - -w
+      - json
+  environment:
+    ETCDCTL_API: "3"
+  register: etcd_member_list_after
+  changed_when: false
   delegate_to: "{{ etcd_member_leader_host }}"
