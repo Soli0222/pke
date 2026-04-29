@@ -429,6 +429,16 @@ kubectl -n uptime-kuma get pvc
 kubectl -n navidrome get pvc
 ```
 
+スクリプトで実施する場合:
+
+```text
+scripts/migrate-longhorn-pvcs.sh uptime-kuma
+scripts/migrate-longhorn-pvcs.sh grafana
+scripts/migrate-longhorn-pvcs.sh navidrome
+```
+
+確認プロンプトを省略する場合は `--yes` を付ける。全対象を順番に実施する場合は `scripts/migrate-longhorn-pvcs.sh all` を使う。
+
 Grafana:
 
 ```text
@@ -529,6 +539,7 @@ kubectl -n grafana exec grafana-pvc-copy-to-original -- sh -c 'cd /old && tar cf
 kubectl -n grafana delete pod grafana-pvc-copy-to-original
 kubectl -n grafana delete pvc grafana-longhorn-copy
 flux resume helmrelease -n grafana grafana
+kubectl -n grafana scale deployment grafana --replicas=1
 kubectl -n grafana get pvc -o wide
 kubectl -n grafana get pods -o wide
 ```
@@ -633,6 +644,7 @@ kubectl -n uptime-kuma exec uptime-kuma-pvc-copy-to-original -- sh -c 'cd /old &
 kubectl -n uptime-kuma delete pod uptime-kuma-pvc-copy-to-original
 kubectl -n uptime-kuma delete pvc uptime-kuma-longhorn-copy
 flux resume helmrelease -n uptime-kuma uptime-kuma
+kubectl -n uptime-kuma scale deployment uptime-kuma --replicas=1
 kubectl -n uptime-kuma get pvc -o wide
 kubectl -n uptime-kuma get pods -o wide
 ```
@@ -827,6 +839,7 @@ kubectl -n navidrome exec navidrome-music-pvc-copy-to-original -- sh -c 'cd /old
 kubectl -n navidrome delete pod navidrome-music-pvc-copy-to-original
 kubectl -n navidrome delete pvc navidrome-data-longhorn-copy navidrome-music-longhorn-copy
 flux resume helmrelease -n navidrome navidrome
+kubectl -n navidrome scale deployment navidrome --replicas=1
 kubectl -n navidrome get pvc -o wide
 kubectl -n navidrome get pods -o wide
 ```
