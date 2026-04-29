@@ -150,6 +150,7 @@
       - k3s_datastore_cafile | length > 0
       - k3s_datastore_certfile | length > 0
       - k3s_datastore_keyfile | length > 0
+      - k3s_token | length > 0
     fail_msg: "k3s server requires external etcd datastore settings."
   when: k3s_node_role == "server"
 

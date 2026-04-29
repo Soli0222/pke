@@ -28,6 +28,7 @@ datastore-endpoint: "{{ k3s_datastore_endpoint }}"
 datastore-cafile: "{{ k3s_datastore_cafile }}"
 datastore-certfile: "{{ k3s_datastore_certfile }}"
 datastore-keyfile: "{{ k3s_datastore_keyfile }}"
+token: "{{ k3s_token }}"
 {% endif %}
 
 {% if k3s_node_role == "agent" %}
