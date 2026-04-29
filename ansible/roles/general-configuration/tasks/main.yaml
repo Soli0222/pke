@@ -41,6 +41,21 @@
     replace: '# \1'
   when: general_configuration_disable_swap | bool
 
+- name: Disable configured swap files in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^(\s*{{ item | regex_escape }}\s+[^#\n]+\s+swap\s+[^#\n]+)$'
+    replace: '# \1'
+  loop: "{{ general_configuration_swap_files }}"
+  when: general_configuration_disable_swap | bool
+
+- name: Remove disabled swap files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ general_configuration_swap_files }}"
+  when: general_configuration_disable_swap | bool
+
 - name: Find systemd swap units
   ansible.builtin.command: systemctl list-unit-files --type=swap --no-legend --no-pager
   register: general_configuration_swap_units
