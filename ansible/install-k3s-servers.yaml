@@ -1,0 +1,7 @@
+---
+- name: Install k3s servers
+  hosts: k3s_server
+  become: true
+  serial: 1
+  roles:
+    - install-k3s

@@ -8,8 +8,10 @@ resources:
 - kustomizations/cert-manager-config.yaml
 - kustomizations/daypassed-bot.yaml
 - kustomizations/external-dns.yaml
+- kustomizations/external-dns-config.yaml
 - kustomizations/external-secrets.yaml
 - kustomizations/kube-state-metrics.yaml
+- kustomizations/longhorn.yaml
 - kustomizations/mk-stream.yaml
 - kustomizations/traefik.yaml
 - kustomizations/emoji-service.yaml

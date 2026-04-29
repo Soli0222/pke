@@ -34,6 +34,8 @@ general_configuration_chrony_allow_networks: []
 
 general_configuration_disable_swap: true
 general_configuration_mask_swap_units: false
+general_configuration_swap_files:
+  - /swap.img
 
 general_configuration_journald_max_use: 1G
 general_configuration_journald_max_file_sec: 1month

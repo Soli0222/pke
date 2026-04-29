@@ -1,0 +1,303 @@
+---
+- name: Validate add target
+  ansible.builtin.assert:
+    that:
+      - inventory_hostname == etcd_member_host
+      - etcd_member_host != etcd_member_leader_host
+    fail_msg: "Run add-etcd-member.yaml against exactly the new member host; do not add the current leader as a new member."
+
+- name: Build etcd private IPv4 address list from netplan
+  ansible.builtin.set_fact:
+    etcd_private_ipv4_addresses: >-
+      {{
+        (
+          [etcd_private_ipv4_raw]
+          if etcd_private_ipv4_raw is string
+          else etcd_private_ipv4_raw
+        )
+        | select
+        | map('regex_replace', '/.*$', '')
+        | list
+      }}
+  vars:
+    etcd_private_ipv4_raw: "{{ ((network_netplan | default({})).private | default({})).ipv4 | default([]) }}"
+
+- name: Validate etcd private IPv4 address
+  ansible.builtin.assert:
+    that:
+      - etcd_private_ipv4_addresses | length > 0
+    fail_msg: "network_netplan.private.ipv4 must be set for the etcd member."
+
+- name: Use private IPv4 address for etcd
+  ansible.builtin.set_fact:
+    etcd_private_ipv4_address: "{{ etcd_private_ipv4_addresses | first }}"
+
+- name: Install etcd dependencies
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - openssl
+      - tar
+    state: present
+    update_cache: true
+
+- name: Ensure etcd directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ etcd_data_dir }}", mode: "0700" }
+    - { path: "{{ etcd_download_dir }}", mode: "0755" }
+    - { path: "{{ etcd_snapshot_dir }}", mode: "0700" }
+    - { path: "{{ etcd_pki_dir }}", mode: "0700" }
+
+- name: Download etcd release archive
+  ansible.builtin.get_url:
+    url: "{{ etcd_download_url }}"
+    dest: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    mode: "0644"
+
+- name: Extract etcd release archive
+  ansible.builtin.unarchive:
+    src: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+    dest: "{{ etcd_download_dir }}"
+    remote_src: true
+    creates: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64/etcd"
+
+- name: Install etcd binaries
+  ansible.builtin.copy:
+    src: "{{ etcd_download_dir }}/etcd-v{{ etcd_version }}-linux-amd64/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  loop:
+    - etcd
+    - etcdctl
+
+- name: Read etcd CA certificate from leader
+  ansible.builtin.slurp:
+    src: "{{ etcd_pki_dir }}/ca.crt"
+  register: etcd_ca_crt_raw
+  delegate_to: "{{ etcd_member_leader_host }}"
+
+- name: Read etcd CA key from leader
+  ansible.builtin.slurp:
+    src: "{{ etcd_pki_dir }}/ca.key"
+  register: etcd_ca_key_raw
+  delegate_to: "{{ etcd_member_leader_host }}"
+  no_log: true
+
+- name: Distribute etcd CA certificate
+  ansible.builtin.copy:
+    content: "{{ etcd_ca_crt_raw.content | b64decode }}"
+    dest: "{{ etcd_pki_dir }}/ca.crt"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Distribute etcd CA key
+  ansible.builtin.copy:
+    content: "{{ etcd_ca_key_raw.content | b64decode }}"
+    dest: "{{ etcd_pki_dir }}/ca.key"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Render OpenSSL config for etcd server certificate
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/roles/setup-etcd/templates/server-openssl.cnf.j2"
+    dest: /tmp/etcd-server-openssl.cnf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Render OpenSSL config for etcd peer certificate
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/roles/setup-etcd/templates/peer-openssl.cnf.j2"
+    dest: /tmp/etcd-peer-openssl.cnf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Generate etcd server certificate and key
+  ansible.builtin.shell: |
+    set -euo pipefail
+    openssl genrsa -out {{ etcd_pki_dir }}/server.key 2048
+    openssl req -new -key {{ etcd_pki_dir }}/server.key -out /tmp/etcd-server.csr -subj "/CN={{ inventory_hostname }}" -config /tmp/etcd-server-openssl.cnf
+    openssl x509 -req -in /tmp/etcd-server.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out {{ etcd_pki_dir }}/server.crt -days 3650 -sha256 -extensions v3_req -extfile /tmp/etcd-server-openssl.cnf
+  args:
+    creates: "{{ etcd_pki_dir }}/server.crt"
+    executable: /bin/bash
+
+- name: Generate etcd peer certificate and key
+  ansible.builtin.shell: |
+    set -euo pipefail
+    openssl genrsa -out {{ etcd_pki_dir }}/peer.key 2048
+    openssl req -new -key {{ etcd_pki_dir }}/peer.key -out /tmp/etcd-peer.csr -subj "/CN={{ inventory_hostname }}-peer" -config /tmp/etcd-peer-openssl.cnf
+    openssl x509 -req -in /tmp/etcd-peer.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out {{ etcd_pki_dir }}/peer.crt -days 3650 -sha256 -extensions v3_req -extfile /tmp/etcd-peer-openssl.cnf
+  args:
+    creates: "{{ etcd_pki_dir }}/peer.crt"
+    executable: /bin/bash
+
+- name: Generate etcd healthcheck client certificate and key
+  ansible.builtin.shell: |
+    set -euo pipefail
+    openssl genrsa -out {{ etcd_pki_dir }}/healthcheck-client.key 2048
+    openssl req -new -key {{ etcd_pki_dir }}/healthcheck-client.key -out /tmp/etcd-healthcheck.csr -subj "/CN=etcd-healthcheck-client/O=system:masters"
+    openssl x509 -req -in /tmp/etcd-healthcheck.csr -CA {{ etcd_pki_dir }}/ca.crt -CAkey {{ etcd_pki_dir }}/ca.key -CAcreateserial -out {{ etcd_pki_dir }}/healthcheck-client.crt -days 3650 -sha256
+  args:
+    creates: "{{ etcd_pki_dir }}/healthcheck-client.crt"
+    executable: /bin/bash
+
+- name: Read k3s etcd client material from leader
+  ansible.builtin.slurp:
+    src: "{{ item }}"
+  register: k3s_etcd_client_material
+  loop:
+    - "{{ etcd_pki_dir }}/ca.crt"
+    - "{{ etcd_pki_dir }}/k3s-etcd-client.crt"
+    - "{{ etcd_pki_dir }}/k3s-etcd-client.key"
+  delegate_to: "{{ etcd_member_leader_host }}"
+  no_log: true
+
+- name: Distribute k3s etcd client material
+  ansible.builtin.copy:
+    content: "{{ item.content | b64decode }}"
+    dest: "{{ item.source }}"
+    owner: root
+    group: root
+    mode: "{{ '0600' if item.source.endswith('.key') else '0644' }}"
+  loop: "{{ k3s_etcd_client_material.results }}"
+  no_log: true
+
+- name: Check target etcd data directory
+  ansible.builtin.stat:
+    path: "{{ etcd_data_dir }}/member"
+  register: etcd_target_data_dir
+
+- name: Get current etcd member list
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/etcdctl
+      - "--endpoints={{ etcd_member_etcdctl_endpoint }}"
+      - "--cacert={{ etcd_pki_dir }}/ca.crt"
+      - "--cert={{ etcd_pki_dir }}/healthcheck-client.crt"
+      - "--key={{ etcd_pki_dir }}/healthcheck-client.key"
+      - member
+      - list
+      - -w
+      - json
+  environment:
+    ETCDCTL_API: "3"
+  register: etcd_member_list_before
+  changed_when: false
+  delegate_to: "{{ etcd_member_leader_host }}"
+
+- name: Check whether target member already exists
+  ansible.builtin.set_fact:
+    etcd_target_member_exists: >-
+      {{
+        (((etcd_member_list_before.stdout | from_json).members | default([]))
+        | selectattr('name', 'equalto', etcd_member_host)
+        | list
+        | length) > 0
+      }}
+
+- name: Refuse to add a host with stale etcd data
+  ansible.builtin.assert:
+    that:
+      - not etcd_target_data_dir.stat.exists or etcd_target_member_exists | bool
+    fail_msg: "{{ etcd_data_dir }}/member exists but {{ etcd_member_host }} is not a member of the current etcd cluster."
+
+- name: Add target member to existing etcd cluster
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/etcdctl
+      - "--endpoints={{ etcd_member_etcdctl_endpoint }}"
+      - "--cacert={{ etcd_pki_dir }}/ca.crt"
+      - "--cert={{ etcd_pki_dir }}/healthcheck-client.crt"
+      - "--key={{ etcd_pki_dir }}/healthcheck-client.key"
+      - member
+      - add
+      - "{{ etcd_member_host }}"
+      - "--peer-urls=https://{{ etcd_private_ipv4_address }}:{{ etcd_peer_port }}"
+  environment:
+    ETCDCTL_API: "3"
+  register: etcd_member_add
+  changed_when: true
+  delegate_to: "{{ etcd_member_leader_host }}"
+  when: not etcd_target_member_exists | bool
+
+- name: Build existing-cluster initial cluster string
+  ansible.builtin.set_fact:
+    etcd_initial_cluster: >-
+      {%- set members = [] -%}
+      {%- for member in (((etcd_member_list_before.stdout | from_json).members | default([])) | sort(attribute='name')) -%}
+      {%- set _ = members.append(member.name ~ "=" ~ member.peerURLs[0]) -%}
+      {%- endfor -%}
+      {%- if not etcd_target_member_exists | bool -%}
+      {%- set _ = members.append(etcd_member_host ~ "=https://" ~ etcd_private_ipv4_address ~ ":" ~ etcd_peer_port) -%}
+      {%- endif -%}
+      {%- for member in members | sort -%}
+      {{ member }}{{ "," if not loop.last else "" }}
+      {%- endfor -%}
+    etcd_cluster_state: existing
+
+- name: Deploy etcd systemd service for existing member
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/roles/setup-etcd/templates/etcd.service.j2"
+    dest: /etc/systemd/system/etcd.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable and start etcd
+  ansible.builtin.systemd:
+    name: etcd
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Wait for new etcd endpoint to become healthy
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/etcdctl
+      - "--endpoints=https://{{ etcd_private_ipv4_address }}:{{ etcd_client_port }}"
+      - "--cacert={{ etcd_pki_dir }}/ca.crt"
+      - "--cert={{ etcd_pki_dir }}/healthcheck-client.crt"
+      - "--key={{ etcd_pki_dir }}/healthcheck-client.key"
+      - endpoint
+      - health
+  environment:
+    ETCDCTL_API: "3"
+  register: etcd_new_endpoint_health
+  changed_when: false
+  retries: 20
+  delay: 3
+  until: etcd_new_endpoint_health.rc == 0
+  delegate_to: "{{ etcd_member_leader_host }}"
+
+- name: Get updated etcd member list
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/etcdctl
+      - "--endpoints={{ etcd_member_etcdctl_endpoint }}"
+      - "--cacert={{ etcd_pki_dir }}/ca.crt"
+      - "--cert={{ etcd_pki_dir }}/healthcheck-client.crt"
+      - "--key={{ etcd_pki_dir }}/healthcheck-client.key"
+      - member
+      - list
+      - -w
+      - json
+  environment:
+    ETCDCTL_API: "3"
+  register: etcd_member_list_after
+  changed_when: false
+  delegate_to: "{{ etcd_member_leader_host }}"

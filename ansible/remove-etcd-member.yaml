@@ -1,0 +1,16 @@
+---
+- name: Remove an etcd member from the existing cluster
+  hosts: "{{ etcd_member_leader_host | default(groups['etcd'][0]) }}"
+  become: true
+  gather_facts: false
+  vars:
+    etcd_member_action: remove
+  pre_tasks:
+    - name: Validate target etcd member host
+      ansible.builtin.assert:
+        that:
+          - etcd_member_host is defined
+          - etcd_member_host | length > 0
+        fail_msg: "Pass the etcd member to remove with -e etcd_member_host=<host>."
+  roles:
+    - etcd-member

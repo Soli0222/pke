@@ -1,0 +1,104 @@
+---
+- name: Validate Longhorn storage devices
+  ansible.builtin.assert:
+    that:
+      - longhorn_storage_devices | length > 0
+    fail_msg: "Set longhorn_storage_devices for {{ inventory_hostname }} before preparing Longhorn storage."
+
+- name: Install Longhorn storage dependencies
+  ansible.builtin.apt:
+    name: "{{ longhorn_storage_packages }}"
+    state: present
+    update_cache: true
+  vars:
+    longhorn_storage_packages: >-
+      {{
+        ['lvm2', 'open-iscsi', 'nfs-common', 'cryptsetup', 'parted']
+        + (['xfsprogs'] if longhorn_storage_fstype == 'xfs' else [])
+      }}
+
+- name: Prepare Longhorn partition on parent disk
+  when:
+    - longhorn_storage_parent_disk | length > 0
+    - (longhorn_storage_partition_number | int) > 0
+  block:
+    - name: Read existing partition table on parent disk
+      community.general.parted:
+        device: "{{ longhorn_storage_parent_disk }}"
+        unit: MiB
+      register: longhorn_parent_disk_info
+
+    - name: Determine whether Longhorn partition already exists
+      ansible.builtin.set_fact:
+        longhorn_partition_exists: >-
+          {{
+            longhorn_parent_disk_info.partitions
+            | selectattr('num', 'equalto', longhorn_storage_partition_number | int)
+            | list | length > 0
+          }}
+
+    - name: Determine start position for new Longhorn partition
+      ansible.builtin.set_fact:
+        longhorn_partition_start: >-
+          {{
+            (
+              [1] + (longhorn_parent_disk_info.partitions | map(attribute='end') | list)
+            ) | max | round(0, 'ceil') | int + 1
+          }}MiB
+      when: not longhorn_partition_exists
+
+    - name: Create Longhorn partition
+      community.general.parted:
+        device: "{{ longhorn_storage_parent_disk }}"
+        label: "{{ longhorn_storage_partition_label }}"
+        number: "{{ longhorn_storage_partition_number | int }}"
+        state: present
+        part_start: "{{ longhorn_partition_start }}"
+        part_end: "{{ longhorn_storage_partition_end }}"
+      when: not longhorn_partition_exists
+
+- name: Wait for Longhorn storage devices
+  ansible.builtin.wait_for:
+    path: "{{ item }}"
+    state: present
+    timeout: 30
+  loop: "{{ longhorn_storage_devices }}"
+
+- name: Enable and start iSCSI service
+  ansible.builtin.systemd:
+    name: iscsid
+    enabled: true
+    state: started
+
+- name: Create Longhorn volume group
+  community.general.lvg:
+    vg: "{{ longhorn_storage_vg_name }}"
+    pvs: "{{ longhorn_storage_devices }}"
+
+- name: Create Longhorn logical volume
+  community.general.lvol:
+    vg: "{{ longhorn_storage_vg_name }}"
+    lv: "{{ longhorn_storage_lv_name }}"
+    size: "{{ longhorn_storage_lv_size }}"
+    shrink: false
+
+- name: Create Longhorn filesystem
+  community.general.filesystem:
+    fstype: "{{ longhorn_storage_fstype }}"
+    dev: "/dev/{{ longhorn_storage_vg_name }}/{{ longhorn_storage_lv_name }}"
+
+- name: Ensure Longhorn mount path exists
+  ansible.builtin.file:
+    path: "{{ longhorn_storage_mount_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ longhorn_storage_mount_mode }}"
+
+- name: Mount Longhorn storage
+  ansible.posix.mount:
+    path: "{{ longhorn_storage_mount_path }}"
+    src: "/dev/{{ longhorn_storage_vg_name }}/{{ longhorn_storage_lv_name }}"
+    fstype: "{{ longhorn_storage_fstype }}"
+    opts: "{{ longhorn_storage_mount_opts }}"
+    state: mounted

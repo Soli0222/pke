@@ -1,0 +1,16 @@
+---
+etcd_version: "3.6.10"
+etcd_download_url: "https://github.com/etcd-io/etcd/releases/download/v{{ etcd_version }}/etcd-v{{ etcd_version }}-linux-amd64.tar.gz"
+etcd_data_dir: /var/lib/etcd
+etcd_download_dir: /var/lib/etcd/downloads
+etcd_snapshot_dir: /var/lib/etcd/snapshots
+etcd_pki_dir: /etc/etcd/pki
+etcd_initial_cluster_token: pke-etcd
+etcd_client_port: 2379
+etcd_peer_port: 2380
+etcd_metrics_port: 2381
+
+etcd_member_action: add
+etcd_member_leader_host: "{{ groups['etcd'][0] }}"
+etcd_member_etcdctl_endpoint: "https://127.0.0.1:{{ etcd_client_port }}"
+etcd_member_stop_removed_service: true

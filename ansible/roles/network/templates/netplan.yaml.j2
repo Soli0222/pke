@@ -24,6 +24,7 @@ network:
     {{ interface.device }}:
       dhcp4: false
       dhcp6: false
+      accept-ra: false
 {% if addresses | length > 0 %}
       addresses:
 {% for address in addresses %}

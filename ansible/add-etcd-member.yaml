@@ -1,0 +1,17 @@
+---
+- name: Add an etcd member to the existing cluster
+  hosts: "{{ etcd_member_host | default('missing_etcd_member_host') }}"
+  become: true
+  gather_facts: true
+  vars:
+    etcd_member_action: add
+  pre_tasks:
+    - name: Validate target etcd member host
+      ansible.builtin.assert:
+        that:
+          - etcd_member_host is defined
+          - etcd_member_host | length > 0
+          - etcd_member_host in groups['etcd']
+        fail_msg: "Pass a target etcd host with -e etcd_member_host=<host>; it must be in the etcd inventory group."
+  roles:
+    - etcd-member
