@@ -24,14 +24,19 @@ spec:
   values:
     config:
       feeds:
-      - https://www.youtube.com/feeds/videos.xml?channel_id=UCRcLAVTbmx2-iNcXSsupdNA
-      - https://www.youtube.com/feeds/videos.xml?channel_id=UCiA-trSZfB0i92V_-dyDqBw
-      - https://www.youtube.com/feeds/videos.xml?channel_id=UCtC3B1n4XMiJmrDtu1Ni5qw
-      - https://www.youtube.com/feeds/videos.xml?channel_id=UCt30jJgChL8qeT9VPadidSw
-      - https://www.youtube.com/feeds/videos.xml?channel_id=UCjIHV9sLF2yrYH2ClgPAzSg
-      - https://www.youtube.com/feeds/videos.xml?channel_id=UCGQ4RBrN9wZJ1j6oOJ2KTFw
+      - name: "natsume-kurusu-yt"
+        url: https://www.youtube.com/feeds/videos.xml?channel_id=UCRcLAVTbmx2-iNcXSsupdNA
+      - name: "meruto-kuramochi-yt"
+        url: https://www.youtube.com/feeds/videos.xml?channel_id=UCiA-trSZfB0i92V_-dyDqBw
+      - name: "suzuna-nanase-yt"
+        url: https://www.youtube.com/feeds/videos.xml?channel_id=UCtC3B1n4XMiJmrDtu1Ni5qw
+      - name: "ui-shigure-yt"
+        url: https://www.youtube.com/feeds/videos.xml?channel_id=UCt30jJgChL8qeT9VPadidSw
+      - name: "alexandros-yt"
+        url: https://www.youtube.com/feeds/videos.xml?channel_id=UCjIHV9sLF2yrYH2ClgPAzSg
+      - name: "ichiro-yamaguchi-yt"
+        url: https://www.youtube.com/feeds/videos.xml?channel_id=UCGQ4RBrN9wZJ1j6oOJ2KTFw
       interval: 30s
-      skip_initial_notify: true
       existingSecret: rss-fetcher-webhooks
     externalValkey:
       host: rss-fetcher-valkey
