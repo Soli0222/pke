@@ -1,5 +1,5 @@
 ---
-k3s_version: "v1.35.3+k3s1"
+k3s_version: "v1.35.4+k3s1"
 k3s_node_role: server
 k3s_use_private_netplan_address: true
 k3s_use_global_netplan_external_address: true
