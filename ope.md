@@ -873,6 +873,19 @@ Misskey 以外は最終 `instances: 1`。Misskey は最終 `instances: 2`。
 jq --version
 ```
 
+スクリプトで実施する場合:
+
+```text
+scripts/migrate_cnpg_to_longhorn.sh spotify-reblend
+scripts/migrate_cnpg_to_longhorn.sh spotify-nowplaying
+scripts/migrate_cnpg_to_longhorn.sh sui
+scripts/migrate_cnpg_to_longhorn.sh misskey
+```
+
+確認プロンプトを省略する場合は `--yes` を付ける。Misskey 以外を順番に実施する場合は `scripts/migrate_cnpg_to_longhorn.sh all` を使う。
+
+このスクリプトは対象アプリの Flux Kustomization を suspend してから CNPG `Cluster` を patch し、Longhorn 側 instance が current primary になったことを確認する。その後、旧 storageClass 側 instance/PVC を `kubectl cnpg destroy` で削除し、final ready instances 数を確認してから最後に resume する。途中で失敗した場合は、状態確認後に必要なら手動で `flux resume kustomization -n flux-system <name>` を実行する。
+
 ```text
 migrate_cnpg_to_longhorn() {
   NS="$1"
@@ -941,7 +954,7 @@ migrate_cnpg_to_longhorn misskey misskey-cluster 2
 - Misskey は `instances: 2`。
 - app 側は CNPG の `*-rw` Service を使うため、通常は接続先変更不要。
 
-旧 local-path 側 instance/PVC が残る場合だけ、状態を確認してから削除する。
+旧 local-path 側 instance/PVC が残る場合だけ、状態を確認してから削除する。スクリプトはこの削除も実施する。
 
 ```text
 kubectl -n spotify-reblend get pods,pvc -o wide
@@ -951,6 +964,10 @@ kubectl -n misskey get pods,pvc -o wide
 ```
 
 CNPG plugin で明示的に削除する場合は、削除対象 instance 名を `kubectl cnpg status` で確認してから実行する。
+
+```text
+kubectl cnpg destroy -n spotify-reblend reblend-cluster reblend-cluster-1
+```
 
 ### 13.4 Commit manifest changes
 
