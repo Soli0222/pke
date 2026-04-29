@@ -1,0 +1,22 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: misskey
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: "./flux/clusters/natsume/apps/misskey"
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cnpg-backup-flux-vars
+  dependsOn:
+  - name: cnpg
+  - name: cnpg-backup-config
+  - name: prometheus-operator-crd
