@@ -3,7 +3,6 @@ all:
   children:
     etcd:
       hosts:
-        natsume-02:
         natsume-03:
         natsume-04:
         natsume-05:
@@ -16,7 +15,6 @@ all:
       children:
         k3s_server:
           hosts:
-            natsume-02:
             natsume-03:
             natsume-04:
             natsume-05:
