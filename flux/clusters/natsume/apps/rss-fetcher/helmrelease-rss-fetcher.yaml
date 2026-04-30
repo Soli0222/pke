@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: rss-fetcher
-      version: 0.3.0
+      version: 0.3.1
       sourceRef:
         kind: HelmRepository
         name: rss-fetcher-repo
