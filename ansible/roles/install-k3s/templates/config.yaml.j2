@@ -3,6 +3,7 @@ node-ip: "{{ k3s_node_ip }}"
 {% if k3s_node_external_ip | length > 0 %}
 node-external-ip: "{{ k3s_node_external_ip }}"
 {% endif %}
+{% if k3s_node_role == "server" %}
 flannel-backend: "{{ k3s_flannel_backend }}"
 disable-network-policy: {{ k3s_disable_network_policy | bool | lower }}
 write-kubeconfig-mode: "{{ k3s_write_kubeconfig_mode }}"
@@ -16,7 +17,6 @@ disable:
   - {{ component }}
 {% endfor %}
 
-{% if k3s_node_role == "server" %}
 advertise-address: "{{ k3s_advertise_address }}"
 {% if k3s_effective_tls_sans | default([]) | length > 0 %}
 tls-san:

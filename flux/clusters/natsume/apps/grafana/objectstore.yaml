@@ -1,0 +1,22 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: grafana-backup-store
+  namespace: grafana
+spec:
+  retentionPolicy: 30d
+  configuration:
+    destinationPath: s3://cnpg-backup/
+    endpointURL: ${CNPG_BACKUP_ENDPOINT_URL}
+    s3Credentials:
+      accessKeyId:
+        name: cnpg-backup-s3-secret
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: cnpg-backup-s3-secret
+        key: ACCESS_SECRET_KEY
+    wal:
+      compression: gzip
+      maxParallel: 4
+    data:
+      compression: gzip

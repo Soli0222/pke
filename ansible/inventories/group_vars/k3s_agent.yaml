@@ -1,4 +1,14 @@
 ---
 k3s_node_role: agent
-k3s_server_url: "https://{{ hostvars[groups['k3s_server'][0]].ansible_host | default(hostvars[groups['k3s_server'][0]].ansible_default_ipv4.address) }}:6443"
-
+k3s_server_host: "{{ groups['k3s_server'][0] }}"
+k3s_server_private_ipv4: >-
+  {{
+    (
+      [((hostvars[k3s_server_host].network_netplan | default({})).private | default({})).ipv4 | default([])]
+      if ((hostvars[k3s_server_host].network_netplan | default({})).private | default({})).ipv4 | default([]) is string
+      else ((hostvars[k3s_server_host].network_netplan | default({})).private | default({})).ipv4 | default([])
+    )
+    | first
+    | regex_replace('/.*$', '')
+  }}
+k3s_server_url: "https://{{ k3s_server_private_ipv4 }}:6443"

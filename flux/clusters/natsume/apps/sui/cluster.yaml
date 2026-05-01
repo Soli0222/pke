@@ -4,7 +4,7 @@ metadata:
   name: sui-cluster
   namespace: sui
 spec:
-  instances: 1
+  instances: 2
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true

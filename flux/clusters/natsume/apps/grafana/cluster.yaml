@@ -1,18 +1,18 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: reblend-cluster
-  namespace: spotify-reblend
+  name: grafana-cluster
+  namespace: grafana
 spec:
   instances: 2
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true
     parameters:
-      barmanObjectName: reblend-backup-store
+      barmanObjectName: grafana-backup-store
   storage:
-    size: 5Gi
+    size: 10Gi
   bootstrap:
     initdb:
-      database: reblend
-      owner: reblend
+      database: grafana
+      owner: grafana

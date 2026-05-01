@@ -4,4 +4,8 @@ resources:
 - namespace.yaml
 - helmrepository-grafana-repo.yaml
 - onepassworditem.yaml
+- onepassworditem-cnpg-backup.yaml
+- objectstore.yaml
+- cluster.yaml
+- scheduledbackup.yaml
 - helmrelease-grafana.yaml
