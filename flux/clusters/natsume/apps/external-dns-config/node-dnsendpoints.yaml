@@ -33,107 +33,63 @@ spec:
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:
-  name: natsume-04-node-records
+  name: natsume-06-node-records
   namespace: external-dns
 spec:
   endpoints:
-  - dnsName: natsume-04.str08.net
+  - dnsName: natsume-06.str08.net
     recordType: A
     targets:
-    - 192.168.9.4
-  - dnsName: natsume-04.str08.net
+    - 192.168.9.6
+  - dnsName: natsume-06.str08.net
     recordType: AAAA
     targets:
-    - fd00:192:168:9::4
-  - dnsName: natsume-04.pstr.space
+    - fd00:192:168:9::6
+  - dnsName: natsume-06.pstr.space
     recordType: A
     targets:
-    - 133.18.140.50
-  - dnsName: natsume-04.pstr.space
+    - 133.18.141.179
+  - dnsName: natsume-06.pstr.space
     recordType: AAAA
     targets:
-    - 2406:8c00:0:3464:133:18:140:50
-  - dnsName: natsume-04.tailscale.str08.net
+    - 2406:8c00:0:3464:133:18:141:179
+  - dnsName: natsume-06.tailscale.str08.net
     recordType: A
     targets:
-    - 100.73.146.43
-  - dnsName: natsume-04.tailscale.str08.net
+    - 100.124.159.113
+  - dnsName: natsume-06.tailscale.str08.net
     recordType: AAAA
     targets:
-    - fe80::f816:3eff:fe14:fac8
+    - fd7a:115c:a1e0::fc39:9f72
 ---
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:
-  name: natsume-05-node-records
+  name: natsume-07-node-records
   namespace: external-dns
 spec:
   endpoints:
-  - dnsName: natsume-05.str08.net
+  - dnsName: natsume-07.str08.net
     recordType: A
     targets:
-    - 192.168.9.5
-  - dnsName: natsume-05.str08.net
+    - 192.168.9.7
+  - dnsName: natsume-07.str08.net
     recordType: AAAA
     targets:
-    - fd00:192:168:9::5
-  - dnsName: natsume-05.pstr.space
+    - fd00:192:168:9::7
+  - dnsName: natsume-07.pstr.space
     recordType: A
     targets:
-    - 133.18.141.37
-  - dnsName: natsume-05.pstr.space
+    - 133.18.124.51
+  - dnsName: natsume-07.pstr.space
     recordType: AAAA
     targets:
-    - 2406:8c00:0:3464:133:18:141:37
-  - dnsName: natsume-05.tailscale.str08.net
-    recordType: A
-    targets:
-    - 100.122.133.10
-  - dnsName: natsume-05.tailscale.str08.net
-    recordType: AAAA
-    targets:
-    - fd7a:115c:a1e0::6c39:850a
----
-apiVersion: externaldns.k8s.io/v1alpha1
-kind: DNSEndpoint
-metadata:
-  name: natsume-cluster-records
-  namespace: external-dns
-spec:
-  endpoints:
-  - dnsName: natsume.str08.net
-    recordType: A
-    targets:
-    - 192.168.9.3
-    - 192.168.9.4
-    - 192.168.9.5
-  - dnsName: natsume.str08.net
-    recordType: AAAA
-    targets:
-    - fd00:192:168:9::3
-    - fd00:192:168:9::4
-    - fd00:192:168:9::5
-  - dnsName: natsume.pstr.space
-    recordType: A
-    targets:
-    - 133.18.141.63
-    - 133.18.140.50
-    - 133.18.141.37
-  - dnsName: natsume.pstr.space
-    recordType: AAAA
-    targets:
-    - 2406:8c00:0:3464:133:18:141:63
-    - 2406:8c00:0:3464:133:18:140:50
-    - 2406:8c00:0:3464:133:18:141:37
-  - dnsName: natsume.tailscale.str08.net
-    recordType: A
-    targets:
-    - 100.122.94.87
-    - 100.73.146.43
-    - 100.122.133.10
-  - dnsName: natsume.tailscale.str08.net
-    recordType: AAAA
-    targets:
-    - fd7a:115c:a1e0::c639:5e57
-    - fe80::f816:3eff:fe14:fac8
-    - fd7a:115c:a1e0::6c39:850a
+    - 2406:8c00:0:3459:133:18:124:51
+  # - dnsName: natsume-07.tailscale.str08.net
+  #   recordType: A
+  #   targets:
+  #   - 100.122.133.10
+  # - dnsName: natsume-07.tailscale.str08.net
+  #   recordType: AAAA
+  #   targets:
+  #   - fd7a:115c:a1e0::6c39:850a
