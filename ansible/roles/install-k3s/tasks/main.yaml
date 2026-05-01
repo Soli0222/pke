@@ -154,6 +154,25 @@
     fail_msg: "k3s server requires external etcd datastore settings."
   when: k3s_node_role == "server"
 
+- name: Read k3s node token from first server for agent join
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_agent_token_raw
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  no_log: true
+  when:
+    - k3s_node_role == "agent"
+    - k3s_token | length == 0
+
+- name: Use k3s node token from first server for agent join
+  ansible.builtin.set_fact:
+    k3s_token: "{{ k3s_agent_token_raw.content | b64decode | trim }}"
+  no_log: true
+  when:
+    - k3s_node_role == "agent"
+    - k3s_token | length == 0
+    - k3s_agent_token_raw is defined
+
 - name: Validate k3s agent settings
   ansible.builtin.assert:
     that:
