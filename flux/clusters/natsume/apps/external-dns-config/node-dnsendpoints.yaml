@@ -85,11 +85,11 @@ spec:
     recordType: AAAA
     targets:
     - 2406:8c00:0:3459:133:18:124:51
-  # - dnsName: natsume-07.tailscale.str08.net
-  #   recordType: A
-  #   targets:
-  #   - 100.122.133.10
-  # - dnsName: natsume-07.tailscale.str08.net
-  #   recordType: AAAA
-  #   targets:
-  #   - fd7a:115c:a1e0::6c39:850a
+  - dnsName: natsume-07.tailscale.str08.net
+    recordType: A
+    targets:
+    - 100.68.253.89
+  - dnsName: natsume-07.tailscale.str08.net
+    recordType: AAAA
+    targets:
+    - fd7a:115c:a1e0::5b39:fd5b

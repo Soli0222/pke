@@ -16,3 +16,4 @@ all:
         k3s_agent:
           hosts:
             natsume-06:
+            natsume-07:
