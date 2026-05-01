@@ -19,8 +19,7 @@ spec:
         namespace: grafana
       interval: 1h
   values:
-    deploymentStrategy:
-      type: Recreate
+    replicas: 1
 
     admin:
       existingSecret: grafana-admin
@@ -28,11 +27,20 @@ spec:
       passwordKey: admin-password
 
     persistence:
-      type: pvc
-      enabled: true
-      accessModes:
-        - ReadWriteOnce
-      size: 10Gi
+      enabled: false
+
+    env:
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: grafana-cluster-rw.grafana.svc.cluster.local:5432
+      GF_DATABASE_NAME: grafana
+      GF_DATABASE_USER: grafana
+      GF_DATABASE_SSL_MODE: disable
+
+    envValueFrom:
+      GF_DATABASE_PASSWORD:
+        secretKeyRef:
+          name: grafana-cluster-app
+          key: password
 
     serviceMonitor:
       enabled: true
