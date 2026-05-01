@@ -4,7 +4,7 @@ metadata:
   name: spn-cluster
   namespace: spotify-nowplaying
 spec:
-  instances: 1
+  instances: 2
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true
