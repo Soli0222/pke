@@ -1,5 +1,5 @@
 ---
-etcd_version: "3.6.10"
+etcd_version: "3.6.11"
 etcd_data_dir: /var/lib/etcd
 etcd_download_dir: /var/lib/etcd/downloads
 etcd_snapshot_dir: /var/lib/etcd/snapshots
