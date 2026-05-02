@@ -21,9 +21,9 @@ flux reconcile kustomization misskey -n flux-system --with-source
 CNPG Cluster と Valkey が Ready になるまで待つ。
 
 ```bash
-kubectl get cluster -n misskey misskey-cluster
-kubectl get pods -n misskey
-kubectl get svc -n misskey
+sudo kubectl get cluster -n misskey misskey-cluster
+sudo kubectl get pods -n misskey
+sudo kubectl get svc -n misskey
 ```
 
 Misskey 本体が起動しないよう確認する。必要なら HelmRelease を suspend する。
@@ -54,15 +54,66 @@ plain SQL で取得済みの場合は `misskey.sql` として扱う。
 
 ## 3. 既存 Redis から RDB を取得する
 
-既存 Redis の `dump.rdb` を手元に置く。
-
-例:
+既存 Redis ホスト上で `dump.rdb` を確保する。`SAVE` か `BGSAVE` で最新の RDB を吐かせ、`/var/lib/redis/dump.rdb` 等を作業ディレクトリにコピーしておく。
 
 ```bash
-scp <old_redis_host>:/path/to/dump.rdb ./dump.rdb
+redis-cli -h 127.0.0.1 -p <old_redis_port> SAVE
+cp /var/lib/redis/dump.rdb ./dump.rdb
 ```
 
 取得後、既存側で書き込みが再開されていないことを確認する。
+
+## 3.5 dump / rdb を natsume-03 へ転送する
+
+dump/rdb を取得するホストと natsume-03 はどちらも sshd を停めているので、private VLAN (`192.168.9.0/24`) で L2 疎通している前提で netcat を使ってワンショット転送する。natsume-03 の private IP は `192.168.9.3` (ens7)。
+
+netcat の方言差を避けるため、ここでは `ncat` (nmap-ncat) を使う前提で書く。素の `nc` (openbsd 版) でも `nc -l 5555` / `nc -N 192.168.9.3 5555` で同じ動作になる。
+
+転送中の整合性確認のため、送信側であらかじめハッシュを取っておく。
+
+```bash
+# 送信側 (dump/rdb ホスト)
+sha256sum misskey.dump dump.rdb
+```
+
+natsume-03 で受信側を起動する。同じポートを使い回すので、片方ずつ転送する。
+
+```bash
+# 受信側 (natsume-03)
+ncat -l --recv-only 192.168.9.3 5555 > misskey.dump
+```
+
+別ホストから送信する。
+
+```bash
+# 送信側 (dump/rdb ホスト)
+ncat --send-only 192.168.9.3 5555 < misskey.dump
+```
+
+完了したら受信側プロセスは自動で終了する。続けて RDB を同じ手順で送る。
+
+```bash
+# 受信側 (natsume-03)
+ncat -l --recv-only 192.168.9.3 5555 > dump.rdb
+
+# 送信側 (dump/rdb ホスト)
+ncat --send-only 192.168.9.3 5555 < dump.rdb
+```
+
+natsume-03 側で hash を照合し、送信側と一致することを確認する。
+
+```bash
+# natsume-03
+sha256sum misskey.dump dump.rdb
+```
+
+進捗を見たい場合は送信側で `pv` を挟む。
+
+```bash
+pv misskey.dump | ncat --send-only 192.168.9.3 5555
+```
+
+ファイアウォールで 5555/tcp を natsume-03 の ens7 で受けられるようにしておくこと。以降の手順 (5. の `pg_restore` と 8. の `rdb-cli`) は natsume-03 上で実行する想定で、この `misskey.dump` / `dump.rdb` を入力に使う。
 
 ## 4. 移行先 CNPG primary を確認する
 
@@ -75,7 +126,7 @@ export CLUSTER="misskey-cluster"
 export DATABASE="misskey"
 export OWNER="misskey"
 export DEST_PRIMARY="$(
-  kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" get cluster "$CLUSTER" \
+  sudo kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" get cluster "$CLUSTER" \
     -o jsonpath='{.status.currentPrimary}'
 )"
 echo "$DEST_PRIMARY"
@@ -86,17 +137,17 @@ echo "$DEST_PRIMARY"
 疎通と extension を確認する。
 
 ```bash
-kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
+sudo kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
   psql -U postgres -d "$DATABASE" -c 'select version();'
 
-kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
+sudo kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
   psql -U postgres -d "$DATABASE" -c 'select extname from pg_extension order by extname;'
 ```
 
 `pgroonga` が無い場合は作成する。
 
 ```bash
-kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
+sudo kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
   psql -U postgres -d "$DATABASE" -c 'create extension if not exists pgroonga;'
 ```
 
@@ -107,7 +158,7 @@ app user ではなく CNPG primary Pod 内で `postgres` ユーザーとして r
 custom format の dump を import する。
 
 ```bash
-kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -i -c postgres "$DEST_PRIMARY" -- \
+sudo kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -i -c postgres "$DEST_PRIMARY" -- \
   pg_restore -U postgres -d "$DATABASE" --clean --if-exists --no-owner \
   < misskey.dump
 ```
@@ -115,7 +166,7 @@ kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -i -c postgres "$DEST_PRI
 plain SQL の場合は `psql` で投入する。
 
 ```bash
-kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -i -c postgres "$DEST_PRIMARY" -- \
+sudo kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -i -c postgres "$DEST_PRIMARY" -- \
   psql -v ON_ERROR_STOP=1 -U postgres -d "$DATABASE" \
   < misskey.sql
 ```
@@ -125,7 +176,7 @@ kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -i -c postgres "$DEST_PRI
 `pg_restore --no-owner` で restore した object は `postgres` owner になりやすい。Misskey の app user が migration や通常処理で object を触れるよう、owner と権限を `misskey` に戻す。
 
 ```bash
-kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -i -c postgres "$DEST_PRIMARY" -- \
+sudo kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -i -c postgres "$DEST_PRIMARY" -- \
   psql -v ON_ERROR_STOP=1 -U postgres -d "$DATABASE" <<SQL
 GRANT CONNECT, TEMPORARY ON DATABASE "$DATABASE" TO "$OWNER";
 GRANT USAGE, CREATE ON SCHEMA public TO "$OWNER";
@@ -208,13 +259,13 @@ SQL
 import 後に件数と extension を軽く確認する。
 
 ```bash
-kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
+sudo kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
   psql -U postgres -d "$DATABASE" -c 'select count(*) from "user";'
 
-kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
+sudo kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
   psql -U postgres -d "$DATABASE" -c 'select extname from pg_extension order by extname;'
 
-kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
+sudo kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMARY" -- \
   psql -U postgres -d "$DATABASE" -c '\dt+'
 ```
 
@@ -223,7 +274,7 @@ kubectl --context "$DEST_CONTEXT" -n "$NAMESPACE" exec -c postgres "$DEST_PRIMAR
 ローカルから port-forward する。
 
 ```bash
-kubectl port-forward -n misskey svc/misskey-valkey 16379:6379
+sudo kubectl port-forward -n misskey svc/misskey-valkey 16379:6379
 ```
 
 別 terminal で空であることを確認する。
@@ -267,8 +318,8 @@ flux reconcile helmrelease misskey -n misskey
 起動後に状態を確認する。
 
 ```bash
-kubectl get pods -n misskey
-kubectl logs -n misskey deploy/misskey --tail=200
+sudo kubectl get pods -n misskey
+sudo kubectl logs -n misskey deploy/misskey --tail=200
 ```
 
 ## 10. 切り戻し方針
