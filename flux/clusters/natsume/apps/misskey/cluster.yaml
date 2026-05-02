@@ -4,7 +4,7 @@ metadata:
   name: misskey-cluster
   namespace: misskey
 spec:
-  instances: 1
+  instances: 2
   imageName: ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine:18
   resources:
     requests:
@@ -25,17 +25,23 @@ spec:
       min_wal_size: 1GB
       max_wal_size: 4GB
       wal_compression: "on"
+      track_io_timing: "on"
+      track_wal_io_timing: "on"
       max_worker_processes: "6"
       max_parallel_workers: "4"
       max_parallel_workers_per_gather: "2"
       max_parallel_maintenance_workers: "2"
+      autovacuum_max_workers: "4"
+      autovacuum_work_mem: 256MB
+      autovacuum_vacuum_scale_factor: "0.1"
+      autovacuum_analyze_scale_factor: "0.05"
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true
     parameters:
       barmanObjectName: misskey-backup-store
   storage:
-    size: 100Gi
+    size: 150Gi
   bootstrap:
     initdb:
       database: misskey

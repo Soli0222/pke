@@ -31,10 +31,10 @@ spec:
 
       outgoingAddressFamily: "dual"
 
-      deliverJobConcurrency: "16"
-      inboxJobConcurrency: "16"
-      deliverJobPerSec: "2048"
-      inboxJobPerSec: "32"
+      deliverJobConcurrency: "128"
+      inboxJobConcurrency: "64"
+      deliverJobPerSec: "128"
+      inboxJobPerSec: "128"
       deliverJobMaxAttempts: "12"
       inboxJobMaxAttempts: "8"
 
