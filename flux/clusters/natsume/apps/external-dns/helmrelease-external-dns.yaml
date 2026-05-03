@@ -32,7 +32,7 @@ spec:
     - A
     - AAAA
     - CNAME
-    - TXT
+    # - TXT
     sources:
     - service
     - ingress

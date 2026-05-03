@@ -1,0 +1,48 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: misskey-cluster
+  namespace: misskey
+spec:
+  instances: 2
+  imageName: ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine:18
+  resources:
+    requests:
+      cpu: 500m
+      memory: 4Gi
+    limits:
+      cpu: "3"
+      memory: 6Gi
+  postgresql:
+    parameters:
+      max_connections: "100"
+      shared_buffers: 1536MB
+      effective_cache_size: 4GB
+      maintenance_work_mem: 256MB
+      work_mem: 8MB
+      random_page_cost: "1.1"
+      effective_io_concurrency: "200"
+      min_wal_size: 1GB
+      max_wal_size: 4GB
+      wal_compression: "on"
+      track_io_timing: "on"
+      track_wal_io_timing: "on"
+      max_worker_processes: "6"
+      max_parallel_workers: "4"
+      max_parallel_workers_per_gather: "2"
+      max_parallel_maintenance_workers: "2"
+      autovacuum_max_workers: "4"
+      autovacuum_work_mem: 256MB
+      autovacuum_vacuum_scale_factor: "0.1"
+      autovacuum_analyze_scale_factor: "0.05"
+  plugins:
+  - name: barman-cloud.cloudnative-pg.io
+    isWALArchiver: true
+    parameters:
+      barmanObjectName: misskey-backup-store
+  storage:
+    size: 150Gi
+  bootstrap:
+    initdb:
+      database: misskey
+      owner: misskey
