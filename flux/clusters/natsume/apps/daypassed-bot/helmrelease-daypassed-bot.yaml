@@ -22,7 +22,7 @@ spec:
         namespace: daypassed-bot
       interval: 1h
   values:
-    schedule: 0 15 * * *
+    schedule: 0 0 * * *
     env:
       specificDate: '2023-04-07'
       misskeyHost: mi.soli0222.com
