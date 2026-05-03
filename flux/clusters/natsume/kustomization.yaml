@@ -15,6 +15,7 @@ resources:
 - kustomizations/longhorn-config.yaml
 - kustomizations/mk-stream.yaml
 - kustomizations/misskey.yaml
+- kustomizations/misskey-stg.yaml
 - kustomizations/traefik.yaml
 - kustomizations/emoji-service.yaml
 - kustomizations/navidrome.yaml
