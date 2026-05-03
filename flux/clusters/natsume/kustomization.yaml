@@ -12,6 +12,7 @@ resources:
 - kustomizations/external-secrets.yaml
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/longhorn.yaml
+- kustomizations/longhorn-config.yaml
 - kustomizations/mk-stream.yaml
 - kustomizations/misskey.yaml
 - kustomizations/traefik.yaml

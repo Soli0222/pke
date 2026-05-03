@@ -26,11 +26,14 @@ spec:
       defaultClass: true
       defaultClassReplicaCount: 2
       defaultDataLocality: best-effort
+      unmapMarkSnapChainRemoved: enabled
       dataEngine: v1
     defaultSettings:
       createDefaultDiskLabeledNodes: true
       defaultDataPath: /var/lib/longhorn
       defaultDataLocality: best-effort
+      managerUrl: https://longhorn.str08.net
+      removeSnapshotsDuringFilesystemTrim: true
       storageMinimalAvailablePercentage: 10
       storageOverProvisioningPercentage: 100
       storageReservedPercentageForDefaultDisk: 0
@@ -41,4 +44,13 @@ spec:
       serviceMonitor:
         enabled: true
     ingress:
-      enabled: false
+      enabled: true
+      ingressClassName: traefik
+      host: longhorn.str08.net
+      tls: true
+      tlsSecret: longhorn.str08.net-dns01
+      path: /
+      pathType: Prefix
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-dns01
+        traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
