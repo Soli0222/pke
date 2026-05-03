@@ -40,7 +40,7 @@ spec:
       enabled: false
     dataStorage:
       enabled: true
-      requestedSize: 5Gi
+      requestedSize: 10Gi
       className: ''
     metrics:
       enabled: true
