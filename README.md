@@ -2,7 +2,7 @@
 
 **Polestar Kubernetes Engine (PKE)** は、K3s クラスタと周辺アプリケーションをコードで構築・運用するためのリポジトリです。
 
-現在の中心は `natsume-03` を control-plane (external etcd + K3s server)、`natsume-06` を worker (K3s agent) として分離した K3s クラスタです。クラスタ初期構築は Ansible、CNI と GitOps 基盤のブートストラップは Helmfile、クラスタアプリケーションの継続同期は Flux CD で管理します。永続ストレージは Longhorn を Flux 経由で導入し、各ノードの専用パーティションをバッキング先として利用します。
+現在の中心は `natsume-03` を control-plane (external etcd + K3s server)、`natsume-06` / `natsume-07` を worker (K3s agent) として分離した K3s クラスタです。クラスタ初期構築は Ansible、CNI と GitOps 基盤のブートストラップは Helmfile、クラスタアプリケーションの継続同期は Flux CD で管理します。永続ストレージは Longhorn を Flux 経由で導入し、Longhorn を載せるノードの専用パーティションをバッキング先として利用します。
 
 ## アーキテクチャ概要
 
@@ -17,10 +17,10 @@ flowchart TB
         FLUX["Flux Operator / Flux controllers"]
     end
 
-    subgraph WORKER["natsume-06 (worker)"]
+    subgraph WORKER["natsume-06 / natsume-07 (worker)"]
         OS_W["Ubuntu / systemd"]
         K3S_AGENT["K3s agent"]
-        LONGHORN_W["Longhorn disk"]
+        LONGHORN_W["Longhorn disk (natsume-06 のみ)"]
     end
 
     subgraph GitOps["flux/clusters/natsume"]
@@ -84,7 +84,7 @@ pke/
 | コンポーネント | バージョン |
 |---------------|-----------|
 | K3s | `v1.35.4+k3s1` |
-| etcd | `3.6.10` |
+| etcd | `3.6.11` |
 | Cilium | `1.19.3` |
 | 1Password Connect | `2.4.1` |
 | Flux Operator | `0.48.0` |
@@ -108,7 +108,7 @@ pke/
 | `ansible/inventories/group_vars/longhorn_storage.yaml` | Longhorn 用ディスク変数 |
 | `ansible/inventories/host_vars/natsume-0{3,6}.yaml` | 各ノードのネットワーク設定 |
 
-現行の `hosts.yaml` は control-plane / worker を分離した 2 ノード構成です。`natsume-03` が `etcd` / `k3s_server` / `longhorn_storage`、`natsume-06` が `k3s_agent` / `longhorn_storage` に所属します。`k3s_agent` 用の `k3s_token` は server (`groups['k3s_server'][0]`) の `/var/lib/rancher/k3s/server/node-token` を `install-k3s` role が自動で読み出して join します。
+現行の `hosts.yaml` は control-plane / worker を分離した 3 ノード構成です。`natsume-03` が `etcd` / `k3s_server` / `longhorn_storage`、`natsume-06` が `k3s_agent` / `longhorn_storage`、`natsume-07` が `k3s_agent` に所属します (Longhorn ディスクは持ちません)。`k3s_agent` 用の `k3s_token` は server (`groups['k3s_server'][0]`) の `/var/lib/rancher/k3s/server/node-token` を `install-k3s` role が自動で読み出して join します。
 
 ### Playbook
 
@@ -180,24 +180,24 @@ Flux のクラスタ定義は `flux/clusters/natsume/` にあります。
 | ストレージ | `longhorn` |
 | ネットワーク | `traefik`, `external-dns`, `external-dns-config` |
 | 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `uptime-kuma` |
-| アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `navidrome`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
+| アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `navidrome`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 | 運用 | `renovate-operator` |
 
 `external-dns-config` はクラスタ全体・各ノードの DNS レコード (`natsume(-0X).str08.net` / `pstr.space` / `tailscale.str08.net`) を `DNSEndpoint` で宣言します。`cnpg-backup-config` は CNPG の barman-cloud バックアップで共通利用する R2 認証情報 (`OnePasswordItem` 経由) を集約します。
 
 ### CloudNativePG クラスタ
 
-Postgres を必要とするアプリは CNPG `Cluster` を `apps/<app>/cluster.yaml` に同梱しています。現行の `grafana` / `spotify-nowplaying` / `spotify-reblend` / `sui` クラスタは `instances: 2` で動作し、`grafana` クラスタは `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次バックアップ (`apps/grafana/scheduledbackup.yaml` + `apps/grafana/objectstore.yaml`) を取得します。
+Postgres を必要とするアプリは CNPG `Cluster` を `apps/<app>/cluster.yaml` に同梱しています。現行の `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` クラスタは `instances: 2` で動作します。`grafana` と `misskey` の各クラスタは `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次バックアップ (`apps/<app>/scheduledbackup.yaml` + `apps/<app>/objectstore.yaml`) を取得します。`misskey` クラスタは pgroonga 拡張を含む `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用し、永続ストレージは 150Gi で動作します。
 
 ## ネットワーク
 
 | 項目 | 値 |
 |------|----|
-| 現行ノード | `natsume-03` (control-plane), `natsume-06` (worker) |
-| Public IPv4 | `133.18.141.63/23` (03), `133.18.141.179/23` (06) |
-| Public IPv6 | `2406:8c00:0:3464:133:18:141:63/64` (03), `2406:8c00:0:3464:133:18:141:179/64` (06) |
-| Private IPv4 | `192.168.9.3/24` (03), `192.168.9.6/24` (06) |
-| Private IPv6 | `fd00:192:168:9::3/64` (03), `fd00:192:168:9::6/64` (06) |
+| 現行ノード | `natsume-03` (control-plane), `natsume-06` / `natsume-07` (worker) |
+| Public IPv4 | `133.18.141.63/23` (03), `133.18.141.179/23` (06), `133.18.124.51/23` (07) |
+| Public IPv6 | `2406:8c00:0:3464:133:18:141:63/64` (03), `2406:8c00:0:3464:133:18:141:179/64` (06), `2406:8c00:0:3459:133:18:124:51/64` (07) |
+| Private IPv4 | `192.168.9.3/24` (03), `192.168.9.6/24` (06), `192.168.9.7/24` (07) |
+| Private IPv6 | `fd00:192:168:9::3/64` (03), `fd00:192:168:9::6/64` (06), `fd00:192:168:9::7/64` (07) |
 | Pod CIDR | `10.1.0.0/16`, `fd00:10:1::/64` |
 | Service CIDR | `10.2.0.0/16`, `fd00:10:2::/64` |
 | Cluster DNS | `10.2.0.10`, `fd00:10:2::a` |
@@ -207,7 +207,7 @@ K3s built-in の `traefik` と `helm-controller` は無効化しています。I
 ## ストレージ
 
 - ストレージドライバは Longhorn (`flux/clusters/natsume/apps/longhorn`)。HelmRelease で `longhorn` chart `1.11.1` を導入します。
-- 各ノード (`natsume-03` / `natsume-06`) では `ansible/prepare-longhorn-storage.yaml` (`longhorn-storage` role) が `/dev/vda` の 4 番パーティションを切り出してフォーマット・マウントし、Longhorn の disk として使えるよう整備します。
+- `longhorn_storage` グループに所属するノード (`natsume-03` / `natsume-06`) では `ansible/prepare-longhorn-storage.yaml` (`longhorn-storage` role) が `/dev/vda` の 4 番パーティションを切り出してフォーマット・マウントし、Longhorn の disk として使えるよう整備します。`natsume-07` は worker ですが Longhorn のバッキングディスクは持ちません。
 
 ## Terraform
 
