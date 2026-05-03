@@ -24,3 +24,5 @@ spec:
   values:
     externalSecret:
       name: mc-mirror-cronjob-secrets
+    cronjob:
+      schedule: "0 0 * * *" 
