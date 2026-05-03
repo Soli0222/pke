@@ -70,7 +70,7 @@ spec:
       port: 6379
 
     ingress:
-      enabled: false
+      enabled: true
       className: "traefik"
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-http01
