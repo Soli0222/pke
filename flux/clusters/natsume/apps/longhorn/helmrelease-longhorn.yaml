@@ -32,7 +32,6 @@ spec:
       createDefaultDiskLabeledNodes: true
       defaultDataPath: /var/lib/longhorn
       defaultDataLocality: best-effort
-      managerUrl: https://longhorn.str08.net
       removeSnapshotsDuringFilesystemTrim: true
       storageMinimalAvailablePercentage: 10
       storageOverProvisioningPercentage: 100
