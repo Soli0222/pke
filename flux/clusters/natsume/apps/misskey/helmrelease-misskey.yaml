@@ -42,7 +42,7 @@ spec:
         provider: sqlPgroonga
 
     web:
-      replicaCount: 0
+      replicaCount: 1
 
       image:
         repository: ghcr.io/soli0222/misskey
