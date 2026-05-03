@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: summaly
-      version: 0.1.6
+      version: 0.1.7
       sourceRef:
         kind: HelmRepository
         name: summaly-repo
@@ -36,3 +36,10 @@ spec:
       - hosts:
         - summaly.soli0222.com
         secretName: summaly.soli0222.com-http01
+    env:
+      - name: NODE_ENV
+        value: "production"
+      - name: SUMMALY_RESPONSE_TIMEOUT
+        value: "15000"
+      - name: SUMMALY_OPERATION_TIMEOUT
+        value: "15000"
