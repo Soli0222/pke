@@ -6,6 +6,20 @@ metadata:
 data:
   config.alloy: |
     // ============================================================
+    // mTLS client cert (loaded from k8s Secret at runtime)
+    // ============================================================
+
+    remote.kubernetes.secret "mtls" {
+      namespace = "alloy"
+      name      = "pke-natsume-mtls"
+    }
+
+    remote.kubernetes.secret "slack_webhook" {
+      namespace = "alloy"
+      name      = "alertmanager-slack-webhook"
+    }
+
+    // ============================================================
     // Endpoints (external mTLS-protected, shared with natsume)
     // ============================================================
 
@@ -13,8 +27,8 @@ data:
       endpoint {
         url = "https://loki.pstr.space/loki/api/v1/push"
         tls_config {
-          cert_file = "/etc/cert/pke-natsume/tls.crt"
-          key_file  = "/etc/cert/pke-natsume/tls.key"
+          cert_pem = remote.kubernetes.secret.mtls.data["tls.crt"]
+          key_pem  = remote.kubernetes.secret.mtls.data["tls.key"]
         }
         headers = {
           "X-Scope-OrgID" = "fake",
@@ -26,8 +40,8 @@ data:
       endpoint {
         url = "https://mimir.pstr.space/api/v1/push"
         tls_config {
-          cert_file = "/etc/cert/pke-natsume/tls.crt"
-          key_file  = "/etc/cert/pke-natsume/tls.key"
+          cert_pem = remote.kubernetes.secret.mtls.data["tls.crt"]
+          key_pem  = remote.kubernetes.secret.mtls.data["tls.key"]
         }
         headers = {
           "X-Scope-OrgID" = "anonymous",
@@ -47,23 +61,18 @@ data:
       address = "https://mimir.pstr.space"
       tenant_id = "anonymous"
       tls_config {
-        cert_file = "/etc/cert/pke-natsume/tls.crt"
-        key_file  = "/etc/cert/pke-natsume/tls.key"
+        cert_pem = remote.kubernetes.secret.mtls.data["tls.crt"]
+        key_pem  = remote.kubernetes.secret.mtls.data["tls.key"]
       }
       rule_selector { match_labels = {} }
       rule_namespace_selector { match_labels = {} }
     }
 
-    remote.kubernetes.secret "slack_webhook" {
-      namespace = "alloy"
-      name      = "alertmanager-slack-webhook"
-    }
-
     mimir.alerts.kubernetes "default" {
       address = "https://mimir.pstr.space"
       tls_config {
-        cert_file = "/etc/cert/pke-natsume/tls.crt"
-        key_file  = "/etc/cert/pke-natsume/tls.key"
+        cert_pem = remote.kubernetes.secret.mtls.data["tls.crt"]
+        key_pem  = remote.kubernetes.secret.mtls.data["tls.key"]
       }
       http_headers = {
         "X-Scope-OrgID" = ["anonymous"],

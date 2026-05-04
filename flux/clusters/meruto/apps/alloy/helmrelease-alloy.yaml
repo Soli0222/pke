@@ -29,14 +29,6 @@ spec:
         key: config.alloy
       stabilityLevel: experimental
       enableReporting: false
-      extraVolumes:
-        - name: pke-natsume-mtls
-          secret:
-            secretName: pke-natsume-mtls
-      extraVolumeMounts:
-        - name: pke-natsume-mtls
-          mountPath: /etc/cert/pke-natsume
-          readOnly: true
     controller:
       type: deployment
     serviceMonitor:
