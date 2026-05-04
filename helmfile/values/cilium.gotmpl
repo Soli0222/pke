@@ -5,11 +5,15 @@ ipam:
   mode: "cluster-pool"
   operator:
     clusterPoolIPv4PodCIDRList:
-      - "10.1.0.0/16"
-    clusterPoolIPv4MaskSize: 24
+      {{- range .Values.cilium.clusterPoolIPv4PodCIDRList }}
+      - {{ . | quote }}
+      {{- end }}
+    clusterPoolIPv4MaskSize: {{ .Values.cilium.clusterPoolIPv4MaskSize }}
     clusterPoolIPv6PodCIDRList:
-      - "fd00:10:1::/64"
-    clusterPoolIPv6MaskSize: 80
+      {{- range .Values.cilium.clusterPoolIPv6PodCIDRList }}
+      - {{ . | quote }}
+      {{- end }}
+    clusterPoolIPv6MaskSize: {{ .Values.cilium.clusterPoolIPv6MaskSize }}
 
 ipv4:
   enabled: true
@@ -19,8 +23,8 @@ ipv6:
 routingMode: "native"
 tunnelProtocol: ""
 autoDirectNodeRoutes: true
-ipv4NativeRoutingCIDR: "10.1.0.0/16"
-ipv6NativeRoutingCIDR: "fd00:10:1::/64"
+ipv4NativeRoutingCIDR: {{ .Values.cilium.ipv4NativeRoutingCIDR | quote }}
+ipv6NativeRoutingCIDR: {{ .Values.cilium.ipv6NativeRoutingCIDR | quote }}
 
 enableIPv4Masquerade: true
 enableIPv6Masquerade: true

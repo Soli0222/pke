@@ -43,7 +43,7 @@ spec:
     - soli0222.com
     - pstr.space
     policy: sync
-    txtPrefix: natsume-02-
+    txtPrefix: natsume-
     provider:
       name: cloudflare
     serviceMonitor:

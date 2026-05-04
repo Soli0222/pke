@@ -1,21 +1,27 @@
 ---
 all:
   children:
-    docker:
+    natsume_etcd:
+      hosts:
+        natsume-03:
+    meruto_etcd:
       hosts:
         meruto-01:
     etcd:
-      hosts:
-        natsume-03:
+      children:
+        natsume_etcd:
+        meruto_etcd:
     longhorn_storage:
       hosts:
         natsume-03:
         natsume-06:
+        meruto-01:
     k3s_cluster:
       children:
         k3s_server:
           hosts:
             natsume-03:
+            meruto-01:
         k3s_agent:
           hosts:
             natsume-06:

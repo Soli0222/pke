@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- kustomizations/prometheus-operator-crd.yaml
+- kustomizations/cert-manager.yaml
+- kustomizations/cert-manager-config.yaml
+- kustomizations/cnpg.yaml
+- kustomizations/external-dns.yaml
+- kustomizations/external-secrets.yaml
+- kustomizations/kube-state-metrics.yaml
+- kustomizations/longhorn.yaml
+- kustomizations/longhorn-config.yaml
+- kustomizations/traefik.yaml
+- kustomizations/alloy.yaml

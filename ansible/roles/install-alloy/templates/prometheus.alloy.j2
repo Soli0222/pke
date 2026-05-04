@@ -42,7 +42,7 @@ prometheus.relabel "add_common_labels" {
 
   rule {
     target_label = "cluster"
-    replacement  = "{{ cluster_name }}"
+    replacement  = "{{ cluster }}"
   }
   rule {
     target_label = "hostname"

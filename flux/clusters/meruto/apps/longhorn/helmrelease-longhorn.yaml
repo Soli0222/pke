@@ -1,0 +1,47 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: longhorn
+  namespace: longhorn-system
+spec:
+  interval: 10m
+  releaseName: longhorn
+  targetNamespace: longhorn-system
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: longhorn
+      version: 1.11.1
+      sourceRef:
+        kind: HelmRepository
+        name: longhorn-repo
+        namespace: longhorn-system
+      interval: 1h
+  values:
+    persistence:
+      defaultClass: true
+      defaultClassReplicaCount: 1
+      defaultDataLocality: best-effort
+      unmapMarkSnapChainRemoved: enabled
+      dataEngine: v1
+    defaultSettings:
+      createDefaultDiskLabeledNodes: true
+      defaultDataPath: /var/lib/longhorn
+      defaultDataLocality: best-effort
+      managerUrl: ""
+      removeSnapshotsDuringFilesystemTrim: true
+      storageMinimalAvailablePercentage: 10
+      storageOverProvisioningPercentage: 100
+      storageReservedPercentageForDefaultDisk: 0
+      allowCollectingLonghornUsageMetrics: false
+    preUpgradeChecker:
+      jobEnabled: false
+    metrics:
+      serviceMonitor:
+        enabled: true
+    ingress:
+      enabled: false

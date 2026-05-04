@@ -1,5 +1,4 @@
 ---
-cluster_name: natsume
 # Remote observability endpoints. The external endpoints are protected by
 # PKE natsume mTLS certificates managed by cert-manager/1Password.
 mimir_endpoint: https://mimir.pstr.space/api/v1/push

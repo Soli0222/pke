@@ -1,3 +1,16 @@
+environments:
+  natsume:
+    values:
+      - environments/natsume.yaml
+  meruto:
+    values:
+      - environments/meruto.yaml
+
+---
+
+helmDefaults:
+  kubeContext: {{ .Values.kubeContext }}
+
 repositories:
   - name: cilium
     url: https://helm.cilium.io/
@@ -36,12 +49,12 @@ releases:
         args:
           - "apply"
           - "-f"
-          - "manifests/flux/fluxinstance.yaml"
+          - "manifests/flux/{{ .Environment.Name }}/fluxinstance.yaml"
       - events: ["preuninstall"]
         showlogs: true
         command: "kubectl"
         args:
           - "delete"
           - "-f"
-          - "manifests/flux/fluxinstance.yaml"
+          - "manifests/flux/{{ .Environment.Name }}/fluxinstance.yaml"
           - "--ignore-not-found=true"

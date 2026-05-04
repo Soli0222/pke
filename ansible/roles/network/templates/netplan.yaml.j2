@@ -22,9 +22,9 @@ network:
 {% endfor %}
 {% endif %}
     {{ interface.device }}:
-      dhcp4: false
-      dhcp6: false
-      accept-ra: false
+      dhcp4: {{ interface.dhcp4 | default(false) | bool | lower }}
+      dhcp6: {{ interface.dhcp6 | default(false) | bool | lower }}
+      accept-ra: {{ interface.accept_ra | default(false) | bool | lower }}
 {% if addresses | length > 0 %}
       addresses:
 {% for address in addresses %}
