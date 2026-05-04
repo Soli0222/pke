@@ -1,0 +1,66 @@
+---
+- name: Install prerequisite packages
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+    state: present
+    update_cache: true
+
+- name: Create /etc/apt/keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download Docker GPG key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    owner: root
+    group: root
+    mode: "0444"
+
+- name: Add Docker apt repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ ansible_architecture | replace('x86_64', 'amd64') | replace('aarch64', 'arm64') }}
+      signed-by=/etc/apt/keyrings/docker.asc]
+      https://download.docker.com/linux/ubuntu
+      {{ ansible_distribution_release }} stable
+    filename: docker
+    state: present
+
+- name: Install Docker packages
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: true
+
+- name: Configure Docker daemon
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {
+        "iptables": false,
+        "ip6tables": false
+      }
+  notify: Restart Docker
+
+- name: Enable and start Docker
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Add users to docker group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  loop: "{{ docker_users }}"

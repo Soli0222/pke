@@ -1,6 +1,9 @@
 ---
 all:
   children:
+    docker:
+      hosts:
+        meruto-01:
     etcd:
       hosts:
         natsume-03:
