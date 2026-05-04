@@ -2,7 +2,9 @@
 k3s_version: "v1.35.4+k3s1"
 k3s_node_role: server
 k3s_use_private_netplan_address: true
-k3s_use_global_netplan_external_address: true
+k3s_external_ip_netplan_source: global  # global, private, or "" to disable
+k3s_external_ip_include_ipv4: true
+k3s_external_ip_include_ipv6: true
 k3s_bind_all_interfaces: true
 k3s_bind_address: "{{ ansible_default_ipv4.address | default(ansible_host) }}"
 k3s_advertise_address: "{{ k3s_bind_address }}"

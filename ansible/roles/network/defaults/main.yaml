@@ -11,6 +11,9 @@ network_netplan_renderer: networkd
 network_netplan:
   global:
     device: ""
+    dhcp4: false
+    dhcp6: false
+    accept_ra: false
     ipv4: []
     ipv6: []
     default_route: []
@@ -18,6 +21,9 @@ network_netplan:
     routes: []
   private:
     device: ""
+    dhcp4: false
+    dhcp6: false
+    accept_ra: false
     ipv4: []
     ipv6: []
     default_route: []

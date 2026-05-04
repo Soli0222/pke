@@ -1,0 +1,16 @@
+cluster: natsume
+kubeContext: natsume@soli
+
+cilium:
+  clusterPoolIPv4PodCIDRList:
+    - "10.1.0.0/16"
+  clusterPoolIPv4MaskSize: 24
+  clusterPoolIPv6PodCIDRList:
+    - "fd00:10:1::/64"
+  clusterPoolIPv6MaskSize: 80
+  ipv4NativeRoutingCIDR: "10.1.0.0/16"
+  ipv6NativeRoutingCIDR: "fd00:10:1::/64"
+
+onepassword:
+  accessTokenItem: "PKE-natsume Access Token: PKE-natsume"
+  credentialsFile: "PKE-natsume Credentials File"

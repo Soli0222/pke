@@ -1,0 +1,45 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy
+  namespace: alloy
+spec:
+  interval: 10m
+  releaseName: alloy
+  targetNamespace: alloy
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: alloy
+      version: 1.8.0
+      sourceRef:
+        kind: HelmRepository
+        name: alloy-repo
+        namespace: alloy
+      interval: 1h
+  values:
+    alloy:
+      configMap:
+        create: false
+        name: alloy-config
+        key: config.alloy
+      stabilityLevel: experimental
+      enableReporting: false
+      extraVolumes:
+        - name: pke-natsume-mtls
+          secret:
+            secretName: pke-natsume-mtls
+      extraVolumeMounts:
+        - name: pke-natsume-mtls
+          mountPath: /etc/cert/pke-natsume
+          readOnly: true
+    controller:
+      type: deployment
+    serviceMonitor:
+      enabled: true
+    ingress:
+      enabled: false

@@ -1,0 +1,50 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  interval: 10m
+  releaseName: traefik
+  targetNamespace: traefik
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: traefik
+      version: 39.0.8
+      sourceRef:
+        kind: HelmRepository
+        name: traefik-repo
+        namespace: traefik
+      interval: 1h
+  values:
+    deployment:
+      kind: DaemonSet
+    logs:
+      access:
+        enabled: true
+    metrics:
+      addInternals: true
+      prometheus:
+        serviceMonitor:
+          enabled: true
+    service:
+      ipFamilyPolicy: RequireDualStack
+      ipFamilies:
+      - IPv4
+      - IPv6
+      spec:
+        externalTrafficPolicy: Local
+    ingressClass:
+      enabled: true
+      isDefaultClass: true
+      name: traefik
+    providers:
+      kubernetesCRD:
+        ingressClass: traefik
+      kubernetesIngress:
+        ingressClass: traefik

@@ -1,0 +1,32 @@
+---
+ansible_host: meruto-01
+cluster: meruto
+
+longhorn_storage_use_existing_vg: true
+longhorn_storage_vg_name: ubuntu-vg
+
+k3s_include_tailscale_tls_sans: false
+k3s_tls_sans:
+  - 192.168.10.3
+  - fd00:192:168:10::3
+k3s_external_ip_netplan_source: private
+k3s_external_ip_include_ipv6: false
+
+network_netplan:
+  global: {}
+  private:
+    device: enp3s0
+    dhcp6: true
+    accept_ra: true
+    ipv4:
+      - 192.168.10.3/24
+    ipv6:
+      - fd00:192:168:10::3/64
+    default_route:
+      - to: default
+        via: 192.168.10.1
+    nameservers:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 2606:4700:4700::1111
+    routes: []

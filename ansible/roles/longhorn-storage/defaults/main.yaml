@@ -1,5 +1,6 @@
 ---
 longhorn_storage_devices: []
+longhorn_storage_use_existing_vg: false
 longhorn_storage_vg_name: longhorn
 longhorn_storage_lv_name: data
 longhorn_storage_lv_size: 100%FREE

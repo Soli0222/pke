@@ -4,6 +4,7 @@
     that:
       - longhorn_storage_devices | length > 0
     fail_msg: "Set longhorn_storage_devices for {{ inventory_hostname }} before preparing Longhorn storage."
+  when: not longhorn_storage_use_existing_vg | bool
 
 - name: Install Longhorn storage dependencies
   ansible.builtin.apt:
@@ -19,6 +20,7 @@
 
 - name: Prepare Longhorn partition on parent disk
   when:
+    - not longhorn_storage_use_existing_vg | bool
     - longhorn_storage_parent_disk | length > 0
     - (longhorn_storage_partition_number | int) > 0
   block:
@@ -63,6 +65,7 @@
     state: present
     timeout: 30
   loop: "{{ longhorn_storage_devices }}"
+  when: not longhorn_storage_use_existing_vg | bool
 
 - name: Enable and start iSCSI service
   ansible.builtin.systemd:
@@ -74,6 +77,7 @@
   community.general.lvg:
     vg: "{{ longhorn_storage_vg_name }}"
     pvs: "{{ longhorn_storage_devices }}"
+  when: not longhorn_storage_use_existing_vg | bool
 
 - name: Create Longhorn logical volume
   community.general.lvol:

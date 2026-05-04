@@ -98,7 +98,7 @@ loki.process "filter_logs" {
 loki.process "add_common_labels" {
   stage.static_labels {
     values = {
-      cluster  = "{{ cluster_name }}",
+      cluster  = "{{ cluster }}",
       hostname = "{{ ansible_hostname }}",
     }
   }

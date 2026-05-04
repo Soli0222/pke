@@ -17,9 +17,8 @@
 - name: Validate ufw interface settings
   ansible.builtin.assert:
     that:
-      - ufw_global_interface | length > 0
       - ufw_private_interface | length > 0
-    fail_msg: ufw_global_interface and ufw_private_interface must be set.
+    fail_msg: ufw_private_interface must be set.
 
 - name: Reset ufw rules
   community.general.ufw:
@@ -44,6 +43,7 @@
     interface: "{{ ufw_global_interface }}"
     port: "{{ item }}"
   loop: "{{ ufw_global_allowed_tcp_ports }}"
+  when: ufw_global_interface | length > 0
 
 - name: Allow all inbound traffic on private interface
   community.general.ufw:

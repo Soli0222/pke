@@ -1,5 +1,6 @@
 ---
 ansible_host: natsume-07
+cluster: natsume
 
 network_netplan:
   global:
