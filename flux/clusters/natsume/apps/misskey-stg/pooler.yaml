@@ -18,6 +18,7 @@ spec:
       server_idle_timeout: "120"
       server_lifetime: "3600"
       query_wait_timeout: "30"
+      ignore_startup_parameters: "statement_timeout"
   template:
     spec:
       containers: []
