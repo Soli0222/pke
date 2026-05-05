@@ -7,49 +7,44 @@
 ### オペレータ層 (`flux/clusters/natsume/apps/cnpg/`)
 
 - **cloudnative-pg** Helm chart (`helmrelease-cnpg.yaml`) — オペレータ本体
-- **plugin-barman-cloud** Helm chart (`helmrelease-plugin-barman-cloud.yaml`) — S3バックアップ／復元用プラグイン
+- **plugin-barman-cloud** Helm chart (`helmrelease-plugin-barman-cloud.yaml`) — S3 バックアップ／復元用プラグイン
 
 両方とも `cnpg-system` ネームスペースに常駐する。
 
 ### バックアップ用シークレット
 
-- `flux/clusters/natsume/apps/cnpg-backup-config/` — 1Password から `cnpg-backup-flux-vars` Secret を `flux-system` ns に取得し、`CNPG_BACKUP_ENDPOINT_URL` を Flux Kustomization の `postBuild.substituteFrom` で各アプリに注入
-- 各アプリ ns には `cnpg-backup-s3-secret` (1Password 由来、`ACCESS_KEY_ID` / `ACCESS_SECRET_KEY`) を `OnePasswordItem` で配置
+- 各アプリ ns に `cnpg-backup-s3-secret` (1Password 由来) を `OnePasswordItem` で配置。キーは以下:
+  - `ACCESS_KEY_ID` / `ACCESS_SECRET_KEY` — R2 のクレデンシャル
+  - `ENDPOINT` — R2 の S3 互換エンドポイント URL
 
-各アプリの Kustomization は以下を `dependsOn` する:
-
-```yaml
-dependsOn:
-- name: cnpg
-- name: cnpg-backup-config
-```
+pg_dump CronJob はこれらを env 経由で参照する。misskey の `ObjectStore` は `endpointURL` に Flux の `postBuild.substituteFrom` で `cnpg-backup-flux-vars` (`CNPG_BACKUP_ENDPOINT_URL`) を注入する。
 
 ### バックアップ方式
 
-クラスタごとに **2 通り** ある。書き込みが活発な `misskey` のみ WAL archive + base backup で PITR 可能、それ以外は日次の `pg_dump` (custom format) を S3 に投げる単純構成。
+クラスタごとに **2 通り** ある。書き込みが活発な `misskey` は WAL archive + base backup で PITR 可能、それ以外は日次の `pg_dump` (custom format) を S3 に投げる単純構成。
 
-#### 方式 A: WAL archive + base backup (misskey のみ)
+#### 方式 A: WAL archive + base backup (misskey)
 
 namespace に4点セット:
 
-1. `Cluster` (postgresql.cnpg.io/v1) — `plugins[]` に `barman-cloud.cloudnative-pg.io` を参照
-2. `ObjectStore` (barmancloud.cnpg.io/v1) — S3 接続情報、retention `7d`、gzip 圧縮
-3. `ScheduledBackup` — 日次 base backup、`method: plugin`
-4. `OnePasswordItem` — S3 クレデンシャル
+1. `Cluster` — `plugins[]` に `barman-cloud.cloudnative-pg.io` を参照
+2. `ObjectStore` (`objectstore.yaml`) — S3 接続情報、retention `7d`、gzip 圧縮
+3. `ScheduledBackup` (`scheduledbackup.yaml`) — 日次 base backup、`method: plugin`
+4. `OnePasswordItem` — S3 クレデンシャル (`cnpg-backup-s3-secret`)
 
 #### 方式 B: pg_dump CronJob (grafana / sui / spotify-reblend / spotify-nowplaying)
 
 namespace に3点セット:
 
 1. `Cluster` — `plugins[]` 無し (=archive_mode off で起動)
-2. `OnePasswordItem` — S3 クレデンシャル (`cnpg-backup-s3-secret`、A と同じ)
-3. `CronJob` (`cronjob-pg-dump.yaml`) — 毎日 03:00 JST に `pg_dump -Fc | aws s3 cp -` で R2 にアップロード、7日より古いオブジェクトを同 Job 内で削除
+2. `OnePasswordItem` — S3 クレデンシャル (`cnpg-backup-s3-secret`)
+3. `CronJob` (`cronjob-pg-dump.yaml`) — 毎日深夜 JST に `pg_dump -Fc | aws s3 cp -` で R2 にアップロード、7日より古いオブジェクトを同 Job 内で削除
 
-`CronJob.spec.timeZone: Asia/Tokyo` を明示しているため `0 3 * * *` がそのまま JST 03:00 として解釈される。CNPG の `<cluster>-app` Secret から認証情報を取得し、`<cluster>-ro` Service 経由でレプリカから dump を取る (primary 負荷を避けるため)。
+`CronJob.spec.timeZone: Asia/Tokyo` を明示しているため schedule は JST として解釈される。CNPG の `<cluster>-app` Secret から認証情報を取得し、`<cluster>-ro` Service 経由でレプリカから dump を取る (primary 負荷を避けるため)。
 
 ### S3 レイアウト
 
-共有バケット `s3://cnpg-backup/` を以下のように使い分け:
+R2 バケット `s3://cnpg-backup/`:
 
 ```
 s3://cnpg-backup/<cluster-name>/base/<backup-id>/                          # 方式A: base backup
@@ -57,44 +52,56 @@ s3://cnpg-backup/<cluster-name>/wals/                                      # 方
 s3://cnpg-backup/<cluster-name>/<cluster-name>-YYYYMMDD-HHMMSS.dump        # 方式B: pg_dump
 ```
 
-### WAL アーカイブ方針
+方式 B へ切り替え済みのクラスタに過去の barman レイアウト (`<cluster>/base/`, `<cluster>/wals/`) が残っている場合は手で消す:
 
-**WAL archive は `misskey` のみ**。書き込み頻度が高く PITR に意味があるので継続。
+```bash
+aws s3 rm --endpoint-url $AWS_ENDPOINT_URL --recursive s3://cnpg-backup/<cluster>/base/
+aws s3 rm --endpoint-url $AWS_ENDPOINT_URL --recursive s3://cnpg-backup/<cluster>/wals/
+```
 
-それ以外のクラスタは過去に WAL archive が有効化されていたが、書き込みがイベント駆動でほぼゼロのため `archive_timeout=300` も発火せず、Grafana ダッシュボード上で「Last archived WAL」が常時赤くなり監視ノイズになっていた。実装上の問題ではなく PITR の必要性が薄いと判断して pg_dump 方式に切り替えた。
+### Cluster 共通設定
 
-WAL archive を切るには **`Cluster.spec.plugins[]` から `barman-cloud.cloudnative-pg.io` のエントリを丸ごと削除する**。`isWALArchiver: false` にしただけでは postgres 側の `archive_mode` が残ったままで止まらないので注意 (過去にハマった)。
+全 Cluster に以下を入れている:
+
+```yaml
+spec:
+  primaryUpdateMethod: switchover   # primary を再起動する代わりにレプリカへ切替えてから旧 primary を更新
+  smartShutdownTimeout: 60          # smart shutdown の最大待ち時間 (秒)。default 180
+```
+
+`switchover` でローリング更新時の primary 切断回数を最小化、`smartShutdownTimeout: 60` で居座るアイドル接続が原因で再起動が止まる事故を回避する。アプリ側のドライバには別途リトライが必要 (CNPG だけでは完全には吸収できない)。
+
+### Pooler
+
+misskey 系は HTTP / WebSocket / queue worker / 通知配信が常時動いていて再起動の体感が大きいので、PgBouncer (`Pooler` CRD) を挟んでいる。
+
+- `pooler.yaml` — `type: rw`、`poolMode: session`、`instances: 2`、podAntiAffinity あり
+- アプリは `*-pooler-rw:5432` に接続 (HelmRelease の `externalPostgresql.host` で指定)
+- session mode を選んでいる理由: TypeORM が `LISTEN/NOTIFY` や session 単位の状態を持つため transaction mode だと壊れる
+- 再起動時は PgBouncer の `PAUSE` がアプリ ↔ pooler の TCP を保持したまま PG 再接続を待ってくれるので、トランザクション外であれば切断を体感されない
 
 ### 現在のクラスタ一覧
 
-| アプリ | namespace | Cluster名 | instances | バックアップ方式 | スケジュール |
-|---|---|---|---|---|---|
-| misskey | misskey | misskey-cluster | 2 | A: WAL archive + base | `0 30 18 * * *` UTC = 03:30 JST |
-| grafana | grafana | grafana-cluster | 2 | B: pg_dump | `0 3 * * *` Asia/Tokyo |
-| sui | sui | sui-cluster | 2 | B: pg_dump | `0 3 * * *` Asia/Tokyo |
-| spotify-nowplaying | spotify-nowplaying | spn-cluster | 2 | B: pg_dump | `0 3 * * *` Asia/Tokyo |
-| spotify-reblend | spotify-reblend | reblend-cluster | 2 | B: pg_dump | `0 3 * * *` Asia/Tokyo |
-| misskey-stg | misskey-stg | misskey-stg-cluster | 1 | (バックアップ無し) | — |
+| アプリ | namespace | Cluster名 | instances | バックアップ方式 | Pooler | スケジュール |
+|---|---|---|---|---|---|---|
+| misskey | misskey | misskey-cluster | 2 | WAL archive + base | misskey-pooler-rw | `0 30 18 * * *` UTC = 03:30 JST |
+| grafana | grafana | grafana-cluster | 2 | pg_dump | — | 03:00 JST |
+| sui | sui | sui-cluster | 2 | pg_dump | — | 03:05 JST |
+| spotify-reblend | spotify-reblend | reblend-cluster | 2 | pg_dump | — | 03:10 JST |
+| spotify-nowplaying | spotify-nowplaying | spn-cluster | 2 | pg_dump | — | 03:15 JST |
+| misskey-stg | misskey-stg | misskey-stg-cluster | 1 | バックアップ無し | misskey-stg-pooler-rw | — |
 
-方式 A の `ScheduledBackup.spec.schedule` は CNPG オペレータが **UTC で評価** する (timeZone 指定不可)。方式 B の Kubernetes `CronJob` は `spec.timeZone` で TZ 明示可能。
+方式 A の `ScheduledBackup.spec.schedule` は CNPG オペレータが UTC で評価する (timeZone 指定不可)。方式 B の Kubernetes `CronJob` は `spec.timeZone` で TZ 明示可能。pg_dump 時刻は 5 分間隔で分散している。
 
 ---
 
-## 手動バックアップ (方式 A: misskey)
+## 手動バックアップ (misskey: WAL archive)
 
-### kubectl cnpg プラグイン経由 (推奨)
-
-```bash
-kubectl cnpg backup <cluster-name> -n <namespace> \
-  --backup-name manual-$(date +%Y%m%d-%H%M%S) \
-  --method plugin
-```
-
-例:
+### kubectl cnpg プラグイン経由
 
 ```bash
 kubectl cnpg backup misskey-cluster -n misskey \
-  --backup-name manual-20260505 \
+  --backup-name manual-$(date +%Y%m%d-%H%M%S) \
   --method plugin
 ```
 
@@ -119,18 +126,11 @@ kubectl apply -f backup.yaml
 kubectl get backup -n misskey -w
 ```
 
-### 進捗・結果の確認
-
-```bash
-kubectl get backup -n <namespace>
-kubectl describe backup <backup-name> -n <namespace>
-```
-
 `status.phase: completed` になれば完了。S3 上の path は `status.backupId` で確認できる。
 
 ---
 
-## 手動バックアップ (方式 B: pg_dump)
+## 手動バックアップ (pg_dump)
 
 ### CronJob を即時実行する
 
@@ -155,48 +155,9 @@ kubectl -n <namespace> run pgdump-oneshot --rm -it \
 
 ---
 
-## CNPG クラスタへのリストア (S3 から)
+## CNPG クラスタへのリストア (misskey: WAL archive)
 
-新しい `Cluster` を `bootstrap.recovery` で起動して S3 のbase backupから復元する。**既存クラスタを上書きするのではなく、別名で建てる** のが基本。
-
-### 手順
-
-1. 復元元の `ObjectStore` (または `Backup` リソース) を新クラスタの ns に用意（あるいは元の ns に作る）
-2. 新しい `Cluster` を作る:
-
-```yaml
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: misskey-cluster-restored
-  namespace: misskey
-spec:
-  instances: 2
-  imageName: ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine:18
-  storage:
-    size: 150Gi
-  bootstrap:
-    recovery:
-      source: misskey-cluster-source
-  externalClusters:
-  - name: misskey-cluster-source
-    plugin:
-      name: barman-cloud.cloudnative-pg.io
-      parameters:
-        barmanObjectName: misskey-backup-store
-        serverName: misskey-cluster   # ← 元クラスタ名
-```
-
-ポイント:
-
-- `serverName` は **S3 上のサブディレクトリ名 = 元 Cluster 名** を指定
-- `bootstrap.recovery` は新規クラスタにしか効かない (起動済みクラスタは bootstrap を再実行しない)
-- 特定の base backup を選びたいときは `bootstrap.recovery.backup.name` で `Backup` リソースを参照
-- WAL アーカイブが有効なので `bootstrap.recovery.recoveryTarget` で PITR 可能 (時刻、LSN、トランザクションID等を指定)
-
-### PITR (特定時点への復元)
-
-base backup 完了時点ではなく「障害発生直前」など任意の時点まで戻す場合は `bootstrap.recovery.recoveryTarget` を指定する。WAL アーカイブが有効なクラスタでのみ可能。
+新しい `Cluster` を `bootstrap.recovery` で起動して S3 の base backup から復元する。既存クラスタを上書きするのではなく、別名で建てるのが基本。
 
 ```yaml
 apiVersion: postgresql.cnpg.io/v1
@@ -213,13 +174,8 @@ spec:
     recovery:
       source: misskey-cluster-source
       recoveryTarget:
-        targetTime: "2026-05-05 02:30:00.000000+00:00"   # この時点まで WAL を再生
-        # または以下のいずれか:
-        # targetLSN: "0/1A000000"          # LSN 指定
-        # targetXID: "1234567"              # トランザクション ID 指定
-        # targetName: "before-migration"    # 事前に pg_create_restore_point() で作った名前
-        # targetImmediate: true             # base backup の整合点で停止 (= PITR 無し相当)
-        targetInclusive: true               # 指定値そのものを含めるか (default: true)
+        targetTime: "2026-05-05 02:30:00.000000+00:00"
+        targetInclusive: true
   externalClusters:
   - name: misskey-cluster-source
     plugin:
@@ -231,29 +187,18 @@ spec:
 
 ポイント:
 
-- `targetTime` は ISO8601 形式 (タイムゾーン込み推奨)。**`targetTime` は復元対象の base backup 完了時刻より後** である必要がある。古い時点に戻したい場合は古い base backup を `bootstrap.recovery.backup.name` で明示的に選択する
-- `recoveryTarget` のキー (`targetTime` / `targetLSN` / `targetXID` / `targetName` / `targetImmediate`) は **どれか1つだけ** 指定する
-- 復元中は postgres が WAL を順に再生して指定時点で停止する。WAL量が多いと数十分〜数時間かかることもある
-- 復元対象の WAL が retention (`7d`) で消えていると失敗する。古い時点への PITR が必要なら base backup を計画的に長期保管する別運用が必要
-
-ターゲット時刻を確認する典型的な手順:
-
-```bash
-# 元クラスタが残っているなら、戻したい時刻の直前のトランザクションIDを記録
-kubectl -n misskey exec misskey-cluster-1 -c postgres -- psql -U postgres -tAc "SELECT now(), txid_current()"
-
-# 元クラスタが死んでいる場合は、想定の障害発生時刻を targetTime に入れる
-```
-
-### 切替
-
-復元クラスタの動作確認が済んだら、Service や DSN を新クラスタへ向け直す（または旧クラスタを削除して新クラスタを正規名にリネームする運用は CNPG の機能では難しいので、**アプリ側の接続先を切り替える** のが現実的）。
+- `serverName` は S3 上のサブディレクトリ名 = 元 Cluster 名
+- `bootstrap.recovery` は新規クラスタにしか効かない
+- PITR しない場合は `recoveryTarget` を省略する
+- `recoveryTarget` のキー (`targetTime` / `targetLSN` / `targetXID` / `targetName` / `targetImmediate`) はどれか1つだけ指定する
+- 復元対象の WAL が retention (`7d`) で消えていると失敗する
+- 復元クラスタの動作確認後、アプリ側の接続先を新クラスタへ向ける
 
 ---
 
-## pg_dump からのリストア (方式 B)
+## pg_dump からのリストア
 
-方式 B のクラスタは PITR ではなく単一 dump からの復元のみ。流れは「クラスタを作り直す → dump を流し込む」。
+PITR は無く、最新 dump からの復元のみ。流れは「クラスタを作り直す → dump を流し込む」。
 
 ### 1. dump を取得
 
@@ -268,6 +213,8 @@ aws s3 cp --endpoint-url $AWS_ENDPOINT_URL \
   ./restore.dump
 ```
 
+1Password の `cnpg-backup-s3-secret` から `ACCESS_KEY_ID` / `ACCESS_SECRET_KEY` / `ENDPOINT` を取れる。
+
 ### 2. クラスタを作り直す (または別名で立てる)
 
 `bootstrap.initdb` で空クラスタを起動するだけ。`owner` は **元と同じユーザー名・DB名** にすること。`<cluster-name>-app` Secret に同じ DSN が入るので、アプリの接続設定を変えずに済む。
@@ -280,6 +227,8 @@ metadata:
   namespace: grafana
 spec:
   instances: 2
+  primaryUpdateMethod: switchover
+  smartShutdownTimeout: 60
   storage:
     size: 10Gi
   bootstrap:
@@ -312,92 +261,16 @@ PGPASSWORD=$PGPASSWORD pg_restore \
 - `-j 4` で並列復元 (custom format でのみ可能)
 - ロールは `bootstrap.initdb.owner` で再作成済みなので別途投入不要
 - 復元後はアプリ Pod を再起動して接続を張り直す
+- misskey は `pgroonga` 拡張を使うので、復元先 Cluster の `imageName` も `ghcr.io/soli0222/pgroonga-cnpg/...` に揃える
 
----
+### 別 PG (CNPG 不使用) への移行
 
-## 非 CNPG (素の PostgreSQL) へのリストア
-
-barman-cloud のbase backupは pg_basebackup と同じ tar 形式なので、CNPG なしの PostgreSQL に展開できる。
-
-### 必要なもの
-
-- `barman-cli-cloud` パッケージ (Debian/Ubuntu: `barman-cli-cloud`、macOS: `pip install barman-cloud`)
-- S3 アクセスキー、エンドポイント、バケット名
-
-### 手順
-
-#### 1. S3 認証を環境変数に
-
-```bash
-export AWS_ACCESS_KEY_ID=<ACCESS_KEY_ID>
-export AWS_SECRET_ACCESS_KEY=<ACCESS_SECRET_KEY>
-export AWS_ENDPOINT_URL=<CNPG_BACKUP_ENDPOINT_URL>
-```
-
-1Password の `cnpg-backup-s3-secret` および `cnpg-backup-flux-vars` から取得する。
-
-#### 2. バックアップ一覧を確認
-
-```bash
-barman-cloud-backup-list \
-  --endpoint-url $AWS_ENDPOINT_URL \
-  s3://cnpg-backup misskey-cluster
-```
-
-`<server>` 部分は **元の Cluster 名**。
-
-#### 3. base backup を取得・展開
-
-```bash
-mkdir -p /var/lib/postgresql/restore
-barman-cloud-restore \
-  --endpoint-url $AWS_ENDPOINT_URL \
-  s3://cnpg-backup misskey-cluster \
-  <backup-id>  \
-  /var/lib/postgresql/restore
-```
-
-`<backup-id>` は前ステップの一覧で得られる ID (例: `20260504T033000`) または `latest`。
-
-展開後は素の `PGDATA` ディレクトリ構造になっている。
-
-#### 4. 起動
-
-CNPG 由来の設定ファイル (`postgresql.auto.conf` の replication 設定、`recovery.signal` 等) が残っている場合は除去:
-
-```bash
-cd /var/lib/postgresql/restore
-rm -f recovery.signal standby.signal
-# postgresql.auto.conf を確認、cnpg関連の primary_conninfo 等は削除
-```
-
-PostgreSQL バージョンに合わせた `pg_ctl` または systemd で起動:
-
-```bash
-pg_ctl -D /var/lib/postgresql/restore start
-```
-
-初回起動時は WAL リプレイが走り、base backup 完了時点の状態で立ち上がる。
-
-#### 5. データ抜き出し (論理ダンプで他DBへ移すパターン)
-
-起動できたら通常の `pg_dump` で論理ダンプが取れる:
-
-```bash
-pg_dump -h localhost -U postgres -Fc misskey > misskey.dump
-pg_restore -h <new-host> -U <user> -d <newdb> misskey.dump
-```
-
-### 注意
-
-- **PostgreSQL のメジャーバージョンを揃える** こと。base backup は物理レプリケーション形式なので異バージョン間で起動できない（`pg_dump` を介せば論理移行は可能）
-- pgroonga 等の拡張機能を使っているクラスタ (misskey) は、復元先にも同じ拡張がインストールされている必要がある (`shared_preload_libraries` の整合性)
-- 復元中はネットワーク帯域を使うので、本番S3エンドポイントの帯域に注意
+dump は logical なので、任意の PG (同 major 以上) にそのまま `pg_restore` できる。pgroonga 等の拡張機能を使っている DB は、復元先にも同じ拡張がインストールされている必要がある (`shared_preload_libraries` の整合性)。
 
 ---
 
 ## 参考
 
-- [CloudNativePG Docs - Recovery](https://cloudnative-pg.io/documentation/current/recovery/)
-- [plugin-barman-cloud](https://github.com/cloudnative-pg/plugin-barman-cloud)
-- [barman-cloud-restore](https://docs.pgbarman.org/release/latest/user_guide/commands/barman_cloud/barman_cloud_restore.html)
+- [CloudNativePG Docs](https://cloudnative-pg.io/documentation/current/)
+- [CNPG Pooler / PgBouncer](https://cloudnative-pg.io/documentation/current/connection_pooling/)
+- [pg_dump / pg_restore](https://www.postgresql.org/docs/current/app-pgdump.html)

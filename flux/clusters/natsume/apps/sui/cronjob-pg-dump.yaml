@@ -4,7 +4,7 @@ metadata:
   name: sui-cluster-pg-dump
   namespace: sui
 spec:
-  schedule: "0 3 * * *"
+  schedule: "5 3 * * *"
   timeZone: Asia/Tokyo
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3

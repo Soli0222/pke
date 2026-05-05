@@ -5,6 +5,8 @@ metadata:
   namespace: sui
 spec:
   instances: 2
+  primaryUpdateMethod: switchover
+  smartShutdownTimeout: 60
   storage:
     size: 5Gi
   bootstrap:

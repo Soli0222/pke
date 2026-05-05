@@ -4,7 +4,7 @@ metadata:
   name: reblend-cluster-pg-dump
   namespace: spotify-reblend
 spec:
-  schedule: "0 3 * * *"
+  schedule: "10 3 * * *"
   timeZone: Asia/Tokyo
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
