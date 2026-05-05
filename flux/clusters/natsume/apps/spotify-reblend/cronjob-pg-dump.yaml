@@ -54,7 +54,7 @@ spec:
             - name: BUCKET
               value: cnpg-backup
             - name: PREFIX
-              value: dumps/reblend-cluster
+              value: reblend-cluster
             - name: CLUSTER_NAME
               value: reblend-cluster
             - name: RETENTION_DAYS

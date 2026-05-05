@@ -52,9 +52,9 @@ namespace に3点セット:
 共有バケット `s3://cnpg-backup/` を以下のように使い分け:
 
 ```
-s3://cnpg-backup/<cluster-name>/base/<backup-id>/      # 方式A: base backup
-s3://cnpg-backup/<cluster-name>/wals/                  # 方式A: WAL
-s3://cnpg-backup/dumps/<cluster-name>/<cluster-name>-YYYYMMDD-HHMMSS.dump   # 方式B: pg_dump
+s3://cnpg-backup/<cluster-name>/base/<backup-id>/                          # 方式A: base backup
+s3://cnpg-backup/<cluster-name>/wals/                                      # 方式A: WAL
+s3://cnpg-backup/<cluster-name>/<cluster-name>-YYYYMMDD-HHMMSS.dump        # 方式B: pg_dump
 ```
 
 ### WAL アーカイブ方針
@@ -260,11 +260,11 @@ kubectl -n misskey exec misskey-cluster-1 -c postgres -- psql -U postgres -tAc "
 ```bash
 export AWS_ACCESS_KEY_ID=<ACCESS_KEY_ID>
 export AWS_SECRET_ACCESS_KEY=<ACCESS_SECRET_KEY>
-export AWS_ENDPOINT_URL=<CNPG_BACKUP_ENDPOINT_URL>
+export AWS_ENDPOINT_URL=<ENDPOINT>
 
-aws s3 ls --endpoint-url $AWS_ENDPOINT_URL s3://cnpg-backup/dumps/<cluster-name>/
+aws s3 ls --endpoint-url $AWS_ENDPOINT_URL s3://cnpg-backup/<cluster-name>/
 aws s3 cp --endpoint-url $AWS_ENDPOINT_URL \
-  s3://cnpg-backup/dumps/<cluster-name>/<cluster-name>-YYYYMMDD-HHMMSS.dump \
+  s3://cnpg-backup/<cluster-name>/<cluster-name>-YYYYMMDD-HHMMSS.dump \
   ./restore.dump
 ```
 

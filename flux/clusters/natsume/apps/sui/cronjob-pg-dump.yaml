@@ -54,7 +54,7 @@ spec:
             - name: BUCKET
               value: cnpg-backup
             - name: PREFIX
-              value: dumps/sui-cluster
+              value: sui-cluster
             - name: CLUSTER_NAME
               value: sui-cluster
             - name: RETENTION_DAYS

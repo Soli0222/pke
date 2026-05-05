@@ -54,7 +54,7 @@ spec:
             - name: BUCKET
               value: cnpg-backup
             - name: PREFIX
-              value: dumps/grafana-cluster
+              value: grafana-cluster
             - name: CLUSTER_NAME
               value: grafana-cluster
             - name: RETENTION_DAYS
