@@ -4,7 +4,7 @@ metadata:
   name: sui-cluster-daily-backup
   namespace: sui
 spec:
-  schedule: "0 0 3 * * *"
+  schedule: "0 0 18 * * *"
   backupOwnerReference: self
   cluster:
     name: sui-cluster

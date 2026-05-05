@@ -4,7 +4,7 @@ metadata:
   name: reblend-cluster-daily-backup
   namespace: spotify-reblend
 spec:
-  schedule: "0 10 3 * * *"
+  schedule: "0 10 18 * * *"
   backupOwnerReference: self
   cluster:
     name: reblend-cluster
