@@ -6,6 +6,8 @@ metadata:
 spec:
   instances: 2
   imageName: ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine:18
+  primaryUpdateMethod: switchover
+  smartShutdownTimeout: 60
   storage:
     size: 10Gi
   bootstrap:

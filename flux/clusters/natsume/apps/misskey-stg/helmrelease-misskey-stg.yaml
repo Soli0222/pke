@@ -48,7 +48,7 @@ spec:
       enabled: false
 
     externalPostgresql:
-      host: "misskey-stg-cluster-rw"
+      host: "misskey-stg-pooler-rw"
       port: 5432
       database: misskey_stg
       username: misskey_stg

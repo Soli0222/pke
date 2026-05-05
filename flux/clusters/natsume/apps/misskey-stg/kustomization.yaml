@@ -6,5 +6,6 @@ resources:
 - helmrepository-valkey-repo.yaml
 - helmrelease-misskey-stg-valkey.yaml
 - cluster.yaml
+- pooler.yaml
 - podmonitor.yaml
 - helmrelease-misskey-stg.yaml
