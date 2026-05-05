@@ -5,11 +5,6 @@ metadata:
   namespace: grafana
 spec:
   instances: 2
-  plugins:
-  - name: barman-cloud.cloudnative-pg.io
-    isWALArchiver: true
-    parameters:
-      barmanObjectName: grafana-backup-store
   storage:
     size: 10Gi
   bootstrap:

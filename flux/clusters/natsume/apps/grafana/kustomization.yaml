@@ -5,8 +5,7 @@ resources:
 - helmrepository-grafana-repo.yaml
 - onepassworditem.yaml
 - onepassworditem-cnpg-backup.yaml
-- objectstore.yaml
 - cluster.yaml
-- scheduledbackup.yaml
+- cronjob-pg-dump.yaml
 - helmrelease-grafana.yaml
 - podmonitor.yaml

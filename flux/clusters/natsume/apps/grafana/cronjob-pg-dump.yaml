@@ -1,0 +1,87 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: grafana-cluster-pg-dump
+  namespace: grafana
+spec:
+  schedule: "0 3 * * *"
+  timeZone: Asia/Tokyo
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: pg-dump
+            image: postgres:18.3-alpine3.23
+            env:
+            - name: PGHOST
+              value: grafana-cluster-ro
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-cluster-app
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-cluster-app
+                  key: password
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-cluster-app
+                  key: dbname
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: cnpg-backup-s3-secret
+                  key: ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cnpg-backup-s3-secret
+                  key: ACCESS_SECRET_KEY
+            - name: AWS_ENDPOINT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cnpg-backup-s3-secret
+                  key: ENDPOINT
+            - name: BUCKET
+              value: cnpg-backup
+            - name: PREFIX
+              value: dumps/grafana-cluster
+            - name: CLUSTER_NAME
+              value: grafana-cluster
+            - name: RETENTION_DAYS
+              value: "7"
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              apk add --no-cache aws-cli coreutils
+              TS=$(date -u +%Y%m%d-%H%M%S)
+              KEY="$PREFIX/$CLUSTER_NAME-$TS.dump"
+              echo "Dumping $PGDATABASE from $PGHOST to s3://$BUCKET/$KEY"
+              pg_dump -Fc --no-owner --no-privileges \
+                | aws s3 cp --endpoint-url "$AWS_ENDPOINT_URL" - "s3://$BUCKET/$KEY"
+              CUTOFF=$(date -u -d "$RETENTION_DAYS days ago" +%Y%m%d)
+              echo "Pruning dumps older than $CUTOFF"
+              aws s3 ls --endpoint-url "$AWS_ENDPOINT_URL" "s3://$BUCKET/$PREFIX/" \
+                | awk -v c="$CLUSTER_NAME-$CUTOFF" '$4 != "" && $4 < c {print $4}' \
+                | while read -r f; do
+                    echo "Deleting $f"
+                    aws s3 rm --endpoint-url "$AWS_ENDPOINT_URL" "s3://$BUCKET/$PREFIX/$f"
+                  done
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi

@@ -5,7 +5,6 @@ resources:
 - helmrepository-sui-repo.yaml
 - helmrelease-sui.yaml
 - cluster.yaml
-- objectstore.yaml
-- scheduledbackup.yaml
 - onepassworditem-cnpg-backup.yaml
+- cronjob-pg-dump.yaml
 - podmonitor.yaml

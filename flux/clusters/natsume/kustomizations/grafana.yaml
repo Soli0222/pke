@@ -12,13 +12,8 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  postBuild:
-    substituteFrom:
-    - kind: Secret
-      name: cnpg-backup-flux-vars
   dependsOn:
   - name: cert-manager-config
   - name: cnpg
-  - name: cnpg-backup-config
   - name: prometheus-operator-crd
   - name: traefik

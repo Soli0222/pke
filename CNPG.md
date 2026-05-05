@@ -24,46 +24,63 @@ dependsOn:
 - name: cnpg-backup-config
 ```
 
-### アプリごとの構成
+### バックアップ方式
 
-各 namespace に4点セット:
+クラスタごとに **2 通り** ある。書き込みが活発な `misskey` のみ WAL archive + base backup で PITR 可能、それ以外は日次の `pg_dump` (custom format) を S3 に投げる単純構成。
+
+#### 方式 A: WAL archive + base backup (misskey のみ)
+
+namespace に4点セット:
 
 1. `Cluster` (postgresql.cnpg.io/v1) — `plugins[]` に `barman-cloud.cloudnative-pg.io` を参照
 2. `ObjectStore` (barmancloud.cnpg.io/v1) — S3 接続情報、retention `7d`、gzip 圧縮
 3. `ScheduledBackup` — 日次 base backup、`method: plugin`
 4. `OnePasswordItem` — S3 クレデンシャル
 
+#### 方式 B: pg_dump CronJob (grafana / sui / spotify-reblend / spotify-nowplaying)
+
+namespace に3点セット:
+
+1. `Cluster` — `plugins[]` 無し (=archive_mode off で起動)
+2. `OnePasswordItem` — S3 クレデンシャル (`cnpg-backup-s3-secret`、A と同じ)
+3. `CronJob` (`cronjob-pg-dump.yaml`) — 毎日 03:00 JST に `pg_dump -Fc | aws s3 cp -` で R2 にアップロード、7日より古いオブジェクトを同 Job 内で削除
+
+`CronJob.spec.timeZone: Asia/Tokyo` を明示しているため `0 3 * * *` がそのまま JST 03:00 として解釈される。CNPG の `<cluster>-app` Secret から認証情報を取得し、`<cluster>-ro` Service 経由でレプリカから dump を取る (primary 負荷を避けるため)。
+
 ### S3 レイアウト
 
-共有バケット `s3://cnpg-backup/` にクラスタ名サブディレクトリで分かれて配置される:
+共有バケット `s3://cnpg-backup/` を以下のように使い分け:
 
 ```
-s3://cnpg-backup/<cluster-name>/base/<backup-id>/   # base backup
-s3://cnpg-backup/<cluster-name>/wals/               # WAL
+s3://cnpg-backup/<cluster-name>/base/<backup-id>/      # 方式A: base backup
+s3://cnpg-backup/<cluster-name>/wals/                  # 方式A: WAL
+s3://cnpg-backup/dumps/<cluster-name>/<cluster-name>-YYYYMMDD-HHMMSS.dump   # 方式B: pg_dump
 ```
 
 ### WAL アーカイブ方針
 
-**全クラスタで `isWALArchiver: true`**。
+**WAL archive は `misskey` のみ**。書き込み頻度が高く PITR に意味があるので継続。
 
-過去に `false` を試したが、`archive_mode` / `archive_command` が postgres 側に残ったままで実質止まらなかったため `true` に戻して PITR 可能な構成を維持している。`false` に変えるだけでは効かない (cluster の plugins[] からエントリ削除等が必要) ことが判明したので、いじらないこと。
+それ以外のクラスタは過去に WAL archive が有効化されていたが、書き込みがイベント駆動でほぼゼロのため `archive_timeout=300` も発火せず、Grafana ダッシュボード上で「Last archived WAL」が常時赤くなり監視ノイズになっていた。実装上の問題ではなく PITR の必要性が薄いと判断して pg_dump 方式に切り替えた。
+
+WAL archive を切るには **`Cluster.spec.plugins[]` から `barman-cloud.cloudnative-pg.io` のエントリを丸ごと削除する**。`isWALArchiver: false` にしただけでは postgres 側の `archive_mode` が残ったままで止まらないので注意 (過去にハマった)。
 
 ### 現在のクラスタ一覧
 
-`ScheduledBackup.spec.schedule` は CNPG オペレータが UTC で評価する。下表は **UTC 表記 / JST 換算 (= UTC + 9h)** を併記している。
-
-| アプリ | namespace | Cluster名 | instances | schedule (UTC) | JST |
+| アプリ | namespace | Cluster名 | instances | バックアップ方式 | スケジュール |
 |---|---|---|---|---|---|
-| misskey | misskey | misskey-cluster | 2 | `0 30 18 * * *` | 03:30 |
-| grafana | grafana | grafana-cluster | 2 | `0 20 18 * * *` | 03:20 |
-| sui | sui | sui-cluster | 2 | `0 0 18 * * *` | 03:00 |
-| spotify-nowplaying | spotify-nowplaying | spn-cluster | 2 | `0 20 18 * * *` | 03:20 |
-| spotify-reblend | spotify-reblend | reblend-cluster | 2 | `0 10 18 * * *` | 03:10 |
+| misskey | misskey | misskey-cluster | 2 | A: WAL archive + base | `0 30 18 * * *` UTC = 03:30 JST |
+| grafana | grafana | grafana-cluster | 2 | B: pg_dump | `0 3 * * *` Asia/Tokyo |
+| sui | sui | sui-cluster | 2 | B: pg_dump | `0 3 * * *` Asia/Tokyo |
+| spotify-nowplaying | spotify-nowplaying | spn-cluster | 2 | B: pg_dump | `0 3 * * *` Asia/Tokyo |
+| spotify-reblend | spotify-reblend | reblend-cluster | 2 | B: pg_dump | `0 3 * * *` Asia/Tokyo |
 | misskey-stg | misskey-stg | misskey-stg-cluster | 1 | (バックアップ無し) | — |
+
+方式 A の `ScheduledBackup.spec.schedule` は CNPG オペレータが **UTC で評価** する (timeZone 指定不可)。方式 B の Kubernetes `CronJob` は `spec.timeZone` で TZ 明示可能。
 
 ---
 
-## 手動バックアップ
+## 手動バックアップ (方式 A: misskey)
 
 ### kubectl cnpg プラグイン経由 (推奨)
 
@@ -110,6 +127,31 @@ kubectl describe backup <backup-name> -n <namespace>
 ```
 
 `status.phase: completed` になれば完了。S3 上の path は `status.backupId` で確認できる。
+
+---
+
+## 手動バックアップ (方式 B: pg_dump)
+
+### CronJob を即時実行する
+
+```bash
+kubectl -n <namespace> create job --from=cronjob/<cluster>-pg-dump <cluster>-pg-dump-manual-$(date +%Y%m%d-%H%M%S)
+kubectl -n <namespace> logs -f job/<cluster>-pg-dump-manual-...
+```
+
+例:
+
+```bash
+kubectl -n grafana create job --from=cronjob/grafana-cluster-pg-dump grafana-cluster-pg-dump-manual-20260505
+```
+
+### Pod に入って手で叩く
+
+```bash
+kubectl -n <namespace> run pgdump-oneshot --rm -it \
+  --image=postgres:18.3-alpine3.23 --restart=Never -- /bin/sh
+# 中で env を埋めて pg_dump -Fc -h <cluster>-ro -U <user> -d <db> > /tmp/x.dump
+```
 
 ---
 
@@ -206,6 +248,70 @@ kubectl -n misskey exec misskey-cluster-1 -c postgres -- psql -U postgres -tAc "
 ### 切替
 
 復元クラスタの動作確認が済んだら、Service や DSN を新クラスタへ向け直す（または旧クラスタを削除して新クラスタを正規名にリネームする運用は CNPG の機能では難しいので、**アプリ側の接続先を切り替える** のが現実的）。
+
+---
+
+## pg_dump からのリストア (方式 B)
+
+方式 B のクラスタは PITR ではなく単一 dump からの復元のみ。流れは「クラスタを作り直す → dump を流し込む」。
+
+### 1. dump を取得
+
+```bash
+export AWS_ACCESS_KEY_ID=<ACCESS_KEY_ID>
+export AWS_SECRET_ACCESS_KEY=<ACCESS_SECRET_KEY>
+export AWS_ENDPOINT_URL=<CNPG_BACKUP_ENDPOINT_URL>
+
+aws s3 ls --endpoint-url $AWS_ENDPOINT_URL s3://cnpg-backup/dumps/<cluster-name>/
+aws s3 cp --endpoint-url $AWS_ENDPOINT_URL \
+  s3://cnpg-backup/dumps/<cluster-name>/<cluster-name>-YYYYMMDD-HHMMSS.dump \
+  ./restore.dump
+```
+
+### 2. クラスタを作り直す (または別名で立てる)
+
+`bootstrap.initdb` で空クラスタを起動するだけ。`owner` は **元と同じユーザー名・DB名** にすること。`<cluster-name>-app` Secret に同じ DSN が入るので、アプリの接続設定を変えずに済む。
+
+```yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: grafana-cluster
+  namespace: grafana
+spec:
+  instances: 2
+  storage:
+    size: 10Gi
+  bootstrap:
+    initdb:
+      database: grafana   # 元と同じ
+      owner: grafana      # 元と同じ
+```
+
+### 3. dump を流し込む
+
+`pg_dump -Fc` で取った dump は `pg_restore` で食わせる。
+
+```bash
+kubectl -n <namespace> port-forward svc/<cluster-name>-rw 5432:5432 &
+
+PGUSER=$(kubectl -n <namespace> get secret <cluster-name>-app -o jsonpath='{.data.username}' | base64 -d)
+PGPASSWORD=$(kubectl -n <namespace> get secret <cluster-name>-app -o jsonpath='{.data.password}' | base64 -d)
+PGDATABASE=$(kubectl -n <namespace> get secret <cluster-name>-app -o jsonpath='{.data.dbname}' | base64 -d)
+
+PGPASSWORD=$PGPASSWORD pg_restore \
+  -h localhost -p 5432 -U $PGUSER -d $PGDATABASE \
+  --no-owner --no-privileges \
+  -j 4 \
+  ./restore.dump
+```
+
+ポイント:
+
+- `--no-owner --no-privileges` を付ける (dump 時にも付けているのでロール存在に依存しない)
+- `-j 4` で並列復元 (custom format でのみ可能)
+- ロールは `bootstrap.initdb.owner` で再作成済みなので別途投入不要
+- 復元後はアプリ Pod を再起動して接続を張り直す
 
 ---
 

@@ -20,12 +20,18 @@
     'helmfile',
     'helm-requirements',
     'helm-values',
+    'kubernetes',
     'custom.regex',
     'terraform',
   ],
   flux: {
     managerFilePatterns: [
       '/(^|/)flux/.+\\.ya?ml$/',
+    ],
+  },
+  kubernetes: {
+    managerFilePatterns: [
+      '/(^|/)flux/.+/cronjob-.+\\.ya?ml$/',
     ],
   },
   packageRules: [
@@ -66,6 +72,15 @@
       commitMessageTopic: 'Ansible {{depName}}',
       addLabels: [
         'manager:ansible',
+      ],
+    },
+    {
+      matchManagers: [
+        'kubernetes',
+      ],
+      commitMessageTopic: 'Kubernetes image {{depName}}',
+      addLabels: [
+        'manager:kubernetes',
       ],
     },
     {
