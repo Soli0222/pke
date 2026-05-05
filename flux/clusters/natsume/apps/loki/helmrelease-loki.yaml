@@ -42,7 +42,7 @@ spec:
         compress_responses: true
         log_queries_longer_than: 10s
       limits_config:
-        retention_period: 60d
+        retention_period: 14d
         query_timeout: 60s
         split_queries_by_interval: 1h
         max_query_series: 5000
