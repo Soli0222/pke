@@ -4,7 +4,7 @@ metadata:
   name: sui-backup-store
   namespace: sui
 spec:
-  retentionPolicy: 30d
+  retentionPolicy: 7d
   configuration:
     destinationPath: s3://cnpg-backup/
     endpointURL: ${CNPG_BACKUP_ENDPOINT_URL}

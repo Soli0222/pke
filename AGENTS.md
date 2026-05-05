@@ -122,7 +122,7 @@ Ansible (OS / etcd / K3s / Longhorn ディスク) -> Helmfile `-e <cluster>` (CN
 | アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `misskey-stg`, `mk-stream`, `navidrome`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 | 運用 | `renovate-operator` |
 
-CNPG `Cluster` を持つアプリ: `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` (いずれも `instances: 2`)。`grafana` と `misskey` は `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次バックアップを取得する。`misskey` クラスタは pgroonga 拡張入りの `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用、永続ストレージは 150Gi。
+CNPG `Cluster` を持つアプリ: `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` (いずれも `instances: 2`、`misskey-stg` は `instances: 1` でバックアップ無し)。各クラスタは `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブを取得 (retention `7d`)。`misskey` クラスタは pgroonga 拡張入りの `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用、永続ストレージは 150Gi。バックアップ運用とリストア手順の詳細は `CNPG.md` を参照。
 
 `cert-manager-config` には `letsencrypt-dns01` / `letsencrypt-http01` の ClusterIssuer に加え、Traefik mTLS 用の自己署名 CA / Certificate / TLSOption (`pke-natsume-mtls`) が含まれる。
 

@@ -206,7 +206,7 @@ natsume との主な差分:
 
 ### CloudNativePG クラスタ
 
-Postgres を必要とするアプリは CNPG `Cluster` を `apps/<app>/cluster.yaml` に同梱しています。現行の `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` クラスタは `instances: 2` で動作します。`grafana` と `misskey` の各クラスタは `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次バックアップ (`apps/<app>/scheduledbackup.yaml` + `apps/<app>/objectstore.yaml`) を取得します。`misskey` クラスタは pgroonga 拡張を含む `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用し、永続ストレージは 150Gi で動作します。
+Postgres を必要とするアプリは CNPG `Cluster` を `apps/<app>/cluster.yaml` に同梱しています。現行の `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` クラスタは `instances: 2` で動作し、`barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブ (`apps/<app>/scheduledbackup.yaml` + `apps/<app>/objectstore.yaml`、retention `7d`) を取得します。`misskey` クラスタは pgroonga 拡張を含む `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用し、永続ストレージは 150Gi で動作します。バックアップ運用の詳細とリストア手順は [CNPG.md](./CNPG.md) を参照してください。
 
 ## ネットワーク
 

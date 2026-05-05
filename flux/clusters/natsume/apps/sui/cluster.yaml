@@ -7,7 +7,7 @@ spec:
   instances: 2
   plugins:
   - name: barman-cloud.cloudnative-pg.io
-    isWALArchiver: false
+    isWALArchiver: true
     parameters:
       barmanObjectName: sui-backup-store
   storage:

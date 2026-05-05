@@ -37,7 +37,7 @@ spec:
       autovacuum_analyze_scale_factor: "0.05"
   plugins:
   - name: barman-cloud.cloudnative-pg.io
-    isWALArchiver: false
+    isWALArchiver: true
     parameters:
       barmanObjectName: misskey-backup-store
   storage:

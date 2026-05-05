@@ -29,7 +29,7 @@ dependsOn:
 各 namespace に4点セット:
 
 1. `Cluster` (postgresql.cnpg.io/v1) — `plugins[]` に `barman-cloud.cloudnative-pg.io` を参照
-2. `ObjectStore` (barmancloud.cnpg.io/v1) — S3 接続情報、retention `30d`、gzip 圧縮
+2. `ObjectStore` (barmancloud.cnpg.io/v1) — S3 接続情報、retention `7d`、gzip 圧縮
 3. `ScheduledBackup` — 日次 base backup、`method: plugin`
 4. `OnePasswordItem` — S3 クレデンシャル
 
@@ -39,17 +39,14 @@ dependsOn:
 
 ```
 s3://cnpg-backup/<cluster-name>/base/<backup-id>/   # base backup
-s3://cnpg-backup/<cluster-name>/wals/               # WAL (現在は未使用)
+s3://cnpg-backup/<cluster-name>/wals/               # WAL
 ```
 
 ### WAL アーカイブ方針
 
-**全クラスタで `isWALArchiver: false`**。理由:
+**全クラスタで `isWALArchiver: true`**。
 
-- 各クラスタは `instances: 2` で streaming replication が効いているため、レプリカブートストラップ用の WAL アーカイブは不要
-- PITR 要件は無く、日次 base backup で「最大24時間ぶんのロス」が許容できる用途のみ
-
-PITR が必要になったクラスタが出てきたら、当該 `Cluster` の `plugins[].isWALArchiver` を `true` に戻す。
+過去に `false` を試したが、`archive_mode` / `archive_command` が postgres 側に残ったままで実質止まらなかったため `true` に戻して PITR 可能な構成を維持している。`false` に変えるだけでは効かない (cluster の plugins[] からエントリ削除等が必要) ことが判明したので、いじらないこと。
 
 ### 現在のクラスタ一覧
 
@@ -153,7 +150,58 @@ spec:
 - `serverName` は **S3 上のサブディレクトリ名 = 元 Cluster 名** を指定
 - `bootstrap.recovery` は新規クラスタにしか効かない (起動済みクラスタは bootstrap を再実行しない)
 - 特定の base backup を選びたいときは `bootstrap.recovery.backup.name` で `Backup` リソースを参照
-- WAL アーカイブが無いので `recoveryTarget` (PITR) は使えない。base backup の完了時点まで戻る
+- WAL アーカイブが有効なので `bootstrap.recovery.recoveryTarget` で PITR 可能 (時刻、LSN、トランザクションID等を指定)
+
+### PITR (特定時点への復元)
+
+base backup 完了時点ではなく「障害発生直前」など任意の時点まで戻す場合は `bootstrap.recovery.recoveryTarget` を指定する。WAL アーカイブが有効なクラスタでのみ可能。
+
+```yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: misskey-cluster-restored
+  namespace: misskey
+spec:
+  instances: 2
+  imageName: ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine:18
+  storage:
+    size: 150Gi
+  bootstrap:
+    recovery:
+      source: misskey-cluster-source
+      recoveryTarget:
+        targetTime: "2026-05-05 02:30:00.000000+00:00"   # この時点まで WAL を再生
+        # または以下のいずれか:
+        # targetLSN: "0/1A000000"          # LSN 指定
+        # targetXID: "1234567"              # トランザクション ID 指定
+        # targetName: "before-migration"    # 事前に pg_create_restore_point() で作った名前
+        # targetImmediate: true             # base backup の整合点で停止 (= PITR 無し相当)
+        targetInclusive: true               # 指定値そのものを含めるか (default: true)
+  externalClusters:
+  - name: misskey-cluster-source
+    plugin:
+      name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: misskey-backup-store
+        serverName: misskey-cluster
+```
+
+ポイント:
+
+- `targetTime` は ISO8601 形式 (タイムゾーン込み推奨)。**`targetTime` は復元対象の base backup 完了時刻より後** である必要がある。古い時点に戻したい場合は古い base backup を `bootstrap.recovery.backup.name` で明示的に選択する
+- `recoveryTarget` のキー (`targetTime` / `targetLSN` / `targetXID` / `targetName` / `targetImmediate`) は **どれか1つだけ** 指定する
+- 復元中は postgres が WAL を順に再生して指定時点で停止する。WAL量が多いと数十分〜数時間かかることもある
+- 復元対象の WAL が retention (`7d`) で消えていると失敗する。古い時点への PITR が必要なら base backup を計画的に長期保管する別運用が必要
+
+ターゲット時刻を確認する典型的な手順:
+
+```bash
+# 元クラスタが残っているなら、戻したい時刻の直前のトランザクションIDを記録
+kubectl -n misskey exec misskey-cluster-1 -c postgres -- psql -U postgres -tAc "SELECT now(), txid_current()"
+
+# 元クラスタが死んでいる場合は、想定の障害発生時刻を targetTime に入れる
+```
 
 ### 切替
 
