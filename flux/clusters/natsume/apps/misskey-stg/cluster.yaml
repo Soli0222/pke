@@ -4,7 +4,7 @@ metadata:
   name: misskey-stg-cluster
   namespace: misskey-stg
 spec:
-  instances: 1
+  instances: 2
   imageName: ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine:18
   storage:
     size: 10Gi
