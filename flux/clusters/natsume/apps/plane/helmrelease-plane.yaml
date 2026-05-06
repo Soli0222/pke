@@ -97,7 +97,7 @@ spec:
           key: AWS_SECRET_ACCESS_KEY
 
     migrator:
-      strategy: helmHook
+      strategy: managedJob
 
     web: &smallFrontend
       memoryLimit: 512Mi
