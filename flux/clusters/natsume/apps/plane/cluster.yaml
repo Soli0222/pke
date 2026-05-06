@@ -4,8 +4,8 @@ metadata:
   name: plane-cluster
   namespace: plane
 spec:
-  instances: 1
-  primaryUpdateMethod: restart
+  instances: 2
+  primaryUpdateMethod: switchover
   smartShutdownTimeout: 60
   storage:
     size: 5Gi
