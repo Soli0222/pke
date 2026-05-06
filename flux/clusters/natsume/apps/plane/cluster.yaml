@@ -1,0 +1,15 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: plane-cluster
+  namespace: plane
+spec:
+  instances: 1
+  primaryUpdateMethod: restart
+  smartShutdownTimeout: 60
+  storage:
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: plane
+      owner: plane

@@ -1,0 +1,9 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: plane-admin-basic-auth
+  namespace: plane
+spec:
+  basicAuth:
+    secret: plane-admin-basic-auth
+    realm: plane

@@ -20,6 +20,7 @@ resources:
 - kustomizations/emoji-service.yaml
 - kustomizations/navidrome.yaml
 - kustomizations/note-tweet-connector.yaml
+- kustomizations/plane.yaml
 - kustomizations/registry.yaml
 - kustomizations/renovate-operator.yaml
 - kustomizations/rss-fetcher.yaml
