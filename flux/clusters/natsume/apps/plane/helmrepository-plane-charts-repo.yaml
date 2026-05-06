@@ -1,8 +1,0 @@
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: plane-charts-repo
-  namespace: plane
-spec:
-  interval: 1h
-  url: https://soli0222.github.io/plane-charts
