@@ -113,7 +113,11 @@ spec:
       cpuLimit: 500m
       cpuRequest: 100m
       memoryRequest: 128Mi
-    worker: *smallBackend
+    worker:
+      memoryLimit: 1Gi
+      cpuLimit: 500m
+      cpuRequest: 100m
+      memoryRequest: 256Mi
     beatworker:
       memoryLimit: 256Mi
       cpuLimit: 250m
