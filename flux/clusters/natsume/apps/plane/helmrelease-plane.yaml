@@ -83,7 +83,7 @@ spec:
       provider: s3
       useMinio: false
       bucket: plane-uploads
-      region: auto
+      region: ap-northeast-1
       fileSizeLimit: "5242880"
       endpointUrlFrom:
         secretKeyRef:
