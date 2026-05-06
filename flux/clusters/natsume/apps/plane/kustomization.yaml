@@ -8,6 +8,7 @@ resources:
 - helmrepository-plane-charts-repo.yaml
 - helmrepository-valkey-repo.yaml
 - cluster.yaml
+- middleware-admin-god-mode-slash.yaml
 - middleware-admin-basic-auth.yaml
 - helmrelease-plane-valkey.yaml
 - helmrelease-plane.yaml

@@ -35,6 +35,8 @@ spec:
       admin:
         enabled: true
         middlewares:
+        - name: plane-admin-god-mode-slash
+          namespace: plane
         - name: plane-admin-basic-auth
           namespace: plane
       tls:

@@ -1,0 +1,10 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: plane-admin-god-mode-slash
+  namespace: plane
+spec:
+  redirectRegex:
+    regex: ^https?://([^/]+)/god-mode$
+    replacement: https://${1}/god-mode/
+    permanent: true
