@@ -1,5 +1,5 @@
 ---
-k3s_version: "v1.35.4+k3s1"
+k3s_version: "v1.36.0+k3s1"
 k3s_node_role: server
 k3s_use_private_netplan_address: true
 k3s_external_ip_netplan_source: global  # global, private, or "" to disable
