@@ -29,6 +29,7 @@ spec:
         format: json
       access:
         enabled: true
+        format: json
     metrics:
       addInternals: true
       prometheus:
