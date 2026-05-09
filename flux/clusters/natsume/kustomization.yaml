@@ -19,7 +19,6 @@ resources:
 - kustomizations/spotify-reblend.yaml
 - kustomizations/sui.yaml
 - kustomizations/summaly.yaml
-- kustomizations/uptime-kuma.yaml
 - kustomizations/grafana.yaml
 - kustomizations/mimir.yaml
 - kustomizations/loki.yaml
