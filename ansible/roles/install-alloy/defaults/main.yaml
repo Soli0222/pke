@@ -9,8 +9,9 @@ loki_endpoint: https://loki.pstr.space/loki/api/v1/push
 mimir_org_id: anonymous
 loki_org_id: fake
 
-# Paths written by this role after reading the PKE natsume mTLS item from
-# 1Password.
+# Paths written by this role after reading the PKE natsume mTLS file fields
+# from 1Password.
+mtls_onepassword_vault: Kubernetes
 mtls_onepassword_item: pke_natsume_mtls
 tls_cert_dir: /etc/cert/pke-natsume
 tls_cert_path: "{{ tls_cert_dir }}/tls.crt"

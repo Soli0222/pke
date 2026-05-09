@@ -14,18 +14,42 @@
   when: k3s_registry_mtls_enabled | bool
 
 - name: Retrieve registry mTLS certificate from 1Password
-  ansible.builtin.set_fact:
-    k3s_registry_mtls_cert_b64: "{{ lookup('community.general.onepassword', k3s_registry_mtls_onepassword_item, field='tls.crt', vault=k3s_registry_mtls_onepassword_vault) }}"
+  ansible.builtin.command:
+    argv:
+      - op
+      - read
+      - "op://{{ k3s_registry_mtls_onepassword_vault }}/{{ k3s_registry_mtls_onepassword_item }}/tls.crt"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  register: k3s_registry_mtls_cert
+  no_log: true
   when: k3s_registry_mtls_enabled | bool
 
 - name: Retrieve registry mTLS private key from 1Password
-  ansible.builtin.set_fact:
-    k3s_registry_mtls_key_b64: "{{ lookup('community.general.onepassword', k3s_registry_mtls_onepassword_item, field='tls.key', vault=k3s_registry_mtls_onepassword_vault) }}"
+  ansible.builtin.command:
+    argv:
+      - op
+      - read
+      - "op://{{ k3s_registry_mtls_onepassword_vault }}/{{ k3s_registry_mtls_onepassword_item }}/tls.key"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  register: k3s_registry_mtls_key
+  no_log: true
   when: k3s_registry_mtls_enabled | bool
 
 - name: Retrieve registry server CA from 1Password
-  ansible.builtin.set_fact:
-    k3s_registry_mtls_ca_b64: "{{ lookup('community.general.onepassword', k3s_registry_mtls_onepassword_item, field=k3s_registry_mtls_ca_onepassword_field, vault=k3s_registry_mtls_onepassword_vault) }}"
+  ansible.builtin.command:
+    argv:
+      - op
+      - read
+      - "op://{{ k3s_registry_mtls_onepassword_vault }}/{{ k3s_registry_mtls_onepassword_item }}/{{ k3s_registry_mtls_ca_onepassword_field }}"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  register: k3s_registry_mtls_ca
+  no_log: true
   when:
     - k3s_registry_mtls_enabled | bool
     - k3s_registry_mtls_ca_path | length > 0
@@ -49,34 +73,37 @@
     mode: "0755"
   when: k3s_registry_mtls_enabled | bool
 
-- name: Decode and save registry mTLS certificate
+- name: Save registry mTLS certificate
   ansible.builtin.copy:
-    content: "{{ k3s_registry_mtls_cert_b64 | b64decode }}"
+    content: "{{ k3s_registry_mtls_cert.stdout }}\n"
     dest: "{{ k3s_registry_mtls_cert_path }}"
     owner: root
     group: root
     mode: "0644"
   notify: Restart k3s for registry mTLS
+  no_log: true
   when: k3s_registry_mtls_enabled | bool
 
-- name: Decode and save registry mTLS private key
+- name: Save registry mTLS private key
   ansible.builtin.copy:
-    content: "{{ k3s_registry_mtls_key_b64 | b64decode }}"
+    content: "{{ k3s_registry_mtls_key.stdout }}\n"
     dest: "{{ k3s_registry_mtls_key_path }}"
     owner: root
     group: root
     mode: "0600"
   notify: Restart k3s for registry mTLS
+  no_log: true
   when: k3s_registry_mtls_enabled | bool
 
-- name: Decode and save registry server CA
+- name: Save registry server CA
   ansible.builtin.copy:
-    content: "{{ k3s_registry_mtls_ca_b64 | b64decode }}"
+    content: "{{ k3s_registry_mtls_ca.stdout }}\n"
     dest: "{{ k3s_registry_mtls_ca_path }}"
     owner: root
     group: root
     mode: "0644"
   notify: Restart k3s for registry mTLS
+  no_log: true
   when:
     - k3s_registry_mtls_enabled | bool
     - k3s_registry_mtls_ca_path | length > 0
