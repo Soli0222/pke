@@ -31,7 +31,7 @@ spec:
       replicas: 1 
     persistence:
       defaultClass: true
-      defaultClassReplicaCount: 2
+      defaultClassReplicaCount: 1
       defaultDataLocality: best-effort
       unmapMarkSnapChainRemoved: enabled
       dataEngine: v1
