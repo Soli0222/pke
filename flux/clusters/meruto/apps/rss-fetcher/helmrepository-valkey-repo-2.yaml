@@ -1,0 +1,8 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: valkey-repo-2
+  namespace: rss-fetcher
+spec:
+  interval: 1h
+  url: https://valkey.io/valkey-helm

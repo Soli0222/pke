@@ -1,0 +1,29 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: emoji-renderer
+  namespace: emoji-service
+spec:
+  interval: 10m
+  releaseName: emoji-renderer
+  targetNamespace: emoji-service
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: emoji-renderer
+      version: 0.1.2
+      sourceRef:
+        kind: HelmRepository
+        name: emoji-renderer-repo
+        namespace: emoji-service
+      interval: 1h
+  values:
+    monitoring:
+      serviceMonitor:
+        enabled: true
+      prometheusRule:
+        enabled: true

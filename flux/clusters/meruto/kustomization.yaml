@@ -2,13 +2,22 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - kustomizations/prometheus-operator-crd.yaml
+- kustomizations/blackbox-exporter-probes.yaml
 - kustomizations/cert-manager.yaml
 - kustomizations/cert-manager-config.yaml
 - kustomizations/cloudflare-tunnel-ingress-controller.yaml
 - kustomizations/cnpg.yaml
+- kustomizations/daypassed-bot.yaml
+- kustomizations/emoji-service.yaml
 - kustomizations/external-dns.yaml
 - kustomizations/external-secrets.yaml
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/longhorn.yaml
 - kustomizations/longhorn-config.yaml
+- kustomizations/mc-mirror-cronjob.yaml
+- kustomizations/mk-stream.yaml
+- kustomizations/note-tweet-connector.yaml
+- kustomizations/prometheus-blackbox-exporter.yaml
+- kustomizations/renovate-operator.yaml
+- kustomizations/rss-fetcher.yaml
 - kustomizations/traefik.yaml
