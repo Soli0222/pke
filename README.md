@@ -8,7 +8,7 @@
 
 | クラスタ | ノード | 役割 | 特記事項 |
 |----------|--------|------|----------|
-| `natsume` | `natsume-03` (control-plane), `natsume-06` / `natsume-07` (worker) | 本番ワークロード / 監視基盤 / DB | Public IP 付き。`natsume-03` が external etcd / K3s server、`natsume-03` / `natsume-06` が Longhorn ディスクを持つ |
+| `natsume` | `natsume-03` | 本番ワークロード / 監視基盤 / DB | Public IP 付き。`natsume-03` が external etcd / K3s server / Longhorn ディスクを持つ |
 | `meruto` | `meruto-01` | 単一ノード | Private インターフェースのみ。Longhorn は既存 `ubuntu-vg` の空き領域を利用。Tailscale なし |
 
 各ホストは `host_vars/<host>.yaml` に `cluster: <name>` を必ず設定します。Alloy / etcd / Flux などはこの値を起点にクラスター固有の設定を組み立てます。
@@ -19,8 +19,6 @@
 flowchart TB
     subgraph Natsume["cluster: natsume"]
         N_CP["natsume-03<br/>control-plane (etcd + K3s server) + Longhorn"]
-        N_W1["natsume-06<br/>worker + Longhorn"]
-        N_W2["natsume-07<br/>worker"]
     end
 
     subgraph Meruto["cluster: meruto"]
@@ -183,10 +181,10 @@ Flux のクラスタ定義は `flux/clusters/<cluster>/` に配置します (`na
 | 基盤 / CRD | `cnpg`, `cnpg-backup-config`, `cert-manager`, `cert-manager-config`, `prometheus-operator-crd` |
 | ストレージ | `longhorn`, `longhorn-config` |
 | ネットワーク | `traefik`, `external-dns`, `external-dns-config` |
-| 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics`, `uptime-kuma` |
-| アプリ | `misskey`, `navidrome`, `registry`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
+| 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics` |
+| アプリ | `misskey`, `navidrome`, `note-tweet-connector`, `registry`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
-`external-dns-config` はクラスタ全体・各ノードの DNS レコード (`natsume(-0X).str08.net` / `pstr.space` / `tailscale.str08.net`) を `DNSEndpoint` で宣言します。`cnpg-backup-config` は CNPG の barman-cloud バックアップで共通利用する R2 認証情報 (`OnePasswordItem` 経由) を集約します。`cert-manager-config` には `letsencrypt-dns01` / `letsencrypt-http01` の ClusterIssuer に加え、Traefik mTLS 用の自己署名 CA / Certificate / TLSOption (`pke-natsume-mtls`) が含まれます。
+`external-dns-config` はクラスタ入口とノードの DNS レコードを `DNSEndpoint` で宣言します。`cnpg-backup-config` は CNPG の barman-cloud バックアップで共通利用する R2 認証情報 (`OnePasswordItem` 経由) を集約します。`cert-manager-config` には `letsencrypt-dns01` / `letsencrypt-http01` の ClusterIssuer に加え、Traefik mTLS 用の自己署名 CA / Certificate / TLSOption (`pke-natsume-mtls`) が含まれます。
 
 ### meruto クラスターの管理コンポーネント
 
@@ -196,7 +194,7 @@ Flux のクラスタ定義は `flux/clusters/<cluster>/` に配置します (`na
 | ストレージ | `longhorn`, `longhorn-config` |
 | ネットワーク | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller` |
 | 監視 | `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes` |
-| アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `note-tweet-connector`, `rss-fetcher` |
+| アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `rss-fetcher` |
 | 運用 | `renovate-operator` |
 
 natsume との主な差分:
@@ -206,7 +204,6 @@ natsume との主な差分:
 - **cloudflare-tunnel-ingress-controller**: `cloudflared-pke-meruto` `OnePasswordItem` を参照し、Cloudflare Tunnel 経由の IngressClass `cloudflare-tunnel` を提供する。controller chart は `0.0.23`、管理する `cloudflared` image tag は `2026.3.0`
 - **cert-manager-config**: `letsencrypt-dns01` ClusterIssuer + `cloudflare-api-token` `OnePasswordItem` のみ。`letsencrypt-http01` と Traefik mTLS 用の CA / TLSOption は含まない
 - **renovate-operator**: GitHub App token 生成に External Secrets Operator の `GithubAccessToken` generator を使う。Ingress は Traefik (`ingressClassName: traefik`) と `letsencrypt-dns01`
-- **note-tweet-connector**: Ingress は Cloudflare Tunnel (`className: cloudflare-tunnel`)
 - 含まれないコンポーネント: `cnpg-backup-config`, `external-dns-config`, Mimir / Loki / Grafana / Alloy 等の natsume 側監視スタック
 
 ### CloudNativePG クラスタ
@@ -219,11 +216,11 @@ Postgres を必要とする natsume のアプリは CNPG `Cluster` を `apps/<ap
 
 | 項目 | 値 |
 |------|----|
-| ノード | `natsume-03` (control-plane), `natsume-06` / `natsume-07` (worker) |
-| Public IPv4 | `133.18.141.63/23` (03), `133.18.141.179/23` (06), `133.18.124.51/23` (07) |
-| Public IPv6 | `2406:8c00:0:3464:133:18:141:63/64` (03), `2406:8c00:0:3464:133:18:141:179/64` (06), `2406:8c00:0:3459:133:18:124:51/64` (07) |
-| Private IPv4 | `192.168.9.3/24` (03), `192.168.9.6/24` (06), `192.168.9.7/24` (07) |
-| Private IPv6 | `fd00:192:168:9::3/64` (03), `fd00:192:168:9::6/64` (06), `fd00:192:168:9::7/64` (07) |
+| ノード | `natsume-03` |
+| Public IPv4 | `133.18.141.63/23` |
+| Public IPv6 | `2406:8c00:0:3464:133:18:141:63/64` |
+| Private IPv4 | `192.168.9.3/24` |
+| Private IPv6 | `fd00:192:168:9::3/64` |
 
 ### meruto クラスター
 
@@ -241,12 +238,12 @@ Postgres を必要とする natsume のアプリは CNPG `Cluster` を `apps/<ap
 | Service CIDR | `10.2.0.0/16`, `fd00:10:2::/64` |
 | Cluster DNS | `10.2.0.10`, `fd00:10:2::a` |
 
-K3s built-in の `traefik` と `helm-controller` は無効化しています。Ingress と Helm release は Flux 側で管理します。natsume クラスターでは各ノードの DNS レコードを `flux/clusters/natsume/apps/external-dns-config/node-dnsendpoints.yaml` で宣言し external-dns が反映します。meruto クラスターは Public IP を持たないため `external-dns-config` は同梱せず、external-dns 自体は `txtPrefix: meruto-` で動作させます (Ingress / Service による DNS 同期のみ、ノードレコードは未管理)。
+K3s built-in の `traefik` と `helm-controller` は無効化しています。Ingress と Helm release は Flux 側で管理します。natsume クラスターでは入口とノードの DNS レコードを `flux/clusters/natsume/apps/external-dns-config/node-dnsendpoints.yaml` で宣言し external-dns が反映します。meruto クラスターは Public IP を持たないため `external-dns-config` は同梱せず、external-dns 自体は `txtPrefix: meruto-` で動作させます (Ingress / Service による DNS 同期のみ、ノードレコードは未管理)。
 
 ## ストレージ
 
 - ストレージドライバは Longhorn (`flux/clusters/<cluster>/apps/longhorn`)。HelmRelease で `longhorn` chart `1.11.1` を導入します。
-- natsume クラスター: `longhorn_storage` グループに所属する `natsume-03` / `natsume-06` で `/dev/vda` の 4 番パーティションを切り出し、新規 VG `longhorn` 上に LV を作成します。Longhorn の default replica count は `2` です。
+- natsume クラスター: `longhorn_storage` グループに所属する `natsume-03` で `/dev/vda` の 4 番パーティションを切り出し、新規 VG `longhorn` 上に LV を作成します。Longhorn の default replica count は `1` です。
 - meruto クラスター: `meruto-01` では `longhorn_storage_use_existing_vg: true` により、既存 `ubuntu-vg` の空き領域に LV `data` (100%FREE) を切ってマウントします。パーティション操作は行いません。Longhorn の default replica count は `1` で、default disk 自動作成には node label `node.longhorn.io/create-default-disk=true` が必要です。
 
 ## Terraform

@@ -14,7 +14,6 @@ all:
     longhorn_storage:
       hosts:
         natsume-03:
-        natsume-06:
         meruto-01:
     k3s_cluster:
       children:
@@ -23,6 +22,4 @@ all:
             natsume-03:
             meruto-01:
         k3s_agent:
-          hosts:
-            natsume-06:
-            natsume-07:
+          hosts: {}
