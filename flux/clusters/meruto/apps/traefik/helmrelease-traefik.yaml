@@ -25,6 +25,8 @@ spec:
     deployment:
       kind: DaemonSet
     logs:
+      general:
+        format: json
       access:
         enabled: true
     metrics:
