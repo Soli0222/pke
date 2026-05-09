@@ -8,7 +8,7 @@
 
 | クラスタ | ノード | 役割 | 特記事項 |
 |----------|--------|------|----------|
-| `natsume` | `natsume-03` (control-plane), `natsume-06` / `natsume-07` (worker) | 本番ワークロード | Public IP 付き。`natsume-03` が external etcd / K3s server、`natsume-06` のみ Longhorn ディスクを持つ |
+| `natsume` | `natsume-03` (control-plane), `natsume-06` / `natsume-07` (worker) | 本番ワークロード / 監視基盤 / DB | Public IP 付き。`natsume-03` が external etcd / K3s server、`natsume-03` / `natsume-06` が Longhorn ディスクを持つ |
 | `meruto` | `meruto-01` | 単一ノード | Private インターフェースのみ。Longhorn は既存 `ubuntu-vg` の空き領域を利用。Tailscale なし |
 
 各ホストは `host_vars/<host>.yaml` に `cluster: <name>` を必ず設定します。Alloy / etcd / Flux などはこの値を起点にクラスター固有の設定を組み立てます。
@@ -18,7 +18,7 @@
 ```mermaid
 flowchart TB
     subgraph Natsume["cluster: natsume"]
-        N_CP["natsume-03<br/>control-plane (etcd + K3s server)"]
+        N_CP["natsume-03<br/>control-plane (etcd + K3s server) + Longhorn"]
         N_W1["natsume-06<br/>worker + Longhorn"]
         N_W2["natsume-07<br/>worker"]
     end
@@ -79,6 +79,8 @@ pke/
 | Flux distribution | `2.x` |
 | Longhorn | `1.11.1` |
 | external-dns | `1.21.1` |
+| cloudflare-tunnel-ingress-controller | `0.0.23` |
+| cloudflared | `2026.3.0` |
 | Tailscale Terraform provider | `0.28.0` |
 
 ## Ansible
@@ -178,12 +180,11 @@ Flux のクラスタ定義は `flux/clusters/<cluster>/` に配置します (`na
 
 | 分類 | コンポーネント |
 |------|---------------|
-| 基盤 / CRD | `cnpg`, `cnpg-backup-config`, `cert-manager`, `cert-manager-config`, `external-secrets`, `prometheus-operator-crd` |
+| 基盤 / CRD | `cnpg`, `cnpg-backup-config`, `cert-manager`, `cert-manager-config`, `prometheus-operator-crd` |
 | ストレージ | `longhorn`, `longhorn-config` |
 | ネットワーク | `traefik`, `external-dns`, `external-dns-config` |
-| 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `uptime-kuma` |
-| アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `misskey-stg`, `mk-stream`, `navidrome`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
-| 運用 | `renovate-operator` |
+| 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics`, `uptime-kuma` |
+| アプリ | `misskey`, `navidrome`, `registry`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
 `external-dns-config` はクラスタ全体・各ノードの DNS レコード (`natsume(-0X).str08.net` / `pstr.space` / `tailscale.str08.net`) を `DNSEndpoint` で宣言します。`cnpg-backup-config` は CNPG の barman-cloud バックアップで共通利用する R2 認証情報 (`OnePasswordItem` 経由) を集約します。`cert-manager-config` には `letsencrypt-dns01` / `letsencrypt-http01` の ClusterIssuer に加え、Traefik mTLS 用の自己署名 CA / Certificate / TLSOption (`pke-natsume-mtls`) が含まれます。
 
@@ -193,20 +194,24 @@ Flux のクラスタ定義は `flux/clusters/<cluster>/` に配置します (`na
 |------|---------------|
 | 基盤 / CRD | `cnpg`, `cert-manager`, `cert-manager-config` (dns01 ClusterIssuer のみ), `external-secrets`, `prometheus-operator-crd` |
 | ストレージ | `longhorn`, `longhorn-config` |
-| ネットワーク | `traefik`, `external-dns` |
-| 監視 | `alloy`, `kube-state-metrics` |
+| ネットワーク | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller` |
+| 監視 | `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes` |
+| アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `note-tweet-connector`, `rss-fetcher` |
+| 運用 | `renovate-operator` |
 
 natsume との主な差分:
 
-- **alloy**: クラスター内に Mimir / Loki が無いため、natsume 側の外部公開エンドポイント `https://mimir.pstr.space` / `https://loki.pstr.space` へ mTLS 経由で送信。クライアント証明書は `OnePasswordItem` (`vaults/Kubernetes/items/pke_natsume_mtls`、ansible の `install-alloy` ロールと同じ参照先) から `Secret pke-natsume-mtls` を生成し、`/etc/cert/pke-natsume/` にマウント。Ingress は無効。`cluster = "meruto"` ラベルで送信
-- **longhorn**: 単一ノード構成のため `defaultClassReplicaCount: 1`、Ingress 無効
-- **external-dns**: `txtPrefix: meruto-` で natsume レコードと衝突回避
+- **longhorn**: 単一ノード構成のため `defaultClassReplicaCount: 1`、Ingress 無効。`createDefaultDiskLabeledNodes: true` のため、`meruto-01` には `node.longhorn.io/create-default-disk=true` ラベルを付けて `/var/lib/longhorn` の default disk を作成する
+- **external-dns**: `txtPrefix: meruto-` で natsume レコードと衝突回避し、`extraArgs.ingress-class: traefik` で Traefik Ingress のみを対象にする
+- **cloudflare-tunnel-ingress-controller**: `cloudflared-pke-meruto` `OnePasswordItem` を参照し、Cloudflare Tunnel 経由の IngressClass `cloudflare-tunnel` を提供する。controller chart は `0.0.23`、管理する `cloudflared` image tag は `2026.3.0`
 - **cert-manager-config**: `letsencrypt-dns01` ClusterIssuer + `cloudflare-api-token` `OnePasswordItem` のみ。`letsencrypt-http01` と Traefik mTLS 用の CA / TLSOption は含まない
-- 含まれないコンポーネント: `cnpg-backup-config`, `external-dns-config`, Mimir / Loki / Grafana 等の監視スタック、blackbox-exporter、各種アプリケーション、`renovate-operator`
+- **renovate-operator**: GitHub App token 生成に External Secrets Operator の `GithubAccessToken` generator を使う。Ingress は Traefik (`ingressClassName: traefik`) と `letsencrypt-dns01`
+- **note-tweet-connector**: Ingress は Cloudflare Tunnel (`className: cloudflare-tunnel`)
+- 含まれないコンポーネント: `cnpg-backup-config`, `external-dns-config`, Mimir / Loki / Grafana / Alloy 等の natsume 側監視スタック
 
 ### CloudNativePG クラスタ
 
-Postgres を必要とするアプリは CNPG `Cluster` を `apps/<app>/cluster.yaml` に同梱しています。現行の `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` クラスタは `instances: 2` で動作し、`barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブ (`apps/<app>/scheduledbackup.yaml` + `apps/<app>/objectstore.yaml`、retention `7d`) を取得します。`misskey` クラスタは pgroonga 拡張を含む `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用し、永続ストレージは 150Gi で動作します。バックアップ運用の詳細とリストア手順は [CNPG.md](./CNPG.md) を参照してください。
+Postgres を必要とする natsume のアプリは CNPG `Cluster` を `apps/<app>/cluster.yaml` に同梱しています。現行の `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` クラスタはいずれも `instances: 2` です。`misskey` は `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブ (`apps/misskey/scheduledbackup.yaml` + `apps/misskey/objectstore.yaml`、retention `7d`) を取得します。`grafana` / `spotify-nowplaying` / `spotify-reblend` / `sui` は日次 `pg_dump` CronJob で R2 にバックアップします。`misskey` クラスタは pgroonga 拡張を含む `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用し、永続ストレージは 150Gi で動作します。バックアップ運用の詳細とリストア手順は [CNPG.md](./CNPG.md) を参照してください。
 
 ## ネットワーク
 
@@ -241,8 +246,8 @@ K3s built-in の `traefik` と `helm-controller` は無効化しています。I
 ## ストレージ
 
 - ストレージドライバは Longhorn (`flux/clusters/<cluster>/apps/longhorn`)。HelmRelease で `longhorn` chart `1.11.1` を導入します。
-- natsume クラスター: `longhorn_storage` グループに所属する `natsume-03` / `natsume-06` で `/dev/vda` の 4 番パーティションを切り出し、新規 VG `longhorn` 上に LV を作成します。
-- meruto クラスター: `meruto-01` では `longhorn_storage_use_existing_vg: true` により、既存 `ubuntu-vg` の空き領域に LV `data` (100%FREE) を切ってマウントします。パーティション操作は行いません。
+- natsume クラスター: `longhorn_storage` グループに所属する `natsume-03` / `natsume-06` で `/dev/vda` の 4 番パーティションを切り出し、新規 VG `longhorn` 上に LV を作成します。Longhorn の default replica count は `2` です。
+- meruto クラスター: `meruto-01` では `longhorn_storage_use_existing_vg: true` により、既存 `ubuntu-vg` の空き領域に LV `data` (100%FREE) を切ってマウントします。パーティション操作は行いません。Longhorn の default replica count は `1` で、default disk 自動作成には node label `node.longhorn.io/create-default-disk=true` が必要です。
 
 ## Terraform
 
@@ -263,7 +268,7 @@ K3s built-in の `traefik` と `helm-controller` は無効化しています。I
 
 ## 運用メモ
 
-- シークレットは 1Password / External Secrets / `OnePasswordItem` の既存パターンに合わせ、平文 Secret をコミットしないでください。
+- シークレットは主に 1Password Operator の `OnePasswordItem` で生成します。External Secrets Operator は meruto の `renovate-operator` で GitHub App token generator に使用しています。平文 Secret はコミットしないでください。
 - K3s と etcd のアップグレードは `ansible/upgrade-k3s.yaml` と `ansible/upgrade-etcd.yaml` を使います。
 - 新規クラスター追加は: `hosts.yaml` に `<name>_etcd` 子グループを作成 → host_vars に `cluster: <name>` 等を設定 → `helmfile/environments/<name>.yaml` と `helmfile/manifests/flux/<name>/fluxinstance.yaml` を追加 → `flux/clusters/<name>/` を作成、の流れになります。
 - ノード追加 / 削除は etcd → K3s server / agent → Longhorn ディスクの順で playbook を分けて流し、`hosts.yaml` と `host_vars/<node>.yaml` の追記を忘れないでください。natsume クラスターでは加えて `flux/clusters/natsume/apps/external-dns-config/node-dnsendpoints.yaml` のレコード更新が必要です (meruto クラスターは `external-dns-config` を持たないため不要)。

@@ -22,7 +22,7 @@ pke/
 
 | クラスタ | ノード | 役割 | 特記事項 |
 |----------|--------|------|----------|
-| `natsume` | `natsume-03` (control-plane), `natsume-06` / `natsume-07` (worker) | 本番ワークロード | Public IP 付き。`natsume-03` が external etcd / K3s server、`natsume-06` のみ Longhorn ディスクを持つ |
+| `natsume` | `natsume-03` (control-plane), `natsume-06` / `natsume-07` (worker) | 本番ワークロード / 監視基盤 / DB | Public IP 付き。`natsume-03` が external etcd / K3s server、`natsume-03` / `natsume-06` が Longhorn ディスクを持つ |
 | `meruto` | `meruto-01` | 単一ノード | Private インターフェースのみ。Longhorn は既存 `ubuntu-vg` の空き領域を利用。Tailscale なし |
 
 各ホストは `host_vars/<host>.yaml` に `cluster: <name>` を必ず設定する。Alloy / etcd / Flux などはこの値を起点にクラスター固有の設定を組み立てる。
@@ -108,21 +108,21 @@ Ansible (OS / etcd / K3s / Longhorn ディスク) -> Helmfile `-e <cluster>` (CN
   - `flux/clusters/<cluster>/kustomizations/<app>.yaml`
   - 既定で `interval: 10m`, `prune: true`, `wait: true`、適用順は `dependsOn` で制御する
 - Secret 管理:
-  - 既存アプリは `OnePasswordItem` と External Secrets を併用している
+  - Secret は主に 1Password Operator の `OnePasswordItem` で生成する
+  - External Secrets Operator は meruto の `renovate-operator` で GitHub App token generator に使用している
   - 新規 Secret は既存パターンに合わせ、平文 Secret をコミットしない
 
 ### natsume クラスターの管理コンポーネント
 
 | 分類 | コンポーネント |
 |------|---------------|
-| 基盤 / CRD | `cnpg`, `cnpg-backup-config`, `cert-manager`, `cert-manager-config`, `external-secrets`, `prometheus-operator-crd` |
+| 基盤 / CRD | `cnpg`, `cnpg-backup-config`, `cert-manager`, `cert-manager-config`, `prometheus-operator-crd` |
 | ストレージ | `longhorn`, `longhorn-config` |
 | ネットワーク | `traefik`, `external-dns`, `external-dns-config` |
-| 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `uptime-kuma` |
-| アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `misskey-stg`, `mk-stream`, `navidrome`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
-| 運用 | `renovate-operator` |
+| 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics`, `uptime-kuma` |
+| アプリ | `misskey`, `navidrome`, `registry`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
-CNPG `Cluster` を持つアプリ: `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` (いずれも `instances: 2`、`misskey-stg` は `instances: 1` でバックアップ無し)。各クラスタは `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブを取得 (retention `7d`)。`misskey` クラスタは pgroonga 拡張入りの `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用、永続ストレージは 150Gi。バックアップ運用とリストア手順の詳細は `CNPG.md` を参照。
+CNPG `Cluster` を持つアプリ: `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` (いずれも `instances: 2`)。`misskey` は `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブを取得 (retention `7d`) し、pgroonga 拡張入りの `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用する。`grafana` / `spotify-nowplaying` / `spotify-reblend` / `sui` は日次 `pg_dump` CronJob で R2 にバックアップする。バックアップ運用とリストア手順の詳細は `CNPG.md` を参照。
 
 `cert-manager-config` には `letsencrypt-dns01` / `letsencrypt-http01` の ClusterIssuer に加え、Traefik mTLS 用の自己署名 CA / Certificate / TLSOption (`pke-natsume-mtls`) が含まれる。
 
@@ -132,16 +132,20 @@ CNPG `Cluster` を持つアプリ: `grafana` / `misskey` / `spotify-nowplaying` 
 |------|---------------|
 | 基盤 / CRD | `cnpg`, `cert-manager`, `cert-manager-config` (dns01 ClusterIssuer のみ), `external-secrets`, `prometheus-operator-crd` |
 | ストレージ | `longhorn`, `longhorn-config` |
-| ネットワーク | `traefik`, `external-dns` |
-| 監視 | `alloy`, `kube-state-metrics` |
+| ネットワーク | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller` |
+| 監視 | `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes` |
+| アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `note-tweet-connector`, `rss-fetcher` |
+| 運用 | `renovate-operator` |
 
 natsume との主な差分:
 
-- **alloy**: クラスター内に Mimir / Loki が無いため、natsume 側の外部公開エンドポイント `https://mimir.pstr.space` / `https://loki.pstr.space` へ mTLS 経由で送信。クライアント証明書は `OnePasswordItem` (`vaults/Kubernetes/items/pke_natsume_mtls`、ansible の `install-alloy` ロールと同じ参照先) で `Secret pke-natsume-mtls` を生成し、`/etc/cert/pke-natsume/` にマウント。Ingress 無効。`cluster = "meruto"` ラベルで送信
-- **longhorn**: 単一ノード構成のため `defaultClassReplicaCount: 1`、Ingress 無効
-- **external-dns**: `txtPrefix: meruto-` で natsume レコードと衝突回避
+- **longhorn**: 単一ノード構成のため `defaultClassReplicaCount: 1`、Ingress 無効。`createDefaultDiskLabeledNodes: true` のため、`meruto-01` には `node.longhorn.io/create-default-disk=true` ラベルを付けて `/var/lib/longhorn` の default disk を作成する
+- **external-dns**: `txtPrefix: meruto-` で natsume レコードと衝突回避し、`extraArgs.ingress-class: traefik` で Traefik Ingress のみを対象にする
+- **cloudflare-tunnel-ingress-controller**: `cloudflared-pke-meruto` `OnePasswordItem` を参照し、Cloudflare Tunnel 経由の IngressClass `cloudflare-tunnel` を提供する。controller chart は `0.0.23`、管理する `cloudflared` image tag は `2026.3.0`
 - **cert-manager-config**: `letsencrypt-dns01` ClusterIssuer + `cloudflare-api-token` `OnePasswordItem` のみ。`letsencrypt-http01` と Traefik mTLS 用の CA / TLSOption は含まない
-- 含まれないコンポーネント: `cnpg-backup-config`, `external-dns-config`, Mimir / Loki / Grafana 等の監視スタック、blackbox-exporter、各種アプリケーション、`renovate-operator`
+- **renovate-operator**: GitHub App token 生成に External Secrets Operator の `GithubAccessToken` generator を使う。Ingress は Traefik (`ingressClassName: traefik`) と `letsencrypt-dns01`
+- **note-tweet-connector**: Ingress は Cloudflare Tunnel (`className: cloudflare-tunnel`)
+- 含まれないコンポーネント: `cnpg-backup-config`, `external-dns-config`, Mimir / Loki / Grafana / Alloy 等の natsume 側監視スタック
 
 ## 現行バージョン
 
@@ -155,6 +159,8 @@ natsume との主な差分:
 | Flux distribution | `2.x` |
 | Longhorn | `1.11.1` |
 | external-dns | `1.21.1` |
+| cloudflare-tunnel-ingress-controller | `0.0.23` |
+| cloudflared | `2026.3.0` |
 | Tailscale Terraform provider | `0.28.0` |
 
 ## Terraform
