@@ -4,9 +4,12 @@ metadata:
   name: reblend-cluster
   namespace: spotify-reblend
 spec:
-  instances: 2
+  instances: 1
   primaryUpdateMethod: switchover
   smartShutdownTimeout: 60
+  affinity:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-03
   storage:
     size: 5Gi
   bootstrap:
