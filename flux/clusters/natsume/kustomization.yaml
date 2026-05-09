@@ -14,6 +14,7 @@ resources:
 - kustomizations/misskey.yaml
 - kustomizations/traefik.yaml
 - kustomizations/navidrome.yaml
+- kustomizations/note-tweet-connector.yaml
 - kustomizations/registry.yaml
 - kustomizations/spotify-nowplaying.yaml
 - kustomizations/spotify-reblend.yaml
