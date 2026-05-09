@@ -28,6 +28,8 @@ spec:
         secretKeyRef:
           name: cloudflare-api-token
           key: apiToken
+    extraArgs:
+      ingress-class: traefik
     managedRecordTypes:
     - A
     - AAAA
