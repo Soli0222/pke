@@ -11,4 +11,3 @@ resources:
 - kustomizations/longhorn.yaml
 - kustomizations/longhorn-config.yaml
 - kustomizations/traefik.yaml
-- kustomizations/alloy.yaml
