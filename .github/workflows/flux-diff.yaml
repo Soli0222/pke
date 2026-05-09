@@ -35,6 +35,7 @@ jobs:
           live-branch: main
           sources: flux-system=.
           limit-bytes: 0
+          api-versions: policy/v1/PodDisruptionBudget,monitoring.coreos.com/v1/ServiceMonitor
 
       - name: Compose comment
         id: comment
