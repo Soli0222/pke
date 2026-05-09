@@ -8,7 +8,6 @@ resources:
 - kustomizations/cert-manager-config.yaml
 - kustomizations/external-dns.yaml
 - kustomizations/external-dns-config.yaml
-- kustomizations/external-secrets.yaml
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/longhorn.yaml
 - kustomizations/longhorn-config.yaml
