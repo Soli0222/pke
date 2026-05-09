@@ -1,0 +1,17 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cloudflare-tunnel-ingress-controller
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: "./flux/clusters/meruto/apps/cloudflare-tunnel-ingress-controller"
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+  - name: prometheus-operator-crd
+

@@ -4,6 +4,7 @@ resources:
 - kustomizations/prometheus-operator-crd.yaml
 - kustomizations/cert-manager.yaml
 - kustomizations/cert-manager-config.yaml
+- kustomizations/cloudflare-tunnel-ingress-controller.yaml
 - kustomizations/cnpg.yaml
 - kustomizations/external-dns.yaml
 - kustomizations/external-secrets.yaml

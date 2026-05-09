@@ -1,0 +1,34 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cloudflare-tunnel-ingress-controller
+  namespace: cloudflare-tunnel-ingress-controller
+spec:
+  interval: 10m
+  releaseName: cloudflare-tunnel-ingress-controller
+  targetNamespace: cloudflare-tunnel-ingress-controller
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: cloudflare-tunnel-ingress-controller
+      version: 0.0.23
+      sourceRef:
+        kind: HelmRepository
+        name: cloudflare-tunnel-ingress-controller-repo
+        namespace: cloudflare-tunnel-ingress-controller
+      interval: 1h
+  values:
+    cloudflare:
+      secretRef:
+        name: cloudflared-pke-meruto
+        accountIDKey: account_id
+        tunnelNameKey: tunnel_name
+        apiTokenKey: api_token
+    cloudflared:
+      image:
+        tag: "2026.3.0"
+
