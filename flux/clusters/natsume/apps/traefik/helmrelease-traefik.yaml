@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: traefik
-      version: 39.0.8
+      version: 40.0.0
       sourceRef:
         kind: HelmRepository
         name: traefik-repo
@@ -36,12 +36,12 @@ spec:
         serviceMonitor:
           enabled: true
     service:
-      ipFamilyPolicy: RequireDualStack
-      ipFamilies:
-      - IPv4
-      - IPv6
       spec:
         externalTrafficPolicy: Local
+        ipFamilyPolicy: RequireDualStack
+        ipFamilies:
+        - IPv4
+        - IPv6
     ingressClass:
       enabled: true
       isDefaultClass: true
