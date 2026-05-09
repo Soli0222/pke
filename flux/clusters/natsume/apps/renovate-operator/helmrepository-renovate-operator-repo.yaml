@@ -1,8 +1,0 @@
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: renovate-operator-repo
-  namespace: renovate-operator
-spec:
-  interval: 1h
-  url: https://helm.mogenius.com/public
