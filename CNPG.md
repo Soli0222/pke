@@ -65,30 +65,25 @@ aws s3 rm --endpoint-url $AWS_ENDPOINT_URL --recursive s3://cnpg-backup/<cluster
 
 ```yaml
 spec:
-  primaryUpdateMethod: switchover   # primary を再起動する代わりにレプリカへ切替えてから旧 primary を更新
+  primaryUpdateMethod: switchover   # レプリカがある構成では switchover を優先
   smartShutdownTimeout: 60          # smart shutdown の最大待ち時間 (秒)。default 180
 ```
 
-`switchover` でローリング更新時の primary 切断回数を最小化、`smartShutdownTimeout: 60` で居座るアイドル接続が原因で再起動が止まる事故を回避する。アプリ側のドライバには別途リトライが必要 (CNPG だけでは完全には吸収できない)。
+現行クラスタはすべて `instances: 1` のため replica への切替は発生しないが、`primaryUpdateMethod: switchover` を明示している。`smartShutdownTimeout: 60` で居座るアイドル接続が原因で再起動が止まる事故を回避する。アプリ側のドライバには別途リトライが必要 (CNPG だけでは完全には吸収できない)。
 
 ### Pooler
 
-misskey 系は HTTP / WebSocket / queue worker / 通知配信が常時動いていて再起動の体感が大きいので、PgBouncer (`Pooler` CRD) を挟んでいる。
-
-- `pooler.yaml` — `type: rw`、`poolMode: session`、`instances: 2`、podAntiAffinity あり
-- アプリは `*-pooler-rw:5432` に接続 (HelmRelease の `externalPostgresql.host` で指定)
-- session mode を選んでいる理由: TypeORM が `LISTEN/NOTIFY` や session 単位の状態を持つため transaction mode だと壊れる
-- 再起動時は PgBouncer の `PAUSE` がアプリ ↔ pooler の TCP を保持したまま PG 再接続を待ってくれるので、トランザクション外であれば切断を体感されない
+現時点では PgBouncer (`Pooler` CRD) は使っていない。misskey は `externalPostgresql.host: misskey-cluster-rw` で CNPG の rw Service に直接接続する。
 
 ### 現在のクラスタ一覧
 
 | アプリ | namespace | Cluster名 | instances | バックアップ方式 | Pooler | スケジュール |
 |---|---|---|---|---|---|---|
-| misskey | misskey | misskey-cluster | 2 | WAL archive + base | misskey-pooler-rw | `0 30 18 * * *` UTC = 03:30 JST |
-| grafana | grafana | grafana-cluster | 2 | pg_dump | — | 03:00 JST |
-| sui | sui | sui-cluster | 2 | pg_dump | — | 03:05 JST |
-| spotify-reblend | spotify-reblend | reblend-cluster | 2 | pg_dump | — | 03:10 JST |
-| spotify-nowplaying | spotify-nowplaying | spn-cluster | 2 | pg_dump | — | 03:15 JST |
+| misskey | misskey | misskey-cluster | 1 | WAL archive + base | — | `0 30 18 * * *` UTC = 03:30 JST |
+| grafana | grafana | grafana-cluster | 1 | pg_dump | — | 03:00 JST |
+| sui | sui | sui-cluster | 1 | pg_dump | — | 03:05 JST |
+| spotify-reblend | spotify-reblend | reblend-cluster | 1 | pg_dump | — | 03:10 JST |
+| spotify-nowplaying | spotify-nowplaying | spn-cluster | 1 | pg_dump | — | 03:15 JST |
 
 方式 A の `ScheduledBackup.spec.schedule` は CNPG オペレータが UTC で評価する (timeZone 指定不可)。方式 B の Kubernetes `CronJob` は `spec.timeZone` で TZ 明示可能。pg_dump 時刻は 5 分間隔で分散している。
 
@@ -165,7 +160,7 @@ metadata:
   name: misskey-cluster-restored
   namespace: misskey
 spec:
-  instances: 2
+  instances: 1
   imageName: ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine:18
   storage:
     size: 150Gi
@@ -225,7 +220,7 @@ metadata:
   name: grafana-cluster
   namespace: grafana
 spec:
-  instances: 2
+  instances: 1
   primaryUpdateMethod: switchover
   smartShutdownTimeout: 60
   storage:
@@ -271,5 +266,4 @@ dump は logical なので、任意の PG (同 major 以上) にそのまま `pg
 ## 参考
 
 - [CloudNativePG Docs](https://cloudnative-pg.io/documentation/current/)
-- [CNPG Pooler / PgBouncer](https://cloudnative-pg.io/documentation/current/connection_pooling/)
 - [pg_dump / pg_restore](https://www.postgresql.org/docs/current/app-pgdump.html)

@@ -208,7 +208,7 @@ natsume との主な差分:
 
 ### CloudNativePG クラスタ
 
-Postgres を必要とする natsume のアプリは CNPG `Cluster` を `apps/<app>/cluster.yaml` に同梱しています。現行の `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` クラスタはいずれも `instances: 2` です。`misskey` は `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブ (`apps/misskey/scheduledbackup.yaml` + `apps/misskey/objectstore.yaml`、retention `7d`) を取得します。`grafana` / `spotify-nowplaying` / `spotify-reblend` / `sui` は日次 `pg_dump` CronJob で R2 にバックアップします。`misskey` クラスタは pgroonga 拡張を含む `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用し、永続ストレージは 150Gi で動作します。バックアップ運用の詳細とリストア手順は [CNPG.md](./CNPG.md) を参照してください。
+Postgres を必要とする natsume のアプリは CNPG `Cluster` を `apps/<app>/cluster.yaml` に同梱しています。現行の `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` クラスタはいずれも `instances: 1` です。`misskey` は `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブ (`apps/misskey/scheduledbackup.yaml` + `apps/misskey/objectstore.yaml`、retention `7d`) を取得します。`grafana` / `spotify-nowplaying` / `spotify-reblend` / `sui` は日次 `pg_dump` CronJob で R2 にバックアップします。`misskey` クラスタは pgroonga 拡張を含む `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用し、永続ストレージは 150Gi で動作します。バックアップ運用の詳細とリストア手順は [CNPG.md](./CNPG.md) を参照してください。
 
 ## ネットワーク
 

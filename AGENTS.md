@@ -122,7 +122,7 @@ Ansible (OS / etcd / K3s / Longhorn ディスク) -> Helmfile `-e <cluster>` (CN
 | 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics` |
 | アプリ | `misskey`, `navidrome`, `note-tweet-connector`, `registry`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
-CNPG `Cluster` を持つアプリ: `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` (いずれも `instances: 2`)。`misskey` は `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブを取得 (retention `7d`) し、pgroonga 拡張入りの `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用する。`grafana` / `spotify-nowplaying` / `spotify-reblend` / `sui` は日次 `pg_dump` CronJob で R2 にバックアップする。バックアップ運用とリストア手順の詳細は `CNPG.md` を参照。
+CNPG `Cluster` を持つアプリ: `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` (いずれも `instances: 1`)。`misskey` は `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブを取得 (retention `7d`) し、pgroonga 拡張入りの `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用する。`grafana` / `spotify-nowplaying` / `spotify-reblend` / `sui` は日次 `pg_dump` CronJob で R2 にバックアップする。バックアップ運用とリストア手順の詳細は `CNPG.md` を参照。
 
 `cert-manager-config` には `letsencrypt-dns01` / `letsencrypt-http01` の ClusterIssuer に加え、Traefik mTLS 用の自己署名 CA / Certificate / TLSOption (`pke-natsume-mtls`) が含まれる。
 
