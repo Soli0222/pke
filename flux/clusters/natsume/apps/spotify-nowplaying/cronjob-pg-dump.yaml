@@ -7,7 +7,7 @@ spec:
   schedule: "15 3 * * *"
   timeZone: Asia/Tokyo
   concurrencyPolicy: Forbid
-  successfulJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 0
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
@@ -20,7 +20,7 @@ spec:
             image: postgres:18.3-alpine3.23
             env:
             - name: PGHOST
-              value: spn-cluster-ro
+              value: spn-cluster-r
             - name: PGUSER
               valueFrom:
                 secretKeyRef:
