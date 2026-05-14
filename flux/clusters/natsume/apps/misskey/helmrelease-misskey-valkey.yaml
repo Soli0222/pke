@@ -22,6 +22,8 @@ spec:
         namespace: misskey
       interval: 1h
   values:
+    env:
+      TZ: Asia/Tokyo
     resources:
       limits:
         cpu: 500m

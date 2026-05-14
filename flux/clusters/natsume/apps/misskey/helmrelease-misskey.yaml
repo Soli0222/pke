@@ -44,6 +44,10 @@ spec:
     web:
       replicaCount: 1
 
+      extraEnv:
+      - name: TZ
+        value: Asia/Tokyo
+
       image:
         repository: ghcr.io/soli0222/misskey
         tag: "2026.5.1-psr.9.10"
