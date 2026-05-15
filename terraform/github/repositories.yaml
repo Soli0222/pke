@@ -28,11 +28,11 @@ global:
       secret_scanning: enabled
       secret_scanning_push_protection: enabled
   actions_secrets:
-    RENOVATE_APP_ID:
+    RENOVATE_CLIENT_ID:
       onepassword:
         vault: Personal
         item: PKE Renovate App
-        field: APP_ID
+        field: CLIENT_ID
     RENOVATE_PRIVATE_KEY:
       onepassword:
         vault: Personal
