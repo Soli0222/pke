@@ -1,0 +1,129 @@
+global:
+  repository:
+    allow_auto_merge: false
+    allow_forking: true
+    allow_merge_commit: true
+    allow_rebase_merge: true
+    allow_squash_merge: true
+    allow_update_branch: false
+    archived: false
+    default_branch: main
+    delete_branch_on_merge: true
+    description: ''
+    has_discussions: false
+    has_issues: true
+    has_projects: true
+    has_wiki: true
+    homepage_url: ''
+    is_template: false
+    merge_commit_message: PR_TITLE
+    merge_commit_title: MERGE_MESSAGE
+    squash_merge_commit_message: COMMIT_MESSAGES
+    squash_merge_commit_title: COMMIT_OR_PR_TITLE
+    topics:
+    - renovate
+    visibility: public
+    web_commit_signoff_required: false
+    security_and_analysis:
+      secret_scanning: enabled
+      secret_scanning_push_protection: enabled
+  actions_secrets:
+    RENOVATE_APP_ID:
+      onepassword:
+        vault: Personal
+        item: PKE Renovate App
+        field: APP_ID
+    RENOVATE_PRIVATE_KEY:
+      onepassword:
+        vault: Personal
+        item: PKE Renovate App
+        file: private-key.pem
+
+repositories:
+  daypassed-bot: {}
+
+  diary-cli: {}
+
+  emoji-bot-gateway: {}
+
+  emoji-renderer: {}
+
+  helm-charts: {}
+
+  mk-stream:
+    security_and_analysis:
+      secret_scanning: disabled
+      secret_scanning_push_protection: disabled
+    actions_secrets:
+      DOCKER_HUB_ACCESS_TOKEN:
+        onepassword:
+          vault: Personal
+          item: Github Docker
+          field: DOCKER_HUB_ACCESS_TOKEN
+      DOCKER_HUB_USERNAME:
+        onepassword:
+          vault: Personal
+          item: Github Docker
+          field: DOCKER_HUB_USERNAME
+
+  note-tweet-connector:
+    actions_secrets:
+      DOCKER_HUB_ACCESS_TOKEN:
+        onepassword:
+          vault: Personal
+          item: Github Docker
+          field: DOCKER_HUB_ACCESS_TOKEN
+      DOCKER_HUB_USERNAME:
+        onepassword:
+          vault: Personal
+          item: Github Docker
+          field: DOCKER_HUB_USERNAME
+
+  pgroonga-cnpg: {}
+
+  pke:
+    description: Polestar Kubernetes Engine
+
+  rss-fetcher: {}
+
+  spotify-nowplaying:
+    description: Web App for Easily Sharing Currently Playing Songs on Spotify
+    homepage_url: https://spn.soli0222.com
+    security_and_analysis:
+      secret_scanning: disabled
+      secret_scanning_push_protection: disabled
+    actions_secrets:
+      DOCKER_PASSWORD:
+        onepassword:
+          vault: Personal
+          item: Github Docker
+          field: DOCKER_HUB_ACCESS_TOKEN
+      DOCKER_USERNAME:
+        onepassword:
+          vault: Personal
+          item: Github Docker
+          field: DOCKER_HUB_USERNAME
+
+  spotify-reblend: {}
+
+  sui: {}
+
+  summaly:
+    default_branch: master
+    description: "\U0001F50D Get a summary of any web page"
+    has_wiki: false
+
+  vip-responder: {}
+
+  webhook-test:
+    actions_secrets:
+      DOCKER_HUB_ACCESS_TOKEN:
+        onepassword:
+          vault: Personal
+          item: Github Docker
+          field: DOCKER_HUB_ACCESS_TOKEN
+      DOCKER_HUB_USERNAME:
+        onepassword:
+          vault: Personal
+          item: Github Docker
+          field: DOCKER_HUB_USERNAME
