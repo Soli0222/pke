@@ -4,7 +4,7 @@ metadata:
   name: misskey-cluster-daily-backup
   namespace: misskey
 spec:
-  schedule: "0 30 18 * * *"
+  schedule: "0 30 16 * * *"
   backupOwnerReference: self
   cluster:
     name: misskey-cluster
