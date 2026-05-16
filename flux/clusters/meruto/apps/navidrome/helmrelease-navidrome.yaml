@@ -27,24 +27,17 @@ spec:
       music:
         existingVolume: navidrome-music
         storageClass: "-"
-        size: 100Gi
+        size: 500Gi
         accessModes:
         - ReadOnlyMany
     ingress:
-      enabled: false
-      className: traefik
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
-        external-dns.alpha.kubernetes.io/cloudflare-proxied: 'true'
+      enabled: true
+      className: cloudflare-tunnel
       hosts:
       - host: navidrome.pstr.space
         paths:
         - path: "/"
           pathType: ImplementationSpecific
-      tls:
-      - hosts:
-        - navidrome.pstr.space
-        secretName: navidrome.pstr.space-dns01
     serviceMonitor:
       enabled: true
     config:

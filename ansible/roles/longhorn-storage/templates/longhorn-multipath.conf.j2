@@ -1,0 +1,8 @@
+blacklist {
+{% for device in longhorn_storage_multipath_blacklist_devices %}
+    device {
+        vendor "{{ device.vendor }}"
+        product "{{ device.product }}"
+    }
+{% endfor %}
+}

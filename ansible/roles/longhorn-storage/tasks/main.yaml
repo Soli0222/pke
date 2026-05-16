@@ -18,6 +18,29 @@
         + (['xfsprogs'] if longhorn_storage_fstype == 'xfs' else [])
       }}
 
+- name: Gather service facts
+  ansible.builtin.service_facts:
+  when: longhorn_storage_configure_multipath_blacklist | bool
+
+- name: Ensure multipath config directory exists
+  ansible.builtin.file:
+    path: "{{ longhorn_storage_multipath_blacklist_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: longhorn_storage_configure_multipath_blacklist | bool
+
+- name: Blacklist Longhorn iSCSI devices from multipath
+  ansible.builtin.template:
+    src: longhorn-multipath.conf.j2
+    dest: "{{ longhorn_storage_multipath_blacklist_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart multipathd
+  when: longhorn_storage_configure_multipath_blacklist | bool
+
 - name: Prepare Longhorn partition on parent disk
   when:
     - not longhorn_storage_use_existing_vg | bool

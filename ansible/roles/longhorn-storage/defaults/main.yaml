@@ -8,6 +8,11 @@ longhorn_storage_fstype: ext4
 longhorn_storage_mount_path: /var/lib/longhorn
 longhorn_storage_mount_opts: defaults
 longhorn_storage_mount_mode: "0700"
+longhorn_storage_configure_multipath_blacklist: true
+longhorn_storage_multipath_blacklist_path: /etc/multipath/conf.d/longhorn.conf
+longhorn_storage_multipath_blacklist_devices:
+  - vendor: IET
+    product: VIRTUAL-DISK
 
 longhorn_storage_parent_disk: ""
 longhorn_storage_partition_number: 0

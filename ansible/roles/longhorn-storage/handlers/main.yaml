@@ -1,0 +1,8 @@
+---
+- name: Restart multipathd
+  ansible.builtin.systemd:
+    name: multipathd
+    state: restarted
+  when:
+    - ansible_facts.services is defined
+    - ansible_facts.services['multipathd.service'] is defined
