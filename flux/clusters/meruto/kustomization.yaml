@@ -18,6 +18,5 @@ resources:
 - kustomizations/mk-stream.yaml
 - kustomizations/navidrome.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml
-- kustomizations/renovate-operator.yaml
 - kustomizations/rss-fetcher.yaml
 - kustomizations/traefik.yaml
