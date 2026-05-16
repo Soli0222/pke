@@ -35,7 +35,7 @@ spec:
       className: cloudflare-tunnel
       blockedPaths:
       - path: /metrics
-        pathType: Exact
+        pathType: Prefix
       hosts:
       - host: navidrome.pstr.space
         paths:
