@@ -11,7 +11,6 @@ resources:
 - kustomizations/daypassed-bot.yaml
 - kustomizations/emoji-service.yaml
 - kustomizations/external-dns.yaml
-- kustomizations/external-secrets.yaml
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/longhorn.yaml
 - kustomizations/longhorn-config.yaml
