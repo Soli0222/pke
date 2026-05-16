@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: navidrome
-      version: 2.3.1
+      version: 2.3.2
       sourceRef:
         kind: HelmRepository
         name: navidrome-repo
@@ -27,12 +27,15 @@ spec:
       music:
         existingVolume: navidrome-music
         storageClass: "-"
-        size: 500Gi
+        size: 100Gi
         accessModes:
         - ReadOnlyMany
     ingress:
       enabled: true
       className: cloudflare-tunnel
+      blockedPaths:
+      - path: /metrics
+        pathType: Exact
       hosts:
       - host: navidrome.pstr.space
         paths:
