@@ -1,0 +1,62 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: navidrome
+  namespace: navidrome
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: navidrome
+      app.kubernetes.io/instance: navidrome
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: cloudflare-tunnel-ingress-controller
+        app: controlled-cloudflared-connector
+    toPorts:
+    - ports:
+      - port: "4533"
+        protocol: TCP
+  - fromEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: alloy
+        app.kubernetes.io/name: alloy
+        app.kubernetes.io/instance: alloy
+    toPorts:
+    - ports:
+      - port: "4533"
+        protocol: TCP
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: kube-system
+        k8s-app: kube-dns
+    toPorts:
+    - ports:
+      - port: "53"
+        protocol: UDP
+      - port: "53"
+        protocol: TCP
+      rules:
+        dns:
+        - matchName: api.deezer.com
+        - matchName: api.listenbrainz.org
+        - matchName: last.fm
+        - matchName: lastfm.freetls.fastly.net
+        - matchName: ws.audioscrobbler.com
+        - matchPattern: "*.dzcdn.net"
+        - matchPattern: "*.last.fm"
+        - matchPattern: "*.lastfm.freetls.fastly.net"
+  - toFQDNs:
+    - matchName: api.deezer.com
+    - matchName: api.listenbrainz.org
+    - matchName: last.fm
+    - matchName: lastfm.freetls.fastly.net
+    - matchName: ws.audioscrobbler.com
+    - matchPattern: "*.dzcdn.net"
+    - matchPattern: "*.last.fm"
+    - matchPattern: "*.lastfm.freetls.fastly.net"
+    toPorts:
+    - ports:
+      - port: "443"
+        protocol: TCP

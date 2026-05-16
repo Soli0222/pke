@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
 - namespace.yaml
 - pv-music.yaml
+- ciliumnetworkpolicy.yaml
 - helmrepository-navidrome-repo.yaml
 - helmrelease-navidrome.yaml
