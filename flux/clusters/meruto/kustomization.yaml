@@ -17,6 +17,7 @@ resources:
 - kustomizations/longhorn-config.yaml
 - kustomizations/mc-mirror-cronjob.yaml
 - kustomizations/mk-stream.yaml
+- kustomizations/navidrome.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml
 - kustomizations/renovate-operator.yaml
 - kustomizations/rss-fetcher.yaml
