@@ -1,8 +1,0 @@
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: navidrome-repo
-  namespace: navidrome
-spec:
-  interval: 1h
-  url: https://soli0222.github.io/helm-charts
