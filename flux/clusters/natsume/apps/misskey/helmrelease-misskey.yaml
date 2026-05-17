@@ -27,7 +27,7 @@ spec:
     misskey:
       url: "https://mi.soli0222.com"
       id: "aid"
-      clusterLimit: 2
+      clusterLimit: 3
 
       outgoingAddressFamily: "dual"
 
