@@ -23,6 +23,7 @@ spec:
       interval: 1h
   values:
     args:
+      twitterOAuth2RedirectURL: "https://ntc.pstr.space/twitter/callback"
       twitterUsername: "Soli_0222"
     ingress:
       enabled: true
