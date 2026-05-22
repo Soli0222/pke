@@ -36,7 +36,7 @@ spec:
       deliverJobPerSec: "128"
       inboxJobPerSec: "128"
       deliverJobMaxAttempts: "12"
-      inboxJobMaxAttempts: "8"
+      inboxJobMaxAttempts: "4"
 
       fulltextSearch:
         provider: sqlPgroonga
