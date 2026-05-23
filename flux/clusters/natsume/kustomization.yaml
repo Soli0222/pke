@@ -11,6 +11,8 @@ resources:
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/longhorn.yaml
 - kustomizations/longhorn-config.yaml
+- kustomizations/tetragon.yaml
+- kustomizations/tetragon-policies.yaml
 - kustomizations/misskey.yaml
 - kustomizations/traefik.yaml
 - kustomizations/note-tweet-connector.yaml

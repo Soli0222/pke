@@ -20,5 +20,7 @@ resources:
 - kustomizations/navidrome.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml
 - kustomizations/rss-fetcher.yaml
+- kustomizations/tetragon.yaml
+- kustomizations/tetragon-policies.yaml
 - kustomizations/traefik.yaml
 - kustomizations/vector.yaml

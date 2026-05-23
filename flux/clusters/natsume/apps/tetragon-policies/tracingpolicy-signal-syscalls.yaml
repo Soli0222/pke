@@ -1,0 +1,92 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: signal-syscalls
+spec:
+  options:
+  - name: policy-mode
+    value: monitor
+  kprobes:
+  - call: sys_kill
+    syscall: true
+    message: "signal syscall observed"
+    tags:
+    - signal
+    args:
+    - index: 0
+      type: int
+      label: pid
+    - index: 1
+      type: int
+      label: sig
+    selectors:
+    - matchArgs:
+      - index: 1
+        operator: Equal
+        values:
+        - "1"
+      matchActions:
+      - action: Post
+  - call: sys_tkill
+    syscall: true
+    message: "signal syscall observed"
+    tags:
+    - signal
+    args:
+    - index: 0
+      type: int
+      label: tid
+    - index: 1
+      type: int
+      label: sig
+    selectors:
+    - matchArgs:
+      - index: 1
+        operator: Equal
+        values:
+        - "1"
+      matchActions:
+      - action: Post
+  - call: sys_tgkill
+    syscall: true
+    message: "signal syscall observed"
+    tags:
+    - signal
+    args:
+    - index: 0
+      type: int
+      label: tgid
+    - index: 1
+      type: int
+      label: tid
+    - index: 2
+      type: int
+      label: sig
+    selectors:
+    - matchArgs:
+      - index: 2
+        operator: Equal
+        values:
+        - "1"
+      matchActions:
+      - action: Post
+  - call: sys_pidfd_send_signal
+    syscall: true
+    message: "signal syscall observed"
+    tags:
+    - signal
+    args:
+    - index: 0
+      type: int
+      label: pidfd
+    - index: 1
+      type: int
+      label: sig
+    selectors:
+    - matchArgs:
+      - index: 1
+        operator: Equal
+        values:
+        - "1"
+      matchActions:
+      - action: Post

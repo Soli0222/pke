@@ -1,0 +1,46 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tetragon
+  namespace: tetragon
+spec:
+  interval: 10m
+  releaseName: tetragon
+  targetNamespace: tetragon
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: tetragon
+      version: 1.7.0
+      sourceRef:
+        kind: HelmRepository
+        name: tetragon-repo
+        namespace: tetragon
+      interval: 1h
+  values:
+    tetragon:
+      clusterName: meruto
+      exportAllowList: |-
+        {"event_set":["PROCESS_KPROBE"]}
+      exportDenyList: |-
+        {"health_check":true}
+        {"namespace":["tetragon"]}
+      exportRateLimit: -1
+      enableProcessCred: true
+      enableProcessNs: true
+      cri:
+        enabled: true
+        socketHostPath: /run/k3s/containerd/containerd.sock
+      prometheus:
+        serviceMonitor:
+          enabled: true
+    tetragonOperator:
+      prometheus:
+        serviceMonitor:
+          enabled: true
+    export:
+      mode: stdout
