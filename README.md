@@ -193,7 +193,7 @@ Flux のクラスタ定義は `flux/clusters/<cluster>/` に配置します (`na
 | 基盤 / CRD | `cnpg`, `cert-manager`, `cert-manager-config` (dns01 ClusterIssuer のみ), `external-secrets`, `prometheus-operator-crd` |
 | ストレージ | `longhorn`, `longhorn-config` |
 | ネットワーク | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller` |
-| 監視 | `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes` |
+| 監視 | `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `ix2215-snmp-exporter`, `vector` |
 | アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `rss-fetcher` |
 | 運用 | `renovate-operator` |
 
@@ -203,8 +203,9 @@ natsume との主な差分:
 - **external-dns**: `txtPrefix: meruto-` で natsume レコードと衝突回避し、`extraArgs.ingress-class: traefik` で Traefik Ingress のみを対象にする
 - **cloudflare-tunnel-ingress-controller**: `cloudflared-pke-meruto` `OnePasswordItem` を参照し、Cloudflare Tunnel 経由の IngressClass `cloudflare-tunnel` を提供する。controller chart は `0.0.23`、管理する `cloudflared` image tag は `2026.3.0`
 - **cert-manager-config**: `letsencrypt-dns01` ClusterIssuer + `cloudflare-api-token` `OnePasswordItem` のみ。`letsencrypt-http01` と Traefik mTLS 用の CA / TLSOption は含まない
+- **ix2215-snmp-exporter / vector**: IX2215 (`192.168.10.1`) の SNMP メトリクスと syslog を収集する。SNMP exporter の設定は `ix2215-snmp-exporter-config`、vector の Loki 送信 mTLS は `pke_natsume_mtls` の `OnePasswordItem` を参照する
 - **renovate-operator**: GitHub App token 生成に External Secrets Operator の `GithubAccessToken` generator を使う。Ingress は Traefik (`ingressClassName: traefik`) と `letsencrypt-dns01`
-- 含まれないコンポーネント: `cnpg-backup-config`, `external-dns-config`, Mimir / Loki / Grafana / Alloy 等の natsume 側監視スタック
+- 含まれないコンポーネント: `cnpg-backup-config`, `external-dns-config`, Mimir / Loki / Grafana 等の natsume 側監視スタック
 
 ### CloudNativePG クラスタ
 

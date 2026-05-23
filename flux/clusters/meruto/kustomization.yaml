@@ -11,6 +11,7 @@ resources:
 - kustomizations/daypassed-bot.yaml
 - kustomizations/emoji-service.yaml
 - kustomizations/external-dns.yaml
+- kustomizations/ix2215-snmp-exporter.yaml
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/longhorn.yaml
 - kustomizations/longhorn-config.yaml
@@ -20,3 +21,4 @@ resources:
 - kustomizations/prometheus-blackbox-exporter.yaml
 - kustomizations/rss-fetcher.yaml
 - kustomizations/traefik.yaml
+- kustomizations/vector.yaml
