@@ -21,3 +21,9 @@ tls_key_path: "{{ tls_cert_dir }}/tls.key"
 # present and container logs should be sent to Loki.
 docker:
   enabled: false
+
+# Optional Falco metrics collection. Enable after installing Falco on hosts.
+falco:
+  enabled: false
+  metrics_address: 127.0.0.1:8765
+  metrics_path: /metrics

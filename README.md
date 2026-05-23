@@ -110,6 +110,7 @@ pke/
 | `ansible/remove-etcd-member.yaml` | 既存 etcd クラスタからの member 削除 (`-e etcd_member_host=<host>`) |
 | `ansible/configure-k3s-registry-mtls.yaml` | K3s containerd の private registry mTLS 設定 |
 | `ansible/install-alloy.yaml` | Grafana Alloy 導入 (Mimir/Loki に `cluster=<host_vars cluster>` ラベルで送信) |
+| `ansible/install-falco.yaml` | Falco 導入 (systemd + modern eBPF、K3s containerd CRI socket、Prometheus metrics) |
 | `ansible/install-docker.yaml` | Docker Engine 導入 |
 | `ansible/upgrade-k3s.yaml` | K3s アップグレード |
 | `ansible/upgrade-etcd.yaml` | etcd アップグレード |
@@ -117,6 +118,8 @@ pke/
 `ansible/configure-k3s-registry-mtls.yaml` は新規クラスタ構築のデッドロックを避けるため、`site-k3s.yaml` には含めません。K3s、Flux、`registry.str08.net`、mTLS client 証明書の準備後に単独で実行します。
 
 複数クラスターを 1 つの inventory で管理しているため、`-l <cluster>_etcd` や `-l <ホスト>` で対象を絞って実行します (例: `ansible-playbook -i ansible/inventories/hosts.yaml -l meruto-01 ansible/site-k3s.yaml`)。
+
+Falco は Kubernetes DaemonSet ではなく host systemd service として導入します。K3s の admin kubeconfig は渡さず、Kubernetes / container metadata は K3s containerd の CRI socket (`/run/k3s/containerd/containerd.sock`) から取得します。custom rules は host 側の `/etc/falco/rules.d` に配置する前提で、必要になった時点で Ansible 管理を追加します。
 
 ### Roles
 
@@ -134,6 +137,7 @@ pke/
 | `configure-k3s-registry-mtls` | K3s containerd の private registry mTLS 設定 |
 | `longhorn-storage` | Longhorn 用ディスクのパーティション作成・XFS/ext4 初期化・マウント。`longhorn_storage_use_existing_vg: true` で既存 VG (`longhorn_storage_vg_name`) の空き領域に LV を切るモードに切り替え |
 | `install-alloy` | Grafana Alloy 導入。`cluster_name` ハードコードを廃止し、host_vars の `cluster` を Mimir/Loki ラベルとして送信 |
+| `install-falco` | Falco を systemd service として導入。`falco_driver_choice: modern_ebpf`、`falco_cri_socket: /run/k3s/containerd/containerd.sock`、`falco_metrics_*` で metrics endpoint を制御 |
 | `install-docker` | Docker Engine 導入 |
 | `upgrade-k3s` | K3s アップグレード |
 | `upgrade-etcd` | etcd アップグレード |

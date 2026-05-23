@@ -1,0 +1,6 @@
+---
+- name: Restart Falco
+  ansible.builtin.systemd:
+    name: "{{ falco_service_name }}"
+    state: restarted
+    daemon_reload: true

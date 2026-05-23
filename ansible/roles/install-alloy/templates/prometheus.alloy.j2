@@ -33,6 +33,20 @@ prometheus.scrape "cadvisor_system" {
   forward_to = [prometheus.relabel.cadvisor_system_only.receiver]
 }
 
+{% if falco is defined and falco.enabled | default(false) %}
+// ============================================================
+// Falco
+// ============================================================
+
+prometheus.scrape "falco" {
+  targets = [{
+    __address__ = "{{ falco.metrics_address }}",
+  }]
+  metrics_path = "{{ falco.metrics_path }}"
+  forward_to   = [prometheus.relabel.add_common_labels.receiver]
+}
+{% endif %}
+
 // ============================================================
 // Common labels for all metrics
 // ============================================================

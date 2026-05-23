@@ -1,0 +1,88 @@
+---
+- name: Install Falco apt prerequisites
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+    update_cache: true
+
+- name: Download Falco repository key
+  ansible.builtin.get_url:
+    url: "{{ falco_apt_key_url }}"
+    dest: "{{ falco_apt_key_asc_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  register: falco_apt_key
+
+- name: Check Falco repository keyring
+  ansible.builtin.stat:
+    path: "{{ falco_apt_keyring_path }}"
+  register: falco_apt_keyring
+
+- name: Dearmor Falco repository key
+  ansible.builtin.command:
+    argv:
+      - gpg
+      - --yes
+      - --dearmor
+      - -o
+      - "{{ falco_apt_keyring_path }}"
+      - "{{ falco_apt_key_asc_path }}"
+  when: falco_apt_key.changed or not falco_apt_keyring.stat.exists
+
+- name: Set Falco repository keyring permissions
+  ansible.builtin.file:
+    path: "{{ falco_apt_keyring_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Add Falco apt repository
+  ansible.builtin.apt_repository:
+    repo: "{{ falco_apt_repository }}"
+    filename: falcosecurity
+    state: present
+    update_cache: true
+
+- name: Install Falco
+  ansible.builtin.apt:
+    name: falco
+    state: "{{ falco_package_state }}"
+  environment:
+    FALCO_FRONTEND: noninteractive
+    FALCO_DRIVER_CHOICE: "{{ falco_driver_choice }}"
+    FALCOCTL_ENABLED: "{{ 'yes' if falco_falcoctl_enabled | bool else 'no' }}"
+
+- name: Manage falcoctl artifact follow service
+  ansible.builtin.systemd:
+    name: falcoctl-artifact-follow.service
+    masked: "{{ not falco_falcoctl_enabled | bool }}"
+    enabled: "{{ falco_falcoctl_enabled | bool }}"
+  failed_when: false
+
+- name: Create Falco config directory
+  ansible.builtin.file:
+    path: "{{ falco_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure Falco for PKE
+  ansible.builtin.template:
+    src: pke.yaml.j2
+    dest: "{{ falco_pke_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Falco
+
+- name: Enable Falco modern eBPF service
+  ansible.builtin.systemd:
+    name: "{{ falco_service_name }}"
+    enabled: true
+    state: started
+    daemon_reload: true

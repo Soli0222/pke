@@ -1,0 +1,26 @@
+---
+falco_apt_key_url: https://falco.org/repo/falcosecurity-packages.asc
+falco_apt_key_asc_path: /usr/share/keyrings/falco-archive-keyring.asc
+falco_apt_keyring_path: /usr/share/keyrings/falco-archive-keyring.gpg
+falco_apt_repository: "deb [signed-by={{ falco_apt_keyring_path }}] https://download.falco.org/packages/deb stable main"
+
+falco_package_state: present
+falco_driver_choice: modern_ebpf
+falco_falcoctl_enabled: false
+falco_service_name: falco-modern-bpf
+
+falco_config_dir: /etc/falco/config.d
+falco_pke_config_path: "{{ falco_config_dir }}/pke.yaml"
+
+falco_modern_ebpf_cpus_for_each_buffer: 2
+falco_modern_ebpf_buf_size_preset: 4
+falco_modern_ebpf_drop_failed_exit: false
+
+falco_cri_socket: /run/k3s/containerd/containerd.sock
+falco_cri_disable_async: false
+
+falco_metrics_enabled: true
+falco_metrics_interval: 15m
+falco_metrics_output_rule: false
+falco_metrics_listen_address: 127.0.0.1
+falco_metrics_listen_port: 8765

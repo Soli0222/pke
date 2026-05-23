@@ -1,0 +1,6 @@
+---
+- name: Install Falco
+  hosts: all
+  become: true
+  roles:
+    - install-falco

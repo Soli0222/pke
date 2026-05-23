@@ -1,3 +1,7 @@
 ---
 ansible_python_interpreter: /usr/bin/python3
 
+falco:
+  enabled: true
+  metrics_address: 127.0.0.1:8765
+  metrics_path: /metrics
