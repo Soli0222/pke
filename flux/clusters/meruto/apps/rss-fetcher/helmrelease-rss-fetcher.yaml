@@ -36,6 +36,8 @@ spec:
         url: https://www.youtube.com/feeds/videos.xml?channel_id=UCjIHV9sLF2yrYH2ClgPAzSg
       - name: "ichiro-yamaguchi-yt"
         url: https://www.youtube.com/feeds/videos.xml?channel_id=UCGQ4RBrN9wZJ1j6oOJ2KTFw
+      - name: "sakanaction-yt"
+        url: https://www.youtube.com/feeds/videos.xml?channel_id=UCli_j3KPGhsF1Mv1AK17UPA
       interval: 30s
       existingSecret: rss-fetcher-webhooks
     externalValkey:
