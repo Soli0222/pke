@@ -1,0 +1,46 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: topolvm
+  namespace: topolvm-system
+spec:
+  interval: 10m
+  releaseName: topolvm
+  targetNamespace: topolvm-system
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: topolvm
+      version: 16.1.0
+      sourceRef:
+        kind: HelmRepository
+        name: topolvm-repo
+        namespace: topolvm-system
+      interval: 1h
+  values:
+    scheduler:
+      enabled: false
+    controller:
+      replicaCount: 1
+      podDisruptionBudget:
+        enabled: false
+    lvmd:
+      deviceClasses:
+      - name: topolvm
+        volume-group: topolvm
+        default: true
+        spare-gb: 10
+    storageClasses:
+    - name: topolvm
+      storageClass:
+        fsType: ext4
+        reclaimPolicy: Retain
+        isDefaultClass: false
+        volumeBindingMode: WaitForFirstConsumer
+        allowVolumeExpansion: true
+        additionalParameters:
+          topolvm.io/device-class: topolvm

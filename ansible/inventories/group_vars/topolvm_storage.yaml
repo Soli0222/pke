@@ -1,0 +1,6 @@
+---
+topolvm_storage_parent_disk: /dev/vda
+topolvm_storage_partition_number: 5
+topolvm_storage_partition_end: "100%"
+topolvm_storage_devices:
+  - /dev/vda5

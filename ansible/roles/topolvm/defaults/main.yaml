@@ -1,0 +1,9 @@
+---
+topolvm_storage_devices: []
+topolvm_storage_vg_name: topolvm
+
+topolvm_storage_parent_disk: ""
+topolvm_storage_partition_number: 0
+topolvm_storage_partition_label: gpt
+topolvm_storage_partition_end: "100%"
+topolvm_storage_partition_size_mib: 0

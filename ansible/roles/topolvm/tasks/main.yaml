@@ -1,0 +1,78 @@
+---
+- name: Validate TopoLVM storage devices
+  ansible.builtin.assert:
+    that:
+      - topolvm_storage_devices | length > 0
+    fail_msg: "Set topolvm_storage_devices for {{ inventory_hostname }} before preparing TopoLVM storage."
+
+- name: Install TopoLVM storage dependencies
+  ansible.builtin.apt:
+    name:
+      - lvm2
+      - parted
+    state: present
+    update_cache: true
+
+- name: Prepare TopoLVM partition on parent disk
+  when:
+    - topolvm_storage_parent_disk | length > 0
+    - (topolvm_storage_partition_number | int) > 0
+  block:
+    - name: Read existing partition table on parent disk
+      community.general.parted:
+        device: "{{ topolvm_storage_parent_disk }}"
+        unit: MiB
+      register: topolvm_parent_disk_info
+
+    - name: Determine whether TopoLVM partition already exists
+      ansible.builtin.set_fact:
+        topolvm_partition_exists: >-
+          {{
+            topolvm_parent_disk_info.partitions
+            | selectattr('num', 'equalto', topolvm_storage_partition_number | int)
+            | list | length > 0
+          }}
+
+    - name: Determine start position for new TopoLVM partition
+      ansible.builtin.set_fact:
+        topolvm_partition_start_mib: >-
+          {{
+            (
+              [1] + (topolvm_parent_disk_info.partitions | map(attribute='end') | list)
+            ) | max | round(0, 'ceil') | int + 1
+          }}
+      when: not topolvm_partition_exists
+
+    - name: Determine end position for new TopoLVM partition
+      ansible.builtin.set_fact:
+        topolvm_partition_end_position: >-
+          {{
+            (
+              (topolvm_partition_start_mib | int) + (topolvm_storage_partition_size_mib | int)
+            ) ~ 'MiB'
+            if (topolvm_storage_partition_size_mib | int) > 0
+            else topolvm_storage_partition_end
+          }}
+      when: not topolvm_partition_exists
+
+    - name: Create TopoLVM partition
+      community.general.parted:
+        device: "{{ topolvm_storage_parent_disk }}"
+        label: "{{ topolvm_storage_partition_label }}"
+        number: "{{ topolvm_storage_partition_number | int }}"
+        state: present
+        part_start: "{{ topolvm_partition_start_mib }}MiB"
+        part_end: "{{ topolvm_partition_end_position }}"
+      when: not topolvm_partition_exists
+
+- name: Wait for TopoLVM storage devices
+  ansible.builtin.wait_for:
+    path: "{{ item }}"
+    state: present
+    timeout: 30
+  loop: "{{ topolvm_storage_devices }}"
+
+- name: Create or extend TopoLVM volume group
+  community.general.lvg:
+    vg: "{{ topolvm_storage_vg_name }}"
+    pvs: "{{ topolvm_storage_devices }}"
