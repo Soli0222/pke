@@ -38,7 +38,7 @@ spec:
     - name: topolvm
       storageClass:
         fsType: ext4
-        reclaimPolicy: Retain
+        reclaimPolicy: Delete
         isDefaultClass: false
         volumeBindingMode: WaitForFirstConsumer
         allowVolumeExpansion: true
