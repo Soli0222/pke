@@ -7,7 +7,7 @@ spec:
   interval: 10m
   path: "./flux/clusters/meruto/apps/tetragon-policies"
   prune: true
-  wait: true
+  wait: false
   timeout: 10m
   dependsOn:
   - name: tetragon
