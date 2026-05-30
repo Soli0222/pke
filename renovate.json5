@@ -7,6 +7,9 @@
   reviewers: [
     'Soli0222',
   ],
+  assignees: [
+    'Soli0222',
+  ],
   timezone: 'Asia/Tokyo',
   prConcurrentLimit: 15,
   prHourlyLimit: 8,
