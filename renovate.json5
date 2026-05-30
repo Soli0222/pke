@@ -2,12 +2,12 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
     'config:recommended',
+    'security:minimumReleaseAgeNpm',
   ],
   reviewers: [
     'Soli0222',
   ],
   timezone: 'Asia/Tokyo',
-  minimumReleaseAge: '3 days',
   prConcurrentLimit: 15,
   prHourlyLimit: 8,
   labels: [
