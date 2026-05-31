@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: emoji-bot-gateway
-      version: 0.1.6
+      version: 0.1.7
       sourceRef:
         kind: HelmRepository
         name: emoji-bot-gateway-repo-2
