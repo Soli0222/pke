@@ -49,6 +49,62 @@ data:
     }
 
     // ============================================================
+    // OpenTelemetry: OTLP receiver for metrics and logs
+    // ============================================================
+
+    otelcol.receiver.otlp "default" {
+      grpc {
+        endpoint = "0.0.0.0:4317"
+      }
+
+      http {
+        endpoint = "0.0.0.0:4318"
+      }
+
+      output {
+        metrics = [otelcol.processor.batch.otlp.input]
+        logs    = [otelcol.processor.attributes.otlp_loki_labels.input]
+      }
+    }
+
+    otelcol.processor.attributes "otlp_loki_labels" {
+      action {
+        key    = "loki.resource.labels"
+        action = "insert"
+        value  = "service.name, service.namespace"
+      }
+
+      output {
+        logs = [otelcol.processor.batch.otlp.input]
+      }
+    }
+
+    otelcol.processor.batch "otlp" {
+      output {
+        metrics = [otelcol.exporter.prometheus.otlp.input]
+        logs    = [otelcol.exporter.loki.otlp.input]
+      }
+    }
+
+    otelcol.exporter.prometheus "otlp" {
+      forward_to = [prometheus.remote_write.default.receiver]
+    }
+
+    otelcol.exporter.loki "otlp" {
+      forward_to = [loki.process.otel_logs.receiver]
+    }
+
+    loki.process "otel_logs" {
+      stage.static_labels {
+        values = {
+          cluster = "meruto",
+          source  = "otlp",
+        }
+      }
+      forward_to = [loki.write.default.receiver]
+    }
+
+    // ============================================================
     // Discovery
     // ============================================================
 
