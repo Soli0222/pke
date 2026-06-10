@@ -81,8 +81,14 @@ data:
 
     otelcol.processor.batch "otlp" {
       output {
-        metrics = [otelcol.exporter.prometheus.otlp.input]
+        metrics = [otelcol.processor.deltatocumulative.otlp.input]
         logs    = [otelcol.exporter.loki.otlp.input]
+      }
+    }
+
+    otelcol.processor.deltatocumulative "otlp" {
+      output {
+        metrics = [otelcol.exporter.prometheus.otlp.input]
       }
     }
 
