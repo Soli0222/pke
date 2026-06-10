@@ -4,6 +4,7 @@
   become: true
   roles:
     - general-configuration
+    - ssh-agent-sudo
     - network
     - sysctl
     - ufw

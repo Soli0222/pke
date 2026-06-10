@@ -2,6 +2,13 @@
 ansible_host: meruto-01
 cluster: meruto
 
+ssh_agent_sudo_users:
+  - name: soli
+    github_user: soli0222
+    login_authorized_keys: true
+    sudo_authorized_keys: true
+    lock_password: true
+
 longhorn_storage_use_existing_vg: true
 longhorn_storage_vg_name: ubuntu-vg
 

@@ -1,0 +1,5 @@
+---
+- name: Reload ssh
+  ansible.builtin.systemd:
+    name: "{{ ssh_agent_sudo_sshd_service }}"
+    state: reloaded

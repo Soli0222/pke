@@ -2,6 +2,18 @@
 ansible_host: natsume-03
 cluster: natsume
 
+ssh_agent_sudo_configure_sshd: false
+ssh_agent_sudo_users:
+  - name: soli
+    github_user: soli0222
+    login_authorized_keys: false
+    sudo_authorized_keys: true
+    lock_password: true
+  - name: ubuntu
+    github_user: soli0222
+    login_authorized_keys: false
+    sudo_authorized_keys: true
+
 network_netplan:
   global:
     device: ens3

@@ -1,0 +1,124 @@
+---
+- name: Install PAM SSH agent authentication package
+  ansible.builtin.apt:
+    name: "{{ ssh_agent_sudo_package }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure sudo authorized keys directory exists
+  ansible.builtin.file:
+    path: "{{ ssh_agent_sudo_authorized_keys_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Fetch GitHub public SSH keys
+  ansible.builtin.uri:
+    url: "{{ item.github_keys_url | default(ssh_agent_sudo_github_keys_base_url ~ '/' ~ (item.github_user | default(ssh_agent_sudo_github_user)) ~ '.keys') }}"
+    return_content: true
+    status_code: 200
+  register: ssh_agent_sudo_github_key_results
+  changed_when: false
+  loop: "{{ ssh_agent_sudo_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Validate fetched GitHub public SSH keys
+  ansible.builtin.assert:
+    that:
+      - item.content is defined
+      - item.content | trim | length > 0
+      - >-
+        (
+          item.content.splitlines()
+          | reject('equalto', '')
+          | reject('match', '^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|sk-ssh-ed25519@openssh.com|sk-ecdsa-sha2-nistp256@openssh.com)\\s+')
+          | list
+          | length
+        ) == 0
+    fail_msg: "Fetched GitHub keys for {{ item.item.name }} are empty or contain an invalid SSH public key line."
+  loop: "{{ ssh_agent_sudo_github_key_results.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+
+- name: Configure login authorized keys from GitHub
+  ansible.posix.authorized_key:
+    user: "{{ item.item.name }}"
+    key: "{{ item.content }}"
+    state: present
+    manage_dir: true
+    exclusive: "{{ item.item.login_authorized_keys_exclusive | default(false) }}"
+  loop: "{{ ssh_agent_sudo_github_key_results.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: item.item.login_authorized_keys | default(true) | bool
+
+- name: Configure sudo authorized keys from GitHub
+  ansible.builtin.copy:
+    dest: "{{ ssh_agent_sudo_authorized_keys_dir }}/{{ item.item.name }}"
+    content: "{{ item.content | trim }}\n"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ ssh_agent_sudo_github_key_results.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: item.item.sudo_authorized_keys | default(true) | bool
+
+- name: Enable SSH agent authentication for sudo
+  ansible.builtin.lineinfile:
+    path: "{{ ssh_agent_sudo_pam_file }}"
+    regexp: '^auth\s+sufficient\s+pam_ssh_agent_auth\.so\s+file='
+    line: "{{ ssh_agent_sudo_pam_line }}"
+    insertbefore: BOF
+    state: present
+    backup: true
+
+- name: Preserve SSH agent socket for sudo
+  ansible.builtin.copy:
+    dest: "{{ ssh_agent_sudo_sudoers_file }}"
+    content: |
+      Defaults env_keep += "SSH_AUTH_SOCK"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Ensure sshd config directory exists
+  ansible.builtin.file:
+    path: "{{ ssh_agent_sudo_sshd_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: ssh_agent_sudo_configure_sshd | bool
+
+- name: Allow SSH agent forwarding in sshd
+  ansible.builtin.copy:
+    dest: "{{ ssh_agent_sudo_sshd_config_file }}"
+    content: |
+      AllowAgentForwarding yes
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload ssh
+  when: ssh_agent_sudo_configure_sshd | bool
+
+- name: Validate sshd configuration
+  ansible.builtin.command: /usr/sbin/sshd -t
+  changed_when: false
+  when: ssh_agent_sudo_configure_sshd | bool
+
+- name: Apply SSH service changes before locking passwords
+  ansible.builtin.meta: flush_handlers
+
+- name: Lock local password authentication for users
+  ansible.builtin.user:
+    name: "{{ item.item.name }}"
+    password_lock: true
+  loop: "{{ ssh_agent_sudo_github_key_results.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: item.item.lock_password | default(false) | bool

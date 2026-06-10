@@ -1,0 +1,7 @@
+---
+- name: Configure SSH agent sudo authentication
+  hosts: all
+  gather_facts: false
+  become: true
+  roles:
+    - ssh-agent-sudo

@@ -1,0 +1,23 @@
+---
+ssh_agent_sudo_github_user: soli0222
+ssh_agent_sudo_github_keys_base_url: https://github.com
+
+ssh_agent_sudo_users:
+  - name: "{{ ansible_user | default(ansible_ssh_user) | default(lookup('env', 'USER')) }}"
+    github_user: "{{ ssh_agent_sudo_github_user }}"
+    login_authorized_keys: true
+    sudo_authorized_keys: true
+    lock_password: true
+
+ssh_agent_sudo_package: libpam-ssh-agent-auth
+
+ssh_agent_sudo_authorized_keys_dir: /etc/security/sudo_authorized_keys
+ssh_agent_sudo_pam_file: /etc/pam.d/sudo
+ssh_agent_sudo_pam_line: "auth sufficient pam_ssh_agent_auth.so file={{ ssh_agent_sudo_authorized_keys_dir }}/%u"
+
+ssh_agent_sudo_sudoers_file: /etc/sudoers.d/10-pke-ssh-agent-auth
+
+ssh_agent_sudo_configure_sshd: true
+ssh_agent_sudo_sshd_config_dir: /etc/ssh/sshd_config.d
+ssh_agent_sudo_sshd_config_file: "{{ ssh_agent_sudo_sshd_config_dir }}/60-pke-agent-forwarding.conf"
+ssh_agent_sudo_sshd_service: ssh
