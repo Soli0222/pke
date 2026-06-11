@@ -28,7 +28,7 @@ jobs:
 
       - name: Run flux-local diff
         id: diff
-        uses: allenporter/flux-local/action/diff@8.2.0
+        uses: allenporter/flux-local/action/diff@8.3.0
         with:
           path: flux/clusters/natsume
           resource: ${{ matrix.resource }}
