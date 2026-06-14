@@ -6,12 +6,62 @@ spec:
   options:
   - name: policy-mode
     value: monitor
+  tracepoints:
+  - subsystem: signal
+    event: signal_generate
+    raw: true
+    message: "SIGHUP generated"
+    tags:
+    - signal
+    - sighup
+    args:
+    - index: 0
+      type: int
+      label: sig
+    - index: 2
+      type: int
+      resolve: pid
+      label: target_pid
+    - index: 3
+      type: int
+      label: group
+    - index: 4
+      type: int
+      label: result
+    selectors:
+    - matchArgs:
+      - index: 0
+        operator: Equal
+        values:
+        - "1"
+      matchActions:
+      - action: Post
+  - subsystem: signal
+    event: signal_deliver
+    raw: true
+    message: "SIGHUP delivered"
+    tags:
+    - signal
+    - sighup
+    args:
+    - index: 0
+      type: int
+      label: sig
+    selectors:
+    - matchArgs:
+      - index: 0
+        operator: Equal
+        values:
+        - "1"
+      matchActions:
+      - action: Post
   kprobes:
   - call: sys_kill
     syscall: true
-    message: "signal syscall observed"
+    message: "SIGHUP syscall observed"
     tags:
     - signal
+    - sighup
     args:
     - index: 0
       type: int
@@ -29,9 +79,10 @@ spec:
       - action: Post
   - call: sys_tkill
     syscall: true
-    message: "signal syscall observed"
+    message: "SIGHUP syscall observed"
     tags:
     - signal
+    - sighup
     args:
     - index: 0
       type: int
@@ -49,9 +100,10 @@ spec:
       - action: Post
   - call: sys_tgkill
     syscall: true
-    message: "signal syscall observed"
+    message: "SIGHUP syscall observed"
     tags:
     - signal
+    - sighup
     args:
     - index: 0
       type: int
@@ -72,9 +124,10 @@ spec:
       - action: Post
   - call: sys_pidfd_send_signal
     syscall: true
-    message: "signal syscall observed"
+    message: "SIGHUP syscall observed"
     tags:
     - signal
+    - sighup
     args:
     - index: 0
       type: int

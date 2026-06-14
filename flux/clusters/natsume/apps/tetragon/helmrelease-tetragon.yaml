@@ -24,14 +24,20 @@ spec:
   values:
     tetragon:
       clusterName: natsume
+      exportFileMaxSizeMB: 50
+      exportFileMaxBackups: 10
       exportAllowList: |-
         {"event_set":["PROCESS_KPROBE"]}
+        {"event_set":["PROCESS_TRACEPOINT"]}
+        {"namespace":["misskey"],"event_set":["PROCESS_EXEC","PROCESS_EXIT"]}
       exportDenyList: |-
         {"health_check":true}
         {"namespace":["tetragon"]}
       exportRateLimit: -1
       enableProcessCred: true
       enableProcessNs: true
+      processAncestors:
+        enabled: base,kprobe,tracepoint
       cri:
         enabled: true
         socketHostPath: /run/k3s/containerd/containerd.sock
