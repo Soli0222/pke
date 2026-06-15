@@ -10,10 +10,10 @@ spec:
   - subsystem: signal
     event: signal_generate
     raw: true
-    message: "SIGHUP generated"
+    message: "tracked signal generated"
     tags:
     - signal
-    - sighup
+    - tracked-signal
     args:
     - index: 0
       type: int
@@ -34,15 +34,19 @@ spec:
         operator: Equal
         values:
         - "1"
+        - "4"
+        - "6"
+        - "7"
+        - "11"
       matchActions:
       - action: Post
   - subsystem: signal
     event: signal_deliver
     raw: true
-    message: "SIGHUP delivered"
+    message: "tracked signal delivered"
     tags:
     - signal
-    - sighup
+    - tracked-signal
     args:
     - index: 0
       type: int
@@ -53,6 +57,10 @@ spec:
         operator: Equal
         values:
         - "1"
+        - "4"
+        - "6"
+        - "7"
+        - "11"
       matchActions:
       - action: Post
   kprobes:
