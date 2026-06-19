@@ -1,0 +1,30 @@
+---
+ansible_host: natsume-08
+cluster: natsume
+
+network_netplan:
+  global:
+    device: ens3
+    ipv4: 133.18.125.154/23
+    ipv6:
+      - 2406:8c00:0:3459:133:18:125:154/64
+    default_route:
+      - 133.18.124.1
+      - via: 2406:8c00:0:3459::1
+        on-link: true
+    nameservers:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 2606:4700:4700::1111
+      - 2606:4700:4700::1001
+    routes: []
+
+  private:
+    device: ens7
+    ipv4:
+      - 192.168.9.8/24
+    ipv6:
+      - fd00:192:168:9::8/64
+    default_route: []
+    nameservers: []
+    routes: []

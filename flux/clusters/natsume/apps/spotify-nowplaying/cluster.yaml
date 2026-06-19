@@ -4,14 +4,16 @@ metadata:
   name: spn-cluster
   namespace: spotify-nowplaying
 spec:
-  instances: 1
+  instances: 2
   primaryUpdateMethod: switchover
   smartShutdownTimeout: 60
   affinity:
     nodeSelector:
-      kubernetes.io/hostname: natsume-03
+      kubernetes.io/hostname: natsume-08
   storage:
+    storageClass: topolvm
     size: 5Gi
+    resizeInUseVolumes: false
   bootstrap:
     initdb:
       database: spn

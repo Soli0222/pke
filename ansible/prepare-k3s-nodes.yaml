@@ -8,3 +8,27 @@
     - network
     - sysctl
     - ufw
+
+- name: Prepare TopoLVM storage volume groups first
+  hosts: topolvm_storage
+  become: true
+  roles:
+    - topolvm
+
+- name: Prepare Longhorn storage volumes after local storage
+  hosts: longhorn_storage
+  become: true
+  roles:
+    - longhorn-storage
+
+- name: Install Alloy
+  hosts: all
+  become: true
+  roles:
+    - install-alloy
+
+- name: Install Falco
+  hosts: all
+  become: true
+  roles:
+    - install-falco

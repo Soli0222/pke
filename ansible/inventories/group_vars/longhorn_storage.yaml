@@ -1,5 +1,6 @@
 ---
 longhorn_storage_parent_disk: /dev/vda
-longhorn_storage_partition_number: 4
+longhorn_storage_partition_number: 5
+longhorn_storage_partition_end: "100%"
 longhorn_storage_devices:
-  - /dev/vda4
+  - /dev/vda5

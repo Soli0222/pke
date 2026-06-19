@@ -1,5 +1,31 @@
 # handover
 
+## 2026-06-19 natsume 16GB ノード追加時の初期ストレージ方針
+
+### 方針
+
+- 新規追加ノードは 16 GB メモリのインスタンスを前提にする。
+- TopoLVM 用領域を先に 300GiB 確保し、残りを Longhorn に割り当てる。
+- 新規ストレージノードの標準レイアウトは `/dev/vda4` = TopoLVM、`/dev/vda5` = Longhorn。
+- `natsume-03` は廃止予定の既存ノードなので、storage playbook の対象グループから外す。
+
+### 実装メモ
+
+- `ansible/inventories/group_vars/topolvm_storage.yaml`
+  - `topolvm_storage_partition_number: 4`
+  - `topolvm_storage_partition_size_mib: 307200`
+  - `topolvm_storage_devices: [/dev/vda4]`
+- `ansible/inventories/group_vars/longhorn_storage.yaml`
+  - `longhorn_storage_partition_number: 5`
+  - `longhorn_storage_devices: [/dev/vda5]`
+- `ansible/prepare-storage.yaml` を使い、TopoLVM -> Longhorn の順に作成する。
+
+### ファイルシステム判断
+
+- Longhorn の backing filesystem は ext4 のままにする。
+- XFS は拡張には強いが縮小できないため、将来の縮小可能性だけを見るなら ext4 のほうがよい。
+- ただし Longhorn / TopoLVM のバッキング領域縮小は、Pod / replica の退避、unmount、LVM resize、partition resize を伴うため、通常運用では縮小前提にしない。必要になったら追加 PV やノード追加で拡張するほうを優先する。
+
 ## 2026-05-30 natsume ストレージ / ノード追加方針
 
 ### 現状

@@ -1,6 +1,0 @@
----
-- name: Prepare TopoLVM storage volume groups
-  hosts: topolvm_storage
-  become: true
-  roles:
-    - topolvm

@@ -1,14 +1,3 @@
----
-- name: Prepare k3s nodes
-  hosts: k3s_cluster
-  become: true
-  roles:
-    - general-configuration
-    - ssh-agent-sudo
-    - network
-    - sysctl
-    - ufw
-
 - name: Install and configure external etcd
   hosts: etcd
   become: true
@@ -35,3 +24,10 @@
   serial: 1
   roles:
     - install-k3s
+
+- name: Configure k3s registry mTLS
+  hosts: k3s_cluster
+  become: true
+  serial: 1
+  roles:
+    - configure-k3s-registry-mtls

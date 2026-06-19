@@ -93,6 +93,7 @@ pke/
 | `ansible/inventories/group_vars/k3s_cluster.yaml` | K3s クラスタ共通変数 |
 | `ansible/inventories/group_vars/k3s_server.yaml` | K3s server 変数 (`k3s_datastore_endpoint` は `groups[cluster + '_etcd']` から構築) |
 | `ansible/inventories/group_vars/k3s_agent.yaml` | K3s agent 変数 (server から node-token を自動取得) |
+| `ansible/inventories/group_vars/topolvm_storage.yaml` | TopoLVM 用ディスク変数 |
 | `ansible/inventories/group_vars/longhorn_storage.yaml` | Longhorn 用ディスク変数 |
 | `ansible/inventories/host_vars/<host>.yaml` | 各ノード固有: `cluster:`、ネットワーク、必要なら `k3s_tls_sans` / `longhorn_storage_use_existing_vg` など |
 
@@ -105,6 +106,8 @@ pke/
 | `ansible/site-k3s.yaml` | ノード初期設定、ネットワーク、UFW、external etcd、K3s server / agent 構築 (一括) |
 | `ansible/prepare-k3s-nodes.yaml` | OS / ネットワーク / sysctl / UFW のみを適用 |
 | `ansible/install-k3s-servers.yaml` | 既存ノードに対して K3s server だけを展開 |
+| `ansible/prepare-storage.yaml` | TopoLVM 用 VG を先に作成し、その後 Longhorn 用パーティション/LV を作成 |
+| `ansible/prepare-topolvm-storage.yaml` | TopoLVM 用パーティション/VG の作成 |
 | `ansible/prepare-longhorn-storage.yaml` | Longhorn 用パーティション/LV の作成・初期化 |
 | `ansible/add-etcd-member.yaml` | 既存 etcd クラスタへの member 追加 (`-e etcd_member_host=<host>`) |
 | `ansible/remove-etcd-member.yaml` | 既存 etcd クラスタからの member 削除 (`-e etcd_member_host=<host>`) |
@@ -135,6 +138,7 @@ Falco は Kubernetes DaemonSet ではなく host systemd service として導入
 | `etcd-member` | 稼働中 etcd クラスタへの member 追加 / 削除 |
 | `install-k3s` | K3s server / agent 導入。`k3s_token` 未指定時は k3s が自動生成。`k3s_external_ip_netplan_source` (`global` / `private` / `""`) と `k3s_external_ip_include_ipv4` / `k3s_external_ip_include_ipv6` で `node-external-ip` を制御。`k3s_include_tailscale_tls_sans: false` で Tailscale 不在ホストに対応 |
 | `configure-k3s-registry-mtls` | K3s containerd の private registry mTLS 設定 |
+| `topolvm` | TopoLVM 用 VG を作成。既定では `/dev/vda4` に 300GiB の PV を作り VG `topolvm` に追加 |
 | `longhorn-storage` | Longhorn 用ディスクのパーティション作成・XFS/ext4 初期化・マウント。`longhorn_storage_use_existing_vg: true` で既存 VG (`longhorn_storage_vg_name`) の空き領域に LV を切るモードに切り替え |
 | `install-alloy` | Grafana Alloy 導入。`cluster_name` ハードコードを廃止し、host_vars の `cluster` を Mimir/Loki ラベルとして送信 |
 | `install-falco` | Falco を systemd service として導入。`falco_driver_choice: modern_ebpf`、`falco_cri_socket: /run/k3s/containerd/containerd.sock`、`falco_metrics_*` で metrics endpoint を制御 |
@@ -247,9 +251,11 @@ K3s built-in の `traefik` と `helm-controller` は無効化しています。I
 
 ## ストレージ
 
-- ストレージドライバは Longhorn (`flux/clusters/<cluster>/apps/longhorn`)。HelmRelease で `longhorn` chart `1.11.1` を導入します。
-- natsume クラスター: `longhorn_storage` グループに所属する `natsume-03` で `/dev/vda` の 4 番パーティションを切り出し、新規 VG `longhorn` 上に LV を作成します。Longhorn の default replica count は `1` です。
-- meruto クラスター: `meruto-01` では `longhorn_storage_use_existing_vg: true` により、既存 `ubuntu-vg` の空き領域に LV `data` (100%FREE) を切ってマウントします。パーティション操作は行いません。Longhorn の default replica count は `1` で、default disk 自動作成には node label `node.longhorn.io/create-default-disk=true` が必要です。
+- ストレージドライバは Longhorn (`flux/clusters/<cluster>/apps/longhorn`) と TopoLVM (`flux/clusters/natsume/apps/topolvm`)。Longhorn の default replica count は `1` です。
+- natsume クラスターの新規ストレージノード: `ansible/prepare-storage.yaml` で TopoLVM を先に作成し、その後 Longhorn を作成します。既定では `/dev/vda4` に TopoLVM 用 300GiB の PV/VG、`/dev/vda5` に Longhorn 用の残り領域を割り当てます。
+- natsume-03 は廃止予定の既存ノードなので、storage playbook の対象グループからは外しています。
+- meruto クラスター: `meruto-01` では `longhorn_storage_use_existing_vg: true` により、既存 `ubuntu-vg` の空き領域に LV `data` (100%FREE) を切ってマウントします。パーティション操作は行いません。Longhorn の default disk 自動作成には node label `node.longhorn.io/create-default-disk=true` が必要です。
+- Longhorn の backing filesystem は既定で ext4 です。将来の縮小余地を残すなら XFS より ext4 のほうが扱いやすいですが、Longhorn / TopoLVM のバッキング領域の縮小は停止・退避・LVM 操作を伴うため、通常運用では縮小前提にしません。
 
 ## Terraform
 
@@ -273,6 +279,6 @@ K3s built-in の `traefik` と `helm-controller` は無効化しています。I
 - シークレットは主に 1Password Operator の `OnePasswordItem` で生成します。External Secrets Operator は meruto の `renovate-operator` で GitHub App token generator に使用しています。平文 Secret はコミットしないでください。
 - K3s と etcd のアップグレードは `ansible/upgrade-k3s.yaml` と `ansible/upgrade-etcd.yaml` を使います。
 - 新規クラスター追加は: `hosts.yaml` に `<name>_etcd` 子グループを作成 → host_vars に `cluster: <name>` 等を設定 → `helmfile/environments/<name>.yaml` と `helmfile/manifests/flux/<name>/fluxinstance.yaml` を追加 → `flux/clusters/<name>/` を作成、の流れになります。
-- ノード追加 / 削除は etcd → K3s server / agent → Longhorn ディスクの順で playbook を分けて流し、`hosts.yaml` と `host_vars/<node>.yaml` の追記を忘れないでください。natsume クラスターでは加えて `flux/clusters/natsume/apps/external-dns-config/node-dnsendpoints.yaml` のレコード更新が必要です (meruto クラスターは `external-dns-config` を持たないため不要)。
+- ノード追加 / 削除は etcd → K3s server / agent → storage (`prepare-storage.yaml`) の順で playbook を分けて流し、`hosts.yaml` と `host_vars/<node>.yaml` の追記を忘れないでください。natsume クラスターでは加えて `flux/clusters/natsume/apps/external-dns-config/node-dnsendpoints.yaml` のレコード更新が必要です (meruto クラスターは `external-dns-config` を持たないため不要)。
 - 新しい Flux アプリを追加する場合は `apps/<app>/`、`kustomizations/<app>.yaml`、ルート `kustomization.yaml` の 3 箇所をそろえてください。Postgres を使うアプリでは CNPG `Cluster` と必要に応じて barman-cloud `ObjectStore` / `ScheduledBackup` を同じディレクトリに同梱します。
 - Terraform state は Cloudflare R2 backend に保存されます。

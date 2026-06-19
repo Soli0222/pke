@@ -13,11 +13,11 @@ all:
         meruto_etcd:
     longhorn_storage:
       hosts:
-        natsume-03:
+        natsume-08:
         meruto-01:
     topolvm_storage:
       hosts:
-        natsume-03:
+        natsume-08:
     k3s_cluster:
       children:
         k3s_server:
@@ -25,4 +25,5 @@ all:
             natsume-03:
             meruto-01:
         k3s_agent:
-          hosts: {}
+          hosts:
+            natsume-08:

@@ -85,3 +85,27 @@ spec:
     recordType: AAAA
     targets:
     - fd7a:115c:a1e0::5b39:fd5b
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: natsume-08-node-records
+  namespace: external-dns
+spec:
+  endpoints:
+  - dnsName: natsume-08.str08.net
+    recordType: A
+    targets:
+    - 192.168.9.8
+  - dnsName: natsume-08.str08.net
+    recordType: AAAA
+    targets:
+    - fd00:192:168:9::8
+  - dnsName: natsume-08.pstr.space
+    recordType: A
+    targets:
+    - 133.18.125.154
+  - dnsName: natsume-08.pstr.space
+    recordType: AAAA
+    targets:
+    - 2406:8c00:0:3459:133:18:125:154
