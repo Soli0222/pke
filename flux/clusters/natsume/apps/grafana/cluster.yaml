@@ -4,7 +4,7 @@ metadata:
   name: grafana-cluster
   namespace: grafana
 spec:
-  instances: 2
+  instances: 1
   primaryUpdateMethod: switchover
   smartShutdownTimeout: 60
   affinity:
