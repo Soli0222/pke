@@ -24,12 +24,11 @@ spec:
   values:
     deployment:
       kind: DaemonSet
-    logs:
-      general:
-        format: json
-      access:
-        enabled: true
-        format: json
+    log:
+      format: json
+    accessLog:
+      enabled: true
+      format: json
     metrics:
       addInternals: true
       prometheus:
