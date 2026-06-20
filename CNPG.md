@@ -117,6 +117,7 @@ Pooler CRD は使っていない。
 
 `misskey-cluster` は `ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine:18` を使う。
 pgroonga を使う restore 先も同じ拡張を含む image にそろえる。
+`misskey-cluster` が使う `natsume-03` の TopoLVM は実機上にある 200GB の領域であり、現在の Ansible inventory の `topolvm_storage` 対象ではない。
 
 ## Backup Schedule
 

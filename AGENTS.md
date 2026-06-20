@@ -8,7 +8,7 @@ PKE はオンプレミスと外部 VPS 上の K3s クラスタを Ansible、Helm
 
 | クラスタ | ノード | 役割 | 補足 |
 |----------|--------|------|------|
-| `natsume` | `natsume-03`, `natsume-08` | 本番ワークロード、監視基盤、DB | `natsume-03` は external etcd と K3s server、`natsume-08` は K3s agent、TopoLVM、Longhorn storage |
+| `natsume` | `natsume-03`, `natsume-08` | 本番ワークロード、監視基盤、DB | `natsume-03` は external etcd と K3s server。実態として `natsume-03` に Longhorn 600GB と TopoLVM 200GB があるが、inventory 上の storage role は `natsume-08` だけに付ける |
 | `meruto` | `meruto-01` | 単一ノードクラスタ | private interface のみを使い、Longhorn は既存 `ubuntu-vg` の空き領域を使う |
 
 `cluster:` は必須である。
@@ -92,11 +92,14 @@ meruto は `k3s_include_tailscale_tls_sans: false` を使い、TLS SAN を host_
 `setup-etcd` は `etcd_version: 3.6.12` を使う。
 snapshot は `/var/lib/etcd/snapshots` に置き、`etcd_maintenance_on_calendar: "*-*-* 00/6:00:00"` で maintenance timer を作る。
 
-`topolvm` は natsume の `natsume-08` だけに適用する。
-`/dev/vda4` に 300GiB の partition を作り、VG `topolvm` を構成する。
+`topolvm` role は inventory 上では natsume の `natsume-08` だけに適用する。
+`natsume-08` では `/dev/vda4` に 300GiB の partition を作り、VG `topolvm` を構成する。
 
-`longhorn-storage` は natsume の `natsume-08` では `/dev/vda5` を使う。
+`longhorn-storage` role は natsume の `natsume-08` では `/dev/vda5` を使う。
 meruto の `meruto-01` は `longhorn_storage_use_existing_vg: true` と `longhorn_storage_vg_name: ubuntu-vg` を使う。
+
+`natsume-03` は実態として Longhorn 600GB と TopoLVM 200GB を持つ。
+この storage は現在の inventory では `longhorn_storage` と `topolvm_storage` に含めない。
 
 `install-alloy` は natsume の Mimir と Loki に送信する。
 remote endpoint は `https://mimir.pstr.space/api/v1/push` と `https://loki.pstr.space/loki/api/v1/push` で、mTLS certificate は 1Password item `pke_natsume_mtls` から読む。
