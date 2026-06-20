@@ -45,6 +45,20 @@ spec:
     serviceMonitor:
       enabled: true
 
+    imageRenderer:
+      enabled: true
+      image:
+        tag: v5.8.11
+        pullPolicy: IfNotPresent
+      serviceMonitor:
+        enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: 1Gi
+
     ingress:
       enabled: true
       ingressClassName: traefik
