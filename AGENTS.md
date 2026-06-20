@@ -1,204 +1,212 @@
 # AGENTS.md
 
-オンプレミス / 外部 VPS 上の Kubernetes プラットフォーム **Polestar Kubernetes Engine (PKE)** のリポジトリ。複数の独立した K3s クラスタ (`natsume` / `meruto`) を `cluster:` host variable で識別し、Ansible / Helmfile / Flux すべてをクラスター別に切り替えて運用する。
+このリポジトリは **Polestar Kubernetes Engine (PKE)** を管理する。
+PKE はオンプレミスと外部 VPS 上の K3s クラスタを Ansible、Helmfile、Flux CD、Terraform で構成する Kubernetes platform である。
+クラスタは host_vars の `cluster: <name>` で識別し、Ansible の inventory、Helmfile environment、Flux の同期 path をクラスタごとに切り替える。
+
+## 現在の管理対象
+
+| クラスタ | ノード | 役割 | 補足 |
+|----------|--------|------|------|
+| `natsume` | `natsume-03`, `natsume-08` | 本番ワークロード、監視基盤、DB | `natsume-03` は external etcd と K3s server、`natsume-08` は K3s agent、TopoLVM、Longhorn storage |
+| `meruto` | `meruto-01` | 単一ノードクラスタ | private interface のみを使い、Longhorn は既存 `ubuntu-vg` の空き領域を使う |
+
+`cluster:` は必須である。
+`setup-etcd`、`k3s_datastore_endpoint`、Alloy の remote write label、Flux の同期 path はこの値に依存する。
 
 ## リポジトリ構成
 
 ```
 pke/
-├── ansible/             # OS・ネットワーク・external etcd・K3s・Alloy・Longhorn ディスクの構成管理
-├── helmfile/            # Cilium, 1Password Connect, Flux Operator のブートストラップ
+├── ansible/                 # OS, network, external etcd, K3s, storage, Alloy, Falco
+├── helmfile/                # Cilium, 1Password Connect, Flux Operator の bootstrap
 │   ├── helmfile.yaml.gotmpl
 │   ├── environments/<cluster>.yaml
 │   ├── manifests/flux/<cluster>/fluxinstance.yaml
 │   └── values/*.gotmpl
-├── flux/clusters/<cluster>/ # Flux CD で同期するクラスタアプリケーション定義
-├── terraform/tailscale/ # Tailscale ACL 管理
-├── .github/             # GitHub Actions
-└── renovate.json5       # Renovate 設定
+├── flux/clusters/<cluster>/ # Flux CD が同期するクラスタ別アプリ定義
+├── terraform/github/        # GitHub repository settings と Actions secrets
+├── terraform/tailscale/     # Tailscale ACL
+├── .github/workflows/       # Renovate と flux-local diff
+└── renovate.json5           # Renovate 設定
 ```
 
-## 管理対象クラスタ
+## デプロイの順序
 
-| クラスタ | ノード | 役割 | 特記事項 |
-|----------|--------|------|----------|
-| `natsume` | `natsume-03` | 本番ワークロード / 監視基盤 / DB | Public IP 付き。`natsume-03` が external etcd / K3s server / Longhorn ディスクを持つ |
-| `meruto` | `meruto-01` | 単一ノード | Private インターフェースのみ。Longhorn は既存 `ubuntu-vg` の空き領域を利用。Tailscale なし |
+Ansible でノードと Kubernetes を構築し、Helmfile で CNI と GitOps 基盤を入れ、Flux CD でクラスタアプリを同期する。
+Terraform は Kubernetes 構築とは独立し、Tailscale ACL と GitHub 設定を管理する。
 
-各ホストは `host_vars/<host>.yaml` に `cluster: <name>` を必ず設定する。Alloy / etcd / Flux などはこの値を起点にクラスター固有の設定を組み立てる。
+1. `ansible/prepare-k3s-nodes.yaml`
+2. `ansible/site-k3s.yaml`
+3. `helmfile -e <cluster> apply`
+4. Flux Operator の `FluxInstance` による `flux/clusters/<cluster>` 同期
 
-## デプロイメントパイプライン
-
-Ansible (OS / etcd / K3s / Longhorn ディスク) -> Helmfile `-e <cluster>` (CNI / Secret backend / Flux) -> Flux CD (クラスタアプリ GitOps)
-
-- Terraform は現状 `terraform/tailscale/` で Tailscale ACL を管理する用途。
-- Kubernetes 本体は `ansible/site-k3s.yaml` で構築する。`-l <cluster>_etcd` などでクラスター単位に流せる。
-- Longhorn 用バッキングディスクは `ansible/prepare-longhorn-storage.yaml` で個別に整備する。
-- Helmfile は K3s 構築後の初期ブートストラップを担当し、`-e natsume` / `-e meruto` で対応する kubeconfig context (`<cluster>@soli`) に対して実行する。
-- Flux Operator が `helmfile/manifests/flux/<cluster>/fluxinstance.yaml` の `FluxInstance` を通じて `flux/clusters/<cluster>` を同期する。
+`prepare-k3s-nodes.yaml` は OS 設定、SSH sudo 用 authorized_keys、Netplan、sysctl、UFW、TopoLVM、Longhorn backing volume、Alloy、Falco を扱う。
+`site-k3s.yaml` は external etcd、etcd maintenance、etcd precheck、K3s server、K3s agent、K3s containerd の private registry mTLS を扱う。
 
 ## Ansible
 
-- インベントリ: `ansible/inventories/hosts.yaml` (すべてのグループは `all.children` 配下に配置)
-- 変数:
-  - 共通: `ansible/inventories/group_vars/all.yaml`
-  - etcd: `ansible/inventories/group_vars/etcd.yaml`
-  - K3s: `ansible/inventories/group_vars/k3s_cluster.yaml`, `k3s_server.yaml`, `k3s_agent.yaml`
-  - Longhorn: `ansible/inventories/group_vars/longhorn_storage.yaml`
-  - ホスト個別: `ansible/inventories/host_vars/<host>.yaml` (`cluster:`、ネットワーク、必要に応じて `k3s_tls_sans` / `longhorn_storage_use_existing_vg` など)
-- 主要 Playbook:
-  - `site-k3s.yaml`: ノード初期設定、ネットワーク、UFW、external etcd、K3s server / agent 構築
-  - `prepare-k3s-nodes.yaml`: OS / ネットワーク / sysctl / UFW のみを適用
-  - `install-k3s-servers.yaml`: 既存ノードへ K3s server だけを展開
-  - `prepare-longhorn-storage.yaml`: Longhorn 用パーティション / LV の作成・初期化
-  - `add-etcd-member.yaml` / `remove-etcd-member.yaml`: 稼働中 etcd クラスタの member 追加・削除 (`-e etcd_member_host=<host>`)
-  - `configure-k3s-registry-mtls.yaml`: K3s containerd の private registry mTLS 設定 (新規構築時のデッドロックを避けるため `site-k3s.yaml` には含めない)
-  - `install-alloy.yaml`: Grafana Alloy 導入 (Mimir / Loki に `cluster=<host_vars cluster>` ラベルで送信)
-  - `install-docker.yaml`: Docker Engine 導入
-  - `upgrade-k3s.yaml`: K3s アップグレード
-  - `upgrade-etcd.yaml`: etcd アップグレード
-- ロールは `ansible/roles/` 配下。タスクは `tasks/main.yaml`、既定値は `defaults/main.yaml`、テンプレートは `templates/` に置く。
-- Ansible YAML は `.yaml` 拡張子を使い、組み込みモジュールは FQCN (`ansible.builtin.*`) を優先する。
+インベントリは `ansible/inventories/hosts.yaml` で管理する。
+すべての group は `all.children` 配下に置く。
 
-### ホストグループ
+| グループ | 現在のホスト | 用途 |
+|----------|--------------|------|
+| `natsume_etcd` | `natsume-03` | natsume の external etcd |
+| `meruto_etcd` | `meruto-01` | meruto の external etcd |
+| `etcd` | `natsume_etcd`, `meruto_etcd` | etcd role の親グループ |
+| `k3s_server` | `natsume-03`, `meruto-01` | K3s server |
+| `k3s_agent` | `natsume-08` | K3s agent |
+| `topolvm_storage` | `natsume-08` | TopoLVM 用 VG |
+| `longhorn_storage` | `natsume-08`, `meruto-01` | Longhorn backing volume |
 
-| グループ | 用途 |
-|---------|------|
-| `<cluster>_etcd` | クラスター別 etcd メンバー (例: `natsume_etcd`, `meruto_etcd`) |
-| `etcd` | `<cluster>_etcd` の親 (children のみで構成) |
-| `k3s_cluster` | K3s クラスタ全体 (children: `k3s_server`, `k3s_agent`) |
-| `k3s_server` | K3s server ノード |
-| `k3s_agent` | K3s agent ノード |
-| `longhorn_storage` | Longhorn 用ディスクを切り出すノード |
+`setup-etcd` と `ansible/inventories/group_vars/k3s_server.yaml` は `groups[cluster + '_etcd']` を参照する。
+新規クラスタを追加するときは `<cluster>_etcd` group を作り、host_vars に同じ `cluster:` を設定する。
 
-`setup-etcd` ロールと `k3s_datastore_endpoint` (`group_vars/k3s_server.yaml`) は `groups[cluster + '_etcd']` を参照する。新規クラスター追加時は `<name>_etcd` 子グループを作り、host に `cluster: <name>` を設定すれば自動的にクラスター固有の etcd / k3s 設定が組み上がる。
+`k3s_agent` は `ansible/inventories/group_vars/k3s_agent.yaml` の `k3s_server_host` と `k3s_server_url` で server に join する。
+現行 inventory では `natsume-08` が `natsume-03` に join する。
 
-`k3s_agent` の `k3s_token` は server (`groups['k3s_server'][0]`) の `/var/lib/rancher/k3s/server/node-token` を `install-k3s` ロールが自動で読み出して join する。`k3s_server` 側は新規構築時 `k3s_token` 未指定で k3s が自動生成する (`config.yaml` には `token` を書かない)。
+### Playbook
 
-### ロールごとの主要オプション
+| Playbook | 用途 |
+|----------|------|
+| `prepare-k3s-nodes.yaml` | OS、network、UFW、storage、Alloy、Falco |
+| `site-k3s.yaml` | external etcd、K3s、registry mTLS |
+| `add-etcd-member.yaml` | `-e etcd_member_host=<host>` で etcd member を追加 |
+| `remove-etcd-member.yaml` | `-e etcd_member_host=<host>` で etcd member を削除 |
+| `upgrade-k3s.yaml` | K3s server と agent の rolling upgrade |
+| `upgrade-etcd.yaml` | etcd precheck、rolling upgrade、postcheck |
+| `install-docker.yaml` | Docker Engine |
 
-- `network`: `network_netplan.<global|private>` の `device` / `ipv4` / `ipv6` / `default_route` / `nameservers` / `routes` / `dhcp4` / `dhcp6` / `accept_ra` をホスト別に指定可能。`global.device` が空のホストは private のみ書き出される
-- `ufw`: `ufw_global_interface` が空のホスト (private-only) では public ポート (80/443) のルールを自動スキップ
-- `setup-etcd`: `etcd_leader_host` と `etcd_initial_cluster` は `groups[cluster + '_etcd']` から構築
-- `install-k3s`: `k3s_token` 未指定なら自動生成、`k3s_external_ip_netplan_source` (`global` / `private` / `""`) と `k3s_external_ip_include_ipv4` / `k3s_external_ip_include_ipv6` で `node-external-ip` を制御。`k3s_include_tailscale_tls_sans: false` で Tailscale 不在ホストに対応。`k3s_tls_sans` で追加 SAN を host_vars 側で明示可能
-- `longhorn-storage`: 既定では `longhorn_storage_parent_disk` のパーティションを切って新規 VG を作る。`longhorn_storage_use_existing_vg: true` を指定すると既存 VG (`longhorn_storage_vg_name`) の空き領域に LV を切るモードになり、パーティション/PV/VG 操作はスキップ
-- `install-alloy`: 旧来の `cluster_name` ハードコードは廃止。Mimir / Loki への送信ラベルは host_vars の `cluster` を参照する
+### Role Options
+
+`network` は `network_netplan.<global|private>` の `device`、`ipv4`、`ipv6`、`default_route`、`nameservers`、`routes`、`dhcp4`、`dhcp6`、`accept_ra` を host_vars から読む。
+`global.device` が空の host は private interface だけを設定する。
+
+`ufw` は global interface がない host では public port rule を作らない。
+
+`install-k3s` は `k3s_version: v1.36.1+k3s1` を使う。
+K3s built-in の `helm-controller` と `traefik` は無効化する。
+`k3s_external_ip_netplan_source` は `global`、`private`、空文字を受け取り、`node-external-ip` を制御する。
+meruto は `k3s_include_tailscale_tls_sans: false` を使い、TLS SAN を host_vars で明示する。
+
+`setup-etcd` は `etcd_version: 3.6.12` を使う。
+snapshot は `/var/lib/etcd/snapshots` に置き、`etcd_maintenance_on_calendar: "*-*-* 00/6:00:00"` で maintenance timer を作る。
+
+`topolvm` は natsume の `natsume-08` だけに適用する。
+`/dev/vda4` に 300GiB の partition を作り、VG `topolvm` を構成する。
+
+`longhorn-storage` は natsume の `natsume-08` では `/dev/vda5` を使う。
+meruto の `meruto-01` は `longhorn_storage_use_existing_vg: true` と `longhorn_storage_vg_name: ubuntu-vg` を使う。
+
+`install-alloy` は natsume の Mimir と Loki に送信する。
+remote endpoint は `https://mimir.pstr.space/api/v1/push` と `https://loki.pstr.space/loki/api/v1/push` で、mTLS certificate は 1Password item `pke_natsume_mtls` から読む。
+
+`install-falco` は systemd service と modern eBPF を使う。
+K3s containerd の CRI socket は `/run/k3s/containerd/containerd.sock` で、metrics は `127.0.0.1:8765/metrics` に出す。
 
 ## Helmfile
 
-- 定義: `helmfile/helmfile.yaml.gotmpl` (helmfile v1 / Go テンプレート対応のため `.gotmpl` 拡張子)
-- 環境: `helmfile/environments/<cluster>.yaml` で Cilium CIDR、1Password アイテム名、`kubeContext` (`<cluster>@soli`) などクラスター固有の値を保持
-- ブートストラップ対象 (全クラスター共通):
-  - Cilium `1.19.3`
-  - 1Password Connect `2.4.1`
-  - Flux Operator `0.48.0`
-- 実行: `helmfile -e natsume apply` / `helmfile -e meruto apply`。`helmDefaults.kubeContext` は env の `kubeContext` を流用するため、コンテキストを意識せず切り替えられる
-- Flux Operator の postsync hook は `helmfile/manifests/flux/{{ .Environment.Name }}/fluxinstance.yaml` を適用する
-- シークレット値は `helmfile/values/*.gotmpl` から `op` CLI 経由で参照する。実シークレットをリポジトリへ置かない
+`helmfile/helmfile.yaml.gotmpl` は Helmfile v1 の Go template として扱う。
+environment は `helmfile/environments/natsume.yaml` と `helmfile/environments/meruto.yaml` である。
+
+| Release | Version |
+|---------|---------|
+| Cilium | `1.19.5` |
+| 1Password Connect | `2.4.1` |
+| Flux Operator | `0.52.0` |
+
+`helmDefaults.kubeContext` は environment の `kubeContext` を使う。
+`helmfile -e natsume apply` は `natsume@soli`、`helmfile -e meruto apply` は `meruto@soli` に対して動く。
+postsync hook は `helmfile/manifests/flux/{{ .Environment.Name }}/fluxinstance.yaml` を apply する。
 
 ## Flux CD
 
-- クラスタ定義: `flux/clusters/<cluster>/` (`natsume` / `meruto` の 2 クラスター)
-- ルート: `flux/clusters/<cluster>/kustomization.yaml`
-- アプリ単位:
-  - `flux/clusters/<cluster>/apps/<app>/`
-  - `namespace.yaml`, `kustomization.yaml`, `helmrelease-*.yaml`, `helmrepository-*.yaml` を基本形にする
-  - Postgres を使うアプリでは CNPG `Cluster` (`cluster.yaml`) と、必要に応じて `objectstore.yaml` / `scheduledbackup.yaml` / `onepassworditem-cnpg-backup.yaml` を同じディレクトリに同梱する
-- 同期単位:
-  - `flux/clusters/<cluster>/kustomizations/<app>.yaml`
-  - 既定で `interval: 10m`, `prune: true`, `wait: true`、適用順は `dependsOn` で制御する
-- Secret 管理:
-  - Secret は主に 1Password Operator の `OnePasswordItem` で生成する
-  - External Secrets Operator は meruto の `renovate-operator` で GitHub App token generator に使用している
-  - 新規 Secret は既存パターンに合わせ、平文 Secret をコミットしない
+Flux root は `flux/clusters/<cluster>/kustomization.yaml` である。
+アプリは `apps/<app>/` と `kustomizations/<app>.yaml` の組で追加する。
+root `kustomization.yaml` への登録を忘れない。
 
-### natsume クラスターの管理コンポーネント
+HelmRelease の chart version は Renovate が追跡できる形で明示する。
+Secret は 1Password Operator の `OnePasswordItem` を基本にし、平文 Secret をコミットしない。
+
+### natsume Components
 
 | 分類 | コンポーネント |
-|------|---------------|
-| 基盤 / CRD | `cnpg`, `cnpg-backup-config`, `cert-manager`, `cert-manager-config`, `prometheus-operator-crd` |
-| ストレージ | `longhorn`, `longhorn-config` |
-| ネットワーク | `traefik`, `external-dns`, `external-dns-config` |
-| 監視 | `grafana`, `mimir`, `loki`, `alloy`, `kube-state-metrics` |
-| アプリ | `misskey`, `navidrome`, `note-tweet-connector`, `registry`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
+|------|----------------|
+| 基盤と CRD | `cnpg`, `cnpg-backup-config`, `prometheus-operator-crd`, `cert-manager`, `cert-manager-config` |
+| Storage | `longhorn`, `longhorn-config`, `topolvm` |
+| Network と Security | `traefik`, `external-dns`, `external-dns-config`, `tetragon`, `tetragon-policies` |
+| Observability | `kube-state-metrics`, `grafana`, `mimir`, `loki`, `alloy` |
+| Apps | `misskey`, `note-tweet-connector`, `registry`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
-CNPG `Cluster` を持つアプリ: `grafana` / `misskey` / `spotify-nowplaying` / `spotify-reblend` / `sui` (いずれも `instances: 1`)。`misskey` は `barman-cloud.cloudnative-pg.io` plugin で R2 互換ストレージへ日次 base backup と WAL アーカイブを取得 (retention `7d`) し、pgroonga 拡張入りの `ghcr.io/soli0222/pgroonga-cnpg` イメージを使用する。`grafana` / `spotify-nowplaying` / `spotify-reblend` / `sui` は日次 `pg_dump` CronJob で R2 にバックアップする。バックアップ運用とリストア手順の詳細は `CNPG.md` を参照。
+`cert-manager-config` は `letsencrypt-dns01`、`letsencrypt-http01`、Traefik mTLS 用 `pke-natsume-mtls` を持つ。
+`external-dns-config` は natsume の入口と node record を `DNSEndpoint` で宣言する。
+`cnpg-backup-config` は `cnpg-backup-flux-vars` を作り、misskey の `ObjectStore` に R2 endpoint を注入する。
 
-`cert-manager-config` には `letsencrypt-dns01` / `letsencrypt-http01` の ClusterIssuer に加え、Traefik mTLS 用の自己署名 CA / Certificate / TLSOption (`pke-natsume-mtls`) が含まれる。
-
-### meruto クラスターの管理コンポーネント
+### meruto Components
 
 | 分類 | コンポーネント |
-|------|---------------|
-| 基盤 / CRD | `cnpg`, `cert-manager`, `cert-manager-config` (dns01 ClusterIssuer のみ), `external-secrets`, `prometheus-operator-crd` |
-| ストレージ | `longhorn`, `longhorn-config` |
-| ネットワーク | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller` |
-| 監視 | `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes` |
-| アプリ | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `rss-fetcher` |
-| 運用 | `renovate-operator` |
+|------|----------------|
+| 基盤と CRD | `cnpg`, `prometheus-operator-crd`, `cert-manager`, `cert-manager-config` |
+| Storage | `longhorn`, `longhorn-config` |
+| Network と Security | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller`, `tetragon`, `tetragon-policies` |
+| Observability | `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `ix2215-snmp-exporter`, `vector` |
+| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `navidrome`, `rss-fetcher` |
 
-natsume との主な差分:
+meruto の `cert-manager-config` は `letsencrypt-dns01` のみを定義する。
+`external-dns` は `txtPrefix: meruto-` を使う。
+`cloudflare-tunnel-ingress-controller` は 1Password item `cloudflared-pke-meruto` から tunnel credential を読む。
+`ix2215-snmp-exporter` は `192.168.10.1` を監視し、`vector` は syslog を natsume 側 Loki に送る。
 
-- **longhorn**: 単一ノード構成のため `defaultClassReplicaCount: 1`、Ingress 無効。`createDefaultDiskLabeledNodes: true` のため、`meruto-01` には `node.longhorn.io/create-default-disk=true` ラベルを付けて `/var/lib/longhorn` の default disk を作成する
-- **external-dns**: `txtPrefix: meruto-` で natsume レコードと衝突回避し、`extraArgs.ingress-class: traefik` で Traefik Ingress のみを対象にする
-- **cloudflare-tunnel-ingress-controller**: `cloudflared-pke-meruto` `OnePasswordItem` を参照し、Cloudflare Tunnel 経由の IngressClass `cloudflare-tunnel` を提供する。controller chart は `0.0.23`、管理する `cloudflared` image tag は `2026.3.0`
-- **cert-manager-config**: `letsencrypt-dns01` ClusterIssuer + `cloudflare-api-token` `OnePasswordItem` のみ。`letsencrypt-http01` と Traefik mTLS 用の CA / TLSOption は含まない
-- **renovate-operator**: GitHub App token 生成に External Secrets Operator の `GithubAccessToken` generator を使う。Ingress は Traefik (`ingressClassName: traefik`) と `letsencrypt-dns01`
-- 含まれないコンポーネント: `cnpg-backup-config`, `external-dns-config`, Mimir / Loki / Grafana / Alloy 等の natsume 側監視スタック
+## CNPG
 
-## 現行バージョン
+CNPG `Cluster` は natsume 側だけにある。
+`misskey`、`grafana`、`sui`、`spotify-reblend`、`spotify-nowplaying` はすべて `instances: 1` である。
 
-| コンポーネント | バージョン |
-|---------------|-----------|
-| K3s | `v1.35.4+k3s1` |
-| etcd | `3.6.11` |
-| Cilium | `1.19.3` |
-| 1Password Connect | `2.4.1` |
-| Flux Operator | `0.48.0` |
-| Flux distribution | `2.x` |
-| Longhorn | `1.11.1` |
-| external-dns | `1.21.1` |
-| cloudflare-tunnel-ingress-controller | `0.0.23` |
-| cloudflared | `2026.3.0` |
-| Tailscale Terraform provider | `0.28.0` |
+`misskey` は `barman-cloud.cloudnative-pg.io` plugin で WAL archive と base backup を使う。
+`grafana`、`sui`、`spotify-reblend`、`spotify-nowplaying` は `pg_dump` CronJob で R2 に dump を送る。
+運用手順は `CNPG.md` を更新する。
 
 ## Terraform
 
-- 現行 Terraform 管理対象は `terraform/tailscale/` の Tailscale ACL。
-- State backend は Cloudflare R2 S3 互換 backend。
-- `TAILSCALE_API_KEY` などの認証情報は環境変数またはローカル設定で扱い、コミットしない。
+`terraform/tailscale/` は Tailscale ACL を管理する。
+provider は `tailscale/tailscale` `0.29.2` である。
 
-## ネットワーク
+`terraform/github/` は `Soli0222/*` の repository settings、default branch、GitHub Actions secrets を管理する。
+provider は `integrations/github` `6.12.1` と `hashicorp/external` `2.4.0` である。
+1Password から secret を読む helper は `terraform/github/op-read-secret.rb` である。
 
-### natsume クラスター
+どちらの Terraform state も Cloudflare R2 の S3 互換 backend に置く。
+認証情報は環境変数または `setup.sh` で注入し、リポジトリに置かない。
 
-- ノード: `natsume-03`
-- Public IPv4: `133.18.141.63/23`
-- Public IPv6: `2406:8c00:0:3464:133:18:141:63/64`
-- Private IPv4: `192.168.9.3/24`
-- Private IPv6: `fd00:192:168:9::3/64`
+## Network
 
-### meruto クラスター
+| Node | Public IPv4 | Public IPv6 | Private IPv4 | Private IPv6 |
+|------|-------------|-------------|--------------|--------------|
+| `natsume-03` | `133.18.141.63/23` | `2406:8c00:0:3464:133:18:141:63/64` | `192.168.9.3/24` | `fd00:192:168:9::3/64` |
+| `natsume-08` | `133.18.125.154/23` | `2406:8c00:0:3459:133:18:125:154/64` | `192.168.9.8/24` | `fd00:192:168:9::8/64` |
+| `meruto-01` | なし | なし | `192.168.10.3/24` | `fd00:192:168:10::3/64` |
 
-- ノード: `meruto-01` (single-node, private only)
-- Private IPv4: `192.168.10.3/24`
-- Private IPv6: `fd00:192:168:10::3/64`
-
-### 共通
-
-- Pod CIDR: `10.1.0.0/16`, `fd00:10:1::/64`
-- Service CIDR: `10.2.0.0/16`, `fd00:10:2::/64`
-- Cluster DNS: `10.2.0.10`, `fd00:10:2::a`
-- K3s built-in `traefik` と `helm-controller` は無効化し、Ingress / Helm 管理は GitOps 側に寄せる。
-- natsume クラスターではクラスタ入口とノードの DNS レコードを `flux/clusters/natsume/apps/external-dns-config/node-dnsendpoints.yaml` の `DNSEndpoint` として宣言する。meruto クラスターは Public IP を持たず `external-dns-config` を持たない (Ingress / Service による DNS 同期のみ)。
+| 項目 | 値 |
+|------|----|
+| Pod CIDR | `10.1.0.0/16`, `fd00:10:1::/64` |
+| Service CIDR | `10.2.0.0/16`, `fd00:10:2::/64` |
+| Cluster DNS | `10.2.0.10`, `fd00:10:2::a` |
 
 ## コーディング規約
 
-- YAML は既存のスタイルに合わせ、`.yaml` 拡張子を使う (helmfile の Go テンプレート対象だけ `.gotmpl`)。
-- Ansible は FQCN を優先し、ロール境界を崩さない。クラスター固有の値は `host_vars` / 子グループ (`<cluster>_etcd` 等) に閉じ込める。
-- Flux の新規アプリは `apps/<app>` と `kustomizations/<app>.yaml` の両方を追加し、ルート `kustomization.yaml` に登録する。複数クラスター対象の変更は両 `flux/clusters/<cluster>/` を揃える。
-- HelmRelease の chart version は Renovate が追跡できる形で明示する。
-- ノードを増減する場合は `hosts.yaml` / `host_vars/<node>.yaml` の追記と、natsume の場合は `flux/clusters/natsume/apps/external-dns-config/node-dnsendpoints.yaml` のレコード更新をセットで行う (meruto には `external-dns-config` が無いため不要)。
-- 新規クラスター追加は: `hosts.yaml` に `<name>_etcd` 子グループ作成 → host_vars に `cluster: <name>` 設定 → `helmfile/environments/<name>.yaml` と `helmfile/manifests/flux/<name>/fluxinstance.yaml` 追加 → `flux/clusters/<name>/` 作成、の順。
-- Git コミットメッセージは Conventional Commits (`feat`, `fix`, `chore` など) を使う。
-- ドキュメント、コメント、運用メモは日本語可。
+YAML は `.yaml` を使う。
+Helmfile の Go template だけ `.gotmpl` を使う。
+
+Ansible built-in module は FQCN を優先する。
+role boundary を崩さず、クラスタ固有値は host_vars、group_vars、`<cluster>_etcd` group に閉じ込める。
+
+Flux の新規アプリは `apps/<app>/`、`kustomizations/<app>.yaml`、root `kustomization.yaml` を同時に追加する。
+複数クラスタへ入れる変更は `flux/clusters/natsume/` と `flux/clusters/meruto/` の差分を明示する。
+
+ノードを増減するときは `ansible/inventories/hosts.yaml` と `ansible/inventories/host_vars/<node>.yaml` を更新する。
+natsume で DNS record が必要な場合は `flux/clusters/natsume/apps/external-dns-config/node-dnsendpoints.yaml` も更新する。
+
+新規クラスタ追加は、`hosts.yaml` の `<cluster>_etcd`、host_vars の `cluster: <cluster>`、`helmfile/environments/<cluster>.yaml`、`helmfile/manifests/flux/<cluster>/fluxinstance.yaml`、`flux/clusters/<cluster>/` をそろえて行う。
+
+Git commit message は Conventional Commits を使う。
+ドキュメント、コメント、運用メモは日本語でよい。
