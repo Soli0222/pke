@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: "./flux/clusters/meruto/apps/mc-mirror-cronjob"
+  path: "./flux/clusters/natsume/apps/mc-mirror-cronjob"
   prune: true
   wait: true
   timeout: 10m

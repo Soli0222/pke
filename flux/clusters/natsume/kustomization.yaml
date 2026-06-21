@@ -16,8 +16,13 @@ resources:
 - kustomizations/tetragon-policies.yaml
 - kustomizations/misskey.yaml
 - kustomizations/traefik.yaml
+- kustomizations/daypassed-bot.yaml
+- kustomizations/emoji-service.yaml
+- kustomizations/mc-mirror-cronjob.yaml
+- kustomizations/mk-stream.yaml
 - kustomizations/note-tweet-connector.yaml
 - kustomizations/registry.yaml
+- kustomizations/rss-fetcher.yaml
 - kustomizations/spotify-nowplaying.yaml
 - kustomizations/spotify-reblend.yaml
 - kustomizations/sui.yaml
