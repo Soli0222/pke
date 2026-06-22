@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: summaly
-      version: 0.1.7
+      version: 0.1.8
       sourceRef:
         kind: HelmRepository
         name: summaly-repo
