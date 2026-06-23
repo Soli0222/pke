@@ -8,11 +8,14 @@ resources:
 - kustomizations/cert-manager-config.yaml
 - kustomizations/cloudflare-tunnel-ingress-controller.yaml
 - kustomizations/cnpg.yaml
+- kustomizations/cnpg-backup-config.yaml
 - kustomizations/external-dns.yaml
 - kustomizations/ix2215-snmp-exporter.yaml
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/longhorn.yaml
 - kustomizations/longhorn-config.yaml
+- kustomizations/topolvm.yaml
+- kustomizations/misskey.yaml
 - kustomizations/navidrome.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml
 - kustomizations/tetragon.yaml
