@@ -41,8 +41,6 @@ spec:
     replica:
       enabled: false
     dataStorage:
-      enabled: true
-      requestedSize: 5Gi
-      className: topolvm
+      enabled: false
     metrics:
       enabled: false

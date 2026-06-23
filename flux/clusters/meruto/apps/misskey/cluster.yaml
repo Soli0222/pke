@@ -46,7 +46,7 @@ spec:
       log_timezone: Asia/Tokyo
   storage:
     storageClass: topolvm
-    size: 90Gi
+    size: 200Gi
     resizeInUseVolumes: false
   bootstrap:
     recovery:
