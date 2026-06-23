@@ -51,6 +51,8 @@ spec:
   bootstrap:
     recovery:
       source: misskey-cluster-source
+      database: misskey
+      owner: misskey
   externalClusters:
   - name: misskey-cluster-source
     plugin:

@@ -62,7 +62,6 @@ spec:
     migration:
       enabled: true
       hookEvents:
-      - pre-install
       - pre-upgrade
       activeDeadlineSeconds: 14400
 
