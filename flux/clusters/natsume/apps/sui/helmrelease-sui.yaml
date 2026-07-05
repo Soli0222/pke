@@ -22,6 +22,8 @@ spec:
         namespace: sui
       interval: 1h
   values:
+    image:
+      tag: 1.8.0-rc.1
     ingress:
       enabled: true
       className: traefik
