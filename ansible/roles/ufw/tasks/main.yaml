@@ -19,6 +19,7 @@
     that:
       - ufw_private_interface | length > 0
     fail_msg: ufw_private_interface must be set.
+  when: not ufw_openclaw | default(false) | bool
 
 - name: Reset ufw rules
   community.general.ufw:
@@ -50,6 +51,7 @@
     rule: allow
     direction: in
     interface: "{{ ufw_private_interface }}"
+  when: not ufw_openclaw | default(false) | bool
 
 - name: Allow cluster pods to reach node control-plane services
   community.general.ufw:
@@ -59,6 +61,7 @@
     from_ip: "{{ item.0 }}"
     port: "{{ item.1 }}"
   loop: "{{ ufw_cluster_pod_cidrs | product(ufw_cluster_allowed_tcp_ports) | list }}"
+  when: not ufw_openclaw | default(false) | bool
 
 - name: Enable ufw
   community.general.ufw:

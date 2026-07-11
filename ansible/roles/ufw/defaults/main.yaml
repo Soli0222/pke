@@ -22,3 +22,5 @@ ufw_cluster_pod_cidrs: >-
 ufw_cluster_allowed_tcp_ports:
   - "6443"
   - "10250"
+
+ufw_openclaw: false

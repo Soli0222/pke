@@ -1,0 +1,10 @@
+---
+ansible_host: amemado-01
+cluster: amemado
+
+ssh_agent_sudo_users:
+  - name: soli
+    github_user: soli0222
+    login_authorized_keys: true
+    sudo_authorized_keys: true
+    lock_password: true

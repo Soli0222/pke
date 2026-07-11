@@ -39,3 +39,5 @@ general_configuration_swap_files:
 
 general_configuration_journald_max_use: 1G
 general_configuration_journald_max_file_sec: 1month
+
+general_configuration_openclaw: false

@@ -1,0 +1,19 @@
+---
+- name: Configure openclaw hosts
+  hosts: openclaw
+  become: true
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+    - name: Install chrony
+      ansible.builtin.apt:
+        name: chrony
+        state: present
+  roles:
+    - general-configuration
+    - ssh-agent-sudo
+    - ufw
+    - install-alloy
+    - install-falco

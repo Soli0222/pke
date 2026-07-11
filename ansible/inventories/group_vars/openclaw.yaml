@@ -1,0 +1,10 @@
+---
+# openclaw hosts are non-K3s nodes and run a minimal subset of roles.
+general_configuration_openclaw: true
+ufw_openclaw: true
+
+# UFW default incoming policy is set to allow for openclaw hosts because the
+# private-interface all-allow and cluster pod rules are skipped.
+# Change to deny and configure network/allowed ports if a restrictive firewall
+# is desired for these hosts.
+ufw_default_incoming_policy: allow

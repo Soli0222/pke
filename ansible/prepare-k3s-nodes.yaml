@@ -22,13 +22,13 @@
     - longhorn-storage
 
 - name: Install Alloy
-  hosts: all
+  hosts: k3s_cluster
   become: true
   roles:
     - install-alloy
 
 - name: Install Falco
-  hosts: all
+  hosts: k3s_cluster
   become: true
   roles:
     - install-falco

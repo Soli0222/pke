@@ -106,6 +106,15 @@
   notify: Reload ssh
   when: ssh_agent_sudo_configure_sshd | bool
 
+- name: Ensure sshd runtime directory exists
+  ansible.builtin.file:
+    path: /run/sshd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: ssh_agent_sudo_configure_sshd | bool
+
 - name: Validate sshd configuration
   ansible.builtin.command: /usr/sbin/sshd -t
   changed_when: false

@@ -3,11 +3,13 @@
   ansible.builtin.apt:
     update_cache: true
     cache_valid_time: "{{ general_configuration_apt_cache_valid_time }}"
+  when: not general_configuration_openclaw | default(false) | bool
 
 - name: Install common packages
   ansible.builtin.apt:
     name: "{{ general_configuration_packages + general_configuration_chrony_packages }}"
     state: present
+  when: not general_configuration_openclaw | default(false) | bool
 
 - name: Set timezone
   community.general.timezone:
@@ -31,6 +33,7 @@
 - name: Disable active swap
   ansible.builtin.command: swapoff -a
   when:
+    - not general_configuration_openclaw | default(false) | bool
     - general_configuration_disable_swap | bool
     - ansible_swaptotal_mb | default(0) | int > 0
 
@@ -39,7 +42,9 @@
     path: /etc/fstab
     regexp: '^(\s*[^#\n]+\s+[^#\n]+\s+swap\s+[^#\n]+)$'
     replace: '# \1'
-  when: general_configuration_disable_swap | bool
+  when:
+    - not general_configuration_openclaw | default(false) | bool
+    - general_configuration_disable_swap | bool
 
 - name: Disable configured swap files in fstab
   ansible.builtin.replace:
@@ -47,20 +52,25 @@
     regexp: '^(\s*{{ item | regex_escape }}\s+[^#\n]+\s+swap\s+[^#\n]+)$'
     replace: '# \1'
   loop: "{{ general_configuration_swap_files }}"
-  when: general_configuration_disable_swap | bool
+  when:
+    - not general_configuration_openclaw | default(false) | bool
+    - general_configuration_disable_swap | bool
 
 - name: Remove disabled swap files
   ansible.builtin.file:
     path: "{{ item }}"
     state: absent
   loop: "{{ general_configuration_swap_files }}"
-  when: general_configuration_disable_swap | bool
+  when:
+    - not general_configuration_openclaw | default(false) | bool
+    - general_configuration_disable_swap | bool
 
 - name: Find systemd swap units
   ansible.builtin.command: systemctl list-unit-files --type=swap --no-legend --no-pager
   register: general_configuration_swap_units
   changed_when: false
   when:
+    - not general_configuration_openclaw | default(false) | bool
     - general_configuration_disable_swap | bool
     - general_configuration_mask_swap_units | bool
 
@@ -72,6 +82,7 @@
     state: stopped
   loop: "{{ general_configuration_swap_units.stdout_lines | default([]) }}"
   when:
+    - not general_configuration_openclaw | default(false) | bool
     - general_configuration_disable_swap | bool
     - general_configuration_mask_swap_units | bool
 
@@ -82,6 +93,7 @@
     owner: root
     group: root
     mode: "0755"
+  when: not general_configuration_openclaw | default(false) | bool
 
 - name: Configure journald limits
   ansible.builtin.copy:
@@ -94,3 +106,4 @@
       SystemMaxUse={{ general_configuration_journald_max_use }}
       MaxFileSec={{ general_configuration_journald_max_file_sec }}
   notify: Restart systemd-journald
+  when: not general_configuration_openclaw | default(false) | bool
