@@ -17,7 +17,7 @@ spec:
   chart:
     spec:
       chart: misskey
-      version: 0.3.1
+      version: 0.4.0
       sourceRef:
         kind: HelmRepository
         name: misskey-repo
@@ -41,6 +41,17 @@ spec:
       fulltextSearch:
         provider: sqlPgroonga
 
+      otelForBackend:
+        enabled: false
+        # -- OTLP traces endpoint (e.g. http://localhost:4318/v1/traces)
+        endpoint: "http://alloy-otlp.alloy.svc.cluster.local:4318/v1/traces"
+        capturePgSpans: true
+        capturePgStatement: true
+        capturePgConnectionSpans: true
+        captureRedisCommandSpans: true
+        captureRedisConnectionSpans: true
+        captureRedisRootSpans: true
+
     web:
       replicaCount: 1
 
@@ -53,7 +64,7 @@ spec:
 
       image:
         repository: ghcr.io/soli0222/misskey
-        tag: "2026.6.0-psr.9.10"
+        tag: "2026.7.0-beta.1-psr.9.10"
 
       persistence:
         enabled: false
