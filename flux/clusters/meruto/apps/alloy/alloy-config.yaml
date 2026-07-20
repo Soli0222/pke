@@ -49,7 +49,7 @@ data:
     }
 
     // ============================================================
-    // OpenTelemetry: OTLP receiver for metrics and logs
+    // OpenTelemetry: OTLP receiver for metrics, logs, and traces
     // ============================================================
 
     otelcol.receiver.otlp "default" {
@@ -64,6 +64,7 @@ data:
       output {
         metrics = [otelcol.processor.batch.otlp.input]
         logs    = [otelcol.processor.attributes.otlp_loki_labels.input]
+        traces  = [otelcol.processor.batch.otlp.input]
       }
     }
 
@@ -83,6 +84,7 @@ data:
       output {
         metrics = [otelcol.processor.deltatocumulative.otlp.input]
         logs    = [otelcol.exporter.loki.otlp.input]
+        traces  = [otelcol.exporter.otlphttp.natsume_tempo.input]
       }
     }
 
@@ -108,6 +110,16 @@ data:
         }
       }
       forward_to = [loki.write.default.receiver]
+    }
+
+    otelcol.exporter.otlphttp "natsume_tempo" {
+      client {
+        endpoint = "https://tempo.pstr.space"
+        tls {
+          cert_pem = convert.nonsensitive(remote.kubernetes.secret.mtls.data["tls.crt"])
+          key_pem  = remote.kubernetes.secret.mtls.data["tls.key"]
+        }
+      }
     }
 
     // ============================================================

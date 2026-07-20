@@ -32,6 +32,79 @@ data:
     }
 
     // ============================================================
+    // OpenTelemetry: OTLP receiver for metrics, logs, and traces
+    // ============================================================
+
+    otelcol.receiver.otlp "default" {
+      grpc {
+        endpoint = "0.0.0.0:4317"
+      }
+
+      http {
+        endpoint = "0.0.0.0:4318"
+      }
+
+      output {
+        metrics = [otelcol.processor.batch.otlp.input]
+        logs    = [otelcol.processor.attributes.otlp_loki_labels.input]
+        traces  = [otelcol.processor.batch.otlp.input]
+      }
+    }
+
+    otelcol.processor.attributes "otlp_loki_labels" {
+      action {
+        key    = "loki.resource.labels"
+        action = "insert"
+        value  = "service.name, service.namespace"
+      }
+
+      output {
+        logs = [otelcol.processor.batch.otlp.input]
+      }
+    }
+
+    otelcol.processor.batch "otlp" {
+      output {
+        metrics = [otelcol.processor.deltatocumulative.otlp.input]
+        logs    = [otelcol.exporter.loki.otlp.input]
+        traces  = [otelcol.exporter.otlp.tempo.input]
+      }
+    }
+
+    otelcol.processor.deltatocumulative "otlp" {
+      output {
+        metrics = [otelcol.exporter.prometheus.otlp.input]
+      }
+    }
+
+    otelcol.exporter.prometheus "otlp" {
+      forward_to = [prometheus.remote_write.default.receiver]
+    }
+
+    otelcol.exporter.loki "otlp" {
+      forward_to = [loki.process.otel_logs.receiver]
+    }
+
+    loki.process "otel_logs" {
+      stage.static_labels {
+        values = {
+          cluster = "natsume",
+          source  = "otlp",
+        }
+      }
+      forward_to = [loki.write.default.receiver]
+    }
+
+    otelcol.exporter.otlp "tempo" {
+      client {
+        endpoint = "tempo.tempo:4317"
+        tls {
+          insecure = true
+        }
+      }
+    }
+
+    // ============================================================
     // Mimir Rules & Alerts (unchanged)
     // ============================================================
 

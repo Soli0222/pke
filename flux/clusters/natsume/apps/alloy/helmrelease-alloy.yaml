@@ -29,6 +29,16 @@ spec:
         key: config.alloy
       stabilityLevel: experimental
       enableReporting: false
+      extraPorts:
+      - name: otlp-grpc
+        port: 4317
+        targetPort: 4317
+        protocol: TCP
+        appProtocol: grpc
+      - name: otlp-http
+        port: 4318
+        targetPort: 4318
+        protocol: TCP
     controller:
       type: deployment
     serviceMonitor:

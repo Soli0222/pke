@@ -30,4 +30,5 @@ resources:
 - kustomizations/grafana.yaml
 - kustomizations/mimir.yaml
 - kustomizations/loki.yaml
+- kustomizations/tempo.yaml
 - kustomizations/alloy.yaml
