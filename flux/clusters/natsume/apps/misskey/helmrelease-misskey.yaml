@@ -64,7 +64,7 @@ spec:
 
       image:
         repository: ghcr.io/soli0222/misskey
-        tag: "2026.7.0-beta.1-psr.9.10"
+        tag: "2026.7.0-beta.1-psr.9.11"
 
       persistence:
         enabled: false
