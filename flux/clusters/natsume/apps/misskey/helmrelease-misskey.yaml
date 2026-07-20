@@ -40,6 +40,10 @@ spec:
 
       fulltextSearch:
         provider: sqlPgroonga
+      
+      logging:
+        level: info
+        format: json
 
       otelForBackend:
         enabled: true
