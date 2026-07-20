@@ -15,15 +15,13 @@ spec:
   chart:
     spec:
       chart: sui
-      version: 0.1.8
+      version: 0.1.9
       sourceRef:
         kind: HelmRepository
         name: sui-repo
         namespace: sui
       interval: 1h
   values:
-    image:
-      tag: 1.8.0-rc.4
     ingress:
       enabled: true
       className: traefik
