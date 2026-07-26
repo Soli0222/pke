@@ -44,7 +44,8 @@ spec:
           existingSecretKey: clientId
         redirectUri: "https://sui.str08.net/api/auth/callback"
         allowedEmails:
-          - "calm.plate8252@str08.net"
+          - "sui@str08.net"
+      cookieSecure: "true"
     tracing:
       tracesEndpoint: "http://alloy-otlp.alloy.svc.cluster.local:4318/v1/traces"
     postgresql:
