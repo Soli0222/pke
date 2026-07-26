@@ -27,6 +27,7 @@ pke/
 ├── flux/clusters/<cluster>/ # Flux CD が同期するクラスタ別アプリ定義
 ├── terraform/github/        # GitHub repository settings と Actions secrets
 ├── terraform/tailscale/     # Tailscale ACL
+├── terraform/auth0/         # sui 用 Auth0 アプリ、DB 接続、ユーザー
 ├── .github/workflows/       # Renovate と flux-local diff
 └── renovate.json5           # Renovate 設定
 ```
@@ -178,7 +179,11 @@ provider は `tailscale/tailscale` `0.29.2` である。
 provider は `integrations/github` `6.12.1` と `hashicorp/external` `2.4.0` である。
 1Password から secret を読む helper は `terraform/github/op-read-secret.rb` である。
 
-どちらの Terraform state も Cloudflare R2 の S3 互換 backend に置く。
+`terraform/auth0/` は sui の Auth0 SPA アプリ、sui 専用 DB 接続 `sui-users`、ユーザーを管理する。
+provider は `auth0/auth0` `1.53.0` と `hashicorp/random` `3.9.0` である。
+Management API の M2M 認証情報は 1Password の `terraform auth0` から取る。
+
+いずれの Terraform state も Cloudflare R2 の S3 互換 backend に置く。
 認証情報は環境変数または `setup.sh` で注入し、リポジトリに置かない。
 
 ## Network
