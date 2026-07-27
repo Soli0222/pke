@@ -38,7 +38,7 @@ spec:
         - sui.str08.net
     auth:
       oidc:
-        issuer: "https://dev-2ftntqulle5xlknf.us.auth0.com"
+        issuer: "https://auth0.pstr.space"
         clientIdSecret:
           existingSecret: "sui-oidc"
           existingSecretKey: clientId
