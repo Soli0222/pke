@@ -46,7 +46,7 @@ spec:
         format: json
 
       otelForBackend:
-        enabled: true
+        enabled: false
         # -- OTLP traces endpoint (e.g. http://localhost:4318/v1/traces)
         endpoint: "http://alloy-otlp.alloy.svc.cluster.local:4318/v1/traces"
         capturePgSpans: true
@@ -68,7 +68,7 @@ spec:
 
       image:
         repository: ghcr.io/soli0222/misskey
-        tag: "2026.7.0-beta.1-psr.9.11"
+        tag: "2026.7.0-psr.9.11"
 
       persistence:
         enabled: false
