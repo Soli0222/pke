@@ -26,6 +26,7 @@ spec:
       misskeyHost: mi.soli0222.com
       rendererBaseUrl: http://emoji-renderer:8109
       existingSecret: emoji-bot-gateway-secret
+      openaiModel: "gpt-5.6-luna"
     valkey:
       enabled: false
     externalValkey:
