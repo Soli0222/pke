@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: note-tweet-connector
-      version: 3.3.1
+      version: 2.2.1
       sourceRef:
         kind: HelmRepository
         name: note-tweet-connector-repo
