@@ -132,6 +132,16 @@ root `kustomization.yaml` への登録を忘れない。
 HelmRelease の chart version は Renovate が追跡できる形で明示する。
 Secret は 1Password Operator の `OnePasswordItem` を基本にし、平文 Secret をコミットしない。
 
+自作アプリのうち release-please を導入したアプリ(daypassed-bot, emoji-renderer,
+emoji-bot-gateway, mk-stream, note-tweet-connector, rss-fetcher, spotify-nowplaying,
+spotify-reblend)は chart を各アプリ自身のリポジトリの `charts/` に持ち、リリース時に
+`oci://ghcr.io/soli0222/charts` へ publish する。これらの HelmRepository は
+`spec.type: oci` を持ち、`spec.url: oci://ghcr.io/soli0222/charts` を指す。
+chart version はアプリの release タグと一致する。
+それ以外(第三者イメージの chart や release-please 未導入のアプリ)は引き続き
+`Soli0222/helm-charts` モノレポが GitHub Pages (`https://soli0222.github.io/helm-charts`)
+で配布する。
+
 ### natsume Components
 
 | 分類 | コンポーネント |
@@ -140,7 +150,7 @@ Secret は 1Password Operator の `OnePasswordItem` を基本にし、平文 Sec
 | Storage | `longhorn`, `longhorn-config`, `topolvm` |
 | Network と Security | `traefik`, `external-dns`, `external-dns-config`, `tetragon`, `tetragon-policies` |
 | Observability | `kube-state-metrics`, `grafana`, `mimir`, `loki`, `alloy` |
-| Apps | `misskey`, `note-tweet-connector`, `registry`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
+| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
 `cert-manager-config` は `letsencrypt-dns01`、`letsencrypt-http01`、Traefik mTLS 用 `pke-natsume-mtls` を持つ。
 `external-dns-config` は natsume の入口と node record を `DNSEndpoint` で宣言する。
@@ -154,7 +164,7 @@ Secret は 1Password Operator の `OnePasswordItem` を基本にし、平文 Sec
 | Storage | `longhorn`, `longhorn-config` |
 | Network と Security | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller`, `tetragon`, `tetragon-policies` |
 | Observability | `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `ix2215-snmp-exporter`, `vector` |
-| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `navidrome`, `rss-fetcher` |
+| Apps | `navidrome` |
 
 meruto の `cert-manager-config` は `letsencrypt-dns01` のみを定義する。
 `external-dns` は `txtPrefix: meruto-` を使う。
