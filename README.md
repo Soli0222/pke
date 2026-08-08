@@ -175,11 +175,20 @@ Flux の root は `flux/clusters/<cluster>/kustomization.yaml` です。
 | Storage | `longhorn`, `longhorn-config`, `topolvm` |
 | Network と Security | `traefik`, `external-dns`, `external-dns-config`, `tetragon`, `tetragon-policies` |
 | Observability | `kube-state-metrics`, `grafana`, `mimir`, `loki`, `alloy` |
-| Apps | `misskey`, `note-tweet-connector`, `registry`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
+| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
 `external-dns-config` は `natsume.str08.net`、`natsume.pstr.space`、node record を `DNSEndpoint` として宣言します。
 `cert-manager-config` は `letsencrypt-dns01`、`letsencrypt-http01`、Traefik mTLS 用の `pke-natsume-mtls` `TLSOption` を持ちます。
 `cnpg-backup-config` は Flux の postBuild substitution 用 Secret `cnpg-backup-flux-vars` を 1Password から作ります。
+
+自作アプリのうち release-please を導入したアプリ(daypassed-bot, emoji-renderer,
+emoji-bot-gateway, mk-stream, note-tweet-connector, rss-fetcher, spotify-nowplaying,
+spotify-reblend)は Helm chart を各アプリ自身のリポジトリの `charts/` に持ち、リリース時に
+`oci://ghcr.io/soli0222/charts` へ publish します。対応する `HelmRepository` は
+`spec.type: oci` / `spec.url: oci://ghcr.io/soli0222/charts` を指し、chart version は
+アプリの release タグと一致します。それ以外(第三者イメージの chart や
+release-please 未導入のアプリ)は引き続き `Soli0222/helm-charts` モノレポが
+GitHub Pages (`https://soli0222.github.io/helm-charts`) で配布します。
 
 ### meruto
 
@@ -189,7 +198,7 @@ Flux の root は `flux/clusters/<cluster>/kustomization.yaml` です。
 | Storage | `longhorn`, `longhorn-config` |
 | Network と Security | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller`, `tetragon`, `tetragon-policies` |
 | Observability | `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `ix2215-snmp-exporter`, `vector` |
-| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `mk-stream`, `navidrome`, `rss-fetcher` |
+| Apps | `navidrome` |
 
 meruto の `cert-manager-config` は `letsencrypt-dns01` と `cloudflare-api-token` だけを持ちます。
 `external-dns` は `txtPrefix: meruto-` を使い、Traefik Ingress を対象にします。
@@ -256,7 +265,8 @@ provider は `integrations/github` `6.12.1` と `hashicorp/external` `2.4.0` で
 GitHub App token は `RENOVATE_CLIENT_ID` と `RENOVATE_PRIVATE_KEY` から生成します。
 
 `.github/workflows/flux-diff.yaml` は pull request の `flux/**` 変更に対して `flux-local` diff を実行します。
-現行 workflow は `flux/clusters/natsume` を対象にし、`helmrelease` と `kustomization` の diff を sticky comment に投稿します。
+`natsume`・`meruto` 両クラスタ × `helmrelease`・`kustomization` をマトリクスで実行し、diff を sticky comment に投稿します。
+`type: oci` の `HelmRepository` を参照するチャートは、CI が匿名 pull で解決するため ghcr.io 上のパッケージが public である必要があります。
 
 `renovate.json5` は Ansible、Flux、GitHub Actions、Helmfile、Helm values、Kubernetes manifest、Terraform、custom regex を対象にします。
 custom regex は `etcd_version` と `k3s_version` を GitHub releases から追跡します。
