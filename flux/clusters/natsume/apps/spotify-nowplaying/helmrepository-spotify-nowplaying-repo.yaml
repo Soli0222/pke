@@ -4,5 +4,6 @@ metadata:
   name: spotify-nowplaying-repo
   namespace: spotify-nowplaying
 spec:
+  type: oci
   interval: 1h
-  url: https://soli0222.github.io/helm-charts
+  url: oci://ghcr.io/soli0222/charts
