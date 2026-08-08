@@ -4,5 +4,6 @@ metadata:
   name: note-tweet-connector-repo
   namespace: note-tweet-connector
 spec:
+  type: oci
   interval: 1h
-  url: https://soli0222.github.io/helm-charts
+  url: oci://ghcr.io/soli0222/charts
