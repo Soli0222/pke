@@ -4,5 +4,6 @@ metadata:
   name: emoji-bot-gateway-repo-2
   namespace: emoji-service
 spec:
+  type: oci
   interval: 1h
-  url: https://soli0222.github.io/helm-charts
+  url: oci://ghcr.io/soli0222/charts
