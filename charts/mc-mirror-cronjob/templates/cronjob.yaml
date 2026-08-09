@@ -1,0 +1,106 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "mc-mirror-cronjob.fullname" . }}
+  labels:
+    {{- include "mc-mirror-cronjob.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "mc-mirror-cronjob.selectorLabels" . | nindent 12 }}
+          {{- with .Values.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ include "mc-mirror-cronjob.serviceAccountName" . }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          restartPolicy: {{ .Values.cronjob.restartPolicy }}
+          containers:
+          - name: {{ .Chart.Name }}
+            securityContext:
+              {{- toYaml .Values.securityContext | nindent 14 }}
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            command: ["/bin/sh", "-c"]
+            env:
+            - name: SOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mc-mirror-cronjob.secretName" . }}
+                  key: {{ .Values.externalSecret.keys.sourceUrl | quote }}
+            - name: SOURCE_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mc-mirror-cronjob.secretName" . }}
+                  key: {{ .Values.externalSecret.keys.sourceAccessKey | quote }}
+            - name: SOURCE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mc-mirror-cronjob.secretName" . }}
+                  key: {{ .Values.externalSecret.keys.sourceSecretKey | quote }}
+            - name: DESTINATION_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mc-mirror-cronjob.secretName" . }}
+                  key: {{ .Values.externalSecret.keys.destinationUrl | quote }}
+            - name: DESTINATION_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mc-mirror-cronjob.secretName" . }}
+                  key: {{ .Values.externalSecret.keys.destinationAccessKey | quote }}
+            - name: DESTINATION_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mc-mirror-cronjob.secretName" . }}
+                  key: {{ .Values.externalSecret.keys.destinationSecretKey | quote }}
+            - name: SOURCE_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mc-mirror-cronjob.secretName" . }}
+                  key: {{ .Values.externalSecret.keys.sourcePath | quote }}
+            - name: DESTINATION_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mc-mirror-cronjob.secretName" . }}
+                  key: {{ .Values.externalSecret.keys.destinationPath | quote }}
+            args:
+            - |
+              set -eu
+              mc alias set {{ .Values.cronjob.aliases.source | quote }} "${SOURCE_URL}" "${SOURCE_ACCESS_KEY}" "${SOURCE_SECRET_KEY}"
+              mc alias set {{ .Values.cronjob.aliases.destination | quote }} "${DESTINATION_URL}" "${DESTINATION_ACCESS_KEY}" "${DESTINATION_SECRET_KEY}"
+              SOURCE_TARGET="{{ .Values.cronjob.aliases.source }}/${SOURCE_PATH}"
+              DESTINATION_TARGET="{{ .Values.cronjob.aliases.destination }}/${DESTINATION_PATH}"
+              echo "Starting mc mirror job at $(date) for source ${SOURCE_TARGET} to ${DESTINATION_TARGET}"
+              mc mirror "${SOURCE_TARGET}" "${DESTINATION_TARGET}"
+              echo "mc mirror job finished at $(date)"
+            volumeMounts:
+            - name: mc-home-dir # Mount the writable emptyDir
+              mountPath: "/root/.mc"
+            resources:
+              {{- toYaml .Values.resources | nindent 14 }}
+          volumes:
+          - name: mc-home-dir # Define the emptyDir for /root/.mc
+            emptyDir: {}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
