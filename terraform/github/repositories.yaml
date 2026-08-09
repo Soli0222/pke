@@ -48,7 +48,11 @@ repositories:
 
   emoji-renderer: {}
 
-  helm-charts: {}
+  helm-charts:
+    archived: true
+    description: >-
+      Retired. Charts moved to the application repositories
+      (oci://ghcr.io/soli0222/charts) and to pke/charts/.
 
   mk-stream:
     security_and_analysis:
