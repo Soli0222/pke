@@ -38,6 +38,7 @@ jobs:
       - name: Set up flate
         uses: home-operations/flate/action@v0.5.0
         with:
+          base: ""
           cache: true
 
       # changed-only モード (flate の --path-orig / --base) は使わない。
@@ -51,6 +52,9 @@ jobs:
           RESOURCE: ${{ matrix.resource }}
         run: |
           set -euo pipefail
+          # setup-flate は base 入力 (既定はデフォルトブランチ) を FLATE_BASE として
+          # export する。これが残っていると changed-only モードに落ちるので外す。
+          unset FLATE_BASE
           for side in live pr; do
             (
               cd "$side"
