@@ -11,12 +11,11 @@ spec:
     createNamespace: false
   chart:
     spec:
-      chart: mimir
-      version: 0.1.6
+      chart: ./charts/mimir
       sourceRef:
-        kind: HelmRepository
-        name: mimir-repo
-        namespace: mimir
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
       interval: 1h
   values:
     envFrom:

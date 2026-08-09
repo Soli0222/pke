@@ -1,0 +1,8 @@
+1. Grafana Mimir is available on the HTTP Service:
+   http://{{ include "mimir.fullname" . }}:{{ .Values.service.httpPort }}
+
+2. Prometheus remote_write endpoint:
+   http://{{ include "mimir.fullname" . }}:{{ .Values.service.httpPort }}/api/v1/push
+
+3. Grafana datasource URL:
+   http://{{ include "mimir.fullname" . }}:{{ .Values.service.httpPort }}/prometheus
