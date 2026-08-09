@@ -4,11 +4,16 @@ on:
   pull_request:
     paths:
       - "flux/**"
+      - "charts/**"
       - ".github/workflows/flux-diff.yaml"
 
 permissions:
   contents: read
   pull-requests: write
+
+env:
+  # helm Capabilities.APIVersions。CRD が入っている前提で render する chart 用。
+  API_VERSIONS: policy/v1/PodDisruptionBudget,monitoring.coreos.com/v1
 
 jobs:
   diff:
@@ -17,33 +22,55 @@ jobs:
       fail-fast: false
       matrix:
         cluster: [natsume, meruto]
-        resource: [helmrelease, kustomization]
+        resource: [hr, ks]
     steps:
-      - name: Ensure Flux CLI
-        shell: bash
-        run: |
-          if ! command -v flux >/dev/null 2>&1; then
-            curl -fsSL https://fluxcd.io/install.sh | sudo bash
-          fi
-          flux --version
-
-      - name: Run flux-local diff
-        id: diff
-        uses: allenporter/flux-local/action/diff@8.4.0
+      - name: Check out the PR branch
+        uses: actions/checkout@v7.0.1
         with:
-          path: flux/clusters/${{ matrix.cluster }}
-          resource: ${{ matrix.resource }}
-          live-branch: main
-          sources: flux-system=.
-          limit-bytes: 0
-          api-versions: policy/v1/PodDisruptionBudget,monitoring.coreos.com/v1
+          path: pr
+
+      - name: Check out the base branch
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          path: live
+
+      - name: Set up flate
+        uses: home-operations/flate/action@v0.5.0
+        with:
+          base: ""
+          cache: true
+
+      # changed-only モード (flate の --path-orig / --base) は使わない。
+      # Kustomization の spec.path に紐づかないファイルの変更が keep set に
+      # 入らないため (home-operations/flate#833)、リポジトリ直下の
+      # charts/ を GitRepository 経由で参照している HelmRelease の変更が
+      # 無言で落ちる。両リビジョンを常にフルレンダリングして比較する。
+      - name: Render both revisions
+        env:
+          CLUSTER: ${{ matrix.cluster }}
+          RESOURCE: ${{ matrix.resource }}
+        run: |
+          set -euo pipefail
+          # setup-flate は base 入力 (既定はデフォルトブランチ) を FLATE_BASE として
+          # export する。これが残っていると changed-only モードに落ちるので外す。
+          unset FLATE_BASE
+          for side in live pr; do
+            (
+              cd "$side"
+              flate build "${RESOURCE}" \
+                --path "flux/clusters/${CLUSTER}" \
+                --api-versions "${API_VERSIONS}" \
+                --no-progress
+            ) > "${side}.yaml"
+          done
 
       - name: Compose comment
         id: comment
         env:
-          DIFF: ${{ steps.diff.outputs.diff }}
           CLUSTER: ${{ matrix.cluster }}
           RESOURCE: ${{ matrix.resource }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
           GH_TOKEN: ${{ secrets.FLUX_DIFF_GIST_TOKEN || secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
@@ -53,7 +80,8 @@ jobs:
           INLINE_LIMIT=60000
           delimiter="$(openssl rand -hex 8)"
 
-          if [[ -z "${DIFF}" ]]; then
+          if diff -u --label "live (${BASE_REF})" --label "pr" \
+              live.yaml pr.yaml > diff.patch; then
             {
               echo "message<<${delimiter}"
               echo "_\`${CLUSTER}\` の ${RESOURCE} に差分はありません。_"
@@ -62,13 +90,12 @@ jobs:
             exit 0
           fi
 
-          printf '%s' "${DIFF}" > diff.patch
           size=$(wc -c < diff.patch)
 
           if (( size <= INLINE_LIMIT )); then
             {
               echo "message<<${delimiter}"
-              echo "<details><summary>flux-local <code>${CLUSTER}</code> / <code>${RESOURCE}</code> diff (${size} bytes)</summary>"
+              echo "<details><summary>flate <code>${CLUSTER}</code> / <code>${RESOURCE}</code> diff (${size} bytes)</summary>"
               echo
               echo '```diff'
               cat diff.patch
@@ -78,11 +105,11 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           else
             gist_url=$(gh gist create diff.patch \
-              --desc "flux-local ${CLUSTER}/${RESOURCE} diff for ${REPO}#${PR_NUMBER}" \
+              --desc "flate ${CLUSTER}/${RESOURCE} diff for ${REPO}#${PR_NUMBER}" \
               | tail -n1)
             {
               echo "message<<${delimiter}"
-              echo "flux-local \`${CLUSTER}\` / \`${RESOURCE}\` diff は **${size} bytes** で 65536 字制限を超えるため Gist に退避しました: ${gist_url}"
+              echo "flate \`${CLUSTER}\` / \`${RESOURCE}\` diff は **${size} bytes** で 65536 字制限を超えるため Gist に退避しました: ${gist_url}"
               echo "${delimiter}"
             } >> "$GITHUB_OUTPUT"
           fi
