@@ -1,0 +1,18 @@
+{{- if and .Values.postgresql.enabled .Values.postgresql.persistence.enabled (not .Values.postgresql.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "misskey.fullname" . }}-postgresql
+  labels:
+    {{- include "misskey.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+spec:
+  accessModes:
+    {{- toYaml .Values.postgresql.persistence.accessModes | nindent 4 }}
+  {{- if .Values.postgresql.persistence.storageClass }}
+  storageClassName: {{ .Values.postgresql.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.postgresql.persistence.size }}
+{{- end }}

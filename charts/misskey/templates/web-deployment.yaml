@@ -1,0 +1,163 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "misskey.fullname" . }}-web
+  labels:
+    {{- include "misskey.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "misskey.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config-secret.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.web.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "misskey.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: web
+        {{- with .Values.web.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.web.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "misskey.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.web.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-db
+          image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
+          imagePullPolicy: {{ .Values.postgresql.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until pg_isready -h {{ include "misskey.postgresql.host" . }} -p {{ include "misskey.postgresql.port" . }} -U {{ include "misskey.postgresql.username" . }}; do
+                echo "Waiting for PostgreSQL..."
+                sleep 2
+              done
+              echo "PostgreSQL is ready!"
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "misskey.postgresql.secretName" . }}
+                  key: {{ include "misskey.postgresql.secretKey" . }}
+        - name: wait-for-redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until redis-cli -h {{ include "misskey.redis.host" . }} -p {{ include "misskey.redis.port" . }} {{ if .Values.redis.password }}-a "$REDIS_PASSWORD"{{ end }} ping; do
+                echo "Waiting for Redis..."
+                sleep 2
+              done
+              echo "Redis is ready!"
+          {{- if .Values.redis.password }}
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "misskey.redis.secretName" . }}
+                  key: {{ include "misskey.redis.secretKey" . }}
+          {{- end }}
+      containers:
+        - name: misskey
+          securityContext:
+            {{- toYaml .Values.web.securityContext | nindent 12 }}
+          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          {{- if .Values.migration.enabled }}
+          args:
+            - pnpm
+            - run
+            - start
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.misskey.port }}
+              protocol: TCP
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "misskey.postgresql.secretName" . }}
+                  key: {{ include "misskey.postgresql.secretKey" . }}
+            - name: DATABASE_URL
+              value: "postgres://{{ include "misskey.postgresql.username" . }}:$(DATABASE_PASSWORD)@{{ include "misskey.postgresql.host" . }}:{{ include "misskey.postgresql.port" . }}/{{ include "misskey.postgresql.database" . }}"
+          {{- if .Values.web.diagnosticReport.enabled }}
+            - name: NODE_OPTIONS
+              value: {{ include "misskey.nodeDiagnosticReportOptions" . | quote }}
+          {{- end }}
+          {{- with .Values.web.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.web.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /misskey/.config
+              readOnly: true
+            {{- if .Values.web.persistence.enabled }}
+            - name: files
+              mountPath: /misskey/files
+            {{- end }}
+            {{- if .Values.web.diagnosticReport.enabled }}
+            - name: node-diagnostic-reports
+              mountPath: {{ .Values.web.diagnosticReport.directory | quote }}
+            {{- end }}
+            {{- with .Values.web.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.web.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.web.readinessProbe | nindent 12 }}
+          {{- with .Values.web.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+      volumes:
+        - name: config
+          secret:
+            secretName: {{ .Values.misskey.existingConfigSecret | default (printf "%s-config" (include "misskey.fullname" .)) }}
+        {{- if .Values.web.persistence.enabled }}
+        - name: files
+          persistentVolumeClaim:
+            claimName: {{ .Values.web.persistence.existingClaim | default (printf "%s-files" (include "misskey.fullname" .)) }}
+        {{- end }}
+        {{- if .Values.web.diagnosticReport.enabled }}
+        - name: node-diagnostic-reports
+          emptyDir:
+            sizeLimit: {{ .Values.web.diagnosticReport.sizeLimit | quote }}
+        {{- end }}
+        {{- with .Values.web.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.web.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.web.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.web.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
