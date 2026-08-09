@@ -40,7 +40,51 @@ global:
         file: private-key.pem
 
 repositories:
+  amemado:
+    topics: []
+    visibility: private
+
+  antenna_del_spam:
+    archived: true
+    delete_branch_on_merge: false
+    topics: []
+    security_and_analysis:
+      secret_scanning: disabled
+      secret_scanning_push_protection: disabled
+
+  audioroute:
+    archived: true
+    has_wiki: false
+    topics: []
+    visibility: private
+    security_and_analysis:
+      secret_scanning: disabled
+      secret_scanning_push_protection: disabled
+
+  Charmy:
+    archived: true
+    delete_branch_on_merge: false
+    has_wiki: false
+    topics: []
+    security_and_analysis:
+      secret_scanning: disabled
+      secret_scanning_push_protection: disabled
+
+  cloudflare-ingress-controller:
+    archived: true
+    delete_branch_on_merge: false
+    topics: []
+    security_and_analysis:
+      secret_scanning_push_protection: disabled
+
   daypassed-bot: {}
+
+  debug-image:
+    archived: true
+    delete_branch_on_merge: false
+    topics: []
+    security_and_analysis:
+      secret_scanning_push_protection: disabled
 
   diary-cli: {}
 
@@ -48,11 +92,42 @@ repositories:
 
   emoji-renderer: {}
 
+  exiforge:
+    topics: []
+
+  flow-sight:
+    archived: true
+    delete_branch_on_merge: false
+    topics: []
+    security_and_analysis:
+      secret_scanning_push_protection: disabled
+
   helm-charts:
     archived: true
     description: >-
       Retired. Charts moved to the application repositories
       (oci://ghcr.io/soli0222/charts) and to pke/charts/.
+    security_and_analysis:
+      secret_scanning_push_protection: disabled
+
+  homebrew-exiforge:
+    topics: []
+
+  keymap:
+    topics: []
+
+  kubecon-schedule:
+    topics: []
+    visibility: private
+
+  Mac-NowPlaying:
+    topics: []
+
+  misskey-summarizer:
+    archived: true
+    topics: []
+    security_and_analysis:
+      secret_scanning_push_protection: disabled
 
   mk-stream:
     security_and_analysis:
@@ -70,6 +145,14 @@ repositories:
           item: Github Docker
           field: DOCKER_HUB_USERNAME
 
+  mk-anniv:
+    archived: true
+    delete_branch_on_merge: false
+    topics: []
+    security_and_analysis:
+      secret_scanning: disabled
+      secret_scanning_push_protection: disabled
+
   note-tweet-connector:
     actions_secrets:
       DOCKER_HUB_ACCESS_TOKEN:
@@ -85,8 +168,18 @@ repositories:
 
   pgroonga-cnpg: {}
 
+  picpress:
+    topics: []
+
   pke:
     description: Polestar Kubernetes Engine
+
+  polestar-hub:
+    topics: []
+
+  polestar_wrapped:
+    topics: []
+    visibility: private
 
   rss-fetcher: {}
 
@@ -113,6 +206,13 @@ repositories:
 
   spotify-reblend: {}
 
+  soli-site:
+    has_discussions: true
+    topics: []
+
+  spn-cli:
+    topics: []
+
   sui: {}
 
   summaly:
@@ -120,7 +220,28 @@ repositories:
     description: "\U0001F50D Get a summary of any web page"
     has_wiki: false
 
+  summaly-server:
+    archived: true
+    delete_branch_on_merge: false
+    homepage_url: https://summaly-server.vercel.app
+    topics: []
+    security_and_analysis:
+      secret_scanning: disabled
+      secret_scanning_push_protection: disabled
+
+  subscription-manager:
+    archived: true
+    delete_branch_on_merge: false
+    topics: []
+    security_and_analysis:
+      secret_scanning_push_protection: disabled
+
   vip-responder: {}
+
+  VVCSoftware_VTM:
+    default_branch: master
+    topics: []
+    visibility: private
 
   webhook-test:
     actions_secrets:

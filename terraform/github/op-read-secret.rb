@@ -5,8 +5,6 @@ require "json"
 require "open3"
 require "shellwords"
 
-query = JSON.parse($stdin.read)
-
 def fail_with(message)
   warn(message)
   exit 1
@@ -38,18 +36,16 @@ def reference_value(reference)
   run_command("op", "read", reference)
 end
 
-reference = query["reference"]
-item = query["item"]
-field = query["field"]
-file = query["file"]
-vault = query["vault"]
-repository = query["repository"]
-secret_name = query["secret_name"]
+def secret_value(source, source_key)
+  unknown_keys = source.keys - %w[reference vault item field file]
+  fail_with("unknown onepassword keys for source #{source_key}: #{unknown_keys.join(", ")}") unless unknown_keys.empty?
 
-unknown_keys = query.keys - %w[repository secret_name reference vault item field file]
-fail_with("unknown onepassword keys for #{repository}/#{secret_name}: #{unknown_keys.join(", ")}") unless unknown_keys.empty?
+  reference = source["reference"]
+  item = source["item"]
+  field = source["field"]
+  file = source["file"]
+  vault = source["vault"]
 
-value =
   if reference && !reference.empty?
     reference_value(reference)
   elsif item && field && !item.empty? && !field.empty?
@@ -57,7 +53,21 @@ value =
   elsif item && file && vault && !item.empty? && !file.empty? && !vault.empty?
     reference_value("op://#{vault}/#{item}/#{file}")
   else
-    fail_with("onepassword source for #{repository}/#{secret_name} requires either reference, item+field, or vault+item+file")
+    fail_with("onepassword source #{source_key} requires either reference, item+field, or vault+item+file")
   end
+end
 
-print JSON.generate({ "value" => value })
+query = JSON.parse($stdin.read)
+unknown_query_keys = query.keys - %w[sources]
+fail_with("unknown query keys: #{unknown_query_keys.join(", ")}") unless unknown_query_keys.empty?
+
+sources = JSON.parse(query.fetch("sources"))
+fail_with("sources must be a JSON object") unless sources.is_a?(Hash)
+
+values = sources.sort.each_with_object({}) do |(source_key, source), result|
+  fail_with("onepassword source #{source_key} must be a JSON object") unless source.is_a?(Hash)
+
+  result[source_key] = secret_value(source, source_key)
+end
+
+print JSON.generate(values)

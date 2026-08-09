@@ -1,5 +1,5 @@
 resource "github_repository" "repositories" {
-  for_each = local.repositories
+  for_each = local.active_repositories
 
   name                        = each.key
   allow_auto_merge            = each.value.allow_auto_merge
@@ -93,8 +93,52 @@ resource "github_repository" "repositories" {
   }
 }
 
+resource "github_repository" "archived" {
+  for_each = local.archived_repositories
+
+  name     = each.key
+  archived = true
+
+  lifecycle {
+    prevent_destroy = true
+
+    # GitHub makes repository settings read-only after archival. Keep the
+    # archived state under management without attempting unsupported updates.
+    ignore_changes = [
+      allow_auto_merge,
+      allow_forking,
+      allow_merge_commit,
+      allow_rebase_merge,
+      allow_squash_merge,
+      allow_update_branch,
+      auto_init,
+      delete_branch_on_merge,
+      description,
+      gitignore_template,
+      has_discussions,
+      has_downloads,
+      has_issues,
+      has_projects,
+      has_wiki,
+      homepage_url,
+      ignore_vulnerability_alerts_during_read,
+      is_template,
+      license_template,
+      merge_commit_message,
+      merge_commit_title,
+      security_and_analysis,
+      squash_merge_commit_message,
+      squash_merge_commit_title,
+      topics,
+      visibility,
+      vulnerability_alerts,
+      web_commit_signoff_required,
+    ]
+  }
+}
+
 resource "github_branch_default" "repositories" {
-  for_each = local.repositories
+  for_each = local.active_repositories
 
   repository = github_repository.repositories[each.key].name
   branch     = each.value.default_branch
