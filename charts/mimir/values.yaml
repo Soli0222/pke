@@ -1,0 +1,247 @@
+# Default values for mimir.
+
+# -- Override the name of the chart
+nameOverride: ""
+# -- Override the full name of the chart
+fullnameOverride: ""
+
+# -- Image configuration
+image:
+  # -- Grafana Mimir image repository
+  repository: grafana/mimir
+  # -- Grafana Mimir image tag. Defaults to the chart appVersion when empty.
+  tag: ""
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+
+# -- Image pull secrets
+imagePullSecrets: []
+
+# -- Service account configuration
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: false
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use
+  name: ""
+
+# -- Pod annotations
+podAnnotations: {}
+# -- Pod labels
+podLabels: {}
+
+# -- Pod security context
+podSecurityContext: {}
+# -- Container security context
+securityContext: {}
+
+# -- Number of Mimir replicas. When using classic monolithic mode, align ring replication factors with this value.
+replicaCount: 1
+# -- Pod management policy for the StatefulSet
+podManagementPolicy: OrderedReady
+# -- Termination grace period in seconds
+terminationGracePeriodSeconds: 180
+
+# -- Service configuration
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service annotations
+  annotations: {}
+  # -- HTTP port exposed by the main Service and container
+  httpPort: 8080
+  # -- gRPC port exposed by the main Service and container
+  grpcPort: 9095
+
+# -- Headless memberlist Service configuration
+memberlistService:
+  # -- Memberlist Service annotations
+  annotations: {}
+  # -- Memberlist port exposed by the headless Service and container
+  port: 7946
+
+# -- Persistent storage configuration for WAL, TSDB state, and compactor data
+persistence:
+  # -- Enable persistent storage. Disable to use emptyDir.
+  enabled: true
+  # -- Use an existing PVC instead of creating a per-pod volume claim. Best suited for single replica deployments.
+  existingClaim: ""
+  # -- PVC annotations
+  annotations: {}
+  # -- PVC storage class
+  storageClass: ""
+  # -- PVC access modes
+  accessModes:
+    - ReadWriteOnce
+  # -- PVC size
+  size: 10Gi
+
+# -- Environment variables added to the Mimir container
+env: []
+# -- envFrom entries added to the Mimir container. Use this to expose object storage credentials such as AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from an existing Secret.
+envFrom: []
+# -- Extra command-line arguments appended as `-key=value`
+extraArgs: {}
+# -- Additional volumes added to the Pod
+extraVolumes: []
+# -- Additional volume mounts added to the Mimir container
+extraVolumeMounts: []
+
+# -- Resource requests and limits
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    memory: 2Gi
+
+# -- Node selector
+nodeSelector: {}
+# -- Tolerations
+tolerations: []
+# -- Affinity
+affinity: {}
+# -- Topology spread constraints
+topologySpreadConstraints: []
+
+# -- Startup probe configuration
+startupProbe:
+  httpGet:
+    path: /ready
+    port: http
+  failureThreshold: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+
+# -- Liveness probe configuration
+livenessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 45
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 5
+
+# -- Readiness probe configuration
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+
+# -- Ingress definitions. Because monolithic Mimir exposes a single HTTP endpoint, each ingress backend always points to the main Service HTTP port.
+ingresses: []
+  # - name: mimir
+  #   className: traefik
+  #   annotations:
+  #     cert-manager.io/cluster-issuer: letsencrypt
+  #   hosts:
+  #     - host: mimir.example.com
+  #       paths:
+  #         - path: /
+  #           pathType: Prefix
+  #   tls:
+  #     - hosts:
+  #         - mimir.example.com
+  #       secretName: mimir-example-com-tls
+
+# -- ServiceMonitor configuration
+serviceMonitor:
+  # -- Enable creation of a ServiceMonitor
+  enabled: false
+  # -- Namespace for the ServiceMonitor. Defaults to the release namespace when empty.
+  namespace: ""
+  # -- Labels added to the ServiceMonitor
+  labels: {}
+  # -- Annotations added to the ServiceMonitor
+  annotations: {}
+  # -- Scrape interval
+  interval: 30s
+  # -- Scrape timeout
+  scrapeTimeout: 10s
+  # -- Metrics path
+  path: /metrics
+  # -- Optional jobLabel
+  jobLabel: ""
+  # -- Extra matchLabels added to the ServiceMonitor selector
+  selector: {}
+  # -- Relabelings for the ServiceMonitor endpoint
+  relabelings: []
+  # -- Metric relabelings for the ServiceMonitor endpoint
+  metricRelabelings: []
+
+# -- Mimir configuration. This string is rendered with `tpl`, then merged with `mimir.structuredConfig`.
+mimir:
+  # -- Base Mimir config rendered into `mimir.yaml`. Prefer official config keys here.
+  config: |
+    target: all
+    multitenancy_enabled: false
+
+    common:
+      storage:
+        backend: s3
+        s3:
+          endpoint: s3.example.com
+          region: us-east-1
+          access_key_id: ${AWS_ACCESS_KEY_ID}
+          secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+          insecure: false
+
+    blocks_storage:
+      s3:
+        bucket_name: mimir-blocks
+      bucket_store:
+        sync_dir: /data/tsdb-sync
+      tsdb:
+        dir: /data/tsdb
+        head_compaction_interval: 15m
+        wal_replay_concurrency: 3
+
+    compactor:
+      data_dir: /data/compactor
+      sharding_ring:
+        kvstore:
+          store: memberlist
+
+    distributor:
+      ring:
+        kvstore:
+          store: memberlist
+
+    ingester:
+      ring:
+        replication_factor: {{ .Values.replicaCount }}
+        kvstore:
+          store: memberlist
+
+    store_gateway:
+      sharding_ring:
+        replication_factor: {{ .Values.replicaCount }}
+        kvstore:
+          store: memberlist
+
+    limits:
+      compactor_blocks_retention_period: 60d
+      max_global_series_per_user: 1000000
+      ingestion_rate: 50000
+      ingestion_burst_size: 1000000
+      out_of_order_time_window: 5m
+
+    memberlist:
+      bind_port: {{ .Values.memberlistService.port }}
+      abort_if_cluster_join_fails: false
+      join_members:
+        - dnssrv+{{ include "mimir.memberlistServiceName" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.memberlistService.port }}
+
+    server:
+      http_listen_port: {{ .Values.service.httpPort }}
+      grpc_listen_port: {{ .Values.service.grpcPort }}
+      log_level: info
+
+  # -- Structured overrides merged on top of `mimir.config`. Use this to add official config blocks such as `ruler_storage` or `alertmanager_storage` without copying the whole config.
+  structuredConfig: {}

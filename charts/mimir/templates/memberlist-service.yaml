@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mimir.memberlistServiceName" . }}
+  labels:
+    {{- include "mimir.labels" . | nindent 4 }}
+  {{- with .Values.memberlistService.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: memberlist
+      port: {{ .Values.memberlistService.port }}
+      targetPort: memberlist
+      protocol: TCP
+  selector:
+    {{- include "mimir.selectorLabels" . | nindent 4 }}
