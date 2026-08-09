@@ -86,6 +86,9 @@ repositories:
 
   rss-fetcher: {}
 
+  shared-workflows:
+    description: Reusable GitHub Actions workflows shared across application repositories
+
   spotify-nowplaying:
     description: Web App for Easily Sharing Currently Playing Songs on Spotify
     homepage_url: https://spn.soli0222.com
