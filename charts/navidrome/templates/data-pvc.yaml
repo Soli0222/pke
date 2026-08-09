@@ -1,0 +1,24 @@
+{{- if and .Values.persistence.data.enabled (not .Values.persistence.data.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "navidrome.dataPvcName" . }}
+  labels:
+    {{- include "navidrome.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    {{- range .Values.persistence.data.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: {{ .Values.persistence.data.size | quote }}
+  {{- if .Values.persistence.data.storageClass }}
+  {{- if (eq "-" .Values.persistence.data.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.persistence.data.storageClass | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

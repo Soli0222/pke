@@ -1,0 +1,497 @@
+{{- if .Values.config.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "navidrome.fullname" . }}-config
+  labels:
+    {{- include "navidrome.labels" . | nindent 4 }}
+data:
+  navidrome.toml: |
+    # Navidrome Configuration File
+    # See https://www.navidrome.org/docs/usage/configuration-options/#available-options
+    
+    # Basic configuration
+    {{- with .Values.config.musicFolder }}
+    MusicFolder = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.dataFolder }}
+    DataFolder = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.cacheFolder }}
+    CacheFolder = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.logLevel }}
+    LogLevel = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.logFile }}
+    LogFile = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.address }}
+    Address = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.baseUrl }}
+    BaseUrl = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.port }}
+    Port = {{ . }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableInsightsCollector" }}
+    EnableInsightsCollector = {{ .Values.config.enableInsightsCollector }}
+    {{- end }}
+    {{- if hasKey .Values.config "enforceNonRootUser" }}
+    EnforceNonRootUser = {{ .Values.config.enforceNonRootUser }}
+    {{- end }}
+    
+    # Advanced configuration
+    {{- with .Values.config.agents }}
+    Agents = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.albumPlayCountMode }}
+    AlbumPlayCountMode = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.authRequestLimit }}
+    AuthRequestLimit = {{ . }}
+    {{- end }}
+    {{- with .Values.config.authWindowLength }}
+    AuthWindowLength = {{ . | quote }}
+    {{- end }}
+    {{- if hasKey .Values.config "autoImportPlaylists" }}
+    AutoImportPlaylists = {{ .Values.config.autoImportPlaylists }}
+    {{- end }}
+    {{- if hasKey .Values.config "autoTranscodeDownload" }}
+    AutoTranscodeDownload = {{ .Values.config.autoTranscodeDownload }}
+    {{- end }}
+    {{- if hasKey .Values.config "defaultPlaylistPublicVisibility" }}
+    DefaultPlaylistPublicVisibility = {{ .Values.config.defaultPlaylistPublicVisibility }}
+    {{- end }}
+    {{- with .Values.config.artistArtPriority }}
+    ArtistArtPriority = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.artistImageFolder }}
+    ArtistImageFolder = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.coverArtPriority }}
+    CoverArtPriority = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.coverArtQuality }}
+    CoverArtQuality = {{ . }}
+    {{- end }}
+    {{- with .Values.config.discArtPriority }}
+    DiscArtPriority = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.defaultDownsamplingFormat }}
+    DefaultDownsamplingFormat = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.defaultLanguage }}
+    DefaultLanguage = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.defaultTheme }}
+    DefaultTheme = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.defaultShareExpiration }}
+    DefaultShareExpiration = {{ . | quote }}
+    {{- end }}
+    {{- if hasKey .Values.config "defaultDownloadableShare" }}
+    DefaultDownloadableShare = {{ .Values.config.defaultDownloadableShare }}
+    {{- end }}
+    {{- with .Values.config.defaultUIVolume }}
+    DefaultUIVolume = {{ . }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableArtworkPrecache" }}
+    EnableArtworkPrecache = {{ .Values.config.enableArtworkPrecache }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableArtworkUpload" }}
+    EnableArtworkUpload = {{ .Values.config.enableArtworkUpload }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableCoverAnimation" }}
+    EnableCoverAnimation = {{ .Values.config.enableCoverAnimation }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableWebPEncoding" }}
+    EnableWebPEncoding = {{ .Values.config.enableWebPEncoding }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableDownloads" }}
+    EnableDownloads = {{ .Values.config.enableDownloads }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableExternalServices" }}
+    EnableExternalServices = {{ .Values.config.enableExternalServices }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableFavourites" }}
+    EnableFavourites = {{ .Values.config.enableFavourites }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableGravatar" }}
+    EnableGravatar = {{ .Values.config.enableGravatar }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableLogRedacting" }}
+    EnableLogRedacting = {{ .Values.config.enableLogRedacting }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableM3UExternalAlbumArt" }}
+    EnableM3UExternalAlbumArt = {{ .Values.config.enableM3UExternalAlbumArt }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableMediaFileCoverArt" }}
+    EnableMediaFileCoverArt = {{ .Values.config.enableMediaFileCoverArt }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableNowPlaying" }}
+    EnableNowPlaying = {{ .Values.config.enableNowPlaying }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableReplayGain" }}
+    EnableReplayGain = {{ .Values.config.enableReplayGain }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableScrobbleHistory" }}
+    EnableScrobbleHistory = {{ .Values.config.enableScrobbleHistory }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableSharing" }}
+    EnableSharing = {{ .Values.config.enableSharing }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableStarRating" }}
+    EnableStarRating = {{ .Values.config.enableStarRating }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableTranscodingConfig" }}
+    EnableTranscodingConfig = {{ .Values.config.enableTranscodingConfig }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableUserEditing" }}
+    EnableUserEditing = {{ .Values.config.enableUserEditing }}
+    {{- end }}
+    {{- with .Values.config.ffmpegPath }}
+    FFmpegPath = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.gaTrackingID }}
+    GATrackingID = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.ignoredArticles }}
+    IgnoredArticles = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.imageCacheSize }}
+    ImageCacheSize = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.lyricsPriority }}
+    LyricsPriority = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.maxImageUploadSize }}
+    MaxImageUploadSize = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.maxSidebarPlaylists }}
+    MaxSidebarPlaylists = {{ . }}
+    {{- end }}
+    {{- with .Values.config.mpvPath }}
+    MPVPath = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.mpvCmdTemplate }}
+    MPVCmdTemplate = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.passwordEncryptionKey }}
+    PasswordEncryptionKey = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.playlistsPath }}
+    PlaylistsPath = {{ . | quote }}
+    {{- end }}
+    {{- if hasKey .Values.config "preferSortTags" }}
+    PreferSortTags = {{ .Values.config.preferSortTags }}
+    {{- end }}
+    {{- if hasKey .Values.config "recentlyAddedByModTime" }}
+    RecentlyAddedByModTime = {{ .Values.config.recentlyAddedByModTime }}
+    {{- end }}
+    {{- with .Values.config.sessionTimeout }}
+    SessionTimeout = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.shareURL }}
+    ShareURL = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.smartPlaylistRefreshDelay }}
+    SmartPlaylistRefreshDelay = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.tlsCert }}
+    TLSCert = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.tlsKey }}
+    TLSKey = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.transcodingCacheSize }}
+    TranscodingCacheSize = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.uiLoginBackgroundUrl }}
+    UILoginBackgroundUrl = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.uiPlaybackReportInterval }}
+    UIPlaybackReportInterval = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.uiSearchDebounceMs }}
+    UISearchDebounceMs = {{ . }}
+    {{- end }}
+    {{- with .Values.config.uiWelcomeMessage }}
+    UIWelcomeMessage = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.uiCoverArtSize }}
+    UICoverArtSize = {{ . }}
+    {{- end }}
+    {{- with .Values.config.unixSocketPerm }}
+    UnixSocketPerm = {{ . | quote }}
+    {{- end }}
+    
+    # Backup configuration
+    {{- with .Values.config.backup.path }}
+    [Backup]
+    Path = {{ . | quote }}
+    {{- with $.Values.config.backup.schedule }}
+    Schedule = {{ . | quote }}
+    {{- end }}
+    {{- with $.Values.config.backup.count }}
+    Count = {{ . }}
+    {{- end }}
+    {{- end }}
+    
+    # Deezer configuration
+    {{- if or (hasKey .Values.config.deezer "enabled") .Values.config.deezer.language }}
+    [Deezer]
+    {{- if hasKey .Values.config.deezer "enabled" }}
+    Enabled = {{ .Values.config.deezer.enabled }}
+    {{- end }}
+    {{- with .Values.config.deezer.language }}
+    Language = {{ . | quote }}
+    {{- end }}
+    {{- end }}
+    
+    # ExtAuth configuration
+    {{- if or .Values.config.extAuth.trustedSources .Values.config.extAuth.userHeader .Values.config.extAuth.logoutURL }}
+    [ExtAuth]
+    {{- with .Values.config.extAuth.trustedSources }}
+    TrustedSources = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.extAuth.userHeader }}
+    UserHeader = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.extAuth.logoutURL }}
+    LogoutURL = {{ . | quote }}
+    {{- end }}
+    {{- end }}
+    
+    # HTTP Headers
+    {{- with .Values.config.httpHeaders.frameOptions }}
+    [HTTPHeaders]
+    FrameOptions = {{ . | quote }}
+    {{- end }}
+    
+    # Inspect configuration
+    {{- if or (hasKey .Values.config.inspect "enabled") .Values.config.inspect.backlogLimit .Values.config.inspect.backlogTimeout .Values.config.inspect.maxRequests }}
+    [Inspect]
+    {{- if hasKey .Values.config.inspect "enabled" }}
+    Enabled = {{ .Values.config.inspect.enabled }}
+    {{- end }}
+    {{- with .Values.config.inspect.backlogLimit }}
+    BacklogLimit = {{ . }}
+    {{- end }}
+    {{- with .Values.config.inspect.backlogTimeout }}
+    BacklogTimeout = {{ printf "%.0f" (float64 .) | int64 }}
+    {{- end }}
+    {{- with .Values.config.inspect.maxRequests }}
+    MaxRequests = {{ . }}
+    {{- end }}
+    {{- end }}
+    
+    # Jukebox configuration
+    {{- if or (hasKey .Values.config.jukebox "enabled") (hasKey .Values.config.jukebox "adminOnly") .Values.config.jukebox.default }}
+    [Jukebox]
+    {{- if hasKey .Values.config.jukebox "enabled" }}
+    Enabled = {{ .Values.config.jukebox.enabled }}
+    {{- end }}
+    {{- if hasKey .Values.config.jukebox "adminOnly" }}
+    AdminOnly = {{ .Values.config.jukebox.adminOnly }}
+    {{- end }}
+    {{- with .Values.config.jukebox.default }}
+    Default = {{ . | quote }}
+    {{- end }}
+    {{- range .Values.config.jukebox.devices }}
+    [[Jukebox.Devices]]
+    {{- with .name }}
+    Name = {{ . | quote }}
+    {{- end }}
+    {{- with .audioDevice }}
+    AudioDevice = {{ . | quote }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    
+    # Last.fm configuration
+    {{- if or (hasKey .Values.config.lastfm "enabled") .Values.config.lastfm.apiKey .Values.config.lastfm.secret .Values.config.lastfm.language (hasKey .Values.config.lastfm "scrobbleFirstArtistOnly") }}
+    [LastFM]
+    {{- if hasKey .Values.config.lastfm "enabled" }}
+    Enabled = {{ .Values.config.lastfm.enabled }}
+    {{- end }}
+    {{- with .Values.config.lastfm.apiKey }}
+    ApiKey = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.lastfm.secret }}
+    Secret = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.lastfm.language }}
+    Language = {{ . | quote }}
+    {{- end }}
+    {{- if hasKey .Values.config.lastfm "scrobbleFirstArtistOnly" }}
+    ScrobbleFirstArtistOnly = {{ .Values.config.lastfm.scrobbleFirstArtistOnly }}
+    {{- end }}
+    {{- end }}
+    
+    # ListenBrainz configuration
+    {{- if or .Values.config.listenBrainz.baseURL (hasKey .Values.config.listenBrainz "enabled") }}
+    [ListenBrainz]
+    {{- with .Values.config.listenBrainz.baseURL }}
+    BaseURL = {{ . | quote }}
+    {{- end }}
+    {{- if hasKey .Values.config.listenBrainz "enabled" }}
+    Enabled = {{ .Values.config.listenBrainz.enabled }}
+    {{- end }}
+    {{- end }}
+
+    # Matcher configuration
+    {{- $matcher := .Values.config.matcher | default dict }}
+    {{- if or (hasKey $matcher "fuzzyThreshold") (hasKey $matcher "preferStarred") }}
+    [Matcher]
+    {{- if hasKey $matcher "fuzzyThreshold" }}
+    FuzzyThreshold = {{ $matcher.fuzzyThreshold }}
+    {{- end }}
+    {{- if hasKey $matcher "preferStarred" }}
+    PreferStarred = {{ $matcher.preferStarred }}
+    {{- end }}
+    {{- end }}
+    
+    # PID configuration
+    {{- if or .Values.config.pid.album .Values.config.pid.track }}
+    [PID]
+    {{- with .Values.config.pid.album }}
+    Album = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.pid.track }}
+    Track = {{ . | quote }}
+    {{- end }}
+    {{- end }}
+    
+    # Plugins configuration
+    {{- if or (hasKey .Values.config.plugins "enabled") .Values.config.plugins.folder (hasKey .Values.config.plugins "autoReload") .Values.config.plugins.logLevel .Values.config.plugins.cacheSize }}
+    [Plugins]
+    {{- if hasKey .Values.config.plugins "enabled" }}
+    Enabled = {{ .Values.config.plugins.enabled }}
+    {{- end }}
+    {{- with .Values.config.plugins.folder }}
+    Folder = {{ . | quote }}
+    {{- end }}
+    {{- if hasKey .Values.config.plugins "autoReload" }}
+    AutoReload = {{ .Values.config.plugins.autoReload }}
+    {{- end }}
+    {{- with .Values.config.plugins.logLevel }}
+    LogLevel = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.plugins.cacheSize }}
+    CacheSize = {{ . | quote }}
+    {{- end }}
+    {{- end }}
+    
+    # Prometheus configuration
+    {{- if or (hasKey .Values.config.prometheus "enabled") .Values.config.prometheus.metricsPath .Values.config.prometheus.password }}
+    [Prometheus]
+    {{- if hasKey .Values.config.prometheus "enabled" }}
+    Enabled = {{ .Values.config.prometheus.enabled }}
+    {{- end }}
+    {{- with .Values.config.prometheus.metricsPath }}
+    MetricsPath = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.prometheus.password }}
+    Password = {{ . | quote }}
+    {{- end }}
+    {{- end }}
+    
+    # Scanner configuration
+    {{- if or (hasKey .Values.config.scanner "enabled") .Values.config.scanner.schedule .Values.config.scanner.watcherWait (hasKey .Values.config.scanner "scanOnStartup") .Values.config.scanner.artistJoiner .Values.config.scanner.artistSplitExceptions (hasKey .Values.config.scanner "followSymlinks") (hasKey .Values.config.scanner "ignoreDotFolders") .Values.config.scanner.purgeMissing }}
+    [Scanner]
+    {{- if hasKey .Values.config.scanner "enabled" }}
+    Enabled = {{ .Values.config.scanner.enabled }}
+    {{- end }}
+    {{- with .Values.config.scanner.schedule }}
+    Schedule = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.scanner.watcherWait }}
+    WatcherWait = {{ . | quote }}
+    {{- end }}
+    {{- if hasKey .Values.config.scanner "scanOnStartup" }}
+    ScanOnStartup = {{ .Values.config.scanner.scanOnStartup }}
+    {{- end }}
+    {{- with .Values.config.scanner.artistJoiner }}
+    ArtistJoiner = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.scanner.artistSplitExceptions }}
+    ArtistSplitExceptions = [{{ range $i, $e := . }}{{ if $i }}, {{ end }}{{ $e | quote }}{{ end }}]
+    {{- end }}
+    {{- if hasKey .Values.config.scanner "followSymlinks" }}
+    FollowSymlinks = {{ .Values.config.scanner.followSymlinks }}
+    {{- end }}
+    {{- if hasKey .Values.config.scanner "ignoreDotFolders" }}
+    IgnoreDotFolders = {{ .Values.config.scanner.ignoreDotFolders }}
+    {{- end }}
+    {{- with .Values.config.scanner.purgeMissing }}
+    PurgeMissing = {{ . | quote }}
+    {{- end }}
+    {{- end }}
+
+    # Search configuration
+    {{- if or .Values.config.search.backend .Values.config.search.fullString }}
+    [Search]
+    {{- with .Values.config.search.backend }}
+    Backend = {{ . | quote }}
+    {{- end }}
+    {{- if hasKey .Values.config.search "fullString" }}
+    FullString = {{ .Values.config.search.fullString }}
+    {{- end }}
+    {{- end }}
+
+    # Subsonic configuration
+    {{- if or (hasKey .Values.config.subsonic "appendSubtitle") (hasKey .Values.config.subsonic "appendAlbumVersion") (hasKey .Values.config.subsonic "artistParticipations") (hasKey .Values.config.subsonic "defaultReportRealPath") (hasKey .Values.config.subsonic "enableAverageRating") .Values.config.subsonic.legacyClients }}
+    [Subsonic]
+    {{- if hasKey .Values.config.subsonic "appendSubtitle" }}
+    AppendSubtitle = {{ .Values.config.subsonic.appendSubtitle }}
+    {{- end }}
+    {{- if hasKey .Values.config.subsonic "appendAlbumVersion" }}
+    AppendAlbumVersion = {{ .Values.config.subsonic.appendAlbumVersion }}
+    {{- end }}
+    {{- if hasKey .Values.config.subsonic "artistParticipations" }}
+    ArtistParticipations = {{ .Values.config.subsonic.artistParticipations }}
+    {{- end }}
+    {{- if hasKey .Values.config.subsonic "defaultReportRealPath" }}
+    DefaultReportRealPath = {{ .Values.config.subsonic.defaultReportRealPath }}
+    {{- end }}
+    {{- if hasKey .Values.config.subsonic "enableAverageRating" }}
+    EnableAverageRating = {{ .Values.config.subsonic.enableAverageRating }}
+    {{- end }}
+    {{- with .Values.config.subsonic.legacyClients }}
+    LegacyClients = {{ . | quote }}
+    {{- end }}
+    {{- end }}
+
+    # Transcoding configuration
+    {{- $transcoding := .Values.config.transcoding | default dict }}
+    {{- if or (hasKey $transcoding "enableCancellation") (hasKey $transcoding "maxConcurrent") (hasKey $transcoding "maxConcurrentPerUser") }}
+    [Transcoding]
+    {{- if hasKey $transcoding "enableCancellation" }}
+    EnableCancellation = {{ $transcoding.enableCancellation }}
+    {{- end }}
+    {{- if hasKey $transcoding "maxConcurrent" }}
+    MaxConcurrent = {{ $transcoding.maxConcurrent }}
+    {{- end }}
+    {{- if hasKey $transcoding "maxConcurrentPerUser" }}
+    MaxConcurrentPerUser = {{ $transcoding.maxConcurrentPerUser }}
+    {{- end }}
+    {{- end }}
+    
+    # Tags configuration
+    {{- if .Values.config.tags }}
+    {{- range $name, $tag := .Values.config.tags }}
+    [Tags.{{ $name }}]
+    {{- with $tag.aliases }}
+    Aliases = [{{ range $i, $a := . }}{{ if $i }}, {{ end }}{{ $a | quote }}{{ end }}]
+    {{- end }}
+    {{- with $tag.split }}
+    Split = [{{ range $i, $s := . }}{{ if $i }}, {{ end }}{{ $s | quote }}{{ end }}]
+    {{- end }}
+    {{- with $tag.type }}
+    Type = {{ . | quote }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+{{- end }}
