@@ -1,0 +1,44 @@
+{{- $root := . -}}
+{{- $global := $root.Values.grobal | default dict -}}
+{{- $globalProber := $global.prober | default dict -}}
+{{- if $root.Values.applications }}
+{{- range $index, $app := $root.Values.applications }}
+{{- $appName := required (printf "applications[%d].name is required" $index) $app.name -}}
+{{- $appProber := $app.prober | default dict -}}
+{{- $interval := default (default "30s" $global.interval) $app.interval -}}
+{{- $module := default (default "http_2xx" $global.module) $app.module -}}
+{{- $jobName := default (default $appName $global.jobName) $app.jobName -}}
+{{- $proberURL := required (printf "applications[%d].prober.url or grobal.prober.url must be set" $index) (default $globalProber.url $appProber.url) -}}
+{{- $proberScheme := default $globalProber.scheme $appProber.scheme -}}
+{{- $proberPath := default $globalProber.path $appProber.path -}}
+{{- $targets := required (printf "applications[%d].targets must be set" $index) $app.targets -}}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: {{ printf "%s-%s" $root.Release.Name $appName | trunc 63 | trimSuffix "-" }}
+  labels:
+    app.kubernetes.io/name: {{ $appName }}
+    app.kubernetes.io/instance: {{ $root.Release.Name }}
+    app.kubernetes.io/managed-by: {{ $root.Release.Service }}
+    helm.sh/chart: {{ printf "%s-%s" $root.Chart.Name $root.Chart.Version | replace "+" "_" }}
+spec:
+  jobName: {{ $jobName }}
+  interval: {{ $interval }}
+  module: {{ $module }}
+  prober:
+    url: {{ $proberURL }}
+{{- with $proberScheme }}
+    scheme: {{ . }}
+{{- end }}
+{{- with $proberPath }}
+    path: {{ . }}
+{{- end }}
+  targets:
+    staticConfig:
+      static:
+{{- range $targets }}
+      - {{ . | quote }}
+{{- end }}
+{{ end }}
+{{ end }}
