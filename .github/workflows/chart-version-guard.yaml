@@ -1,0 +1,70 @@
+name: chart-version-guard
+
+# pke 本体の charts/ を変更したら Chart.yaml の version を必ず上げさせる。
+#
+# HelmChart.spec.reconcileStrategy の既定は ChartVersion なので、GitRepository を
+# 参照していても version が上がらない限り新しい chart artifact は作られない。
+# version を据え置いたまま chart を変更すると flux-diff には差分が出るのに
+# 実際には reconcile されない、という一番たちの悪い状態になる。
+
+on:
+  pull_request:
+    paths:
+      - "charts/**"
+      - ".github/workflows/chart-version-guard.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Require a version bump for every changed chart
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          base=$(git merge-base "${BASE_SHA}" HEAD)
+
+          # 変更のあった chart ディレクトリ。README.md だけの変更は chart artifact に
+          # 影響しないので対象外にする。
+          mapfile -t charts < <(
+            git diff --name-only "${base}" HEAD -- charts \
+              | grep -v '^charts/[^/]*/README\.md$' \
+              | cut -d/ -f1,2 \
+              | sort -u
+          )
+
+          if [[ ${#charts[@]} -eq 0 ]]; then
+            echo "version に影響する chart の変更はありません。"
+            exit 0
+          fi
+
+          failed=0
+          for chart in "${charts[@]}"; do
+            head_version=$(yq -r '.version' "${chart}/Chart.yaml")
+
+            if ! base_version=$(git show "${base}:${chart}/Chart.yaml" 2>/dev/null | yq -r '.version'); then
+              echo "  ${chart}: 新規追加 (${head_version})"
+              continue
+            fi
+
+            if [[ "$base_version" == "$head_version" ]]; then
+              echo "::error file=${chart}/Chart.yaml::${chart} を変更したのに version が ${base_version} のままです。Flux は Chart.yaml の version が上がらない限り新しい chart artifact を作らないので、この変更は反映されません。"
+              failed=1
+            elif [[ "$(printf '%s\n%s\n' "$base_version" "$head_version" | sort -V | tail -1)" != "$head_version" ]]; then
+              echo "::error file=${chart}/Chart.yaml::${chart} の version が ${base_version} から ${head_version} へ下がっています。"
+              failed=1
+            else
+              echo "  ${chart}: ${base_version} -> ${head_version}"
+            fi
+          done
+
+          exit "$failed"

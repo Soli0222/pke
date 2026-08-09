@@ -182,14 +182,31 @@ Flux の root は `flux/clusters/<cluster>/kustomization.yaml` です。
 `cert-manager-config` は `letsencrypt-dns01`、`letsencrypt-http01`、Traefik mTLS 用の `pke-natsume-mtls` `TLSOption` を持ちます。
 `cnpg-backup-config` は Flux の postBuild substitution 用 Secret `cnpg-backup-flux-vars` を 1Password から作ります。
 
-自作アプリのうち release-please を導入したアプリ(daypassed-bot, emoji-renderer,
-emoji-bot-gateway, mk-stream, note-tweet-connector, rss-fetcher, spotify-nowplaying,
-spotify-reblend)は Helm chart を各アプリ自身のリポジトリの `charts/` に持ち、リリース時に
-`oci://ghcr.io/soli0222/charts` へ publish します。対応する `HelmRepository` は
-`spec.type: oci` / `spec.url: oci://ghcr.io/soli0222/charts` を指し、chart version は
-アプリの release タグと一致します。それ以外(第三者イメージの chart や
-release-please 未導入のアプリ)は引き続き `Soli0222/helm-charts` モノレポが
-GitHub Pages (`https://soli0222.github.io/helm-charts`) で配布します。
+Helm chart の出どころは 3 通りあります。
+
+| chart | source | 参照の仕方 |
+|-------|--------|------------|
+| 第三者の chart | 各 upstream の `HelmRepository` | chart version を pin |
+| 自作アプリ(release-please 導入済み) | `oci://ghcr.io/soli0222/charts` | `spec.type: oci` の `HelmRepository` |
+| 第三者イメージのラッパー | **この pke リポジトリの `charts/`** | `GitRepository` (flux-system) を `chart: ./charts/<name>` で参照 |
+
+自作アプリ(daypassed-bot, emoji-renderer, emoji-bot-gateway, mk-stream,
+note-tweet-connector, rss-fetcher, spotify-nowplaying, spotify-reblend)は chart を
+各アプリ自身のリポジトリの `charts/` に持ち、`oci://ghcr.io/soli0222/charts` へ
+publish します。chart の `version` と `appVersion` は別物です。`version` は chart
+自体の変更に対して上がり、`appVersion` がアプリの release タグを指します。
+
+第三者イメージのラッパー chart(blackbox-exporter-probes, distribution,
+mc-mirror-cronjob, mimir, misskey, navidrome, summaly)は pke 本体の `charts/` に
+置き、Flux の `GitRepository` から直接参照します。pke 自身が唯一の消費者なので、
+OCI へ publish して pull し直す往復は挟みません。
+
+`charts/` の chart でも `Chart.yaml` の `version` は残し、変更時に必ず上げます。
+`HelmChart.spec.reconcileStrategy` の既定は `ChartVersion` で、GitRepository を
+参照していても **`version` が上がらない限り新しい chart artifact は作られない**
+ためです(`reconcileStrategy: Revision` にすると GitRepository を共有している
+全 chart が commit のたびに新 revision 扱いになるので採りません)。image tag の
+更新に対する patch bump は Renovate の `bumpVersions` が行います。
 
 ### meruto
 

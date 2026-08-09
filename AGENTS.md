@@ -133,15 +133,31 @@ root `kustomization.yaml` への登録を忘れない。
 HelmRelease の chart version は Renovate が追跡できる形で明示する。
 Secret は 1Password Operator の `OnePasswordItem` を基本にし、平文 Secret をコミットしない。
 
-自作アプリのうち release-please を導入したアプリ(daypassed-bot, emoji-renderer,
-emoji-bot-gateway, mk-stream, note-tweet-connector, rss-fetcher, spotify-nowplaying,
-spotify-reblend)は chart を各アプリ自身のリポジトリの `charts/` に持ち、リリース時に
-`oci://ghcr.io/soli0222/charts` へ publish する。これらの HelmRepository は
-`spec.type: oci` を持ち、`spec.url: oci://ghcr.io/soli0222/charts` を指す。
-chart version はアプリの release タグと一致する。
-それ以外(第三者イメージの chart や release-please 未導入のアプリ)は引き続き
-`Soli0222/helm-charts` モノレポが GitHub Pages (`https://soli0222.github.io/helm-charts`)
-で配布する。
+Helm chart の出どころは 3 通り。
+
+| chart | source | 参照の仕方 |
+|-------|--------|------------|
+| 第三者の chart | 各 upstream の `HelmRepository` | chart version を pin |
+| 自作アプリ(release-please 導入済み) | `oci://ghcr.io/soli0222/charts` | `spec.type: oci` の `HelmRepository` |
+| 第三者イメージのラッパー | **この pke リポジトリの `charts/`** | `GitRepository` (flux-system) を `chart: ./charts/<name>` で参照 |
+
+自作アプリ(daypassed-bot, emoji-renderer, emoji-bot-gateway, mk-stream,
+note-tweet-connector, rss-fetcher, spotify-nowplaying, spotify-reblend)は chart を
+各アプリ自身のリポジトリの `charts/` に持ち、`oci://ghcr.io/soli0222/charts` へ
+publish する。chart の `version` と `appVersion` は別物で、`version` は chart 自体の
+変更に対して上がり、`appVersion` がアプリの release タグを指す。
+
+第三者イメージのラッパー chart(blackbox-exporter-probes, distribution,
+mc-mirror-cronjob, mimir, misskey, navidrome, summaly)は pke 本体の `charts/` に置き、
+Flux の `GitRepository` から直接参照する。pke 自身が唯一の消費者なので、OCI へ
+publish して pull し直す往復は挟まない。
+
+`charts/` の chart でも `Chart.yaml` の `version` は残し、変更時に必ず上げる。
+`HelmChart.spec.reconcileStrategy` の既定は `ChartVersion` で、GitRepository を
+参照していても **`version` が上がらない限り新しい chart artifact は作られない**ため
+(`reconcileStrategy: Revision` にすると GitRepository を共有している全 chart が
+commit のたびに新 revision 扱いになるので採らない)。image tag の更新に対する
+patch bump は Renovate の `bumpVersions` が行う。
 
 ### natsume Components
 

@@ -36,6 +36,12 @@
   kubernetes: {
     managerFilePatterns: [
       '/(^|/)flux/.+/cronjob-.+\\.ya?ml$/',
+      '/(^|/)charts/.+/values\\.yaml$/',
+    ],
+  },
+  'helm-values': {
+    managerFilePatterns: [
+      '/(^|/)charts/.+/values\\.yaml$/',
     ],
   },
   packageRules: [
@@ -113,8 +119,65 @@
         'manager:ansible-vars',
       ],
     },
+    // charts/ の第三者イメージ追従。helm-charts から移植。automerge はしない。
+    {
+      matchFileNames: [
+        'charts/**',
+      ],
+      matchDatasources: [
+        'docker',
+      ],
+      commitMessagePrefix: 'chore(chart):',
+      addLabels: [
+        'manager:charts',
+      ],
+      automerge: false,
+    },
+  ],
+  // charts/ の image tag を上げたら同じ PR で chart version の patch を上げる。
+  // GitRepository 参照でも HelmChart.spec.reconcileStrategy の既定は ChartVersion
+  // なので、version が上がらないと新しい chart artifact が作られず反映されない。
+  //
+  // filePatterns は更新対象ファイルのディレクトリ基準なので、Chart.yaml を持たない
+  // flux/ 以下の更新には一致せず影響しない。
+  bumpVersions: [
+    {
+      filePatterns: [
+        '{{packageFileDir}}/Chart.yaml',
+      ],
+      matchStrings: [
+        '(?:^|\\n)version:\\s*(?<version>[^\\s]+)',
+      ],
+      bumpType: 'patch',
+    },
   ],
   customManagers: [
+    // charts/*/values.yaml の `repository:` + `tag:` の組。helm-values だけでは
+    // 拾えない書き方を補う。helm-charts から移植。
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/(^|/)charts/.+/values\\.yaml$/',
+      ],
+      matchStrings: [
+        'repository:\\s*(?<depName>[^\\s]+)\\s+tag:\\s*["\'](?<currentValue>[^"\']+)["\']',
+      ],
+      datasourceTemplate: 'docker',
+      versioningTemplate: 'docker',
+    },
+    // charts/*/Chart.yaml の appVersion を `# renovate: image=...` で追従させる。
+    // helm-charts から移植。
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/(^|/)charts/.+/Chart\\.yaml$/',
+      ],
+      matchStrings: [
+        '#\\s*renovate:\\s*image=(?<depName>[^\\s]+)\\nappVersion:\\s*["\']?(?<currentValue>[^"\'\\s]+)["\']?',
+      ],
+      datasourceTemplate: 'docker',
+      versioningTemplate: 'docker',
+    },
     {
       customType: 'regex',
       managerFilePatterns: [
