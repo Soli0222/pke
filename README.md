@@ -48,6 +48,7 @@ pke/
 │   ├── manifests/flux/<cluster>/fluxinstance.yaml
 │   └── values/*.gotmpl
 ├── flux/clusters/<cluster>/ # Flux CD が同期するクラスタ別アプリ定義
+├── charts/                  # Flux が GitRepository 経由で参照する自リポジトリ管理の Helm chart
 ├── terraform/github/        # GitHub repository settings と Actions secrets
 ├── terraform/tailscale/     # Tailscale ACL
 ├── .github/workflows/       # Renovate と flux-local diff

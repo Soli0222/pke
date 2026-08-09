@@ -14,12 +14,11 @@ spec:
     crds: CreateReplace
   chart:
     spec:
-      chart: blackbox-exporter-probes
-      version: 1.0.0
+      chart: ./charts/blackbox-exporter-probes
       sourceRef:
-        kind: HelmRepository
-        name: blackbox-exporter-probes-repo
-        namespace: blackbox-exporter-probes
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
       interval: 1h
   values:
     applications:

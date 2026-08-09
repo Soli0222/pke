@@ -1,0 +1,97 @@
+{{- $root := . -}}
+{{- if $root.Values.prometheusRule }}
+{{- if $root.Values.prometheusRule.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ printf "%s-blackbox-exporter" $root.Release.Name | trunc 63 | trimSuffix "-" }}
+  labels:
+    app.kubernetes.io/name: blackbox-exporter-probes
+    app.kubernetes.io/instance: {{ $root.Release.Name }}
+    app.kubernetes.io/managed-by: {{ $root.Release.Service }}
+    helm.sh/chart: {{ printf "%s-%s" $root.Chart.Name $root.Chart.Version | replace "+" "_" }}
+{{- with $root.Values.prometheusRule.labels }}
+{{ toYaml . | indent 4 }}
+{{- end }}
+spec:
+  groups:
+    - name: blackbox-exporter
+      interval: {{ $root.Values.prometheusRule.interval | default "30s" }}
+      rules:
+        - alert: EndpointDown
+          expr: probe_success == 0
+          for: {{ $root.Values.prometheusRule.endpointDown.for | default "5m" }}
+          labels:
+            severity: {{ $root.Values.prometheusRule.endpointDown.severity | default "critical" }}
+{{- with $root.Values.prometheusRule.endpointDown.labels }}
+{{ toYaml . | indent 12 }}
+{{- end }}
+          annotations:
+            summary: "Endpoint {{ "{{" }} $labels.instance {{ "}}" }} is down"
+            description: "Endpoint {{ "{{" }} $labels.instance {{ "}}" }} has been down for more than {{ $root.Values.prometheusRule.endpointDown.for | default "5m" }}."
+{{- with $root.Values.prometheusRule.endpointDown.annotations }}
+{{ toYaml . | indent 12 }}
+{{- end }}
+
+        - alert: SSLCertExpiringSoon
+          expr: probe_ssl_earliest_cert_expiry - time() < {{ $root.Values.prometheusRule.sslCertExpiry.daysThreshold | default "30" }} * 24 * 3600
+          for: {{ $root.Values.prometheusRule.sslCertExpiry.for | default "1h" }}
+          labels:
+            severity: {{ $root.Values.prometheusRule.sslCertExpiry.severity | default "warning" }}
+{{- with $root.Values.prometheusRule.sslCertExpiry.labels }}
+{{ toYaml . | indent 12 }}
+{{- end }}
+          annotations:
+            summary: "SSL certificate for {{ "{{" }} $labels.instance {{ "}}" }} expiring soon"
+            description: "SSL certificate for {{ "{{" }} $labels.instance {{ "}}" }} will expire in {{ "{{" }} $value | humanizeDuration {{ "}}" }}."
+{{- with $root.Values.prometheusRule.sslCertExpiry.annotations }}
+{{ toYaml . | indent 12 }}
+{{- end }}
+
+        - alert: SSLCertExpiryCritical
+          expr: probe_ssl_earliest_cert_expiry - time() < {{ $root.Values.prometheusRule.sslCertExpiryCritical.daysThreshold | default "7" }} * 24 * 3600
+          for: {{ $root.Values.prometheusRule.sslCertExpiryCritical.for | default "1h" }}
+          labels:
+            severity: {{ $root.Values.prometheusRule.sslCertExpiryCritical.severity | default "critical" }}
+{{- with $root.Values.prometheusRule.sslCertExpiryCritical.labels }}
+{{ toYaml . | indent 12 }}
+{{- end }}
+          annotations:
+            summary: "SSL certificate for {{ "{{" }} $labels.instance {{ "}}" }} expiring very soon"
+            description: "SSL certificate for {{ "{{" }} $labels.instance {{ "}}" }} will expire in {{ "{{" }} $value | humanizeDuration {{ "}}" }}."
+{{- with $root.Values.prometheusRule.sslCertExpiryCritical.annotations }}
+{{ toYaml . | indent 12 }}
+{{- end }}
+
+        - alert: SlowResponse
+          expr: probe_duration_seconds > {{ $root.Values.prometheusRule.slowResponse.threshold | default "5" }}
+          for: {{ $root.Values.prometheusRule.slowResponse.for | default "5m" }}
+          labels:
+            severity: {{ $root.Values.prometheusRule.slowResponse.severity | default "warning" }}
+{{- with $root.Values.prometheusRule.slowResponse.labels }}
+{{ toYaml . | indent 12 }}
+{{- end }}
+          annotations:
+            summary: "Slow response from {{ "{{" }} $labels.instance {{ "}}" }}"
+            description: "{{ "{{" }} $labels.instance {{ "}}" }} is responding slowly ({{ "{{" }} $value {{ "}}" }}s)."
+{{- with $root.Values.prometheusRule.slowResponse.annotations }}
+{{ toYaml . | indent 12 }}
+{{- end }}
+
+        - alert: HTTPStatusCodeError
+          expr: probe_http_status_code >= 400
+          for: {{ $root.Values.prometheusRule.httpStatusError.for | default "5m" }}
+          labels:
+            severity: {{ $root.Values.prometheusRule.httpStatusError.severity | default "warning" }}
+{{- with $root.Values.prometheusRule.httpStatusError.labels }}
+{{ toYaml . | indent 12 }}
+{{- end }}
+          annotations:
+            summary: "HTTP error status code for {{ "{{" }} $labels.instance {{ "}}" }}"
+            description: "{{ "{{" }} $labels.instance {{ "}}" }} returned HTTP status code {{ "{{" }} $value {{ "}}" }}."
+{{- with $root.Values.prometheusRule.httpStatusError.annotations }}
+{{ toYaml . | indent 12 }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,58 @@
+grobal:
+  jobName: http-get
+  interval: 30s
+  module: http_2xx
+  prober:
+    url: prometheus-blackbox-exporter.prometheus-blackbox-exporter.svc.cluster.local:9115
+    scheme: http
+    path: /probe
+
+applications:
+  - name: example-tld
+    jobName: ''
+    interval: ''
+    module: ''
+    prober:
+      url: ''
+      scheme: ''
+      path: /probe
+    targets:
+      - https://example.tld
+
+prometheusRule:
+  enabled: true
+  interval: 30s
+  labels: {}
+  
+  endpointDown:
+    for: 5m
+    severity: critical
+    labels: {}
+    annotations: {}
+  
+  sslCertExpiry:
+    daysThreshold: 30
+    for: 1h
+    severity: warning
+    labels: {}
+    annotations: {}
+  
+  sslCertExpiryCritical:
+    daysThreshold: 7
+    for: 1h
+    severity: critical
+    labels: {}
+    annotations: {}
+  
+  slowResponse:
+    threshold: 5  # 秒
+    for: 5m
+    severity: warning
+    labels: {}
+    annotations: {}
+  
+  httpStatusError:
+    for: 5m
+    severity: warning
+    labels: {}
+    annotations: {}

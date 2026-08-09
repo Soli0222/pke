@@ -1,0 +1,7 @@
+apiVersion: v2
+name: blackbox-exporter-probes
+description: A Helm chart for deploying Prometheus Blackbox Exporter Probes.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
