@@ -14,12 +14,11 @@ spec:
     crds: CreateReplace
   chart:
     spec:
-      chart: distribution
-      version: 0.1.3
+      chart: ./charts/distribution
       sourceRef:
-        kind: HelmRepository
-        name: distribution-repo
-        namespace: registry
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
       interval: 1h
   values:
     resources:

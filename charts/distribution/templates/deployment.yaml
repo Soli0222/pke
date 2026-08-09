@@ -1,0 +1,197 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "distribution.fullname" . }}
+  labels:
+    {{- include "distribution.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "distribution.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- if .Values.config.enabled }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "distribution.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "distribution.serviceAccountName" . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+            {{- if .Values.config.http.debug }}
+            - name: debug
+              containerPort: {{ .Values.debugPort }}
+              protocol: TCP
+            {{- end }}
+          env:
+            - name: REGISTRY_HTTP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "distribution.httpSecretName" . }}
+                  key: http-secret
+            {{- if .Values.otelTracesExporter }}
+            - name: OTEL_TRACES_EXPORTER
+              value: {{ .Values.otelTracesExporter | quote }}
+            {{- end }}
+            {{- if .Values.htpasswd.enabled }}
+            - name: REGISTRY_AUTH_HTPASSWD_REALM
+              value: "Registry Realm"
+            - name: REGISTRY_AUTH_HTPASSWD_PATH
+              value: "/auth/htpasswd"
+            {{- end }}
+            {{- if or .Values.secrets.s3.accessKey .Values.secrets.existingSecret }}
+            - name: REGISTRY_STORAGE_S3_ACCESSKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "distribution.credentialsSecretName" . }}
+                  key: s3-access-key
+                  optional: true
+            - name: REGISTRY_STORAGE_S3_SECRETKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "distribution.credentialsSecretName" . }}
+                  key: s3-secret-key
+                  optional: true
+            {{- end }}
+            {{- if or .Values.secrets.azure.accountKey .Values.secrets.existingSecret }}
+            - name: REGISTRY_STORAGE_AZURE_ACCOUNTKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "distribution.credentialsSecretName" . }}
+                  key: azure-account-key
+                  optional: true
+            {{- end }}
+            {{- if or .Values.secrets.redis.password .Values.secrets.existingSecret }}
+            - name: REGISTRY_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "distribution.credentialsSecretName" . }}
+                  key: redis-password
+                  optional: true
+            {{- end }}
+            {{- if or .Values.secrets.proxy.username .Values.secrets.existingSecret }}
+            - name: REGISTRY_PROXY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "distribution.credentialsSecretName" . }}
+                  key: proxy-username
+                  optional: true
+            - name: REGISTRY_PROXY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "distribution.credentialsSecretName" . }}
+                  key: proxy-password
+                  optional: true
+            {{- end }}
+            {{- with .Values.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: /var/lib/registry
+            {{- end }}
+            {{- if .Values.config.enabled }}
+            - name: config
+              mountPath: /etc/distribution/config.yml
+              subPath: config.yml
+            {{- end }}
+            {{- if .Values.tls.enabled }}
+            - name: tls
+              mountPath: /certs
+              readOnly: true
+            {{- end }}
+            {{- if .Values.htpasswd.enabled }}
+            - name: htpasswd
+              mountPath: /auth
+              readOnly: true
+            {{- end }}
+            {{- $useGCS := and .Values.config.storage.gcs (gt (len .Values.config.storage.gcs) 0) }}
+            {{- if and $useGCS (or .Values.secrets.gcs.keyfile .Values.secrets.existingSecret) }}
+            - name: gcs-keyfile
+              mountPath: /etc/distribution/gcs
+              readOnly: true
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "distribution.pvcName" . }}
+        {{- end }}
+        {{- if .Values.config.enabled }}
+        - name: config
+          configMap:
+            name: {{ include "distribution.configMapName" . }}
+        {{- end }}
+        {{- if .Values.tls.enabled }}
+        - name: tls
+          secret:
+            secretName: {{ include "distribution.tlsSecretName" . }}
+        {{- end }}
+        {{- if .Values.htpasswd.enabled }}
+        - name: htpasswd
+          secret:
+            secretName: {{ include "distribution.htpasswdSecretName" . }}
+        {{- end }}
+        {{- $useGCS := and .Values.config.storage.gcs (gt (len .Values.config.storage.gcs) 0) }}
+        {{- if and $useGCS (or .Values.secrets.gcs.keyfile .Values.secrets.existingSecret) }}
+        - name: gcs-keyfile
+          secret:
+            secretName: {{ include "distribution.credentialsSecretName" . }}
+            items:
+              - key: gcs-keyfile
+                path: keyfile.json
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}

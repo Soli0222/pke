@@ -1,0 +1,192 @@
+{{- if .Values.config.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "distribution.configMapName" . }}
+  labels:
+    {{- include "distribution.labels" . | nindent 4 }}
+data:
+  config.yml: |
+    version: {{ .Values.config.version | quote }}
+    
+    log:
+      {{- if .Values.config.log.accesslog }}
+      accesslog:
+        disabled: {{ .Values.config.log.accesslog.disabled | default false }}
+      {{- end }}
+      level: {{ .Values.config.log.level | default "info" }}
+      formatter: {{ .Values.config.log.formatter | default "text" }}
+    
+    storage:
+      {{- /* Determine which storage backend to use. Only one should be active. */}}
+      {{- /* Priority: s3 > azure > gcs > filesystem */}}
+      {{- $useS3 := and .Values.config.storage.s3 (gt (len .Values.config.storage.s3) 0) }}
+      {{- $useAzure := and .Values.config.storage.azure (gt (len .Values.config.storage.azure) 0) }}
+      {{- $useGCS := and .Values.config.storage.gcs (gt (len .Values.config.storage.gcs) 0) }}
+      {{- $useFilesystem := and .Values.config.storage.filesystem (not $useS3) (not $useAzure) (not $useGCS) }}
+      {{- if $useFilesystem }}
+      filesystem:
+        rootdirectory: {{ .Values.config.storage.filesystem.rootdirectory | default "/var/lib/registry" }}
+        {{- if .Values.config.storage.filesystem.maxthreads }}
+        maxthreads: {{ .Values.config.storage.filesystem.maxthreads }}
+        {{- end }}
+      {{- end }}
+      {{- if $useS3 }}
+      s3:
+        {{- /* Remove accesskey and secretkey from config - they come from env vars */}}
+        {{- $s3Config := omit .Values.config.storage.s3 "accesskey" "secretkey" }}
+        {{- toYaml $s3Config | nindent 8 }}
+      {{- end }}
+      {{- if $useAzure }}
+      azure:
+        {{- /* Remove accountkey from config - it comes from env var */}}
+        {{- $azureConfig := omit .Values.config.storage.azure "accountkey" }}
+        {{- toYaml $azureConfig | nindent 8 }}
+      {{- end }}
+      {{- if $useGCS }}
+      gcs:
+        {{- /* Set keyfile path if credentials are provided via secret */}}
+        {{- if or .Values.secrets.gcs.keyfile .Values.secrets.existingSecret }}
+        keyfile: /etc/distribution/gcs/keyfile.json
+        {{- end }}
+        {{- $gcsConfig := omit .Values.config.storage.gcs "keyfile" "credentials" }}
+        {{- toYaml $gcsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.config.storage.delete }}
+      delete:
+        enabled: {{ .Values.config.storage.delete.enabled | default false }}
+      {{- end }}
+      {{- if .Values.config.storage.cache }}
+      cache:
+        blobdescriptor: {{ .Values.config.storage.cache.blobdescriptor | default "inmemory" }}
+        {{- if .Values.config.storage.cache.blobdescriptorsize }}
+        blobdescriptorsize: {{ .Values.config.storage.cache.blobdescriptorsize }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.config.storage.maintenance }}
+      maintenance:
+        {{- if .Values.config.storage.maintenance.uploadpurging }}
+        uploadpurging:
+          enabled: {{ .Values.config.storage.maintenance.uploadpurging.enabled | default true }}
+          age: {{ .Values.config.storage.maintenance.uploadpurging.age | default "168h" }}
+          interval: {{ .Values.config.storage.maintenance.uploadpurging.interval | default "24h" }}
+          dryrun: {{ .Values.config.storage.maintenance.uploadpurging.dryrun | default false }}
+        {{- end }}
+        {{- if .Values.config.storage.maintenance.readonly }}
+        readonly:
+          enabled: {{ .Values.config.storage.maintenance.readonly.enabled | default false }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.config.storage.redirect }}
+      redirect:
+        disable: {{ .Values.config.storage.redirect.disable | default false }}
+      {{- end }}
+      {{- if .Values.config.storage.tag }}
+      tag:
+        concurrencylimit: {{ .Values.config.storage.tag.concurrencylimit | default 8 }}
+      {{- end }}
+    
+    http:
+      addr: {{ .Values.config.http.addr | default ":5000" }}
+      {{- if .Values.config.http.prefix }}
+      prefix: {{ .Values.config.http.prefix }}
+      {{- end }}
+      {{- if .Values.config.http.host }}
+      host: {{ .Values.config.http.host }}
+      {{- end }}
+      relativeurls: {{ .Values.config.http.relativeurls | default false }}
+      {{- if .Values.config.http.draintimeout }}
+      draintimeout: {{ .Values.config.http.draintimeout }}
+      {{- end }}
+      {{- if .Values.config.http.headers }}
+      headers:
+        {{- range $key, $value := .Values.config.http.headers }}
+        {{ $key }}:
+          {{- toYaml $value | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.config.http.http2 }}
+      http2:
+        disabled: {{ .Values.config.http.http2.disabled | default false }}
+      {{- end }}
+      {{- if .Values.config.http.h2c }}
+      h2c:
+        enabled: {{ .Values.config.http.h2c.enabled | default false }}
+      {{- end }}
+      {{- if .Values.tls.enabled }}
+      tls:
+        certificate: /certs/tls.crt
+        key: /certs/tls.key
+      {{- end }}
+      {{- if .Values.config.http.debug }}
+      debug:
+        addr: {{ .Values.config.http.debug.addr | default ":5001" }}
+        {{- if .Values.config.http.debug.prometheus }}
+        prometheus:
+          enabled: {{ .Values.config.http.debug.prometheus.enabled | default true }}
+          path: {{ .Values.config.http.debug.prometheus.path | default "/metrics" }}
+        {{- end }}
+      {{- end }}
+    
+    {{- if .Values.htpasswd.enabled }}
+    auth:
+      htpasswd:
+        realm: Registry Realm
+        path: /auth/htpasswd
+    {{- else if .Values.config.auth }}
+    auth:
+      {{- toYaml .Values.config.auth | nindent 6 }}
+    {{- end }}
+    
+    {{- if .Values.config.health }}
+    health:
+      {{- if .Values.config.health.storagedriver }}
+      storagedriver:
+        enabled: {{ .Values.config.health.storagedriver.enabled | default true }}
+        {{- if .Values.config.health.storagedriver.interval }}
+        interval: {{ .Values.config.health.storagedriver.interval }}
+        {{- end }}
+        {{- if .Values.config.health.storagedriver.threshold }}
+        threshold: {{ .Values.config.health.storagedriver.threshold }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.config.health.file }}
+      file:
+        {{- toYaml .Values.config.health.file | nindent 8 }}
+      {{- end }}
+      {{- if .Values.config.health.http }}
+      http:
+        {{- toYaml .Values.config.health.http | nindent 8 }}
+      {{- end }}
+      {{- if .Values.config.health.tcp }}
+      tcp:
+        {{- toYaml .Values.config.health.tcp | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    
+    {{- if .Values.config.proxy }}
+    proxy:
+      {{- toYaml .Values.config.proxy | nindent 6 }}
+    {{- end }}
+    
+    {{- if .Values.config.validation }}
+    validation:
+      {{- if hasKey .Values.config.validation "disabled" }}
+      disabled: {{ .Values.config.validation.disabled }}
+      {{- end }}
+      {{- if .Values.config.validation.manifests }}
+      manifests:
+        {{- toYaml .Values.config.validation.manifests | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    
+    {{- if .Values.config.notifications }}
+    notifications:
+      {{- toYaml .Values.config.notifications | nindent 6 }}
+    {{- end }}
+    
+    {{- if .Values.config.redis }}
+    redis:
+      {{- toYaml .Values.config.redis | nindent 6 }}
+    {{- end }}
+{{- end }}

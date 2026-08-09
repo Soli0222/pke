@@ -1,0 +1,46 @@
+Distribution Registry has been deployed!
+
+{{- if .Values.ingress.enabled }}
+The registry is accessible at:
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+Get the registry URL by running these commands:
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "distribution.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+Get the registry URL by running these commands:
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "distribution.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.service.port }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+Get the registry URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "distribution.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  echo "Visit http://127.0.0.1:5000 to use your registry"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 5000:5000
+{{- end }}
+
+{{- if .Values.htpasswd.enabled }}
+
+Authentication is enabled. Use the configured credentials to push/pull images.
+{{- end }}
+
+{{- if .Values.serviceMonitor.enabled }}
+
+Prometheus ServiceMonitor is enabled. Metrics are available at:
+  http://{{ include "distribution.fullname" . }}:{{ .Values.debugPort }}{{ .Values.config.http.debug.prometheus.path | default "/metrics" }}
+{{- end }}
+
+Push an image to the registry:
+  docker tag myimage {{ if .Values.ingress.enabled }}{{ (index .Values.ingress.hosts 0).host }}{{ else }}localhost:5000{{ end }}/myimage
+  docker push {{ if .Values.ingress.enabled }}{{ (index .Values.ingress.hosts 0).host }}{{ else }}localhost:5000{{ end }}/myimage
+
+Pull an image from the registry:
+  docker pull {{ if .Values.ingress.enabled }}{{ (index .Values.ingress.hosts 0).host }}{{ else }}localhost:5000{{ end }}/myimage
+
+For more information, visit:
+  https://distribution.github.io/distribution/

@@ -1,0 +1,396 @@
+# Default values for distribution.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- Override the name of the chart
+nameOverride: ""
+# -- Override the full name of the chart
+fullnameOverride: ""
+
+# -- Image configuration
+image:
+  # -- Registry image repository
+  repository: registry
+  # -- Registry image tag
+  tag: ""
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+
+# -- Image pull secrets
+imagePullSecrets: []
+
+# -- Service account configuration
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: false
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use. If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# -- Pod security context
+podSecurityContext: {}
+  # fsGroup: 2000
+
+# -- Container security context
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# -- Number of replicas
+replicaCount: 1
+
+# -- Service configuration
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port
+  port: 5000
+  # -- Target port
+  targetPort: 5000
+
+# -- Container port for the registry
+containerPort: 5000
+
+# -- Debug server port (for metrics and health checks)
+debugPort: 5001
+
+# -- Resource limits and requests
+resources: {}
+  # limits:
+  #   cpu: 500m
+  #   memory: 512Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# -- Node selector
+nodeSelector: {}
+
+# -- Tolerations
+tolerations: []
+
+# -- Affinity
+affinity: {}
+
+# -- Pod annotations
+podAnnotations: {}
+
+# -- Pod labels
+podLabels: {}
+
+# -- Persistence configuration
+persistence:
+  # -- Enable persistence
+  enabled: true
+  # -- Use existing PVC (if specified, no new PVC will be created)
+  existingClaim: ""
+  # -- Storage class for the PVC
+  storageClass: ""
+  # -- Storage size
+  size: 10Gi
+  # -- Access modes
+  accessModes:
+    - ReadWriteOnce
+
+# -- Ingress configuration
+ingress:
+  # -- Enable ingress
+  enabled: false
+  # -- Ingress class name
+  className: ""
+  # -- Ingress annotations
+  annotations: {}
+  # -- Ingress hosts
+  hosts:
+    - host: registry.local
+      paths:
+        - path: /
+          pathType: Prefix
+  # -- Ingress TLS configuration
+  tls: []
+
+# -- Registry configuration. See https://distribution.github.io/distribution/about/configuration/
+config:
+  # -- Enable custom configuration (if false, uses default registry config)
+  enabled: true
+  
+  # -- Configuration version (required)
+  version: "0.1"
+  
+  # -- Logging configuration
+  log:
+    # -- Log level: error, warn, info, debug
+    level: info
+    # -- Log formatter: text, json, logstash
+    formatter: text
+    # -- Access log configuration
+    accesslog:
+      # -- Disable access logging
+      disabled: false
+  
+  # -- HTTP server configuration
+  http:
+    # -- HTTP listen address
+    addr: :5000
+    # -- HTTP secret for signing state. Auto-generated if not set
+    secret: ""
+    # -- Return relative URLs in Location headers
+    relativeurls: false
+    # -- Time to wait for HTTP connections to drain on shutdown
+    draintimeout: 60s
+    # -- HTTP response headers
+    headers:
+      X-Content-Type-Options:
+        - nosniff
+    # -- HTTP/2 configuration
+    http2:
+      # -- Disable HTTP/2
+      disabled: false
+    # -- H2C (HTTP/2 Cleartext) configuration
+    h2c:
+      # -- Enable H2C
+      enabled: false
+    # -- Debug server configuration (exposes /debug/health and /metrics)
+    debug:
+      # -- Debug server listen address
+      addr: :5001
+      # -- Prometheus metrics configuration
+      prometheus:
+        # -- Enable Prometheus metrics
+        enabled: true
+        # -- Metrics path
+        path: /metrics
+  
+  # Storage configuration
+  # Storage configuration
+  # -- Only one storage backend should be configured at a time. S3/Azure/GCS takes priority over filesystem.
+  storage:
+    # -- Filesystem storage configuration (default backend)
+    # @default -- enabled by default
+    # Ref: https://distribution.github.io/distribution/storage-drivers/filesystem/
+    filesystem:
+      # -- Root directory for registry data (default: /var/lib/registry)
+      rootdirectory: /var/lib/registry
+      # -- Maximum number of simultaneous file operations (default: 100, min: 25)
+      # maxthreads: 100
+    
+    # -- S3 storage configuration. Credentials should be set in secrets.s3
+    # Ref: https://distribution.github.io/distribution/storage-drivers/s3/
+    s3: {}
+      # region: us-east-1  # (required) AWS region
+      # bucket: my-registry-bucket  # (required) S3 bucket name
+      # regionendpoint: http://myobjects.local  # (optional) S3-compatible endpoint
+      # forcepathstyle: false  # (optional, default: false)
+      # encrypt: false  # (optional, default: false)
+      # keyid: ""  # (optional) KMS key ID for encryption
+      # secure: true  # (optional, default: true)
+      # skipverify: false  # (optional, default: false)
+      # v4auth: true  # (optional, default: true)
+      # chunksize: 10485760  # (optional, default: 10MB, min: 5MB)
+      # multipartcopychunksize: 33554432  # (optional, default: 32MB)
+      # multipartcopymaxconcurrency: 100  # (optional, default: 100)
+      # multipartcopythresholdsize: 33554432  # (optional, default: 32MB)
+      # rootdirectory: ""  # (optional, default: bucket root)
+      # storageclass: STANDARD  # (optional, default: STANDARD)
+      # objectacl: private  # (optional, default: private)
+      # loglevel: "off"  # (optional, default: off)
+    
+    # -- Azure Blob storage configuration. Credentials should be set in secrets.azure
+    # Ref: https://distribution.github.io/distribution/storage-drivers/azure/
+    azure: {}
+      # accountname: myaccount  # (required)
+      # container: mycontainer  # (required)
+      # credentials:  # (required)
+      #   type: client_secret  # client_secret, shared_key, or default_credentials
+      #   clientid: ""  # required for client_secret
+      #   tenantid: ""  # required for client_secret
+      #   secret: ""  # required for client_secret
+      # rootdirectory: ""  # (optional)
+      # realm: core.windows.net  # (optional, default: core.windows.net)
+    
+    # -- Google Cloud Storage configuration. Credentials should be set in secrets.gcs
+    # Ref: https://distribution.github.io/distribution/storage-drivers/gcs/
+    gcs: {}
+      # bucket: my-gcs-bucket  # (required)
+      # rootdirectory: ""  # (optional, default: bucket root)
+      # chunksize: 5242880  # (optional, default: 5MB, must be multiple of 256KB)
+    
+    # -- Enable deletion of image blobs and manifests by digest
+    delete:
+      enabled: false
+    # -- Cache configuration for layer metadata
+    cache:
+      # -- Cache type: inmemory or redis
+      blobdescriptor: inmemory
+      # -- Maximum number of entries in inmemory cache
+      # blobdescriptorsize: 10000
+    # -- Maintenance configuration
+    maintenance:
+      # -- Upload purging configuration to remove orphaned files
+      uploadpurging:
+        enabled: true
+        age: 168h
+        interval: 24h
+        dryrun: false
+    # -- Redirect configuration for storage backends that support it
+    redirect:
+      # -- Disable redirects to serve all data through the registry
+      disable: false
+    # -- Tag lookup concurrency limit
+    # tag:
+      # -- Maximum concurrent tag lookups (0 = GOMAXPROCS)
+      # concurrencylimit: 8
+
+  # -- Authentication configuration. Only one auth method can be configured at a time
+  auth: {}
+    # htpasswd:
+    #   realm: Registry Realm
+    #   path: /auth/htpasswd
+    # token:
+    #   realm: https://auth.example.com/token
+    #   service: registry
+    #   issuer: registry-token-issuer
+    #   rootcertbundle: /certs/token.pem
+
+  # -- Health check configuration
+  health:
+    # -- Storage driver health check
+    storagedriver:
+      enabled: true
+      interval: 10s
+      threshold: 3
+
+  # -- Proxy configuration for pull-through cache. Credentials should be set in secrets.proxy
+  proxy: {}
+    # remoteurl: https://registry-1.docker.io
+    # ttl: 168h
+
+  # -- Validation configuration
+  validation:
+    # -- Disable validation
+    disabled: false
+
+  # -- Notifications configuration for webhooks
+  notifications: {}
+    # events:
+    #   includereferences: true
+    # endpoints:
+    #   - name: webhook
+    #     disabled: false
+    #     url: https://webhook.example.com/event
+    #     timeout: 1s
+    #     threshold: 10
+    #     backoff: 1s
+
+  # -- Redis configuration for caching. Password should be set in secrets.redis
+  redis: {}
+    # addrs:
+    #   - localhost:6379
+    # db: 0
+    # dialtimeout: 10ms
+    # readtimeout: 10ms
+    # writetimeout: 10ms
+
+# -- Secrets configuration for storage backends and other services. Values are stored in a Kubernetes Secret and injected as environment variables
+secrets:
+  # -- Use existing secret for credentials. If set, other secret values are ignored. The existing secret should contain the following keys: s3-access-key, s3-secret-key, azure-account-key, gcs-keyfile, redis-password, proxy-username, proxy-password
+  existingSecret: ""
+  
+  # -- S3 storage credentials
+  s3:
+    # -- S3 access key (injected as REGISTRY_STORAGE_S3_ACCESSKEY)
+    accessKey: ""
+    # -- S3 secret key (injected as REGISTRY_STORAGE_S3_SECRETKEY)
+    secretKey: ""
+  
+  # -- Azure storage credentials
+  azure:
+    # -- Azure storage account key (injected as REGISTRY_STORAGE_AZURE_ACCOUNTKEY)
+    accountKey: ""
+  
+  # -- GCS storage credentials
+  gcs:
+    # -- GCS service account JSON key file content (mounted at /etc/distribution/gcs/keyfile.json)
+    keyfile: ""
+  
+  # -- Redis credentials
+  redis:
+    # -- Redis password (injected as REGISTRY_REDIS_PASSWORD)
+    password: ""
+  
+  # -- Proxy credentials for pull-through cache with private upstream
+  proxy:
+    # -- Proxy upstream username (injected as REGISTRY_PROXY_USERNAME)
+    username: ""
+    # -- Proxy upstream password (injected as REGISTRY_PROXY_PASSWORD)
+    password: ""
+
+# -- TLS configuration
+tls:
+  # -- Enable TLS
+  enabled: false
+  # -- Use existing secret containing tls.crt and tls.key
+  existingSecret: ""
+  # -- TLS certificate (if existingSecret is not set)
+  certificate: ""
+  # -- TLS private key (if existingSecret is not set)
+  key: ""
+
+# -- htpasswd authentication configuration
+htpasswd:
+  # -- Enable htpasswd authentication
+  enabled: false
+  # -- Use existing secret containing htpasswd file
+  existingSecret: ""
+  # -- htpasswd credentials in bcrypt format (username:bcrypt_hashed_password)
+  credentials: ""
+
+# -- ServiceMonitor for Prometheus Operator
+serviceMonitor:
+  # -- Enable ServiceMonitor
+  enabled: false
+  # -- Scrape interval
+  interval: 30s
+  # -- Scrape timeout
+  scrapeTimeout: 10s
+  # -- Additional labels
+  labels: {}
+  # -- Annotations
+  annotations: {}
+
+# -- Liveness probe configuration
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# -- Readiness probe configuration
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# -- OpenTelemetry traces exporter. Set to "none" to disable traces, or specify your trace collector endpoint
+otelTracesExporter: "none"
+
+# -- Extra environment variables
+env: []
+
+# -- Extra volume mounts
+extraVolumeMounts: []
+
+# -- Extra volumes
+extraVolumes: []
