@@ -1,0 +1,78 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "misskey.fullname" . }}-postgresql
+  labels:
+    {{- include "misskey.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "misskey.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgresql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "misskey.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
+          imagePullPolicy: {{ .Values.postgresql.image.pullPolicy }}
+          ports:
+            - name: postgresql
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.database }}
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.username }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "misskey.postgresql.secretName" . }}
+                  key: {{ if .Values.postgresql.existingSecret }}{{ .Values.postgresql.existingSecretKey }}{{ else }}password{{ end }}
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - {{ .Values.postgresql.username }}
+                - -d
+                - {{ .Values.postgresql.database }}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - {{ .Values.postgresql.username }}
+                - -d
+                - {{ .Values.postgresql.database }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          {{- if .Values.postgresql.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          {{- end }}
+          resources:
+            {{- toYaml .Values.postgresql.resources | nindent 12 }}
+      {{- if .Values.postgresql.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.postgresql.persistence.existingClaim | default (printf "%s-postgresql" (include "misskey.fullname" .)) }}
+      {{- end }}
+{{- end }}

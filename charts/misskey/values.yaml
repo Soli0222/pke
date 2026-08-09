@@ -1,0 +1,658 @@
+# Default values for misskey
+# This is a YAML-formatted file.
+
+# -- Override the name of the chart
+nameOverride: ""
+# -- Override the full name of the chart
+fullnameOverride: ""
+
+# Misskey configuration
+misskey:
+  # -- Use existing secret for the entire Misskey configuration (default.yml)
+  # If set, all other misskey.* settings are ignored and this secret is used
+  existingConfigSecret: ""
+
+  # -- The URL of your Misskey instance (REQUIRED)
+  # IMPORTANT: Once you have started the instance, DO NOT CHANGE THIS
+  url: "https://misskey.example.tld"
+
+  # -- Port for Misskey to listen on
+  port: 3000
+
+  # -- Use UNIX domain socket instead of port
+  socket: ""
+  # -- Permission for socket file (e.g. '777')
+  chmodSocket: ""
+
+  # -- ID generation method (aid, aidx, meid, ulid, objectid)
+  # ONCE YOU HAVE STARTED THE INSTANCE, DO NOT CHANGE THIS
+  id: "aidx"
+
+  # -- Setup password for initial admin account setup
+  # Be sure to change this when setting up Misskey via the Internet
+  setupPassword: ""
+
+  # -- Trust proxy settings for reverse proxy
+  # Can be boolean or array of CIDR ranges
+  trustProxy: true
+
+  # -- Whether to disable HSTS
+  disableHsts: false
+
+  # -- Enable internal IP-based rate limiting (default: true)
+  enableIpRateLimit: true
+
+  # -- Maximum file size for uploads (bytes)
+  maxFileSize: 262144000
+
+  # -- Number of worker processes (cluster limit)
+  clusterLimit: 1
+
+  # -- Number of threads of extra thread pool for CPU-intensive tasks (per worker)
+  threadPoolSize: 1
+
+  # -- Proxy settings for outgoing HTTP/HTTPS requests
+  proxy: ""
+
+  # -- Proxy for SMTP/SMTPS connections
+  proxySmtp: ""
+
+  # -- Hosts that should bypass the proxy
+  proxyBypassHosts:
+    - api.deepl.com
+    - api-free.deepl.com
+    - www.recaptcha.net
+    - hcaptcha.com
+    - challenges.cloudflare.com
+
+  # -- Allowed private networks for file upload
+  allowedPrivateNetworks: []
+  # - '127.0.0.1/32'
+
+  # -- Local address used for outgoing requests
+  outgoingAddress: ""
+
+  # -- IP address family for outgoing requests (ipv4, ipv6, dual)
+  outgoingAddressFamily: ""
+
+  # -- Media proxy URL
+  mediaProxy: ""
+
+  # -- Video thumbnail generator URL
+  videoThumbnailGenerator: ""
+
+  # -- Maximum number of notes cached per channel
+  perChannelMaxNoteCacheCount: 1000
+
+  # -- Maximum number of notifications cached per user
+  perUserNotificationsMaxCount: 500
+
+  # -- Threshold for deactivating antennas (milliseconds)
+  deactivateAntennaThreshold: 604800000
+
+  # -- PID file path
+  pidFile: "/tmp/misskey.pid"
+
+  # Job concurrency settings
+  # -- Deliver job concurrency per worker
+  deliverJobConcurrency: ""
+  # -- Inbox job concurrency per worker
+  inboxJobConcurrency: ""
+  # -- Relationship job concurrency per worker
+  relationshipJobConcurrency: ""
+
+  # Job rate limiter settings
+  # -- Deliver jobs per second
+  deliverJobPerSec: ""
+  # -- Inbox jobs per second
+  inboxJobPerSec: ""
+  # -- Relationship jobs per second
+  relationshipJobPerSec: ""
+
+  # Job attempts settings
+  # -- Max attempts for deliver jobs
+  deliverJobMaxAttempts: ""
+  # -- Max attempts for inbox jobs
+  inboxJobMaxAttempts: ""
+
+  # Logging settings
+  logging:
+    # -- Log output format (pretty or json)
+    format: ""
+    # -- Minimum log level (debug, info, warn, error, fatal, off)
+    level: ""
+    # -- Per-logger domain log levels
+    domains: {}
+    sql:
+      # -- Enable query parameter logging
+      enableQueryParamLogging: false
+      # -- Disable query truncation in logs
+      disableQueryTruncation: false
+
+  # Sentry error tracking (optional)
+  sentry:
+    # -- Enable Sentry for backend
+    backend:
+      enabled: false
+      dsn: ""
+      enableNodeProfiling: false
+      # -- Sentry integration names to disable
+      disabledIntegrations: []
+      # -- URL patterns to which Sentry trace headers are propagated
+      tracePropagationTargets: []
+    # -- Enable Sentry for frontend
+    frontend:
+      enabled: false
+      dsn: ""
+      # -- Vue integration options
+      vueIntegration: {}
+      # -- Browser tracing integration options
+      browserTracingIntegration: {}
+      # -- Replay integration options
+      replayIntegration: {}
+
+  # OpenTelemetry configuration (optional)
+  otelForBackend:
+    # -- Enable OpenTelemetry for backend
+    enabled: false
+    # -- OTLP traces endpoint (e.g. http://localhost:4318/v1/traces)
+    endpoint: ""
+    # -- Headers to send with OTLP requests
+    headers: {}
+    # -- Sampling rate
+    sampleRate: 1.0
+    # -- Capture PostgreSQL query spans
+    capturePgSpans: false
+    # -- Include raw SQL text in PostgreSQL spans
+    capturePgStatement: false
+    # -- Include PostgreSQL connection-pool spans
+    capturePgConnectionSpans: false
+    # -- Capture Redis command spans
+    captureRedisCommandSpans: false
+    # -- Include Redis startup/reconnect spans
+    captureRedisConnectionSpans: false
+    # -- Capture Redis commands without an HTTP or job parent span
+    captureRedisRootSpans: false
+    # -- Resource attributes to attach to traces
+    resourceAttributes: {}
+    # -- Propagate Sentry traces to remote outbound requests
+    propagateTraceToRemote: false
+    # -- Queue worker trace context mode (link or parent)
+    jobTraceContextMode: "link"
+
+  # -- Fulltext search provider (sqlLike, sqlPgroonga, meilisearch)
+  fulltextSearch:
+    provider: sqlLike
+
+  # Meilisearch configuration (optional)
+  meilisearch:
+    enabled: false
+    host: ""
+    port: 7700
+    apiKey: ""
+    ssl: false
+    index: ""
+    scope: local
+
+  # -- Publish tarball instead of repository URL (for AGPL compliance)
+  publishTarballInsteadOfProvideRepositoryUrl: false
+
+# Web/Backend deployment configuration
+web:
+  # -- Number of replicas
+  replicaCount: 1
+
+  image:
+    # -- Image repository
+    repository: misskey/misskey
+    # -- Image tag (defaults to Chart.appVersion)
+    tag: ""
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+
+  # -- Image pull secrets
+  imagePullSecrets: []
+
+  # -- Additional environment variables
+  extraEnv: []
+
+  # -- Additional environment variables from secrets/configmaps
+  extraEnvFrom: []
+
+  # -- Additional volumes added to the web Pod
+  extraVolumes: []
+
+  # -- Additional volume mounts added to the Misskey container
+  extraVolumeMounts: []
+
+  diagnosticReport:
+    # -- Enable Node.js diagnostic reports for the Misskey web process
+    enabled: false
+    # -- Directory where Node.js diagnostic report files are written
+    directory: /var/run/misskey-node-reports
+    # -- EmptyDir size limit for diagnostic report files
+    sizeLimit: 256Mi
+    # -- Write a report on fatal Node.js/V8 errors
+    reportOnFatalError: true
+    # -- Write a report on uncaught exceptions
+    reportOnUncaughtException: true
+    # -- Write a report when the diagnostic signal is received
+    reportOnSignal: true
+    # -- Signal that triggers report generation when reportOnSignal is enabled
+    signal: SIGUSR2
+    # -- Write compact single-line JSON reports
+    compact: true
+
+  # -- Resource limits and requests
+  resources: {}
+    # limits:
+    #   cpu: 1000m
+    #   memory: 2Gi
+    # requests:
+    #   cpu: 500m
+    #   memory: 1Gi
+
+  # -- Node selector
+  nodeSelector: {}
+
+  # -- Tolerations
+  tolerations: []
+
+  # -- Affinity rules
+  affinity: {}
+
+  # -- Security context for the pod
+  podSecurityContext:
+    fsGroup: 991
+
+  # -- Security context for the container
+  securityContext:
+    runAsUser: 991
+    runAsGroup: 991
+    runAsNonRoot: true
+
+  # -- Pod annotations
+  podAnnotations: {}
+
+  # -- Pod labels
+  podLabels: {}
+
+  service:
+    # -- Service type
+    type: ClusterIP
+    # -- Service port
+    port: 3000
+
+  # -- Liveness probe configuration
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 15
+    failureThreshold: 4
+
+  # -- Readiness probe configuration
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # -- Startup probe configuration
+  startupProbe:
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+
+  # Persistence for uploaded files
+  persistence:
+    # -- Enable persistence for files
+    enabled: true
+    # -- Storage class
+    storageClass: ""
+    # -- Access modes
+    accessModes:
+      - ReadWriteOnce
+    # -- Size of the PVC
+    size: 10Gi
+    # -- Existing claim to use
+    existingClaim: ""
+    # -- Annotations for the PVC
+    annotations: {}
+
+# Database migration Job configuration
+migration:
+  # -- Run database migrations as a Helm hook Job.
+  # When enabled, the web container starts with `pnpm run start` instead of
+  # the image default `pnpm run migrateandstart`.
+  enabled: false
+
+  # -- Helm hook events for the migration Job.
+  # The default keeps install behavior unchanged. Add pre-install only when
+  # the database and config Secret are already available before chart install.
+  hookEvents:
+    - pre-upgrade
+
+  # -- Helm hook delete policy for the migration Job
+  hookDeletePolicy:
+    - before-hook-creation
+    - hook-succeeded
+
+  # -- Number of retries before marking the migration Job failed
+  backoffLimit: 3
+
+  # -- Maximum time in seconds for the migration Job to complete
+  activeDeadlineSeconds: 600
+
+  # -- Resource limits and requests for the migration container
+  resources: {}
+
+# Internal PostgreSQL configuration
+postgresql:
+  # -- Enable internal PostgreSQL
+  enabled: true
+
+  image:
+    # -- PostgreSQL image repository
+    repository: postgres
+    # -- PostgreSQL image tag
+    tag: "18-alpine"
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+
+  # -- PostgreSQL database name
+  database: misskey
+
+  # -- PostgreSQL username
+  username: misskey
+
+  # -- PostgreSQL password (required if existingSecret is not set)
+  password: "you-should-change-this-password"
+
+  # -- Use existing secret for password
+  existingSecret: ""
+
+  # -- Key in existing secret containing the password
+  existingSecretKey: "password"
+
+  # -- Disable query caching
+  disableCache: false
+
+  # -- Extra connection options
+  extra: {}
+  # ssl: true
+
+  # Database replication settings
+  replication:
+    # -- Enable database replication
+    enabled: false
+    # -- Slave database configurations
+    # Each slave can use existingSecret/existingSecretKey for password
+    slaves: []
+    # - host: slave1.example.com
+    #   port: 5432
+    #   db: misskey
+    #   user: misskey
+    #   pass: password
+    #   existingSecret: ""
+    #   existingSecretKey: "password"
+
+  persistence:
+    # -- Enable persistence for PostgreSQL
+    enabled: true
+    # -- Storage class
+    storageClass: ""
+    # -- Access modes
+    accessModes:
+      - ReadWriteOnce
+    # -- Size of the PVC
+    size: 10Gi
+    # -- Existing claim to use
+    existingClaim: ""
+
+  service:
+    # -- PostgreSQL service port
+    port: 5432
+
+  # -- Resource limits and requests
+  resources: {}
+    # limits:
+    #   cpu: 500m
+    #   memory: 512Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 256Mi
+
+# External PostgreSQL configuration (used when postgresql.enabled is false)
+externalPostgresql:
+  # -- External PostgreSQL host
+  host: ""
+  # -- External PostgreSQL port
+  port: 5432
+  # -- External PostgreSQL database
+  database: misskey
+  # -- External PostgreSQL username
+  username: misskey
+  # -- External PostgreSQL password (required if existingSecret is not set)
+  password: ""
+  # -- Use existing secret for password (if set, misskey.existingConfigSecret is also required)
+  existingSecret: ""
+  # -- Key in existing secret containing the password
+  existingSecretKey: "password"
+  # -- Extra connection options
+  extra: {}
+  # -- Enable SSL
+  ssl: false
+
+# Internal Redis configuration
+redis:
+  # -- Enable internal Redis
+  enabled: true
+
+  image:
+    # -- Redis image repository
+    repository: redis
+    # -- Redis image tag
+    tag: "7-alpine"
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+
+  # -- Redis username (optional, used with ACL)
+  username: ""
+
+  # -- Redis password (leave empty for no password)
+  password: ""
+
+  # -- Use existing secret for password
+  existingSecret: ""
+
+  # -- Key in existing secret containing the password
+  existingSecretKey: "password"
+
+  # -- IP family (0=Both, 4=IPv4, 6=IPv6)
+  family: 0
+
+  # -- Key prefix
+  prefix: ""
+
+  # -- Redis database number
+  db: 0
+
+  persistence:
+    # -- Enable persistence for Redis
+    enabled: true
+    # -- Storage class
+    storageClass: ""
+    # -- Access modes
+    accessModes:
+      - ReadWriteOnce
+    # -- Size of the PVC
+    size: 2Gi
+    # -- Existing claim to use
+    existingClaim: ""
+
+  service:
+    # -- Redis service port
+    port: 6379
+
+  # -- Resource limits and requests
+  resources: {}
+    # limits:
+    #   cpu: 200m
+    #   memory: 256Mi
+    # requests:
+    #   cpu: 50m
+    #   memory: 64Mi
+
+# Separate Redis instances for different purposes (optional)
+# If not configured, the main redis configuration will be used
+redisForPubsub:
+  # -- Enable separate Redis for PubSub
+  enabled: false
+  # -- Redis host
+  host: ""
+  # -- Redis port
+  port: 6379
+  # -- Redis username (optional, used with ACL)
+  username: ""
+  # -- Redis password
+  password: ""
+  # -- Use existing secret for password
+  existingSecret: ""
+  # -- Key in existing secret containing the password
+  existingSecretKey: "password"
+  # -- IP family (0=Both, 4=IPv4, 6=IPv6)
+  family: 0
+  # -- Key prefix
+  prefix: ""
+  # -- Redis database number
+  db: 0
+
+redisForJobQueue:
+  # -- Enable separate Redis for Job Queue
+  enabled: false
+  # -- Redis host
+  host: ""
+  # -- Redis port
+  port: 6379
+  # -- Redis username (optional, used with ACL)
+  username: ""
+  # -- Redis password
+  password: ""
+  # -- Use existing secret for password
+  existingSecret: ""
+  # -- Key in existing secret containing the password
+  existingSecretKey: "password"
+  # -- IP family (0=Both, 4=IPv4, 6=IPv6)
+  family: 0
+  # -- Key prefix
+  prefix: ""
+  # -- Redis database number
+  db: 0
+
+redisForTimelines:
+  # -- Enable separate Redis for Timelines
+  enabled: false
+  # -- Redis host
+  host: ""
+  # -- Redis port
+  port: 6379
+  # -- Redis username (optional, used with ACL)
+  username: ""
+  # -- Redis password
+  password: ""
+  # -- Use existing secret for password
+  existingSecret: ""
+  # -- Key in existing secret containing the password
+  existingSecretKey: "password"
+  # -- IP family (0=Both, 4=IPv4, 6=IPv6)
+  family: 0
+  # -- Key prefix
+  prefix: ""
+  # -- Redis database number
+  db: 0
+
+redisForReactions:
+  # -- Enable separate Redis for Reactions
+  enabled: false
+  # -- Redis host
+  host: ""
+  # -- Redis port
+  port: 6379
+  # -- Redis username (optional, used with ACL)
+  username: ""
+  # -- Redis password
+  password: ""
+  # -- Use existing secret for password
+  existingSecret: ""
+  # -- Key in existing secret containing the password
+  existingSecretKey: "password"
+  # -- IP family (0=Both, 4=IPv4, 6=IPv6)
+  family: 0
+  # -- Key prefix
+  prefix: ""
+  # -- Redis database number
+  db: 0
+
+# External Redis configuration (used when redis.enabled is false)
+externalRedis:
+  # -- External Redis host
+  host: ""
+  # -- External Redis port
+  port: 6379
+  # -- External Redis username (optional, used with ACL)
+  username: ""
+  # -- External Redis password
+  password: ""
+  # -- Use existing secret for password
+  existingSecret: ""
+  # -- Key in existing secret containing the password
+  existingSecretKey: "password"
+  # -- IP family (0=Both, 4=IPv4, 6=IPv6)
+  family: 0
+  # -- Redis database number
+  db: 0
+  # -- Key prefix
+  prefix: ""
+
+# Ingress configuration
+ingress:
+  # -- Enable ingress
+  enabled: true
+  # -- Ingress class name
+  className: ""
+  # -- Ingress annotations
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/proxy-body-size: 256m
+  # -- Ingress hosts
+  hosts:
+    - host: misskey.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  # -- Ingress TLS configuration
+  tls: []
+  #  - secretName: misskey-tls
+  #    hosts:
+  #      - misskey.example.com
+
+# Service account configuration
+serviceAccount:
+  # -- Create service account
+  create: true
+  # -- Annotations for service account
+  annotations: {}
+  # -- Service account name
+  name: ""

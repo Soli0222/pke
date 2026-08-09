@@ -1,0 +1,22 @@
+{{- if and .Values.web.persistence.enabled (not .Values.web.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "misskey.fullname" . }}-files
+  labels:
+    {{- include "misskey.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+  {{- with .Values.web.persistence.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.web.persistence.accessModes | nindent 4 }}
+  {{- if .Values.web.persistence.storageClass }}
+  storageClassName: {{ .Values.web.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.web.persistence.size }}
+{{- end }}

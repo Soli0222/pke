@@ -16,12 +16,11 @@ spec:
     crds: CreateReplace
   chart:
     spec:
-      chart: misskey
-      version: 0.4.1
+      chart: ./charts/misskey
       sourceRef:
-        kind: HelmRepository
-        name: misskey-repo
-        namespace: misskey
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
       interval: 1h
   values:
     misskey:
