@@ -9,12 +9,13 @@ Terraform は次の resource を管理する。
 
 | Resource | 用途 |
 |----------|------|
-| `github_repository.repositories` | repository settings |
-| `github_branch_default.repositories` | default branch |
-| `github_actions_secret.repository` | GitHub Actions repository secrets |
-| `data.external.onepassword_actions_secret` | 1Password から secret value を読む external data source |
+| `github_repository.repositories` | active repository settings |
+| `github_repository.archived` | archive 済み repository の archived state |
+| `github_branch_default.repositories` | active repository の default branch |
+| `github_actions_secret.repository` | active repository の GitHub Actions repository secrets |
+| `data.external.onepassword_actions_secrets` | 1Password から secret value をまとめて読む external data source |
 
-`github_repository.repositories` は `prevent_destroy = true` を使う。
+`github_repository.repositories` と `github_repository.archived` は `prevent_destroy = true` を使う。
 Terraform から repository を破棄しない。
 
 ## Provider と Backend
@@ -22,7 +23,7 @@ Terraform から repository を破棄しない。
 | 対象 | 値 |
 |------|----|
 | Terraform | `>= 1.5.0` |
-| GitHub provider | `integrations/github` `6.12.1` |
+| GitHub provider | `integrations/github` `6.13.0` |
 | External provider | `hashicorp/external` `2.4.0` |
 | GitHub owner | `Soli0222` |
 | State backend | Cloudflare R2 S3 compatible backend |
@@ -49,6 +50,7 @@ terraform plan
 | `repositories.tf` | `github_repository` と `github_branch_default` |
 | `actions_secrets.tf` | 1Password backed `github_actions_secret` |
 | `op-read-secret.rb` | external provider から呼ぶ 1Password 読み取り helper |
+| `import-existing-repositories.sh` | 既存 repository と default branch の再開可能な import helper |
 | `setup.sh` | `GITHUB_TOKEN` と R2 backend credentials の export |
 
 ## Repository Settings
@@ -60,31 +62,65 @@ terraform plan
 現行の global default は repository を public にし、pull request merge 後の branch 削除を有効にする。
 secret scanning と push protection は global で有効にする。
 `mk-stream` と `spotify-nowplaying` は個別 override で secret scanning を無効にする。
+Private repository では `security_and_analysis` blockを生成しない。
+今回追加した既存repositoryは `topics: []` でoverrideし、globalの `renovate` topicを追加しない。
+
+archive 済み repository は `github_repository.archived` で `archived` state だけを管理する。
+GitHub がarchive後のrepository settingsをread-onlyにするため、それ以外の属性は `ignore_changes` とする。
+default branch と Actions secrets も `active_repositories` だけを対象とし、archive 済み repository への更新は行わない。
 
 `has_downloads`、`vulnerability_alerts`、`ignore_vulnerability_alerts_during_read` は provider 側で deprecated または no-op 扱いである。
 YAML の管理対象から外し、Terraform 側の `ignore_changes` で plan noise を抑える。
 
 ## Managed Repositories
 
-現行の `repositories.yaml` は次の repository を管理する。
+現行の `repositories.yaml` は次の active repository を管理する。
 
 ```text
+amemado
 daypassed-bot
 diary-cli
 emoji-bot-gateway
 emoji-renderer
-helm-charts
+exiforge
+homebrew-exiforge
+keymap
+kubecon-schedule
+Mac-NowPlaying
 mk-stream
 note-tweet-connector
 pgroonga-cnpg
+picpress
 pke
+polestar-hub
+polestar_wrapped
 rss-fetcher
+shared-workflows
+soli-site
+spn-cli
 spotify-nowplaying
 spotify-reblend
 sui
 summaly
 vip-responder
+VVCSoftware_VTM
 webhook-test
+```
+
+次の archive 済み repository は archived state だけを管理する。
+
+```text
+antenna_del_spam
+audioroute
+Charmy
+cloudflare-ingress-controller
+debug-image
+flow-sight
+helm-charts
+misskey-summarizer
+mk-anniv
+subscription-manager
+summaly-server
 ```
 
 ## GitHub Actions Secrets
@@ -95,6 +131,9 @@ repository 個別の secret は `repositories.<name>.actions_secrets` に置く�
 同名 secret がある場合は repository 個別の指定が優先される。
 
 現行の global secret は Renovate 用 GitHub App credential である。
+
+同じ 1Password source はリポジトリ数にかかわらず1回だけ読み取る。
+すべての一意な source を単一の external data source へ渡し、helper 内で順次取得するため、1Password Desktop の delegated session を並列に確立しない。
 
 | Secret | 1Password source |
 |--------|------------------|
@@ -158,10 +197,20 @@ terraform plan
 
 新しい repository を追加する。
 
-1. `repositories.yaml` の `repositories` に repository 名を追加する。
-2. GitHub 側に既存 repository がある場合は `terraform import 'github_repository.repositories["<repo>"]' <repo>` を実行する。
-3. default branch も `terraform import 'github_branch_default.repositories["<repo>"]' <repo>` で import する。
+1. `repositories.yaml` の `repositories` に repository 名を追加する。archive 済みの場合は `archived: true` と現在値に必要な override も指定する。
+2. GitHub 側に既存 repository がある場合、activeなら `terraform import 'github_repository.repositories["<repo>"]' <repo>`、archive済みなら `terraform import 'github_repository.archived["<repo>"]' <repo>` を実行する。
+3. active repository の場合だけ、default branch も `terraform import 'github_branch_default.repositories["<repo>"]' <repo>` で import する。
 4. `terraform plan` で差分を確認する。
+
+複数の既存 repository をまとめて import または中断後に再開する場合は helper を使う。
+state に存在する resource は自動的に skipし、archive 済み repository の default branch は対象外にする。
+
+```bash
+cd terraform/github
+source ./setup.sh
+./import-existing-repositories.sh --check
+./import-existing-repositories.sh
+```
 
 既存 secret を Terraform 管理へ追加する。
 
