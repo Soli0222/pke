@@ -1,0 +1,54 @@
+{{- if and .Values.persistence.music.enabled (not .Values.persistence.music.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "navidrome.musicPvcName" . }}
+  labels:
+    {{- include "navidrome.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    {{- range .Values.persistence.music.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.music.size | quote }}
+  {{- if .Values.persistence.music.storageClass }}
+  {{- if (eq "-" .Values.persistence.music.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.persistence.music.storageClass | quote }}
+  {{- end }}
+  {{- else if .Values.persistence.music.existingVolume }}
+  storageClassName: ""
+  {{- end }}
+  {{- if .Values.persistence.music.existingVolume }}
+  volumeName: {{ .Values.persistence.music.existingVolume }}
+  {{- end }}
+{{- end }}
+
+---
+
+{{- if and .Values.persistence.music.enabled .Values.persistence.music.createPv (not .Values.persistence.music.existingVolume) }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "navidrome.musicPvName" . }}
+  labels:
+    {{- include "navidrome.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.music.size | quote }}
+  accessModes:
+    {{- range .Values.persistence.music.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  persistentVolumeReclaimPolicy: Retain
+  {{- if .Values.persistence.music.nfs.mountOptions }}
+  mountOptions:
+    {{- toYaml .Values.persistence.music.nfs.mountOptions | nindent 4 }}
+  {{- end }}
+  nfs:
+    server: {{ .Values.persistence.music.nfs.server | quote }}
+    path: {{ .Values.persistence.music.nfs.path | quote }}
+{{- end }}

@@ -14,12 +14,11 @@ spec:
     crds: CreateReplace
   chart:
     spec:
-      chart: navidrome
-      version: 2.5.0
+      chart: ./charts/navidrome
       sourceRef:
-        kind: HelmRepository
-        name: navidrome-repo
-        namespace: navidrome
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
       interval: 1h
   values:
     replicaCount: 1

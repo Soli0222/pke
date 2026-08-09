@@ -1,0 +1,15 @@
+{{- if and .Values.ingress.enabled .Values.ingress.blockedPaths }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "navidrome.ingressBlockServiceName" . }}
+  labels:
+    {{- include "navidrome.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+{{- end }}

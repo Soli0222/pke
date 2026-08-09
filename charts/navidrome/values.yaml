@@ -1,0 +1,379 @@
+# Default values for navidrome.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Application metadata
+nameOverride: ""
+fullnameOverride: ""
+
+# Image configuration
+image:
+  repository: deluan/navidrome
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# Service account configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# Pod security context
+podSecurityContext: {}
+  # fsGroup: 2000
+
+# Container security context
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# Deployment configuration
+replicaCount: 1
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 4533
+  targetPort: 4533
+
+# Application port configuration
+containerPort: 4533
+
+# Resource limits and requests
+resources: {}
+  # limits:
+  #   cpu: 500m
+  #   memory: 512Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# Node selection
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Persistence configuration
+persistence:
+  # Data volume configuration
+  data:
+    enabled: true
+    # Use existing PVC (if specified, no new PVC will be created)
+    existingClaim: ""
+    # Storage class for the PVC
+    storageClass: ""
+    # Storage size
+    size: 10Gi
+    # Access modes
+    accessModes:
+      - ReadWriteOnce
+  
+  # Music volume configuration
+  music:
+    enabled: true
+    # Use existing PVC (if specified, no new PVC will be created)
+    existingClaim: ""
+    # Use existing PV (if specified, no new PV will be created)
+    existingVolume: ""
+    # Create PV (set to false to only create PVC)
+    createPv: false
+    # Storage class for the PVC (use "-" for empty storageClassName)
+    storageClass: ""
+    # Storage size
+    size: 50Gi
+    # Access modes
+    accessModes:
+      - ReadWriteOnce
+    # NFS configuration (for PV creation, only used when createPv is true)
+    nfs:
+      server: ""
+      path: ""
+      # NFS version and mount options
+      mountOptions:
+        - nfsvers=4.1
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  # Paths to return no backend endpoint for, useful for hiding internal endpoints
+  # from public ingress while keeping them available through the ClusterIP service.
+  blockedPaths: []
+    # - path: /metrics
+    #   pathType: Exact
+  hosts:
+    - host: example.tld
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: navidrome-tls
+  #    hosts:
+  #      - example.tld
+
+# ServiceMonitor configuration (requires Prometheus Operator)
+serviceMonitor:
+  # Enable ServiceMonitor creation
+  enabled: false
+  # Namespace to create ServiceMonitor in (defaults to release namespace)
+  namespace: ""
+  # Additional labels for ServiceMonitor
+  labels: {}
+  # Annotations for ServiceMonitor
+  annotations: {}
+  # Job label for ServiceMonitor
+  jobLabel: ""
+  # Additional selector labels
+  selector: {}
+  # Scrape interval
+  interval: "30s"
+  # Scrape timeout
+  scrapeTimeout: "10s"
+  # Relabelings
+  relabelings: []
+  # Metric relabelings
+  metricRelabelings: []
+
+# Application configuration
+config:
+  # Enable ConfigMap-based configuration
+  enabled: true
+  
+  # Basic configuration
+  musicFolder: "/music"
+  dataFolder: "/data"
+  cacheFolder: ""  # defaults to <DataFolder>/cache
+  logLevel: "info"
+  logFile: ""  # empty means log to stderr
+  address: ""  # defaults to 0.0.0.0 and ::
+  baseUrl: ""
+  port: 4533
+  enableInsightsCollector: true
+  enforceNonRootUser: false
+  
+  # Advanced configuration
+  agents: "lastfm,deezer"
+  albumPlayCountMode: "absolute"
+  authRequestLimit: 5
+  authWindowLength: "20s"
+  autoImportPlaylists: true
+  autoTranscodeDownload: false
+  defaultPlaylistPublicVisibility: false
+  artistArtPriority: "artist.*, album/artist.*, external"
+  artistImageFolder: ""  # empty means use default
+  coverArtPriority: "cover.*, folder.*, front.*, embedded, external"
+  coverArtQuality: 75
+  discArtPriority: "disc*.*, cd*.*, dvd*.*"
+  defaultDownsamplingFormat: "opus"
+  defaultLanguage: "ja"
+  defaultTheme: "Dark"
+  defaultShareExpiration: "8760h"  # 1 year
+  defaultDownloadableShare: false
+  defaultUIVolume: 100
+  enableArtworkPrecache: true
+  enableArtworkUpload: true
+  enableCoverAnimation: true
+  enableWebPEncoding: false
+  enableDownloads: true
+  enableExternalServices: true
+  enableFavourites: true
+  enableGravatar: false
+  enableLogRedacting: true
+  enableM3UExternalAlbumArt: false
+  enableMediaFileCoverArt: true
+  enableNowPlaying: true
+  enableReplayGain: true
+  enableScrobbleHistory: true
+  enableSharing: true
+  enableStarRating: true
+  enableTranscodingConfig: false
+  enableUserEditing: true
+  ffmpegPath: ""  # empty means search in PATH
+  gaTrackingID: ""
+  ignoredArticles: "The El La Los Las Le Les Os As O A"
+  imageCacheSize: "100MB"
+  lyricsPriority: ".ttml,.yaml,.yml,.elrc,.lrc,.srt,.txt,embedded"
+  maxImageUploadSize: "10MB"
+  maxSidebarPlaylists: 100
+  mpvPath: ""  # empty means search in PATH
+  mpvCmdTemplate: "mpv --audio-device=%d --no-audio-display %f --input-ipc-server=%s"
+  passwordEncryptionKey: ""
+  playlistsPath: ""  # empty means any playlist files in library
+  preferSortTags: false
+  recentlyAddedByModTime: false
+  sessionTimeout: "48h"
+  shareURL: ""  # empty means use server address
+  smartPlaylistRefreshDelay: "5s"
+  tlsCert: ""  # empty means disable TLS
+  tlsKey: ""  # empty means disable TLS
+  transcodingCacheSize: "100MB"
+  uiLoginBackgroundUrl: ""  # empty means random from Unsplash collection
+  uiPlaybackReportInterval: "1m"
+  uiSearchDebounceMs: 250
+  uiWelcomeMessage: ""
+  uiCoverArtSize: 300
+  unixSocketPerm: "0660"
+  
+  # Backup configuration
+  backup:
+    path: ""  # empty means disabled
+    schedule: ""  # empty means disabled
+    count: 0  # 0 means disabled
+  
+  # Deezer configuration
+  deezer:
+    enabled: true
+    language: "en"
+  
+  # ExtAuth configuration
+  extAuth:
+    trustedSources: ""  # empty means deny all
+    userHeader: "Remote-User"
+    logoutURL: ""
+  
+  # HTTP Headers
+  httpHeaders:
+    frameOptions: "DENY"
+  
+  # Inspect configuration
+  inspect:
+    enabled: true
+    backlogLimit: 100
+    backlogTimeout: 60000000000  # 1 minute in nanoseconds (Go time.Minute)
+    maxRequests: 1
+  
+  # Jukebox configuration
+  jukebox:
+    enabled: false
+    adminOnly: true
+    default: ""  # empty means auto detect
+    devices: []
+    # Example:
+    # - name: "My Device"
+    #   audioDevice: "hw:0,0"
+  
+  # Last.fm configuration
+  lastfm:
+    enabled: true
+    apiKey: ""
+    secret: ""
+    language: "en"
+    scrobbleFirstArtistOnly: false
+  
+  # ListenBrainz configuration
+  listenBrainz:
+    baseURL: "https://api.listenbrainz.org/1/"
+    enabled: true
+
+  # Matcher configuration
+  matcher:
+    fuzzyThreshold: 85
+    preferStarred: true
+  
+  # PID configuration
+  pid:
+    album: "musicbrainz_albumid|albumartistid,album,albumversion,releasedate"
+    track: "musicbrainz_trackid|albumid,discnumber,tracknumber,title"
+  
+  # Plugins configuration
+  plugins:
+    enabled: true
+    folder: ""  # empty means <DataFolder>/plugins
+    autoReload: false
+    logLevel: ""  # empty means use main LogLevel
+    cacheSize: "200MB"
+  
+  # Prometheus configuration
+  prometheus:
+    enabled: true
+    metricsPath: "/metrics"
+    password: ""  # empty means no authentication
+  
+  # Scanner configuration
+  scanner:
+    enabled: true
+    schedule: "0"  # 0 means disabled, use cron syntax otherwise
+    watcherWait: "5s"
+    scanOnStartup: true
+    artistJoiner: " • "
+    # Artist names that must never be split by tag separators
+    # Example:
+    # artistSplitExceptions:
+    #   - "Tyler, The Creator"
+    artistSplitExceptions: []
+    followSymlinks: true
+    ignoreDotFolders: true  # false means also index folders whose name starts with a dot
+    purgeMissing: "never"  # possible values: "never", "always", "full"
+
+  # Search configuration
+  search:
+    backend: "fts"
+    fullString: false
+
+  # Subsonic configuration
+  subsonic:
+    appendSubtitle: true
+    appendAlbumVersion: true
+    artistParticipations: false
+    defaultReportRealPath: false
+    enableAverageRating: true
+    legacyClients: "DSub"
+
+  # Transcoding configuration
+  transcoding:
+    enableCancellation: false
+    maxConcurrent: 0
+    maxConcurrentPerUser: 0
+  
+  # Tags configuration (custom tags to import from music files)
+  # Example:
+  # tags:
+  #   genre:
+  #     aliases:
+  #       - "TCON"
+  #     split: ";/"
+  tags: {}
+
+# Additional environment variables (not from secrets)
+env: []
+# - name: EXAMPLE_VAR
+#   value: "example-value"
+
+# Health checks
+livenessProbe: {}
+  # httpGet:
+  #   path: /
+  #   port: http
+  # initialDelaySeconds: 30
+  # periodSeconds: 10
+
+readinessProbe: {}
+  # httpGet:
+  #   path: /
+  #   port: http
+  # initialDelaySeconds: 5
+  #   periodSeconds: 5
