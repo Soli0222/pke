@@ -1,0 +1,11 @@
+1. Get the CronJob status:
+   kubectl get cronjob --namespace {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+2. Check the logs of the jobs created by the CronJob:
+   First, get the list of pods for the jobs:
+   kubectl get pods --namespace {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+   Then, view logs for a specific pod:
+   kubectl logs --namespace {{ .Release.Namespace }} <pod-name>
+
+Please ensure that the secret '{{ .Values.cronjob.mcConfigSecretName }}' exists in the namespace '{{ .Release.Namespace }}' and contains the 'config.json' key with your mc configuration. This secret should be managed by 1Password or your preferred secrets management tool.

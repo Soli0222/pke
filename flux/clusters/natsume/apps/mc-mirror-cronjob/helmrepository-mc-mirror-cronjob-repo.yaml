@@ -1,8 +1,0 @@
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: mc-mirror-cronjob-repo
-  namespace: mc-mirror-cronjob
-spec:
-  interval: 1h
-  url: https://soli0222.github.io/helm-charts

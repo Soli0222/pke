@@ -14,12 +14,11 @@ spec:
     crds: CreateReplace
   chart:
     spec:
-      chart: mc-mirror-cronjob
-      version: 1.0.0
+      chart: ./charts/mc-mirror-cronjob
       sourceRef:
-        kind: HelmRepository
-        name: mc-mirror-cronjob-repo
-        namespace: mc-mirror-cronjob
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
       interval: 1h
   values:
     externalSecret:

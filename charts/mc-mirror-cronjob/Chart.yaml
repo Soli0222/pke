@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mc-mirror-cronjob
+description: A Helm chart for a Kubernetes CronJob that runs mc mirror
+type: application
+version: 1.0.0
+appVersion: "RELEASE.2025-07-21T05-28-08Z"
