@@ -165,7 +165,7 @@ patch bump は Renovate の `bumpVersions` が行う。
 |------|----------------|
 | 基盤と CRD | `cnpg`, `cnpg-backup-config`, `prometheus-operator-crd`, `cert-manager`, `cert-manager-config` |
 | Storage | `longhorn`, `longhorn-config`, `topolvm` |
-| Network と Security | `traefik`, `external-dns`, `external-dns-config`, `tetragon`, `tetragon-policies` |
+| Network と Security | `traefik`, `external-dns`, `external-dns-config` |
 | Observability | `kube-state-metrics`, `grafana`, `mimir`, `loki`, `alloy` |
 | Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
@@ -179,7 +179,7 @@ patch bump は Renovate の `bumpVersions` が行う。
 |------|----------------|
 | 基盤と CRD | `cnpg`, `prometheus-operator-crd`, `cert-manager`, `cert-manager-config` |
 | Storage | `longhorn`, `longhorn-config` |
-| Network と Security | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller`, `tetragon`, `tetragon-policies` |
+| Network と Security | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller` |
 | Observability | `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `ix2215-snmp-exporter`, `vector` |
 | Apps | `navidrome` |
 

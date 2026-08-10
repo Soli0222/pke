@@ -12,8 +12,6 @@ resources:
 - kustomizations/longhorn.yaml
 - kustomizations/longhorn-config.yaml
 - kustomizations/topolvm.yaml
-- kustomizations/tetragon.yaml
-- kustomizations/tetragon-policies.yaml
 - kustomizations/misskey.yaml
 - kustomizations/traefik.yaml
 - kustomizations/daypassed-bot.yaml

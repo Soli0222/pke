@@ -69,7 +69,6 @@ pke/
 | CNPG barman cloud plugin | `0.7.0` |
 | Longhorn | `1.12.0` |
 | TopoLVM | `16.1.1` |
-| Tetragon | `1.7.0` |
 | cert-manager | `v1.20.2` |
 | Traefik | `41.0.0` |
 | external-dns | `1.21.1` |
@@ -174,7 +173,7 @@ Flux の root は `flux/clusters/<cluster>/kustomization.yaml` です。
 |------|----------------|
 | 基盤と CRD | `cnpg`, `cnpg-backup-config`, `prometheus-operator-crd`, `cert-manager`, `cert-manager-config` |
 | Storage | `longhorn`, `longhorn-config`, `topolvm` |
-| Network と Security | `traefik`, `external-dns`, `external-dns-config`, `tetragon`, `tetragon-policies` |
+| Network と Security | `traefik`, `external-dns`, `external-dns-config` |
 | Observability | `kube-state-metrics`, `grafana`, `mimir`, `loki`, `alloy` |
 | Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
@@ -214,7 +213,7 @@ OCI へ publish して pull し直す往復は挟みません。
 |------|----------------|
 | 基盤と CRD | `cnpg`, `prometheus-operator-crd`, `cert-manager`, `cert-manager-config` |
 | Storage | `longhorn`, `longhorn-config` |
-| Network と Security | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller`, `tetragon`, `tetragon-policies` |
+| Network と Security | `traefik`, `external-dns`, `cloudflare-tunnel-ingress-controller` |
 | Observability | `alloy`, `kube-state-metrics`, `prometheus-blackbox-exporter`, `blackbox-exporter-probes`, `ix2215-snmp-exporter`, `vector` |
 | Apps | `navidrome` |
 

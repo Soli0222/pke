@@ -18,7 +18,5 @@ resources:
 - kustomizations/misskey.yaml
 - kustomizations/navidrome.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml
-- kustomizations/tetragon.yaml
-- kustomizations/tetragon-policies.yaml
 - kustomizations/traefik.yaml
 - kustomizations/vector.yaml
