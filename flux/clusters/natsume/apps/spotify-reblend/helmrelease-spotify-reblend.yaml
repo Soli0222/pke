@@ -38,8 +38,9 @@ spec:
       enabled: true
     otel:
       enabled: true
-      endpoint: "http://alloy-otlp.alloy.svc.cluster.local:4318/v1/traces"
+      endpoint: "http://alloy-otlp.alloy.svc.cluster.local:4318"
       serviceName: "spotify-reblend"
+      tracesSampler: "always_on"
     ingress:
       enabled: true
       className: traefik
