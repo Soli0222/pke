@@ -35,7 +35,7 @@ spec:
       allowedOrigins: https://reblend.pstr.space
       existingSecret: spotify-reblend-secret
     autoUpdate:
-      enabled: false
+      enabled: true
     otel:
       enabled: true
       endpoint: "http://alloy-otlp.alloy.svc.cluster.local:4318/v1/traces"
