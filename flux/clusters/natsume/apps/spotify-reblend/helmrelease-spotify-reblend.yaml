@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: spotify-reblend
-      version: 0.3.0
+      version: 0.6.1
       sourceRef:
         kind: HelmRepository
         name: spotify-reblend-repo
@@ -34,6 +34,12 @@ spec:
       appOrigin: https://reblend.pstr.space
       allowedOrigins: https://reblend.pstr.space
       existingSecret: spotify-reblend-secret
+    autoUpdate:
+      enabled: false
+    otel:
+      enabled: true
+      endpoint: "http://alloy-otlp.alloy.svc.cluster.local:4318/v1/traces"
+      serviceName: "spotify-reblend"
     ingress:
       enabled: true
       className: traefik
