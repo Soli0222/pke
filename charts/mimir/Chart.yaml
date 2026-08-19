@@ -2,7 +2,7 @@ apiVersion: v2
 name: mimir
 description: A Helm chart for Grafana Mimir running in monolithic mode
 type: application
-version: 0.1.6
+version: 0.1.7
 
 # renovate: image=docker.io/grafana/mimir
-appVersion: "3.1.4"
+appVersion: "3.2.0"
