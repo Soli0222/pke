@@ -175,7 +175,7 @@ Flux の root は `flux/clusters/<cluster>/kustomization.yaml` です。
 | Storage | `longhorn`, `longhorn-config`, `topolvm` |
 | Network と Security | `traefik`, `external-dns`, `external-dns-config` |
 | Observability | `kube-state-metrics`, `grafana`, `mimir`, `loki`, `alloy` |
-| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
+| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
 `external-dns-config` は `natsume.str08.net`、`natsume.pstr.space`、node record を `DNSEndpoint` として宣言します。
 `cert-manager-config` は `letsencrypt-dns01`、`letsencrypt-http01`、Traefik mTLS 用の `pke-natsume-mtls` `TLSOption` を持ちます。
@@ -190,7 +190,7 @@ Helm chart の出どころは 3 通りあります。
 | 第三者イメージのラッパー | **この pke リポジトリの `charts/`** | `GitRepository` (flux-system) を `chart: ./charts/<name>` で参照 |
 
 自作アプリ(daypassed-bot, emoji-renderer, emoji-bot-gateway, mk-stream,
-note-tweet-connector, rss-fetcher, spotify-nowplaying, spotify-reblend)は chart を
+rss-fetcher, spotify-nowplaying, spotify-reblend)は chart を
 各アプリ自身のリポジトリの `charts/` に持ち、`oci://ghcr.io/soli0222/charts` へ
 publish します。chart の `version` と `appVersion` は別物です。`version` は chart
 自体の変更に対して上がり、`appVersion` がアプリの release タグを指します。

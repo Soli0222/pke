@@ -142,7 +142,7 @@ Helm chart の出どころは 3 通り。
 | 第三者イメージのラッパー | **この pke リポジトリの `charts/`** | `GitRepository` (flux-system) を `chart: ./charts/<name>` で参照 |
 
 自作アプリ(daypassed-bot, emoji-renderer, emoji-bot-gateway, mk-stream,
-note-tweet-connector, rss-fetcher, spotify-nowplaying, spotify-reblend)は chart を
+rss-fetcher, spotify-nowplaying, spotify-reblend)は chart を
 各アプリ自身のリポジトリの `charts/` に持ち、`oci://ghcr.io/soli0222/charts` へ
 publish する。chart の `version` と `appVersion` は別物で、`version` は chart 自体の
 変更に対して上がり、`appVersion` がアプリの release タグを指す。
@@ -167,7 +167,7 @@ patch bump は Renovate の `bumpVersions` が行う。
 | Storage | `longhorn`, `longhorn-config`, `topolvm` |
 | Network と Security | `traefik`, `external-dns`, `external-dns-config` |
 | Observability | `kube-state-metrics`, `grafana`, `mimir`, `loki`, `alloy` |
-| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `note-tweet-connector`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
+| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
 `cert-manager-config` は `letsencrypt-dns01`、`letsencrypt-http01`、Traefik mTLS 用 `pke-natsume-mtls` を持つ。
 `external-dns-config` は natsume の入口と node record を `DNSEndpoint` で宣言する。

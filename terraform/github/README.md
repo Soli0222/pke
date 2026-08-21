@@ -88,7 +88,6 @@ keymap
 kubecon-schedule
 Mac-NowPlaying
 mk-stream
-note-tweet-connector
 pgroonga-cnpg
 picpress
 pke
