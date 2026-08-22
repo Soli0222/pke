@@ -36,7 +36,7 @@ jobs:
           path: live
 
       - name: Set up flate
-        uses: home-operations/flate/action@v0.5.1
+        uses: home-operations/flate/action@v0.6.0
         with:
           base: ""
           cache: true
