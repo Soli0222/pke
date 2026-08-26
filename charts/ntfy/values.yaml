@@ -1,0 +1,113 @@
+# Default values for ntfy.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: binwiederhier/ntfy
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# ntfy uses SQLite for its message cache and authentication database. Keep this
+# at one unless those stores are moved to shared backends.
+replicaCount: 1
+
+strategy:
+  type: Recreate
+
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+securityContext: {}
+automountServiceAccountToken: false
+terminationGracePeriodSeconds: 30
+
+service:
+  type: ClusterIP
+  annotations: {}
+  port: 80
+  metricsPort: 9090
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  annotations: {}
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+
+env: []
+envFrom: []
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+startupProbe:
+  httpGet:
+    path: /v1/health
+    port: http
+  failureThreshold: 30
+  periodSeconds: 5
+  timeoutSeconds: 3
+
+livenessProbe:
+  httpGet:
+    path: /v1/health
+    port: http
+  periodSeconds: 15
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /v1/health
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: ntfy.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+serviceMonitor:
+  enabled: false
+  namespace: ""
+  labels: {}
+  annotations: {}
+  interval: 30s
+  scrapeTimeout: 10s
+  relabelings: []
+  metricRelabelings: []
+
+# This string is rendered with tpl, so service ports and release values can be
+# referenced from the configuration.
+ntfy:
+  config: |
+    base-url: "https://ntfy.example.com"
+    listen-http: ":{{ .Values.service.port }}"
+    metrics-listen-http: ":{{ .Values.service.metricsPort }}"
+    behind-proxy: true
+    cache-file: "/var/cache/ntfy/cache.db"
+    auth-file: "/var/cache/ntfy/user.db"
+    attachment-cache-dir: "/var/cache/ntfy/attachments"

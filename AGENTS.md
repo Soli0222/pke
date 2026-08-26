@@ -148,7 +148,7 @@ publish する。chart の `version` と `appVersion` は別物で、`version` �
 変更に対して上がり、`appVersion` がアプリの release タグを指す。
 
 第三者イメージのラッパー chart(blackbox-exporter-probes, distribution,
-mc-mirror-cronjob, mimir, misskey, navidrome, summaly)は pke 本体の `charts/` に置き、
+mc-mirror-cronjob, mimir, misskey, navidrome, ntfy, summaly)は pke 本体の `charts/` に置き、
 Flux の `GitRepository` から直接参照する。pke 自身が唯一の消費者なので、OCI へ
 publish して pull し直す往復は挟まない。
 
@@ -167,7 +167,7 @@ patch bump は Renovate の `bumpVersions` が行う。
 | Storage | `longhorn`, `longhorn-config`, `topolvm` |
 | Network と Security | `traefik`, `external-dns`, `external-dns-config` |
 | Observability | `kube-state-metrics`, `grafana`, `mimir`, `loki`, `alloy` |
-| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
+| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `ntfy`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
 `cert-manager-config` は `letsencrypt-dns01`、`letsencrypt-http01`、Traefik mTLS 用 `pke-natsume-mtls` を持つ。
 `external-dns-config` は natsume の入口と node record を `DNSEndpoint` で宣言する。

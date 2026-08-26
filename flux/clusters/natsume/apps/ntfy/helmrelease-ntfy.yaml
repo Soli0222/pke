@@ -1,0 +1,68 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ntfy
+  namespace: ntfy
+spec:
+  interval: 10m
+  releaseName: ntfy
+  targetNamespace: ntfy
+  install:
+    createNamespace: false
+  chart:
+    spec:
+      chart: ./charts/ntfy
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 1h
+  values:
+    env:
+      - name: NTFY_AUTH_USERS
+        valueFrom:
+          secretKeyRef:
+            name: ntfy-admin
+            key: auth-users
+
+    ntfy:
+      config: |
+        base-url: "https://ntfy.pstr.space"
+        listen-http: ":{{ .Values.service.port }}"
+        metrics-listen-http: ":{{ .Values.service.metricsPort }}"
+        behind-proxy: true
+
+        cache-file: "/var/cache/ntfy/cache.db"
+        auth-file: "/var/cache/ntfy/user.db"
+        auth-default-access: "deny-all"
+        enable-login: true
+        enable-signup: false
+        require-login: true
+
+        attachment-cache-dir: "/var/cache/ntfy/attachments"
+        attachment-total-size-limit: "5G"
+        attachment-file-size-limit: "15M"
+
+        upstream-base-url: "https://ntfy.sh"
+
+    persistence:
+      storageClass: longhorn
+      size: 10Gi
+
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-http01
+      hosts:
+        - host: ntfy.pstr.space
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - hosts:
+            - ntfy.pstr.space
+          secretName: ntfy.pstr.space-http01
+
+    serviceMonitor:
+      enabled: true

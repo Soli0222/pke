@@ -175,7 +175,7 @@ Flux の root は `flux/clusters/<cluster>/kustomization.yaml` です。
 | Storage | `longhorn`, `longhorn-config`, `topolvm` |
 | Network と Security | `traefik`, `external-dns`, `external-dns-config` |
 | Observability | `kube-state-metrics`, `grafana`, `mimir`, `loki`, `alloy` |
-| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
+| Apps | `daypassed-bot`, `emoji-service`, `mc-mirror-cronjob`, `misskey`, `mk-stream`, `ntfy`, `registry`, `rss-fetcher`, `spotify-nowplaying`, `spotify-reblend`, `sui`, `summaly` |
 
 `external-dns-config` は `natsume.str08.net`、`natsume.pstr.space`、node record を `DNSEndpoint` として宣言します。
 `cert-manager-config` は `letsencrypt-dns01`、`letsencrypt-http01`、Traefik mTLS 用の `pke-natsume-mtls` `TLSOption` を持ちます。
@@ -196,7 +196,7 @@ publish します。chart の `version` と `appVersion` は別物です。`vers
 自体の変更に対して上がり、`appVersion` がアプリの release タグを指します。
 
 第三者イメージのラッパー chart(blackbox-exporter-probes, distribution,
-mc-mirror-cronjob, mimir, misskey, navidrome, summaly)は pke 本体の `charts/` に
+mc-mirror-cronjob, mimir, misskey, navidrome, ntfy, summaly)は pke 本体の `charts/` に
 置き、Flux の `GitRepository` から直接参照します。pke 自身が唯一の消費者なので、
 OCI へ publish して pull し直す往復は挟みません。
 

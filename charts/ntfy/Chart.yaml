@@ -1,0 +1,8 @@
+apiVersion: v2
+name: ntfy
+description: A Helm chart for the ntfy publish-subscribe notification service
+type: application
+version: 0.1.0
+
+# renovate: image=docker.io/binwiederhier/ntfy
+appVersion: "v2.27.0"
