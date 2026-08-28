@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: cloudflare-tunnel-ingress-controller
-      version: 0.0.24
+      version: 0.1.0
       sourceRef:
         kind: HelmRepository
         name: cloudflare-tunnel-ingress-controller-repo
@@ -28,7 +28,3 @@ spec:
         accountIDKey: account_id
         tunnelNameKey: tunnel_name
         apiTokenKey: api_token
-    cloudflared:
-      image:
-        tag: "2026.3.0"
-
