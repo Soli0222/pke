@@ -28,7 +28,3 @@ spec:
         accountIDKey: account_id
         tunnelNameKey: tunnel_name
         apiTokenKey: api_token
-    cloudflared:
-      image:
-        tag: "2026.3.0"
-
