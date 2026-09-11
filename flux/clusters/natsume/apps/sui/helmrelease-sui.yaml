@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: sui
-      version: 0.4.3
+      version: 0.5.0
       sourceRef:
         kind: HelmRepository
         name: sui-repo
@@ -43,9 +43,14 @@ spec:
           existingSecret: "sui-oidc"
           existingSecretKey: clientId
         redirectUri: "https://sui.str08.net/api/auth/callback"
+        allowedSubjects:
+          - "auth0|6a66027ea2bcdda34ea2a03f"
         allowedEmails:
           - "sui@str08.net"
       cookieSecure: "true"
+    mcp:
+      oauth:
+        resourceUrl: "https://sui.str08.net/mcp"
     credentials:
       encryptionKey:
         existingSecret: sui-credentials
