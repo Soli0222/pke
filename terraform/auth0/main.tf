@@ -35,6 +35,9 @@ resource "auth0_connection" "sui" {
   name     = "sui-users"
   strategy = "auth0"
 
+  # Third-party CIMD clients authenticate through domain-level connections.
+  is_domain_connection = true
+
   options {
     disable_signup         = true
     brute_force_protection = true
@@ -72,8 +75,8 @@ variable "management_client_id" {
   type        = string
 }
 
-# Login-wise only the sui application may use this connection; the M2M
-# application is present solely so that auth0_user.sui can be managed here.
+# Explicit first-party clients. Third-party CIMD clients use the domain-level
+# connection above; the M2M client is required to manage auth0_user.sui.
 resource "auth0_connection_clients" "sui" {
   connection_id = auth0_connection.sui.id
   enabled_clients = [
