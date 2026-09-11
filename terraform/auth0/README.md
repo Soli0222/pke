@@ -102,12 +102,16 @@ MCP API へのアクセスは専用 client grant で制限する。signup 無効
 ### CIMD の適用前確認
 
 Auth0 は管理者が CIMD URL を取り込んで登録する方式であり、その登録を Terraform が行う。
-`chatgpt_cimd_url` の既定値は `https://chatgpt.com/oauth/client.json`。
-Auth0 の discovery が `authorization_response_iss_parameter_supported: true` を通知し、認可応答でも正しい `iss` を返す場合に使う。
-この条件を満たさない場合は、ChatGPT の接続管理画面に表示される接続固有の URL を指定する。
+sui の ChatGPT 接続固有の公開 CIMD URL は、`mcp.tf` の `local.sui_chatgpt_cimd_url` に設定する。
+CIMD URL は公開情報であり、認証情報は引き続き `setup.sh` から環境変数で渡す。
 
-```bash
-export TF_VAR_chatgpt_cimd_url='https://chatgpt.com/oauth/<callback_id>/client.json'
+共通 URL `https://chatgpt.com/oauth/client.json` は、Auth0 の discovery が `authorization_response_iss_parameter_supported: true` を通知し、認可応答でも正しい `iss` を返す場合に使う。
+現在の Auth0 discovery はこの条件を満たさないため、接続固有の URL を設定している。
+ChatGPT 側で接続を作り直した場合は CIMD URL を確認し、変更されていれば `mcp.tf` の値を更新する。
+
+```hcl
+# mcp.tf の locals 内
+sui_chatgpt_cimd_url = "https://chatgpt.com/oauth/ll1JdSuQS8kD/client.json"
 ```
 
 CIMD URL はリソース作成後に変更すると再作成になる。

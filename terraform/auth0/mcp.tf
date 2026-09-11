@@ -1,7 +1,8 @@
 # MCP resource discovery is served by sui. Auth0 owns authorization, tokens,
 # and ChatGPT client metadata; no client secret is copied into ChatGPT.
 locals {
-  sui_mcp_identifier = "https://sui.str08.net/mcp"
+  sui_mcp_identifier   = "https://sui.str08.net/mcp"
+  sui_chatgpt_cimd_url = "https://chatgpt.com/oauth/ll1JdSuQS8kD/client.json"
   sui_mcp_scopes = {
     "read:sui"  = "Read sui financial data"
     "write:sui" = "Create, update, and delete sui financial data"
@@ -42,19 +43,8 @@ resource "auth0_resource_server_scope" "sui_mcp" {
   description                = each.value
 }
 
-variable "chatgpt_cimd_url" {
-  description = "ChatGPT connection's CIMD URL. Use its callback-specific URL if Auth0 does not advertise authorization response issuer identification."
-  type        = string
-  default     = "https://chatgpt.com/oauth/client.json"
-
-  validation {
-    condition     = can(regex("^https://chatgpt\\.com/oauth/([A-Za-z0-9_-]+/)?client\\.json$", var.chatgpt_cimd_url))
-    error_message = "Use the ChatGPT CIMD URL shown in the connection's management page."
-  }
-}
-
 resource "auth0_client_cimd" "chatgpt" {
-  external_client_id         = var.chatgpt_cimd_url
+  external_client_id         = local.sui_chatgpt_cimd_url
   external_client_id_version = 1
   description                = "ChatGPT access to sui MCP"
   oidc_conformant            = true
