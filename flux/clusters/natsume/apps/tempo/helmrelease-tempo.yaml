@@ -50,24 +50,8 @@ spec:
             forcepathstyle: true
           wal:
             path: /var/tempo/wal
-      metricsGenerator:
-        enabled: true
-        processor:
-          local_blocks:
-            flush_to_storage: true
-        storage:
-          path: /var/tempo/metrics
-          remote_write:
-            - url: http://mimir.mimir:8080/api/v1/push
-              headers:
-                X-Scope-OrgID: anonymous
-        traces_storage:
-          path: /var/tempo/metrics-wal
-      overrides:
-        defaults:
-          metrics_generator:
-            processors:
-              - local-blocks
+      # Tempo 3 では live-store が TraceQL metrics 用のブロックを生成・保存する。
+      # local-blocks 専用だった metrics-generator の設定は不要。
       receivers:
         otlp:
           protocols:
