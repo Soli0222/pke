@@ -29,6 +29,22 @@ data:
       }
     }
 
+    // external_labels の補完前に CNPG の DB 名を退避する。
+    prometheus.relabel "cluster_labels" {
+      forward_to = [prometheus.remote_write.default.receiver]
+
+      rule {
+        source_labels = ["__name__", "cluster"]
+        regex         = "cnpg_.+;(.+)"
+        target_label  = "cnpg_cluster"
+        replacement   = "$1"
+      }
+      rule {
+        target_label = "cluster"
+        replacement  = "meruto"
+      }
+    }
+
     prometheus.remote_write "default" {
       endpoint {
         url = "https://mimir.pstr.space/api/v1/push"
@@ -95,7 +111,7 @@ data:
     }
 
     otelcol.exporter.prometheus "otlp" {
-      forward_to = [prometheus.remote_write.default.receiver]
+      forward_to = [prometheus.relabel.cluster_labels.receiver]
     }
 
     otelcol.exporter.loki "otlp" {
@@ -160,7 +176,7 @@ data:
 
     prometheus.scrape "kubernetes_api" {
       targets         = discovery.relabel.kubernetes_api.output
-      forward_to      = [prometheus.remote_write.default.receiver]
+      forward_to      = [prometheus.relabel.cluster_labels.receiver]
       scrape_interval = "30s"
       metrics_path    = "/metrics"
       clustering { enabled = true }
@@ -194,7 +210,7 @@ data:
 
     prometheus.scrape "kubernetes_nodes" {
       targets         = discovery.relabel.kubelet_targets.output
-      forward_to      = [prometheus.remote_write.default.receiver]
+      forward_to      = [prometheus.relabel.cluster_labels.receiver]
       scrape_interval = "30s"
       metrics_path    = "/metrics"
       scheme          = "https"
@@ -208,7 +224,7 @@ data:
 
     prometheus.scrape "kubernetes_cadvisor" {
       targets         = discovery.relabel.kubelet_targets.output
-      forward_to      = [prometheus.remote_write.default.receiver]
+      forward_to      = [prometheus.relabel.cluster_labels.receiver]
       scrape_interval = "30s"
       metrics_path    = "/metrics/cadvisor"
       scheme          = "https"
@@ -225,17 +241,17 @@ data:
     // ============================================================
 
     prometheus.operator.servicemonitors "default" {
-      forward_to = [prometheus.remote_write.default.receiver]
+      forward_to = [prometheus.relabel.cluster_labels.receiver]
       clustering { enabled = true }
     }
 
     prometheus.operator.podmonitors "default" {
-      forward_to = [prometheus.remote_write.default.receiver]
+      forward_to = [prometheus.relabel.cluster_labels.receiver]
       clustering { enabled = true }
     }
 
     prometheus.operator.probes "default" {
-      forward_to = [prometheus.remote_write.default.receiver]
+      forward_to = [prometheus.relabel.cluster_labels.receiver]
       clustering { enabled = true }
     }
 
@@ -245,7 +261,7 @@ data:
 
     prometheus.scrape "alloy_metrics" {
       targets         = [{"__address__" = "localhost:12345"}]
-      forward_to      = [prometheus.remote_write.default.receiver]
+      forward_to      = [prometheus.relabel.cluster_labels.receiver]
       scrape_interval = "15s"
       metrics_path    = "/metrics"
       clustering { enabled = true }
