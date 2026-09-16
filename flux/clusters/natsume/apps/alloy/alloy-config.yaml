@@ -105,7 +105,7 @@ data:
     }
 
     // ============================================================
-    // Mimir Rules & Alerts (unchanged)
+    // Mimir Rules & Alerts
     // ============================================================
 
     mimir.rules.kubernetes "default" {
@@ -120,6 +120,12 @@ data:
       name      = "alertmanager-slack-webhook"
     }
 
+    remote.kubernetes.secret "ntfy_publish" {
+      namespace      = "alloy"
+      name           = "ntfy-alertmanager"
+      poll_frequency = "1m"
+    }
+
     mimir.alerts.kubernetes "default" {
       address = "http://mimir.mimir:8080"
       http_headers = {
@@ -131,10 +137,20 @@ data:
           slack_api_url: ` + remote.kubernetes.secret.slack_webhook.data["api-url"] + `
         route:
           receiver: slack_webhook
-          group_by: ['alertname']
+          group_by: ['alertname', 'severity', 'pke_cluster']
           group_wait: 30s
           group_interval: 5m
           repeat_interval: 12h
+          routes:
+            # 全件 Slack に配送し、次の ntfy route も評価する。
+            - receiver: slack_webhook
+              continue: true
+            - receiver: ntfy_pke
+              routes:
+                - receiver: ntfy_natsume
+                  matchers: ['pke_cluster="natsume"']
+                - receiver: ntfy_meruto
+                  matchers: ['pke_cluster="meruto"']
         receivers:
           - name: slack_webhook
             slack_configs:
@@ -144,6 +160,30 @@ data:
                 send_resolved: true
                 username: 'Alertmanager'
                 icon_emoji: ':warning:'
+          - name: ntfy_natsume
+            webhook_configs:
+              - url: 'https://ntfy.pstr.space/natsume-alerts?template=alertmanager'
+                send_resolved: true
+                http_config:
+                  authorization:
+                    type: Bearer
+                    credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+          - name: ntfy_meruto
+            webhook_configs:
+              - url: 'https://ntfy.pstr.space/meruto-alerts?template=alertmanager'
+                send_resolved: true
+                http_config:
+                  authorization:
+                    type: Bearer
+                    credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+          - name: ntfy_pke
+            webhook_configs:
+              - url: 'https://ntfy.pstr.space/pke-alerts?template=alertmanager'
+                send_resolved: true
+                http_config:
+                  authorization:
+                    type: Bearer
+                    credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
         `
       alertmanagerconfig_selector { match_labels = {} }
       alertmanagerconfig_namespace_selector { match_labels = {} }

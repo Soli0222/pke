@@ -24,6 +24,11 @@ spec:
           secretKeyRef:
             name: ntfy-admin
             key: auth-users
+      - name: NTFY_AUTH_TOKENS
+        valueFrom:
+          secretKeyRef:
+            name: ntfy-admin
+            key: auth-tokens
 
     ntfy:
       config: |
@@ -35,6 +40,13 @@ spec:
         cache-file: "/var/cache/ntfy/cache.db"
         auth-file: "/var/cache/ntfy/user.db"
         auth-default-access: "deny-all"
+        auth-access:
+          - "alertmanager:natsume-alerts:write-only"
+          - "alertmanager:meruto-alerts:write-only"
+          - "alertmanager:pke-alerts:write-only"
+          - "alerts-reader:natsume-alerts:read-only"
+          - "alerts-reader:meruto-alerts:read-only"
+          - "alerts-reader:pke-alerts:read-only"
         enable-login: true
         enable-signup: false
         require-login: true
