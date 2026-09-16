@@ -83,6 +83,10 @@ spec:
             kvstore:
               store: memberlist
 
+        frontend:
+          # 単一Podではクエリ分割による待ち行列の急増を避ける。
+          parallelize_shardable_queries: false
+
         limits:
           compactor_blocks_retention_period: 14d
           max_global_series_per_user: 1000000
