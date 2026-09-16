@@ -88,6 +88,8 @@ spec:
           parallelize_shardable_queries: false
 
         limits:
+          ruler_alertmanager_client_config:
+            alertmanager_url: http://mimir.mimir:8080/alertmanager
           compactor_blocks_retention_period: 14d
           max_global_series_per_user: 1000000
           ingestion_rate: 50000
