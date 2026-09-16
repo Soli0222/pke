@@ -130,11 +130,17 @@ data:
     {{- if hasKey .Values.config "enableMediaFileCoverArt" }}
     EnableMediaFileCoverArt = {{ .Values.config.enableMediaFileCoverArt }}
     {{- end }}
+    {{- if hasKey .Values.config "enableNaturalSorting" }}
+    EnableNaturalSorting = {{ .Values.config.enableNaturalSorting }}
+    {{- end }}
     {{- if hasKey .Values.config "enableNowPlaying" }}
     EnableNowPlaying = {{ .Values.config.enableNowPlaying }}
     {{- end }}
     {{- if hasKey .Values.config "enableReplayGain" }}
     EnableReplayGain = {{ .Values.config.enableReplayGain }}
+    {{- end }}
+    {{- if hasKey .Values.config "enableScheduledDBAnalyze" }}
+    EnableScheduledDBAnalyze = {{ .Values.config.enableScheduledDBAnalyze }}
     {{- end }}
     {{- if hasKey .Values.config "enableScrobbleHistory" }}
     EnableScrobbleHistory = {{ .Values.config.enableScrobbleHistory }}
@@ -165,6 +171,9 @@ data:
     {{- end }}
     {{- with .Values.config.lyricsPriority }}
     LyricsPriority = {{ . | quote }}
+    {{- end }}
+    {{- with .Values.config.maxImageSize }}
+    MaxImageSize = {{ . | quote }}
     {{- end }}
     {{- with .Values.config.maxImageUploadSize }}
     MaxImageUploadSize = {{ . | quote }}
@@ -287,6 +296,24 @@ data:
     {{- end }}
     {{- end }}
     
+    # Jellyfin configuration
+    {{- $jellyfin := .Values.config.jellyfin | default dict }}
+    {{- if or (hasKey $jellyfin "enabled") $jellyfin.serverName $jellyfin.exposedPublicUsers (ne $jellyfin.maxConcurrentStreams nil) }}
+    [Jellyfin]
+    {{- if hasKey $jellyfin "enabled" }}
+    Enabled = {{ $jellyfin.enabled }}
+    {{- end }}
+    {{- with $jellyfin.serverName }}
+    ServerName = {{ . | quote }}
+    {{- end }}
+    {{- with $jellyfin.exposedPublicUsers }}
+    ExposedPublicUsers = {{ . | quote }}
+    {{- end }}
+    {{- if ne $jellyfin.maxConcurrentStreams nil }}
+    MaxConcurrentStreams = {{ $jellyfin.maxConcurrentStreams }}
+    {{- end }}
+    {{- end }}
+
     # Jukebox configuration
     {{- if or (hasKey .Values.config.jukebox "enabled") (hasKey .Values.config.jukebox "adminOnly") .Values.config.jukebox.default }}
     [Jukebox]
