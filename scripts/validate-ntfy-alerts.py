@@ -59,7 +59,7 @@ def main():
         alertmanager = alertmanager.replace('` + remote.kubernetes.secret.ntfy_publish.data["token"] + `', TOKENS["publisher"])
         assert "`" not in alertmanager
         parsed = yaml.safe_load(alertmanager)
-        assert set(parsed["route"]["group_by"]) == {"alertname", "severity", "pke_cluster"}
+        assert set(parsed["route"]["group_by"]) == {"alertname", "severity", "cluster"}
         (out / "alertmanager.yaml").write_text(alertmanager)
         mount = ["--network", "none", "-v", f"{out}:/work:ro"]
         run("docker", "run", "--rm", *mount, ALLOY, "validate", "--stability.level=experimental", "/work/config.alloy")
@@ -69,7 +69,7 @@ def main():
         for cluster, receiver in [("natsume", "natsume"), ("meruto", "meruto"), ("pke", "pke"), ("unknown", "pke"), ("", "pke"), (None, "pke")]:
             labels = ["alertname=Validation", "severity=info"]
             if cluster is not None:
-                labels.append("pke_cluster=" + cluster)
+                labels.append("cluster=" + cluster)
             amtool("config", "routes", "test", "--config.file=/work/alertmanager.yaml",
                    "--verify.receivers=slack_webhook,ntfy_" + receiver, *labels)
         for cluster in ("natsume", "meruto"):

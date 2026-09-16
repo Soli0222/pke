@@ -15,6 +15,9 @@ metadata:
 spec:
   podMetricsEndpoints:
   - port: metrics
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_pod_label_cnpg_io_cluster]
+      targetLabel: cnpg_cluster
   selector:
     matchLabels:
       cnpg.io/cluster: misskey-cluster

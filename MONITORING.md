@@ -205,9 +205,9 @@ Issue は次の記録が揃ってから閉じる。
 natsume の Alloy が Mimir Alertmanager に同期する設定で、すべてのアラートを Slack `#alert` と ntfy に送る。
 最初の子 route は条件なしで Slack に送り、`continue: true` によって次の ntfy route も評価する。
 ntfy route は次の topic を選択する。
-`group_by` は `alertname`、`severity`、`pke_cluster` とし、クラスタや重要度が違う通知を分離する。
+`group_by` は `alertname`、`severity`、`cluster` とし、クラスタや重要度が違う通知を分離する。
 
-| `pke_cluster` | ntfy topic | Slack |
+| `cluster` | ntfy topic | Slack |
 | --- | --- | --- |
 | `natsume` | `natsume-alerts` | `#alert` |
 | `meruto` | `meruto-alerts` | `#alert` |
@@ -293,10 +293,10 @@ render に実 token は渡さず、資格情報が `secretKeyRef` のままで�
 
 | ケース | 追加ラベル | 期待する topic |
 | --- | --- | --- |
-| natsume | `pke_cluster: natsume` | `natsume-alerts` |
-| meruto | `pke_cluster: meruto` | `meruto-alerts` |
-| 共通 | `pke_cluster: pke` | `pke-alerts` |
-| 未知 | `pke_cluster: unknown` | `pke-alerts` |
+| natsume | `cluster: natsume` | `natsume-alerts` |
+| meruto | `cluster: meruto` | `meruto-alerts` |
+| 共通 | `cluster: pke` | `pke-alerts` |
+| 未知 | `cluster: unknown` | `pke-alerts` |
 | 欠落 | 追加しない | `pke-alerts` |
 
 同じ ID の発火と解消が Slack と期待した ntfy topic に届き、他の topic には届かないことを記録する。
@@ -364,3 +364,88 @@ ntfy のユーザー一覧を過去の値で丸ごと上書きせず、既存 ad
 既存 item の更新は Operator の600秒ポーリングを待つ場合がある。
 Secret のフィールド更新を値非表示で確認してから rollout する。
 必要なら OnePasswordItem の metadata annotation を更新して再処理を促す。
+
+## クラスタラベルの契約（#735）
+
+Kubernetes クラスタ名は `cluster`、CNPG の DB クラスタ名は `cnpg_cluster` に分ける。
+#735 の当初案だった `pke_cluster` の追加は採用しない。
+後続 #736 以降の matcher、recording rule、通知ラベルも `cluster` を使う。
+
+両クラスタの Alloy は、すべてのメトリクスを `prometheus.relabel.cluster_labels` に通す。
+`cnpg_*` に元の `cluster` があれば `cnpg_cluster` にコピーし、その後 `cluster` を収集元の `natsume` / `meruto` で上書きする。
+入力の同名ラベルより収集設定を優先する。
+この変換は remote_write の external_labels による補完より前に行うため、元から DB 名を持たないメトリクスに Kubernetes クラスタ名を DB 名としてコピーしない。
+[Alloy の relabel](https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.relabel/) の rule は記述順に適用される。
+
+natsume の5つの DB PodMonitor は、Pod の `cnpg.io/cluster` を target relabeling で `cnpg_cluster` にコピーする。
+これにより、元から `cluster` を持たない PostgreSQL メトリクスや `up` にも DB 名が付く。
+meruto の DB PodMonitor は現在存在せず、追加は #740 で同じ relabeling を指定する。
+ホスト Alloy は既存の共通 relabel で inventory の `cluster` を上書き設定しているため、変更しない。
+
+| 収集元 | 共通経路 | 代表メトリクス |
+| --- | --- | --- |
+| 両クラスタの Kubernetes API / kubelet / cAdvisor | cluster_labels → remote_write.default | `apiserver_request_total`, `kubelet_running_pods`, `container_cpu_usage_seconds_total` |
+| ServiceMonitor / PodMonitor / Probe | 同上 | `kube_node_info`, `cnpg_collector_up`, `probe_success` |
+| Kubernetes Alloy 自己監視 | 同上 | `alloy_build_info` |
+| OTLP → Prometheus exporter | 同上 | アプリが送信するメトリクス |
+| ホスト node / system cAdvisor / Falco | add_common_labels → remote_write.mimir | `node_uname_info`, `container_cpu_usage_seconds_total`, `falcosecurity_*` |
+| etcd（natsume-03 / meruto-01） | 同上 | `etcd_server_has_leader` |
+| ホスト Alloy 自己監視 | 現在収集なし。#739 で add_common_labels に接続 | 追加後に確認 |
+
+### 検証と段階的な反映
+
+Python の PyYAML / Jinja2、kubectl、Docker がある環境で次を実行する。
+両クラスタの kustomize build、Alloy v1.19.2 による設定検証、3ホストの template render（Falco 有効/無効、対象ホストの etcd）を行う。
+使い捨ての Alloy と Prometheus への実送信で、DB 名の保持と欠落/空/誤った cluster の補正を検証し、コンテナを回収する。
+通知側の検証は既存スクリプトで行う。
+
+```sh
+python3 scripts/validate-cluster-labels.py
+python3 scripts/validate-ntfy-alerts.py
+```
+
+本番への反映は承認後に行う。
+先に natsume の DB PodMonitor を反映し、次に meruto の Alloy、最後に natsume の Alloy と Alertmanager の cluster matcher を反映する。
+段階を厳密に分ける場合は merge 前に対象 Flux Kustomization の同期を一時停止し、対象を一つずつ再開する。
+通常の自動同期では両クラスタや別アプリの適用順は保証されない。
+PodMonitor より先に Alloy が反映されても元の cluster を持つ CNPG 系列の DB 名は保持されるが、その他の DB 系列には PodMonitor 反映まで cnpg_cluster が付かない。
+各段階で設定 reload 成功と remote_write の滞留/失敗を確認し、送信元ごとの反映時刻を記録する。
+ホストへの Ansible 適用は不要である。
+
+Mimir の port-forward を使い、次の式を `/prometheus/api/v1/query` で確認する。
+上の表にある各代表メトリクスについて `count by (cluster, job, instance) (<metric>)` を調べる。
+CNPG は次の式を確認し、`cluster="natsume"` と DB ごとの `cnpg_cluster` が共存することを確認する。
+
+```promql
+count by (cluster, cnpg_cluster, namespace) (cnpg_collector_up)
+count by (cluster, cnpg_cluster, namespace) (cnpg_pg_replication_streaming_replicas)
+count by (cluster, cnpg_cluster, namespace) (up{cnpg_cluster!=""})
+```
+
+DB 名で絞る既存クエリは `cluster="misskey-cluster"` から `cnpg_cluster="misskey-cluster"` に変更し、必要なら `cluster="natsume"` を併記する。
+DB 単位の `by (cluster)` や vector matching も `cnpg_cluster` に変更する。
+外部から取り込む CNPG ダッシュボードでは変数の label_values とパネル式の両方を確認する。
+予約した `cluster` に別の意味を持たせる OTLP アプリも同様に固有のラベル名へ移行する。
+
+### 履歴と rollback
+
+ラベルが変わる CNPG 系列は新しい時系列になる。
+過去のデータは変更されず、旧系列と新系列が retention 期間中は併存し、切替直後の lookback では二重に集計される場合がある。
+従来から正しい cluster を持ち、他のラベルも変わらない系列は新系列にならない。
+旧 DB 名を指定したクエリは切替後の新データを返さなくなるため、ダッシュボード側も同時に移行する。
+
+後続ルールは各送信元の反映完了時刻から、その式の最長 range と for 期間を満たす連続履歴が蓄積してから有効化する。
+たとえば `[6h]` を使う予測では6時間以上、`[24h]` なら24時間以上を確保し、欠測があれば待ち直す。
+履歴不足を正常と判定せず、#736 以降で実際の式ごとに必要時間を決める。
+
+rollback はこの PR の Alloy、PodMonitor、通知 matcher の変更を合わせて revert し、移行した外部クエリも戻す。
+反映後に旧ラベルでの収集と通知先を確認する。
+新ラベルの履歴は残り、rollback 前後をまたぐ集計には同じ注意が必要である。
+
+### #735 の確認記録
+
+2026-09-16 の読み取り確認では、両クラスタの Alloy は v1.19.2、natsume の `cnpg_collector_up` は5つの DB 名を `cluster` に持っていた。
+`cnpg_pg_replication_streaming_replicas` は `cluster="natsume"` の5系列であり、同じ CNPG 内でも意味が異なっていた。
+Grafana DB の保存済み dashboard は0件で、リポジトリ内にも移行対象の CNPG クエリは見つからなかった。
+meruto の PodMonitor は CNPG operator 用のみだった。
+本番反映、反映後の各送信元のラベル確認、履歴蓄積は未実施であり、結果を #735 に記録してから閉じる。
