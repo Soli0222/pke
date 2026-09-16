@@ -26,6 +26,9 @@ spec:
       enabled: false
     controller:
       replicaCount: 1
+      # 単一ノードでは必須の Pod anti-affinity により新旧 Pod を同時配置できない。
+      updateStrategy:
+        type: Recreate
       podDisruptionBudget:
         enabled: false
     lvmd:
