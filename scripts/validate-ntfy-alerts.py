@@ -15,7 +15,7 @@ NTFY = "binwiederhier/ntfy:v2.28.0"
 ALLOY = "grafana/alloy:v1.19.2"
 AMTOOL = "prom/alertmanager:v0.31.1"
 TOKENS = {name: "tk_" + char * 29 for name, char in
-          [("admin", "a"), ("publisher", "b"), ("reader", "c"), ("rotated", "d")]}
+          [("admin", "a"), ("publisher", "b"), ("rotated", "d")]}
 # 公式設定例の bcrypt hash。ローカル検証専用で本番には使用しない。
 HASH = "$2a$10$YLiO8U21sX1uhZamTLJXHuxgVC0Z/GKISibrKCLohPgtG7yIxSk4C"
 
@@ -82,11 +82,11 @@ def main():
                       "auth-file": "/data/user.db", "cache-file": "/data/cache.db"})
         (out / "ntfy.yaml").write_text(yaml.safe_dump(local))
         users = ",".join(f"{name}:{HASH}:{role}" for name, role in
-                         [("soli", "admin"), ("alertmanager", "user"), ("alerts-reader", "user")])
+                         [("soli", "admin"), ("alertmanager", "user")])
         volume = out.name
         run("docker", "volume", "create", volume)
         def start(publisher):
-            tokens = f"soli:{TOKENS['admin']},alertmanager:{publisher},alerts-reader:{TOKENS['reader']}"
+            tokens = f"soli:{TOKENS['admin']},alertmanager:{publisher}"
             cid = run("docker", "run", "-d", "--user", "0:0", "-p", "127.0.0.1::80",
                       "-v", f"{out}:/work:ro", "-v", f"{volume}:/data", "-e", "NTFY_AUTH_USERS=" + users,
                       "-e", "NTFY_AUTH_TOKENS=" + tokens, NTFY, "serve", "--config", "/work/ntfy.yaml")
@@ -122,8 +122,6 @@ def main():
                         assert "Validation" in message["title"], message
                         assert "Local notification validation" in message["message"], message
                     assert request(base, f"/{topic}/json?poll=1", TOKENS["publisher"])[0] == 403
-                    assert request(base, f"/{topic}/json?poll=1", TOKENS["reader"])[0] == 200
-                    assert request(base, f"/{topic}", TOKENS["reader"], {"message": "denied"})[0] == 403
                     assert request(base, f"/{topic}/json?poll=1")[0] in (401, 403)
                 assert request(base, "/other-topic", TOKENS["publisher"], {"message": "denied"})[0] == 403
                 assert request(base, "/pke-alerts", "tk_" + "z" * 29, {"message": "denied"})[0] == 401
@@ -134,13 +132,12 @@ def main():
             try:
                 assert request(base, "/pke-alerts", TOKENS["publisher"], {"message": "old token"})[0] == 401
                 assert request(base, "/pke-alerts", TOKENS["rotated"], {"message": "new token"})[0] == 200
-                assert request(base, "/pke-alerts/json?poll=1", TOKENS["reader"])[0] == 200
                 assert request(base, "/other-topic/json?poll=1", TOKENS["admin"])[0] == 200
             finally:
                 run("docker", "rm", "-f", cid)
         finally:
             run("docker", "volume", "rm", volume)
-        print("local ntfy: three topics firing/resolved, ACL, invalid token, rotation, retained admin/reader: OK")
+        print("local ntfy: three topics firing/resolved, ACL, invalid token, rotation, retained admin: OK")
 
 
 if __name__ == "__main__":
