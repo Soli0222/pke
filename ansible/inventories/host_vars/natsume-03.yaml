@@ -2,6 +2,12 @@
 ansible_host: natsume-03
 cluster: natsume
 
+alloy_systemd_units:
+  - alloy.service
+  - k3s.service
+  - etcd.service
+  - falco-modern-bpf.service
+
 ssh_agent_sudo_configure_sshd: false
 ssh_agent_sudo_users:
   - name: soli

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """実 Secret を使わず Alloy の設定と cluster ラベル変換を検証する。"""
 import json
+import re
 import subprocess
 import tempfile
 import time
@@ -30,6 +31,7 @@ def main():
         out = Path(temp)
         out.chmod(0o755)
         configs = {}
+        host_configs = {}
         for cluster in ('natsume', 'meruto'):
             run('kubectl', 'kustomize', f'flux/clusters/{cluster}')
             configs[cluster] = yaml.safe_load((ROOT / f'flux/clusters/{cluster}/apps/alloy/alloy-config.yaml').read_text())['data']['config.alloy']
@@ -37,6 +39,7 @@ def main():
         defaults = yaml.safe_load((ROOT / 'ansible/roles/install-alloy/defaults/main.yaml').read_text())
         common = yaml.safe_load((ROOT / 'ansible/inventories/group_vars/all.yaml').read_text())
         env = Environment(undefined=StrictUndefined)
+        env.filters['regex_escape'] = re.escape
         for host in ('natsume-03', 'natsume-08', 'meruto-01'):
             values = defaults | common | yaml.safe_load((ROOT / f'ansible/inventories/host_vars/{host}.yaml').read_text())
             values['ansible_hostname'] = host
@@ -46,6 +49,7 @@ def main():
                 if host != 'natsume-08':
                     rendered += '\n' + env.from_string((ROOT / 'ansible/roles/install-alloy/templates/etcd.alloy.j2').read_text()).render(**values)
                 (out / f'{host}-{enabled}.alloy').write_text(rendered)
+                host_configs[host] = (values['cluster'], rendered)
         for config in out.glob('*.alloy'):
             run('docker', 'run', '--rm', '--network', 'none', '-v', f'{out}:/work:ro', ALLOY,
                 'validate', '--stability.level=experimental', '/work/' + config.name)
@@ -111,6 +115,39 @@ prometheus.scrape "test" {
                 run('docker', 'rm', '-f', sender)
                 containers.remove(sender)
                 print(f'{cluster}: CNPG DB name preserved; missing/empty/wrong cluster normalized: OK', flush=True)
+
+            # ホストの self exporter と実 relabel を使い、Kubernetes Alloy と識別できることを確認する。
+            for host, (cluster, source) in host_configs.items():
+                self_config = 'prometheus.exporter.self "host"' + source.split('prometheus.exporter.self "host"', 1)[1].split('// System cAdvisor', 1)[0]
+                common = 'prometheus.relabel "add_common_labels" {' + source.split('prometheus.relabel "add_common_labels" {', 1)[1].split('prometheus.remote_write "mimir"', 1)[0]
+                config = self_config + common + '''
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://localhost:9090/api/v1/write"
+    queue_config { batch_send_deadline = "1s" }
+  }
+}
+'''
+                (out / 'host-test.alloy').write_text(config)
+                sender = run('docker', 'run', '-d', '--network', 'container:' + receiver,
+                             '-v', f'{out}:/work:ro', ALLOY, 'run', '/work/host-test.alloy')
+                containers.append(sender)
+                selector = '{hostname="' + host + '",job="alloy-host"}'
+                for attempt in range(60):
+                    rows = http(query_url + urlencode({'query': 'alloy_build_info' + selector}))['data']['result']
+                    queue = http(query_url + urlencode({'query': 'prometheus_remote_storage_samples_pending' + selector}))['data']['result']
+                    if len(rows) == 1 and len(queue) == 1:
+                        break
+                    time.sleep(1)
+                else:
+                    raise AssertionError(f'{host}: self metrics not received')
+                for row in rows + queue:
+                    assert row['metric']['cluster'] == cluster, row
+                    assert row['metric']['instance'], row
+                assert queue[0]['metric']['component_id'] == 'prometheus.remote_write.mimir'
+                run('docker', 'rm', '-f', sender)
+                containers.remove(sender)
+                print(f'{host}: self build/remote_write metrics with cluster, hostname, alloy-host job: OK', flush=True)
         finally:
             for cid in reversed(containers):
                 run('docker', 'rm', '-f', cid)

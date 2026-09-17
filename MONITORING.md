@@ -782,3 +782,110 @@ sample timestamp は scrape 時刻であり、FluxReport の更新時刻では�
 Flux の prune で今回の2件の PodMonitor が消え、Alloy の対応 target がなくなることを確認する。
 既存の FluxInstance、controller、Operator、NetworkPolicy は維持する。
 過去のメトリクスは Mimir に残るが、新しいサンプルの収集は止まる。
+
+## ホスト Alloy の systemd と自己監視（#739）
+
+Ansible の `install-alloy` role で、既存 node exporter に systemd collector を追加し、Alloy 自身も scrape する。
+対象は `k3s_cluster` の3ホスト。Kubernetes 内の Alloy 設定は変更しない。
+
+### unit は host_vars の実名で指定する
+
+`alloy_systemd_units` を完全一致の正規表現に変換し、`prometheus.exporter.unix.node` の `systemd.unit_include` に渡す。
+`enable_collectors` を使うため、既存の CPU / memory / filesystem などの collector も維持する。
+unit の追加・削除時は、host_vars の一覧も更新する。
+この一覧は常駐を期待する unit の宣言であり、Falco metrics の scrape 有効・無効とは独立している。
+
+| ホスト | Alloy 実 version（2026-09-17 JST） | 監視する unit |
+| --- | --- | --- |
+| natsume-03 | v1.16.0 | `alloy.service`、`k3s.service`、`etcd.service`、`falco-modern-bpf.service` |
+| natsume-08 | v1.17.0 | `alloy.service`、`k3s-agent.service`、`falco-modern-bpf.service` |
+| meruto-01 | v1.16.1 | `alloy.service`、`k3s.service`、`etcd.service`、`falco-modern-bpf.service` |
+
+`falco.service` は実機では `falco-modern-bpf.service` の別名だったため、collector が返す実名を使う。
+natsume-08 に k3s server / etcd の unit は要求しない。
+追加の unit を宣言していないホストでは、role の既定で `alloy.service` だけを対象にする。
+
+3ホストには `/run/dbus/system_bus_socket` があり、常駐 Alloy は既存の systemd override により `User=root` で動く。
+今回この権限は変更しない。
+各ホストの既存 Alloy binary を別ポート・一時 storage で起動した読み取り検証では、一般ユーザーでも D-Bus を読めた。
+systemd だけを有効にした一時 exporter は対象 unit のみを返し、`node_scrape_collector_success{collector="systemd"}=1` だった。
+一時プロセスとファイルは検証後に回収し、本番サービスの停止や状態変更は行っていない。
+
+`node_systemd_unit_state` は各 unit に `state="active|activating|deactivating|inactive|failed"` の5系列を返す。
+対象11 unit、合計55系列で `active=1`、残り4状態が0であることを実測した。
+失敗は `state="failed" == 1`、停止は `state="inactive" == 1` として区別できる。
+停止・失敗を意図的に発生させる試験は行っていない。
+存在しない、または systemd に load されていない unit は系列が欠ける場合があるため、不在を inactive=0 や正常と扱わない。
+[collector の設定仕様](https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.exporter.unix/)も参照する。
+
+### self-metrics は job と hostname でホストを識別する
+
+`prometheus.exporter.self.host` → `discovery.relabel.alloy_self` → `prometheus.scrape.alloy_self` の経路で30秒ごとに収集する。
+target の `job` は `alloy-host`、`instance` は exporter が返す hostname とする。
+既存の `add_common_labels` を通し、`cluster` と `hostname` を付けて同じ Mimir endpoint へ送る。
+新しい外部待受 port は作らず、[self exporter の内部 endpoint](https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.exporter.self/)を使う。
+
+常駐 Alloy の生 `/metrics` では、全3バージョンで次の指標を確認した。
+remote_write component は `component_id="prometheus.remote_write.mimir"`。送信先ごとの指標は `remote_name` / `url` も持つ。
+
+| 用途 | 指標 |
+| --- | --- |
+| 再試行せず失敗した sample | `prometheus_remote_storage_samples_failed_total` |
+| 再試行した sample | `prometheus_remote_storage_samples_retried_total` |
+| shard 内で送信を待つ sample | `prometheus_remote_storage_samples_pending` |
+| remote_write が受け取った最新 sample 時刻 | `prometheus_remote_storage_highest_timestamp_in_seconds` |
+| queue が読んだ最新 sample 時刻 | `prometheus_remote_storage_queue_highest_timestamp_seconds` |
+| queue が送信できた最新 sample 時刻 | `prometheus_remote_storage_queue_highest_sent_timestamp_seconds` |
+
+調査時は failed=0 / pending=0 だったが、retried には過去の累積値があった。
+失敗・再試行は counter の絶対値だけで判断せず、増分を確認する。
+pending は WAL 全体の未送信量を表すものではなく、送信進捗の時刻も併せて見る。
+これらの自己監視も同じ送信経路を使う。Alloy や通信が止まると Mimir 上の系列が更新されなくなるため、up=0 だけでは停止を検出できない。
+後続 #744 では inventory に基づく欠測監視を別に設計し、natsume / Mimir 全断は #750 の外部経路で扱う。
+
+### 検証と1台ずつの反映
+
+`scripts/validate-cluster-labels.py` は3ホストの Falco 有効 / 無効、該当ホストの etcd を含む設定を描画し、Alloy v1.19.2 で validate する。
+追加した self exporter とホストの共通 relabel を使うローカル remote_write 試験で、build / queue メトリクスの `job=alloy-host`、`cluster`、`hostname` を確認する。
+今回さらに実 inventory を使う Ansible template render、新 playbook の syntax-check、各ホストの導入済み binary による全 Prometheus 設定の validate を実施した。
+Ansible の実機 check / diff は昇格認証が通らず未完了。一般ユーザーからも `/etc/alloy` を読めなかったため、本適用前に昇格可能な環境で差分を確認する。
+
+```sh
+uv run --with pyyaml --with jinja2 python scripts/validate-cluster-labels.py
+cd ansible
+ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --syntax-check
+ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --limit natsume-08 --check --diff
+ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --limit natsume-08 --diff
+```
+
+merge 後、まず natsume-08 に適用し、下記の Mimir 確認を済ませてから meruto-01、最後に natsume-03 へ同じ手順で進める。
+専用 playbook は `serial: 1` / `any_errors_fatal: true` とし、既存 package・証明書・Loki・etcd 設定は更新しない。
+`/etc/alloy/prometheus.alloy` を導入済みの `alloy validate` で検証してから置き換え、変更時だけ Alloy を再起動する。
+置換前のファイルは Ansible の backup に保存し、出力されたパスを rollback 用に記録する。
+check mode だけではこの validate の実行確認にならないため、事前の binary 検証と適用時の結果も確認する。
+本番での設定反映と Mimir 到達確認は merge 後に記録する。
+
+```promql
+node_scrape_collector_success{collector="systemd",hostname=~"natsume-03|natsume-08|meruto-01"}
+count by (cluster, hostname, name) (node_systemd_unit_state)
+node_systemd_unit_state{state=~"active|inactive|failed"}
+up{job="alloy-host"}
+alloy_build_info{job="alloy-host"}
+prometheus_remote_storage_samples_pending{job="alloy-host"}
+increase(prometheus_remote_storage_samples_failed_total{job="alloy-host"}[5m])
+increase(prometheus_remote_storage_samples_retried_total{job="alloy-host"}[5m])
+time() - prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job="alloy-host"}
+time() - timestamp(alloy_build_info{job="alloy-host"})
+```
+
+ホストごとに期待する unit 名・5状態・正常な collector、self target の up=1 と正しい cluster / hostname を確認する。
+5分以上の履歴で sample と送信時刻が更新されることを確認し、node / Falco / etcd の既存収集も維持されていることを照合する。
+通知テストは実施しない。
+
+### rollback は保存した Prometheus 設定を復元する
+
+問題が出たホストでは次のホストへ進まず、まず適用時に出力された backup ファイルを `sudo /usr/bin/alloy validate <backup-file>` で検証する。
+そのファイルを owner=root / group=root / mode=0644 で `/etc/alloy/prometheus.alloy` に戻し、`sudo systemctl restart alloy` を実行する。
+既存の node / Falco / etcd の収集再開を確認する。追加した systemd と self-metrics の新規 sample は止まる。
+続けてリポジトリの変更を revert し、次回の Ansible 適用で再導入されないようにする。
+他の `/etc/alloy` ファイルや証明書、Alloy の systemd override は復元対象に含めない。
