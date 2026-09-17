@@ -127,6 +127,18 @@ data:
     mimir.rules.kubernetes "default" {
       address = "http://mimir.mimir:8080"
       tenant_id = "anonymous"
+      // 既存 namespace を維持し、入力系列と評価結果を natsume に限定する。
+      mimir_namespace_prefix = "alloy"
+      extra_query_matchers {
+        matcher {
+          name       = "cluster"
+          match_type = "="
+          value      = "natsume"
+        }
+      }
+      external_labels = {
+        cluster = "natsume",
+      }
       rule_selector { match_labels = {} }
       rule_namespace_selector { match_labels = {} }
     }

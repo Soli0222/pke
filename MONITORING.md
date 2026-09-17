@@ -449,3 +449,124 @@ rollback はこの PR の Alloy、PodMonitor、通知 matcher の変更を合わ
 Grafana DB の保存済み dashboard は0件で、リポジトリ内にも移行対象の CNPG クエリは見つからなかった。
 meruto の PodMonitor は CNPG operator 用のみだった。
 本番反映、反映後の各送信元のラベル確認、履歴蓄積は未実施であり、結果を #735 に記録してから閉じる。
+
+
+## クラスタごとにルールの入力と出力を分離する（#736）
+
+両クラスタの Alloy は同じ Mimir の `anonymous` tenant にルールを同期する。
+`extra_query_matchers` で全 vector selector に `cluster` の完全一致条件を加え、`external_labels` で alert / recording rule の出力にも同じ値を付ける。
+集計で元のラベルが落ちる式や `absent` にも出力ラベルが必要となる。
+既存の `cluster` matcher と出力ラベルは上書きされるため、中央で複数クラスタを集計するルールはこの同期対象に入れない。
+CNPG の DB 選択、`by`、`on`、`ignoring` では DB 識別に `cnpg_cluster` を使い、Kubernetes クラスタの選択には `cluster` を使う。
+仕様は [Alloy の component reference](https://grafana.com/docs/alloy/latest/reference/components/mimir/mimir.rules.kubernetes/) と [v1.19.2 の変換処理](https://github.com/grafana/alloy/blob/v1.19.2/internal/component/mimir/rules/kubernetes/events.go)で確認できる。
+
+| 設定 | natsume | meruto |
+| --- | --- | --- |
+| Mimir URL | `http://mimir.mimir:8080` | `https://mimir.pstr.space` |
+| namespace prefix | `alloy`（既存の既定値を明示） | `meruto` |
+| query matcher / 出力ラベル | `cluster="natsume"` | `cluster="meruto"` |
+| 認証 | クラスタ内 HTTP、tenant `anonymous` | remote_write と同じ `remote.kubernetes.secret.mtls`、tenant `anonymous` |
+
+Mimir namespace は `<prefix>/<Kubernetes namespace>/<PrometheusRule名>/<UID>` となる。
+同じ名前の PrometheusRule が両クラスタにあっても衝突しない。
+Alloy chart 1.12.1 の既存 ClusterRole は namespaces と prometheusrules の get / list / watch を許可しているため、追加 RBAC は不要。
+chart 自体、blackbox の閾値、Alertmanager の route は変更しない。
+
+### merge 前の確認記録（2026-09-17 JST）
+
+両クラスタの実 Alloy は v1.19.2。ServiceAccount `alloy/alloy` の上記権限は `kubectl auth can-i --as=system:serviceaccount:alloy:alloy` で全件確認した。
+Mimir の discovered Alertmanager は1、同期済みルール24本はすべて `health=ok` だった。
+既存 namespace は次の3つで、prefix はすべて `alloy`。meruto prefix は存在しなかった。
+
+| Kubernetes namespace / PrometheusRule | UID | 内訳 |
+| --- | --- | --- |
+| emoji-service / emoji-renderer | `63d1b106-01f0-44eb-ba5b-542e4e90eff9` | alert 3本 |
+| loki / loki-loki-rules | `7392d2dd-e610-46bf-ac47-e2701af5250d` | recording 18本 |
+| spotify-nowplaying / spotify-nowplaying | `0d0fedf1-330e-424f-9ff8-19f8b97f0ea7` | alert 3本 |
+
+meruto には `blackbox-exporter-probes/blackbox-exporter-probes-blackbox-exporter`（UID `ebefe359-4a96-4dbc-b3e6-9d4e21338817`）がある。
+対象は `EndpointDown`、`SSLCertExpiringSoon`、`SSLCertExpiryCritical`、`SlowResponse`、`HTTPStatusCodeError` の5本。
+同期 component が未配置のため、Mimir にはまだ存在しない。
+この棚卸しに CNPG のルールはなく、リポジトリにも旧 `cluster=<DB名>` を前提とする CNPG rule query は見つからなかった。
+代表系列 `cnpg_collector_up` は natsume の5 DB で `cluster` / `cnpg_cluster` の共存を再確認した。
+
+ただし、既存アプリ6本の `job="emoji-renderer"` / `job="spotify-nowplaying"` は現在の系列に一致しない。
+実際の job は `emoji-renderer-metrics` / `spotify-nowplaying-metrics` であり、変更前から入力が空だった。
+評価の `health=ok` は入力や通知の有効性を保証しないため、この6本を有効な監視として数えない。
+アプリ固有 chart の matcher 修正は #736 に含めず、別途対応する。Loki の入力 bucket は natsume で135系列あり、既存 recording 出力には cluster がなかった。
+
+以下はローカル検証であり、本番での反映・通知確認は merge 後に行う。
+
+```sh
+uv run --with pyyaml --with jinja2 python scripts/validate-cluster-labels.py
+uv run --with pyyaml python scripts/validate-rule-scoping.py
+```
+
+前者は両クラスタの Kustomize / Alloy validate と既存のラベル変換を検証する。
+後者は合成 PrometheusRule を返すローカルの偽 Kubernetes API と保存用の偽 Mimir API に、実 Alloy v1.19.2 を接続する。
+取得した同期後のルールを promtool v3.5.0 で評価し、同名系列の値が natsume=2、meruto=7 に分かれることを確認する。
+集計、range、既存 matcher の上書き、片方にだけ系列がある `absent`、CNPG の DB 別 join / 選択、alert と recording の出力ラベルを対象とする。
+本番の kubeconfig / Secret は使わない。偽 API は一時ポートで合成データだけを返し、終了時にサーバー・コンテナ・一時ファイルを回収する。
+
+### 履歴を確認してから通常の Flux 同期で反映する
+
+#735 でラベルが変わった系列の履歴開始は、[反映記録](https://github.com/Soli0222/pke/issues/735#issuecomment-5698389709)の 2026-09-16 22:33 JST とする。
+経過時間だけで充足を判定せず、対象 selector ごとに `count_over_time` と `timestamp` を確認する。
+収集間隔と range から期待サンプル数を求め、対象ごとの欠落や古い最終サンプルがあれば原因を調べる。
+
+| 既存ルール | 最長 range | for | 反映時の確認 |
+| --- | --- | --- | --- |
+| natsume アプリ6本 | 5m | 5m | 対象系列の直近5分の履歴。反映後の pending を含め最低5分観測 |
+| Loki recording 18本 | 1m | なし | bucket / sum / count の直近1分の履歴と出力ラベル |
+| meruto blackbox 5本 | range なし | 5m / 1h | probe の最新値と継続収集。条件が続く SSL 警報は1時間経過後に評価 |
+
+今回、欠測・予測ルールは追加しない。
+後続 Issue で追加する場合は必要な range と for を個別に確認し、追加収集系列はその収集開始から履歴を数える。
+Loki recording のうち出力に cluster がなかった系列も反映時から新系列になるため、その記録系列を使う後続ルールの履歴は別に確認する。
+2026-09-17 の読み取りでは meruto の `probe_success` は4ターゲットそれぞれ直近1時間に120サンプルあり、SSL expiry / duration / HTTP status もそれぞれ4系列を確認した。
+本番反映時にも最新の値と履歴を再確認する。
+
+merge 後は両クラスタの `alloy` Kustomization の revision、ConfigMap の内容、Alloy の reload 成功を確認する。
+通常同期では適用順を保証しないが、別 prefix を使うため両クラスタの同時反映は可能。
+Mimir の port-forward はこの文書の「適用と状態確認」を使う。
+反映前後で次の API を取得し、namespace の集合、保存された expr / labels、評価結果を比較する。ルール定義だけを保存し、認証情報を含む `/config` は取得しない。
+
+```sh
+curl -fsS -H 'X-Scope-OrgID: anonymous' \
+  http://127.0.0.1:18080/prometheus/config/v1/rules > /tmp/pke-rules-after.yaml
+curl -fsS -H 'X-Scope-OrgID: anonymous' \
+  http://127.0.0.1:18080/prometheus/api/v1/rules |
+  jq '[.data.groups[] | {file, name, rules: [.rules[] | {name, query, labels, health, lastError, state}]}]'
+```
+
+棚卸し以降に PrometheusRule が増減していなければ、既存3 namespace と新しい meruto 1 namespace の計4つ、alert 11本 / recording 18本となる。
+既存3 namespace の名前と UID が変わらず、すべての selector が所有クラスタに限定され、全 rule の labels に同じ cluster があることを確認する。
+`health=ok` / `lastError` 空に加え、評価失敗と Alloy の `mimir_rules_events_failed_total` が増加しないことを確認する。
+Loki の記録系列も実際に query し、集計で cluster が落ちていないことを確認する。
+
+### 両クラスタの通知と回収を確認する
+
+本番テスト通知の実施が承認された後、この文書の「Slack までの発火と解消の検証」の一時 PrometheusRule を両クラスタで実行する。
+`kubectl --context` をそれぞれ指定し、同じテスト ID と alertname を使う。
+テスト rule に cluster を手書きせず、Alloy が付与した値で natsume-alerts / meruto-alerts に分かれることを確かめる。
+同じ rule に `record: pke_scope_e2e_sum` / `expr: sum(up)` と、`record: pke_scope_e2e_absent` / `expr: absent(pke_scope_e2e_nonexistent)` を追加する。
+前者はクラスタを指定した直接 query の `sum(up{cluster="..."})` と同時刻の結果を比べ、後者は両クラスタで値1になることを確認する。
+各出力の cluster と、保存された入力 selector の完全一致条件も確認する。
+同名の入力系列を両クラスタに与えた際の数値分離と DB join は、上記のローカル試験でも確認する。
+
+発火→解消が Slack と各 ntfy topic に届いた記録を残し、fallback topic に誤配送されていないことを確認する。
+実アプリや blackbox 対象を停止して発火させない。
+blackbox 5本と natsume の既存ルールは同期・正常評価を確認し、通知経路は同じ component を通る合成ルールで確認する。
+テスト後は作成した PrometheusRule だけを両クラスタから削除し、次回同期後（既定5分）の Mimir でも該当 UID の namespace が消えたことを確認する。
+一時 recording 系列は retention まで残りうるため、書き込み停止とサンプル時刻を確認する。
+本番での同期、評価、発火・解消、回収がそろったら #736 に記録し、Issue を閉じる。
+
+### rollback では meruto の同期済みルールも確認する
+
+natsume は今回の matcher / external_labels を revert すると、同じ alloy namespace のルールが旧式に更新される。
+meruto は component の撤去だけでは同期済みルールが残る可能性がある。
+meruto の一時テスト CR を先に回収し、その削除同期を確認してから設定を revert する。
+component の停止を確認後、API の namespace 一覧と PrometheusRule の UID を照合し、今回作成した `meruto/blackbox-exporter-probes/blackbox-exporter-probes-blackbox-exporter/<UID>` だけを個別削除する。
+削除には namespace 全体を URL encode した `/prometheus/config/v1/rules/<encoded-namespace>` への DELETE を使う。
+実行前に対象を確認し、prefix 一括削除や既存 alloy namespace の削除は行わない。
+rollback 後に既存24本の正常評価・通知先 discovery と、meruto ルールの二重評価がないことを確認する。
