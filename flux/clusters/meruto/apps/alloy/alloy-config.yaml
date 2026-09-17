@@ -65,6 +65,32 @@ data:
     }
 
     // ============================================================
+    // Mimir Rules
+    // ============================================================
+
+    mimir.rules.kubernetes "default" {
+      address = "https://mimir.pstr.space"
+      tenant_id = "anonymous"
+      mimir_namespace_prefix = "meruto"
+      extra_query_matchers {
+        matcher {
+          name       = "cluster"
+          match_type = "="
+          value      = "meruto"
+        }
+      }
+      external_labels = {
+        cluster = "meruto",
+      }
+      tls_config {
+        cert_pem = convert.nonsensitive(remote.kubernetes.secret.mtls.data["tls.crt"])
+        key_pem  = remote.kubernetes.secret.mtls.data["tls.key"]
+      }
+      rule_selector { match_labels = {} }
+      rule_namespace_selector { match_labels = {} }
+    }
+
+    // ============================================================
     // OpenTelemetry: OTLP receiver for metrics, logs, and traces
     // ============================================================
 
