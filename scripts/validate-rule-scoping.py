@@ -44,7 +44,11 @@ def main():
                 'metadata': {'namespace': 'test', 'name': 'scoping', 'uid': UID, 'resourceVersion': '1'},
                 'spec': {'groups': [{'name': 'scoping', 'interval': '1m', 'rules': rules}]}}
     namespace = {'apiVersion': 'v1', 'kind': 'Namespace', 'metadata': {'name': 'test', 'resourceVersion': '1'}}
-    stored = {}
+    # prefix 変更だけでは旧 namespace は自動削除されないことも確認する。
+    legacy_namespace = f'alloy/test/scoping/{UID}'
+    legacy_groups = [{'name': 'legacy', 'rules': [{'record': 'pke_legacy', 'expr': 'vector(1)'}]}]
+    stored = {legacy_namespace: legacy_groups}
+    delete_requests = []
     lock = threading.Lock()
     stopping = threading.Event()
 
@@ -94,6 +98,10 @@ def main():
                 stored[name] = [group]
             self.reply({}, 202)
 
+        def do_DELETE(self):
+            delete_requests.append(self.path)
+            self.reply({'error': 'unexpected namespace deletion'}, 500)
+
     server = ThreadingHTTPServer(('0.0.0.0', 0), API)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     endpoint = f'http://host.docker.internal:{server.server_port}'
@@ -118,7 +126,7 @@ def main():
                           '-e', 'KUBECONFIG=/work/kubeconfig', '-v', f'{out}:/work:ro',
                           ALLOY, 'run', f'/work/{cluster}.alloy')
                 containers.append(cid)
-                ns = f'{"alloy" if cluster == "natsume" else "meruto"}/test/scoping/{UID}'
+                ns = f'{cluster}/test/scoping/{UID}'
                 for _ in range(60):
                     with lock:
                         ready = ns in stored
@@ -135,9 +143,14 @@ def main():
                     assert 'cluster="wrong"' not in rule['expr'], rule
                 print(f'{cluster}: real Alloy rewrites queries and alert/recording labels; namespace={ns}', flush=True)
 
-            assert len(stored) == 2, stored
+            assert len(stored) == 3, stored
+            assert stored[legacy_namespace] == legacy_groups
+            assert not delete_requests, delete_requests
+            print('Legacy alloy namespace remains unchanged; explicit cleanup is required', flush=True)
             groups = []
             for ns, group in stored.items():
+                if ns == legacy_namespace:
+                    continue
                 groups.append(dict(group[0], name=ns))
             (out / 'rules.yaml').write_text(yaml.safe_dump({'groups': groups}))
             inputs = []
