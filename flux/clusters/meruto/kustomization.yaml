@@ -18,3 +18,4 @@ resources:
 - kustomizations/prometheus-blackbox-exporter.yaml
 - kustomizations/traefik.yaml
 - kustomizations/vector.yaml
+- kustomizations/flux-monitoring.yaml

@@ -691,3 +691,94 @@ chart が管理する既存 `longhorn-manager` policy は削除しない。
 Longhorn の volume / replica / disk / StorageClass と ServiceMonitor を変更する必要はない。
 rollback 後は Alloy からの収集が再び遮断されるため、欠測を確認して復旧方針を記録する。
 Longhorn 指標の収集成功だけで、すべての iSCSI 障害を検出できるとは扱わない。
+
+## Flux controller とリソース状態の収集（#738）
+
+両クラスタの `apps/flux-monitoring/` に2件の PodMonitor を置く。
+Flux Kustomization は `prometheus-operator-crd` に依存し、既存の `flux-system` namespace を使う。
+Alloy の既存 PodMonitor discovery と共通 relabel を通し、Mimir へ `cluster=natsume` / `cluster=meruto` を付けて送る。
+
+### 実機で確認した endpoint と収集対象
+
+2026-09-17 JST の実 Deployment と各 Pod の `/metrics` で、次の構成を確認した。
+両クラスタは同じ controller 構成で、image automation controller は稼働していない。
+
+| 対象 | 実 image version | metrics port | 主なメトリクス |
+| --- | --- | --- | --- |
+| source-controller | v1.9.5 | `http-prom` / 8080 | `gotk_reconcile_duration_seconds_*`、`gotk_cache_events_total` |
+| kustomize-controller | v1.9.5 | `http-prom` / 8080 | `gotk_reconcile_duration_seconds_*` |
+| helm-controller | v1.6.4 | `http-prom` / 8080 | `gotk_reconcile_duration_seconds_*` |
+| notification-controller | v1.9.4 | `http-prom` / 8080 | `gotk_event_http_request_duration_seconds_*` |
+| flux-operator | v0.57.0 | `http-metrics` / 8080 | `flux_resource_info`、`flux_instance_info`、`flux_operator_info` |
+
+すべて HTTP の `/metrics` を30秒間隔で scrape する。
+controller は `app.kubernetes.io/part-of=flux`、Operator は `app.kubernetes.io/name=flux-operator` と `app.kubernetes.io/instance=flux-operator` の一致で選択する。
+port 名を分けるため、Operator を controller 側で二重収集しない。
+Pod label から `controller` ラベルも付ける。
+既存の Flux NetworkPolicy `allow-scraping` が全 namespace から TCP/8080 を許可しているため、通信許可の追加は不要。
+
+controller の duration には `kind` / `name` / `namespace` があり、`namespace` は監視対象リソースの namespace を表す。
+controller 側は `honorLabels: true` とし、scrape 対象の `flux-system` でこの値を上書きしない。
+Operator の `flux_resource_info` は対象 namespace を `exported_namespace` に持つ。
+こちらの scrape ラベル `namespace=flux-system` と混同しない。
+
+### Ready と suspend は Operator の状態ラベルで判定する
+
+現行 controller の実 endpoint に `gotk_reconcile_condition` / `gotk_suspend_status` は存在しない。
+[Flux の監視仕様](https://fluxcd.io/flux/monitoring/metrics/)に従い、処理時間は controller、リソース状態は [Flux Operator のメトリクス](https://fluxoperator.dev/docs/instance/monitoring/)から取得する。
+`flux_resource_info` の値は常に1で、`ready="True|False|Unknown"` と `suspended="True|False"` が現在の状態を表す。
+Ready=False のときは `ready="False"` の系列が1となる。Unknown も同様で、ほかの状態を値0で並べる形式ではない。
+`type` / `status` ラベルはなく、Ready condition の status が `ready` に、reason が `reason` に入る。
+系列の不在や値0を、正常・失敗の判定に使わない。
+
+[v0.57.0 の実装](https://github.com/controlplaneio-fluxcd/flux-operator/blob/v0.57.0/internal/reporter/metrics.go)では、Ready condition がなければ `ready="Unknown"`、`spec.suspend=true` なら `suspended="True"` となる。
+OCI 型 HelmRepository と Alert / Provider は例外的に `ready="True"` として扱う。
+後続 #748 では対象 kind を絞り、意図した suspend と収集欠損を別に扱う。
+今回の生メトリクスは natsume 117件 / meruto 64件がすべて `ready="True",suspended="False"`、値1だった。
+False / Unknown / suspended=True の表現は上記実装で確認したもので、本番への障害注入や suspend による観測はしていない。
+
+Operator は FluxReport の更新時に状態メトリクスを更新する。
+現在は両クラスタとも reporting interval の上書きがなく、既定の5分間隔である。
+30秒 scrape にしても状態の判明には通常最大約5分と収集・転送時間がかかる。
+この PR では reporting / reconciliation interval とリリース戦略を変更しない。
+
+### 静的検証と merge 後の確認
+
+両クラスタの root / app の Kustomize build、実 Deployment に対する selector と named port の一致、実 API の server dry-run を確認する。
+PodMonitor は各クラスタで4 controller と1 Operator を選択する想定である。
+PodMonitor / ServiceMonitor と Alloy の既存 target 一覧も比較し、同じ endpoint を収集する既存経路がないことを確認する。
+Pod endpoint の生メトリクスを読めたことだけでは、Alloy から Mimir までの到達確認としない。
+
+```sh
+kubectl kustomize flux/clusters/natsume/apps/flux-monitoring
+kubectl kustomize flux/clusters/meruto/apps/flux-monitoring
+kubectl --context natsume@soli apply --dry-run=server -k flux/clusters/natsume/apps/flux-monitoring
+kubectl --context meruto@soli apply --dry-run=server -k flux/clusters/meruto/apps/flux-monitoring
+```
+
+merge 後は通常の Flux 同期で反映し、`flux-monitoring` Kustomization の revision / Ready と2件の PodMonitor を確認する。
+Alloy の `prometheus.operator.podmonitors.default` で各クラスタ5 target が healthy、last_error が空であることを確認する。
+controller / Operator の再起動は不要。
+Mimir では次を照合する。
+
+```promql
+up{controller=~"source-controller|kustomize-controller|helm-controller|notification-controller|flux-operator"}
+count by (cluster, controller, instance) (up{controller=~".+"})
+count by (cluster, controller, kind, namespace) (gotk_reconcile_duration_seconds_count)
+count by (cluster, controller) (gotk_event_http_request_duration_seconds_count)
+count by (cluster, kind, ready, suspended) (flux_resource_info)
+flux_resource_info{kind=~"Kustomization|HelmRelease|GitRepository",ready=~"False|Unknown",suspended="False"} == 1
+time() - timestamp(flux_resource_info)
+```
+
+期待する10 target が up=1、各 instance の収集経路が1つで、サンプルが継続して更新されることを確認する。
+duration の対象リソース名・namespace と、Operator の `name` / `exported_namespace` を実 CR に照合する。
+sample timestamp は scrape 時刻であり、FluxReport の更新時刻ではない点に注意する。
+通知テストは行わず、収集とラベルの確認後に結果を #738 へ記録する。
+
+### rollback は PodMonitor を取り除く
+
+両クラスタの `flux-monitoring` app / Kustomization と root の登録を revert する。
+Flux の prune で今回の2件の PodMonitor が消え、Alloy の対応 target がなくなることを確認する。
+既存の FluxInstance、controller、Operator、NetworkPolicy は維持する。
+過去のメトリクスは Mimir に残るが、新しいサンプルの収集は止まる。
