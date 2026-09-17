@@ -1,6 +1,6 @@
 # navidrome
 
-![Version: 2.5.0](https://img.shields.io/badge/Version-2.5.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.63.2](https://img.shields.io/badge/AppVersion-0.63.2-informational?style=flat-square)
+![Version: 2.6.0](https://img.shields.io/badge/Version-2.6.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.64.0](https://img.shields.io/badge/AppVersion-0.64.0-informational?style=flat-square)
 
 A Helm chart for Navidrome - A modern Music Server and Streamer
 
@@ -47,8 +47,10 @@ A Helm chart for Navidrome - A modern Music Server and Streamer
 | config.enableLogRedacting | bool | `true` |  |
 | config.enableM3UExternalAlbumArt | bool | `false` |  |
 | config.enableMediaFileCoverArt | bool | `true` |  |
+| config.enableNaturalSorting | bool | `false` | Sort names and titles naturally (for example, Track 2 before Track 10). |
 | config.enableNowPlaying | bool | `true` |  |
 | config.enableReplayGain | bool | `true` |  |
+| config.enableScheduledDBAnalyze | bool | `true` | Periodically run a full database ANALYZE to refresh query planner statistics. |
 | config.enableScrobbleHistory | bool | `true` |  |
 | config.enableSharing | bool | `true` |  |
 | config.enableStarRating | bool | `true` |  |
@@ -69,6 +71,10 @@ A Helm chart for Navidrome - A modern Music Server and Streamer
 | config.inspect.backlogTimeout | int | `60000000000` |  |
 | config.inspect.enabled | bool | `true` |  |
 | config.inspect.maxRequests | int | `1` |  |
+| config.jellyfin.enabled | bool | `false` | Enable the experimental Jellyfin Music API. |
+| config.jellyfin.exposedPublicUsers | string | `""` | Comma-separated usernames exposed by the unauthenticated public users endpoint; empty exposes none. |
+| config.jellyfin.maxConcurrentStreams | int | `nil` | Concurrent Jellyfin collection streams; null omits the option and uses Navidrome's dynamic default, max(2, MaxOpenConns/2). |
+| config.jellyfin.serverName | string | `""` | Server name advertised to Jellyfin clients; empty uses `Navidrome <version>`. |
 | config.jukebox.adminOnly | bool | `true` |  |
 | config.jukebox.default | string | `""` |  |
 | config.jukebox.devices | list | `[]` |  |
@@ -85,6 +91,7 @@ A Helm chart for Navidrome - A modern Music Server and Streamer
 | config.lyricsPriority | string | `".ttml,.yaml,.yml,.elrc,.lrc,.srt,.txt,embedded"` |  |
 | config.matcher.fuzzyThreshold | int | `85` |  |
 | config.matcher.preferStarred | bool | `true` |  |
+| config.maxImageSize | string | `"20MB"` | Maximum artwork image size to decode; Navidrome raises this to maxImageUploadSize if lower. |
 | config.maxImageUploadSize | string | `"10MB"` |  |
 | config.maxSidebarPlaylists | int | `100` |  |
 | config.mpvCmdTemplate | string | `"mpv --audio-device=%d --no-audio-display %f --input-ipc-server=%s"` |  |
