@@ -4,3 +4,4 @@ resources:
 - namespace.yaml
 - helmrepository-longhorn-repo.yaml
 - helmrelease-longhorn.yaml
+- networkpolicy-alloy-metrics.yaml

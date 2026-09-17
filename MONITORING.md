@@ -570,3 +570,79 @@ component の停止を確認後、API の namespace 一覧と PrometheusRule の
 削除には namespace 全体を URL encode した `/prometheus/config/v1/rules/<encoded-namespace>` への DELETE を使う。
 実行前に対象を確認し、prefix 一括削除や既存 alloy namespace の削除は行わない。
 rollback 後に既存24本の正常評価・通知先 discovery と、meruto ルールの二重評価がないことを確認する。
+
+## Longhorn manager への Alloy 通信を許可する（#737）
+
+Longhorn 1.12.1 の manager metrics は `http://<manager Pod IP>:9500/metrics` で公開される。
+既存 ServiceMonitor の `app=longhorn-manager`、Service `longhorn-backend`、port `manager` はこの endpoint を指しており、変更しない。
+[公式の監視構成](https://longhorn.io/docs/1.12.0/monitoring/prometheus-and-grafana-setup/)も同じ Service と port を使う。
+
+収集を妨げていたのは、chart の [manager NetworkPolicy](https://github.com/longhorn/charts/blob/longhorn-1.12.1/charts/longhorn/templates/network-policies/manager-network-policy.yaml)だった。
+既定の `networkPolicies.restrictInternalTraffic: true` により作られ、Longhorn 内部の Pod だけを許可する。
+`networkPolicies.enabled: false` でも、この内部通信用の policy は生成される。
+両クラスタの `apps/longhorn/networkpolicy-alloy-metrics.yaml` で、既存 policy に次の許可を加える。
+
+- 宛先: `longhorn-system` の `app=longhorn-manager` Pod、TCP/9500。
+- 送信元: `alloy` namespace **かつ** `app.kubernetes.io/name=alloy` / `app.kubernetes.io/instance=alloy` の Pod。
+
+namespaceSelector と podSelector は同じ `from` 要素に置き、両条件を満たす Pod だけを対象とする。
+9500 は manager API と metrics の共用 port であり、NetworkPolicy は HTTP path 単位の制限をしない。
+既存の内部通信用 policy は維持する。ServiceMonitor、Alloy、Longhorn chart / storage の設定は変更しない。
+
+### 変更前の証拠（2026-09-17 JST）
+
+| クラスタ / ノード | manager endpoint | Alloy の last scrape error | manager 自身からの取得 |
+| --- | --- | --- | --- |
+| natsume / natsume-03 | `10.1.1.169:9500/metrics` | `context deadline exceeded`、約10秒 | 成功、volume capacity 7系列 |
+| natsume / natsume-08 | `10.1.0.86:9500/metrics` | 同上 | 成功、volume capacity 1系列 |
+| meruto / meruto-01 | `10.1.0.16:9500/metrics` | 同上 | 成功、volume capacity 2系列 |
+
+Pod IP は当時の値で、再作成後は EndpointSlice を取り直す。
+ServiceMonitor は各クラスタ1件、Alloy target は natsume 2件 / meruto 1件で、すべて `up=0`。
+Mimir の `{__name__=~"longhorn_.*"}` は空だった。
+Alloy の生成設定は HTTP、`/metrics`、1分間隔、timeout 10秒。Service / EndpointSlice の selector、port 9500、ready endpoint は一致していた。
+実 NetworkPolicy の ingress は同 namespace の Longhorn 関連 Pod に限られ、Alloy を許可していなかった。Alloy 側には egress 制限がなかった。
+
+manager コンテナから自身の Pod IP に curl すると、全3台が成功した。
+`longhorn_volume_capacity_bytes` / `longhorn_volume_robustness` に node / volume / pvc / pvc_namespace、`longhorn_node_storage_capacity_bytes` に node を確認した。
+ここで取得した生メトリクスには cluster がなく、Alloy の共通 relabel が Mimir への送信前に付ける。
+manager は localhost:9500 で待ち受けていないため、Pod port-forward は connection refused となった。endpoint の異常とは扱わず、Pod IP で切り分けた。
+
+### merge 後に収集の継続とラベルを確認する
+
+両クラスタの root / Longhorn Kustomize build、送信元を AND 条件にした selector の検査、実 API の `kubectl apply --dry-run=server` は成功した。
+本番への policy 反映と Mimir への到達確認は merge 後に行う。通常の Flux 同期で適用でき、Alloy / Longhorn の再起動は不要。
+
+```sh
+kubectl --context natsume@soli -n longhorn-system get networkpolicy longhorn-manager-alloy-metrics
+kubectl --context meruto@soli -n longhorn-system get networkpolicy longhorn-manager-alloy-metrics
+```
+
+Flux `longhorn` Kustomization の反映 revision と Ready を確認し、Alloy の `prometheus.operator.servicemonitors.default` で該当 target の last_error が消えることを確認する。
+API から調べる場合は Alloy の12345へ port-forward し、`/api/v0/web/components/prometheus.operator.servicemonitors.default` の debugInfo / targets を読む。
+Mimir の query API はこの文書の「適用と状態確認」の port-forward を使う。
+
+```promql
+up{namespace="longhorn-system",job="longhorn-backend"}
+min_over_time(up{namespace="longhorn-system",job="longhorn-backend"}[5m])
+count_over_time(up{namespace="longhorn-system",job="longhorn-backend"}[5m])
+count by (cluster, node) (longhorn_node_storage_capacity_bytes)
+count by (cluster, node, volume, pvc_namespace, pvc) (longhorn_volume_capacity_bytes)
+count by (cluster, node, volume, state) (longhorn_volume_robustness)
+count by (cluster, instance) (up{namespace="longhorn-system",job="longhorn-backend"})
+time() - timestamp(longhorn_volume_capacity_bytes)
+```
+
+反映後5分以上観測し、期待する3 target が継続して up=1、5分の最小値が1、1分間隔に見合うサンプル数であることを確認する。
+node / volume の系列に正しい cluster が付き、最終サンプルが更新され続けることを確認する。
+最後の count は各 instance で1となることを確認し、ServiceMonitor / Alloy target の一覧も照合して二重 scrape がないことを確かめる。
+新しく届く系列の履歴開始を記録し、#747 のルールは必要な履歴がたまってから有効化する。
+通知テストは行わず、収集とラベルの確認記録を #737 に残して完了扱いとする。
+
+### rollback は今回の通信許可だけを取り除く
+
+両クラスタの追加 NetworkPolicy と Kustomize の登録を revert し、Flux の prune で今回の policy だけが消えることを確認する。
+chart が管理する既存 `longhorn-manager` policy は削除しない。
+Longhorn の volume / replica / disk / StorageClass と ServiceMonitor を変更する必要はない。
+rollback 後は Alloy からの収集が再び遮断されるため、欠測を確認して復旧方針を記録する。
+Longhorn 指標の収集成功だけで、すべての iSCSI 障害を検出できるとは扱わない。
