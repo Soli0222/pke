@@ -1,5 +1,9 @@
 # 監視基盤の運用
 
+2026-09-17 のユーザー指定により、本番の合成通知テストは今後実施しない。
+通知検証を省略した旨を記録し、各 Issue のほかの検証を満たした時点で完了扱いとする。
+以下に残る通知テスト手順は参考用であり、自動実行やクローズの必須条件にはしない。
+
 ## natsume の Ruler 通知先
 
 Mimir 3.2.1 の Ruler は、次の設定で同じ Mimir 内の Alertmanager に通知する。
@@ -463,7 +467,7 @@ CNPG の DB 選択、`by`、`on`、`ignoring` では DB 識別に `cnpg_cluster`
 | 設定 | natsume | meruto |
 | --- | --- | --- |
 | Mimir URL | `http://mimir.mimir:8080` | `https://mimir.pstr.space` |
-| namespace prefix | `alloy`（既存の既定値を明示） | `meruto` |
+| namespace prefix | `natsume`（#762 で旧 `alloy` から移行） | `meruto` |
 | query matcher / 出力ラベル | `cluster="natsume"` | `cluster="meruto"` |
 | 認証 | クラスタ内 HTTP、tenant `anonymous` | remote_write と同じ `remote.kubernetes.secret.mtls`、tenant `anonymous` |
 
@@ -472,7 +476,7 @@ Mimir namespace は `<prefix>/<Kubernetes namespace>/<PrometheusRule名>/<UID>` 
 Alloy chart 1.12.1 の既存 ClusterRole は namespaces と prometheusrules の get / list / watch を許可しているため、追加 RBAC は不要。
 chart 自体、blackbox の閾値、Alertmanager の route は変更しない。
 
-### merge 前の確認記録（2026-09-17 JST）
+### #736 の merge 前の確認記録（2026-09-17 JST）
 
 両クラスタの実 Alloy は v1.19.2。ServiceAccount `alloy/alloy` の上記権限は `kubectl auth can-i --as=system:serviceaccount:alloy:alloy` で全件確認した。
 Mimir の discovered Alertmanager は1、同期済みルール24本はすべて `health=ok` だった。
@@ -495,7 +499,7 @@ meruto には `blackbox-exporter-probes/blackbox-exporter-probes-blackbox-export
 評価の `health=ok` は入力や通知の有効性を保証しないため、この6本を有効な監視として数えない。
 アプリ固有 chart の matcher 修正は #736 に含めず、別途対応する。Loki の入力 bucket は natsume で135系列あり、既存 recording 出力には cluster がなかった。
 
-以下はローカル検証であり、本番での反映・通知確認は merge 後に行う。
+以下はローカル検証である。#736 の同期・評価・ラベルは本番確認済みで、通知テストはユーザー指定により省略してクローズした。
 
 ```sh
 uv run --with pyyaml --with jinja2 python scripts/validate-cluster-labels.py
@@ -540,36 +544,77 @@ curl -fsS -H 'X-Scope-OrgID: anonymous' \
 ```
 
 棚卸し以降に PrometheusRule が増減していなければ、既存3 namespace と新しい meruto 1 namespace の計4つ、alert 11本 / recording 18本となる。
-既存3 namespace の名前と UID が変わらず、すべての selector が所有クラスタに限定され、全 rule の labels に同じ cluster があることを確認する。
+#736 の反映では既存3 namespace の名前と UID を維持した。#762 の移行後は natsume prefix となり、UID は同じ。
+すべての selector が所有クラスタに限定され、全 rule の labels に同じ cluster があることを確認する。
 `health=ok` / `lastError` 空に加え、評価失敗と Alloy の `mimir_rules_events_failed_total` が増加しないことを確認する。
 Loki の記録系列も実際に query し、集計で cluster が落ちていないことを確認する。
 
-### 両クラスタの通知と回収を確認する
+### #736 は通知テストを省略して完了
 
-本番テスト通知の実施が承認された後、この文書の「Slack までの発火と解消の検証」の一時 PrometheusRule を両クラスタで実行する。
-`kubectl --context` をそれぞれ指定し、同じテスト ID と alertname を使う。
-テスト rule に cluster を手書きせず、Alloy が付与した値で natsume-alerts / meruto-alerts に分かれることを確かめる。
-同じ rule に `record: pke_scope_e2e_sum` / `expr: sum(up)` と、`record: pke_scope_e2e_absent` / `expr: absent(pke_scope_e2e_nonexistent)` を追加する。
-前者はクラスタを指定した直接 query の `sum(up{cluster="..."})` と同時刻の結果を比べ、後者は両クラスタで値1になることを確認する。
-各出力の cluster と、保存された入力 selector の完全一致条件も確認する。
-同名の入力系列を両クラスタに与えた際の数値分離と DB join は、上記のローカル試験でも確認する。
-
-発火→解消が Slack と各 ntfy topic に届いた記録を残し、fallback topic に誤配送されていないことを確認する。
-実アプリや blackbox 対象を停止して発火させない。
-blackbox 5本と natsume の既存ルールは同期・正常評価を確認し、通知経路は同じ component を通る合成ルールで確認する。
-テスト後は作成した PrometheusRule だけを両クラスタから削除し、次回同期後（既定5分）の Mimir でも該当 UID の namespace が消えたことを確認する。
-一時 recording 系列は retention まで残りうるため、書き込み停止とサンプル時刻を確認する。
-本番での同期、評価、発火・解消、回収がそろったら #736 に記録し、Issue を閉じる。
+[反映記録](https://github.com/Soli0222/pke/issues/736#issuecomment-5714682431)に、両クラスタの同期、全29ルールの正常評価、入力 matcher と出力ラベル、Loki 記録系列のラベルを記載した。
+ユーザー指定により本番の合成通知テストは省略し、Issue をクローズした。一時 PrometheusRule は作成していない。
+通知到着を確認済みとは扱わず、今後の Issue も同じ方針で進める。
 
 ### rollback では meruto の同期済みルールも確認する
 
-natsume は今回の matcher / external_labels を revert すると、同じ alloy namespace のルールが旧式に更新される。
+この項は #736 の rollback を扱う。#762 の prefix 移行を戻す場合は次節の手順を使う。
+matcher / external_labels を revert すると、使用中の namespace に保存されたルールが旧式に更新される。
 meruto は component の撤去だけでは同期済みルールが残る可能性がある。
 meruto の一時テスト CR を先に回収し、その削除同期を確認してから設定を revert する。
 component の停止を確認後、API の namespace 一覧と PrometheusRule の UID を照合し、今回作成した `meruto/blackbox-exporter-probes/blackbox-exporter-probes-blackbox-exporter/<UID>` だけを個別削除する。
 削除には namespace 全体を URL encode した `/prometheus/config/v1/rules/<encoded-namespace>` への DELETE を使う。
 実行前に対象を確認し、prefix 一括削除や既存 alloy namespace の削除は行わない。
 rollback 後に既存24本の正常評価・通知先 discovery と、meruto ルールの二重評価がないことを確認する。
+
+## natsume の rule namespace prefix を統一する（#762）
+
+#736 では既存 namespace を維持したが、ユーザーの追加指定で prefix を `alloy` から `natsume` に変更する。
+`cluster` matcher と出力ラベル、rule group 名、式、UID は変えない。meruto の設定も維持する。
+以下の3 namespace が移行対象であり、先頭の `alloy/` だけを `natsume/` に置き換える。
+
+```text
+alloy/emoji-service/emoji-renderer/63d1b106-01f0-44eb-ba5b-542e4e90eff9
+alloy/loki/loki-loki-rules/7392d2dd-e610-46bf-ac47-e2701af5250d
+alloy/spotify-nowplaying/spotify-nowplaying/0d0fedf1-330e-424f-9ff8-19f8b97f0ea7
+```
+
+実 Alloy v1.19.2 を使う `scripts/validate-rule-scoping.py` で、新しい natsume / meruto prefix とクラスタ分離を検証する。
+この試験は旧 alloy namespace をあらかじめ偽 API に置き、prefix を変えても旧ルールが自動削除されないことも確認する。
+本番でも新旧が一時的に並び、同じルールが二重評価されるため、merge 後は新ルールの確認と旧ルールの回収を続けて行う。
+新しい rule group は評価状態を引き継がない可能性がある。pending / firing の状態や `for` の経過を確認し、無中断の移行とは扱わない。
+記録系列の名前・ラベルは維持するため、prefix 変更自体で別のメトリクス系列にはならない。
+
+### 新しい3 namespace の同期・正常評価を確認してから旧3つを回収する
+
+1. merge 前に Mimir の `/prometheus/config/v1/rules` を保存し、上記3つと meruto 1つの計4 namespace であることを確認する。natsume の PrometheusRule 一覧と UID も取り直す。対象が増減していたら一覧を更新し、削除対象を確認し直す。
+2. merge 後、natsume の Alloy Kustomization の revision と reload 成功を確認する。すべての稼働 Alloy Pod で component の `mimir_namespace_prefix` が `natsume` になったことを確認する。旧 prefix を書く Pod が残っている間は回収しない。
+3. Mimir の保存 API を再取得し、旧3つと対応する新3つの全 rule group を比較する。group 名、interval、rule 順序、expr、for、labels、annotations を含む内容が一致することを確認する。移行先が欠ける場合や内容が違う場合は削除しない。
+4. `/prometheus/api/v1/rules` で新3 namespace の全24本が評価され、`health=ok` / `lastError` 空となったことを確認する。Loki の記録系列に新しいサンプルが届くことも確認する。
+5. 旧3 namespace を1件ずつ指定し、対応する移行先を再確認してから DELETE する。削除 API は namespace 全体を percent-encode する。tenant 全体や prefix 一括の削除 API は使わない。
+
+Alloy component の実引数は、各 Pod の12345への port-forward 後に `/api/v0/web/components/mimir.rules.kubernetes.default` で確認できる。
+Mimir の API はこの文書の port-forward を使い、認証情報を含む `/config` は取得しない。
+[namespace 削除 API](https://grafana.com/docs/mimir/latest/references/http-api/#delete-namespace)の実行例は次のとおり。旧3つそれぞれについて、上記の照合後に実行する。
+
+```sh
+# 一覧から照合済みの旧 namespace を1つだけ指定する。
+old_namespace='alloy/emoji-service/emoji-renderer/63d1b106-01f0-44eb-ba5b-542e4e90eff9'
+encoded_namespace=$(python3 -c 'import sys; from urllib.parse import quote; print(quote(sys.argv[1], safe=""))' "$old_namespace")
+curl -fsS -X DELETE -H 'X-Scope-OrgID: anonymous' \
+  "http://127.0.0.1:18080/prometheus/config/v1/rules/$encoded_namespace"
+```
+
+削除受付の202だけで完了とはしない。
+保存 API と評価 API の両方から旧3つが消え、natsume 3つ / meruto 1つの計4 namespace、alert 11本 / recording 18本となることを確認する。
+次の Alloy 同期周期（既定5分）後も旧 prefix が再生成されず、評価失敗が増えていないことを確認して #762 に記録する。
+移行前の meruto の保存内容が変わらないことも比較する。通知テストは実施しない。
+
+### rollback も新旧を照合してから不要な側を回収する
+
+旧 namespace を削除する前なら、prefix を `alloy` に revert し、全 Alloy Pod の反映を確認する。
+旧3つが正常評価されていることを確認してから、今回作成した natsume 3 namespace だけを削除する。
+旧 namespace の回収後に戻す場合は、先に prefix を revert して Alloy に旧3つを再同期させる。
+旧側の保存内容と正常評価を確認後、同じ手順で新側を回収する。両側を先に削除しない。
 
 ## Longhorn manager への Alloy 通信を許可する（#737）
 
