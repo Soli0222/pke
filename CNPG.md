@@ -2,6 +2,9 @@
 
 この文書は PKE で管理する CloudNativePG の構成、バックアップ、リストア手順をまとめる。
 現行の CNPG `Cluster` は natsume クラスタにだけ存在する。
+meruto の復元用 Misskey DB は [PR #753](https://github.com/Soli0222/pke/pull/753) で撤去した。
+operator の稼働と DB の存在は別に確認し、meruto の DB メトリクスがないことを欠測とは扱わない。
+監視対象の確認記録と再導入時の手順は [MONITORING.md](MONITORING.md#meruto-の-cnpg-監視対象740) を参照する。
 
 ## Operator
 

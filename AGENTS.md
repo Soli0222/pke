@@ -191,6 +191,8 @@ meruto の `cert-manager-config` は `letsencrypt-dns01` のみを定義する�
 ## CNPG
 
 CNPG `Cluster` は natsume 側だけにある。
+meruto の復元用 `misskey-cluster` は #753 で撤去済みで、CNPG operator だけを維持する。
+meruto に DB PodMonitor や DB の欠測アラートを追加するときは、先に実在する `Cluster` と DB Pod を確認する。
 `misskey`、`grafana`、`sui`、`spotify-reblend`、`spotify-nowplaying` はすべて `instances: 1` である。
 
 `misskey` は `barman-cloud.cloudnative-pg.io` plugin で WAL archive と base backup を使う。

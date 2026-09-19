@@ -889,3 +889,37 @@ time() - timestamp(alloy_build_info{job="alloy-host"})
 既存の node / Falco / etcd の収集再開を確認する。追加した systemd と self-metrics の新規 sample は止まる。
 続けてリポジトリの変更を revert し、次回の Ansible 適用で再導入されないようにする。
 他の `/etc/alloy` ファイルや証明書、Alloy の systemd override は復元対象に含めない。
+
+## meruto の CNPG 監視対象（#740）
+
+#740 は meruto の `misskey/misskey-cluster` の収集追加を想定していたが、Issue 作成後に [PR #753](https://github.com/Soli0222/pke/pull/753) で DB と関連 manifest が撤去された。
+2026-09-19 JST に main `05962c1` と実クラスタを再確認し、meruto の DB PodMonitor 追加は不要と判断した。
+AGENTS.md / CNPG.md の「CNPG Cluster は natsume のみ」という記述は現状と一致する。
+
+| 確認対象 | meruto の結果 |
+| --- | --- |
+| リポジトリ | `apps/misskey/`、対応 Flux Kustomization、root 登録はいずれも撤去済み |
+| `Cluster.postgresql.cnpg.io` | 全 namespace で0件 |
+| `cnpg.io/podRole=instance` の DB Pod | 全 namespace で0件 |
+| CNPG PodMonitor | `cnpg-system/cnpg-cloudnative-pg` の operator 用1件。DB 用は0件 |
+| operator Deployment | ready / available 各1 |
+| Alloy の operator target | 1件、health=up、last_error なし |
+| Mimir の operator `up` | `cluster="meruto",job="cnpg-system/cnpg-cloudnative-pg"` が1 |
+| Mimir の DB 指標 | `cluster="meruto",cnpg_cluster!=""` の `cnpg_*` はなし |
+
+natsume には `grafana-cluster`、`misskey-cluster`、`reblend-cluster`、`spn-cluster`、`sui-cluster` の5 DB が存在する。
+それぞれの `cnpg_collector_up` に `cluster="natsume"` と DB 名の `cnpg_cluster` が付くことを確認した。
+meruto の DB に対する up=1 やラベル共存を確認したとは扱わない。
+後続 #746 で期待する DB 一覧にも、撤去済みの meruto / misskey-cluster を含めない。
+
+### DB を再導入した場合
+
+まず実 `Cluster` と DB Pod の namespace、`cnpg.io/cluster`、`cnpg.io/podRole=instance`、metrics の named port を確認する。
+対象 app に PodMonitor と Kustomize 登録を追加し、Pod の `cnpg.io/cluster` から `cnpg_cluster` を付ける relabeling を設定する。
+Alloy の共通 relabel による `cluster="meruto"` と併せて、元から DB 名の cluster を持つ系列・持たない系列の両方で確認する。
+natsume の PodMonitor は構造の参考にし、operatorVersion / DB version などの生成メタデータをコピーしない。
+operator 用と DB 用の target を分け、重複収集がないことも確認する。
+
+今回の変更は文書のみで、両クラスタの manifest、DB 設定、storage、backup は変更しない。
+merge 後のクラスタ適用は不要で、rollback は文書変更の revert のみとなる。
+通知テストは実施しない。
