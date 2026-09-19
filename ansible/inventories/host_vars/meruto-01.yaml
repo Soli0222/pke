@@ -2,6 +2,12 @@
 ansible_host: meruto-01
 cluster: meruto
 
+alloy_systemd_units:
+  - alloy.service
+  - k3s.service
+  - etcd.service
+  - falco-modern-bpf.service
+
 ssh_agent_sudo_users:
   - name: soli
     github_user: soli0222

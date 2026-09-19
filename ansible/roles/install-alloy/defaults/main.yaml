@@ -17,6 +17,10 @@ tls_cert_dir: /etc/cert/pke-natsume
 tls_cert_path: "{{ tls_cert_dir }}/tls.crt"
 tls_key_path: "{{ tls_cert_dir }}/tls.key"
 
+# 常駐を期待する実 unit 名。ホスト固有のサービスは host_vars で列挙する。
+alloy_systemd_units:
+  - alloy.service
+
 # Optional Docker log collection. Enable this per host/group where Docker is
 # present and container logs should be sent to Loki.
 docker:

@@ -1,0 +1,22 @@
+---
+- name: Validate and update Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.alloy.j2
+    dest: /etc/alloy/prometheus.alloy
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+    validate: /usr/bin/alloy validate %s
+  register: alloy_monitoring_config
+
+- name: Record the rollback configuration path
+  ansible.builtin.debug:
+    msg: "Previous configuration: {{ alloy_monitoring_config.backup_file }}"
+  when: alloy_monitoring_config.backup_file is defined
+
+- name: Restart Alloy after a configuration change
+  ansible.builtin.systemd_service:
+    name: alloy
+    state: restarted
+  when: alloy_monitoring_config.changed

@@ -2,11 +2,36 @@
 // Node Exporter
 // ============================================================
 
-prometheus.exporter.unix "node" {}
+prometheus.exporter.unix "node" {
+  enable_collectors = ["systemd"]
+  systemd {
+    unit_include = {{ ('^(' ~ (alloy_systemd_units | map('regex_escape') | join('|')) ~ ')$') | tojson }}
+  }
+}
 
 prometheus.scrape "node" {
   targets    = prometheus.exporter.unix.node.targets
   forward_to = [prometheus.relabel.add_common_labels.receiver]
+}
+
+// ============================================================
+// Host Alloy self-metrics
+// ============================================================
+
+prometheus.exporter.self "host" {}
+
+discovery.relabel "alloy_self" {
+  targets = prometheus.exporter.self.host.targets
+  rule {
+    target_label = "job"
+    replacement  = "alloy-host"
+  }
+}
+
+prometheus.scrape "alloy_self" {
+  targets         = discovery.relabel.alloy_self.output
+  scrape_interval = "30s"
+  forward_to      = [prometheus.relabel.add_common_labels.receiver]
 }
 
 // ============================================================
