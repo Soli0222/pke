@@ -25,7 +25,7 @@
         "kind": "upstream",
         "url": "https://github.com/controlplaneio-fluxcd/flux-operator/blob/bda202b7503d9f019436028699c1e235ceb68e02/config/monitoring/dashboards/flux-performance.json",
         "revision": "bda202b7503d9f019436028699c1e235ceb68e02",
-        "license": "Apache-2.0; licenses/flux-operator-LICENSE",
+        "license": "AGPL-3.0; licenses/flux-operator-LICENSE",
         "changes": [
           "Mimir UID固定、cluster → Flux namespaceの選択を追加し、全selectorとCPU joinをクラスタ分離",
           "未Ready・suspend一覧と件数を追加。無条件の欠測ゼロ補完を除去",
