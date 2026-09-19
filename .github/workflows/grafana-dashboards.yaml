@@ -21,5 +21,7 @@ jobs:
         run: python3 -m pip install -r grafana/requirements.txt
       - name: Check valid and invalid dashboard fixtures
         run: python3 scripts/test-grafana-dashboards.py
+      - name: Check Git Sync setup boundaries
+        run: python3 scripts/test-grafana-git-sync.py
       - name: Validate Git Sync files
         run: python3 scripts/validate-grafana-dashboards.py

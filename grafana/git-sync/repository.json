@@ -1,0 +1,20 @@
+{
+  "apiVersion": "provisioning.grafana.app/v0alpha1",
+  "kind": "Repository",
+  "metadata": { "name": "pke-dashboards" },
+  "spec": {
+    "title": "PKE",
+    "type": "github",
+    "description": "Soli0222/pkeのレビュー済みダッシュボード",
+    "github": {
+      "url": "https://github.com/Soli0222/pke",
+      "branch": "main",
+      "path": "grafana/dashboards/",
+      "generateDashboardPreviews": false
+    },
+    "connection": { "name": "pke-github" },
+    "sync": { "enabled": true, "intervalSeconds": 60, "target": "folder" },
+    "workflows": ["branch"],
+    "webhook": { "disabled": true }
+  }
+}
