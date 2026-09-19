@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """1Passwordの専用GitHub Appをgcx経由でGrafanaへ登録する。既定はdry-run。"""
 import argparse
+import base64
 import json
 import os
 import subprocess
@@ -48,7 +49,8 @@ def main():
     config = ROOT / 'grafana/git-sync'
     connection = json.loads((config / 'connection.template.json').read_text())
     connection['spec']['github'] = {'appID': app_id, 'installationID': installation_id}
-    connection['secure'] = {'privateKey': {'create': private_key}}
+    # Provisioning APIのsecure.privateKeyはPEMをbase64化した値を受け取る。
+    connection['secure'] = {'privateKey': {'create': base64.b64encode(private_key.encode()).decode()}}
     # git管理外の0700ディレクトリ / 0600ファイルにのみ一時保存する。
     with tempfile.TemporaryDirectory(prefix='pke-grafana-git-sync-') as temp:
         path = Path(temp) / 'connection.json'
