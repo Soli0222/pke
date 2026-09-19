@@ -1,0 +1,15 @@
+{
+  "apiVersion": "provisioning.grafana.app/v0alpha1",
+  "kind": "Connection",
+  "metadata": { "name": "pke-github" },
+  "spec": {
+    "title": "PKE GitHub App",
+    "type": "github",
+    "url": "https://github.com",
+    "github": {
+      "appID": "${APP_ID}",
+      "installationID": "${INSTALLATION_ID}"
+    },
+    "webhook": { "disabled": true }
+  }
+}

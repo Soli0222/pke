@@ -104,7 +104,7 @@ gcx dashboards get <uid> -o json
 Repositoryの確認は必要なspec・statusだけを抽出する。
 UIで変更する場合はGit Syncのブランチ経由でPRを作り、同じ検証を通す。
 継続的な書き込み元はGit Syncのみとし、CIで`gcx push`やdashboard APIによる更新をしない。
-新規追加時の接続・認証設定は、[Git Syncの設定仕様](https://grafana.com/docs/grafana/latest/as-code/observability-as-code/git-sync/git-sync-setup/set-up-code/)に従う。
+接続・認証設定は[Git Syncの接続手順](git-sync/README.md)を参照する。
 
 ## 既存画面をUIDを保って移行する
 
