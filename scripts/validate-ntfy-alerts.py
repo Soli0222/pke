@@ -331,7 +331,9 @@ def main():
                         assert code == 200, (topic, state, code)
                         message = json.loads(body)
                         assert state.upper() in message["message"].upper(), message
-                        assert "Validation" in message["title"], message
+                        assert message["title"] == (
+                            f"{state.capitalize()}: pke / Validation"
+                        ), message
                         assert "Local notification validation" in message["message"], (
                             message
                         )

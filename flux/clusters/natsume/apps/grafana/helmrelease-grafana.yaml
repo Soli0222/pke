@@ -52,6 +52,15 @@ spec:
         pullPolicy: IfNotPresent
       serviceMonitor:
         enabled: true
+      networkPolicy:
+        extraIngressSelectors:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: alloy
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: alloy
+              app.kubernetes.io/instance: alloy
       resources:
         requests:
           cpu: 100m
