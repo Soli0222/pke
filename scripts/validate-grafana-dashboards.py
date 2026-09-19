@@ -101,7 +101,8 @@ def content_errors(resource, datasources):
         else:
             errors.append(f'{at}: unknown datasource UID')
             return
-        if plugin and plugin != expected:
+        allowed_types = {'grafana', 'datasource'} if expected == 'grafana' else {expected}
+        if plugin and plugin not in allowed_types:
             errors.append(f'{at}: datasource plugin does not match UID')
 
     ids = set()
@@ -116,6 +117,9 @@ def content_errors(resource, datasources):
             errors.append(f'{at}: library panels are not managed by Git Sync')
         if 'datasource' in value:
             check_source(value['datasource'], at, value.get('group'))
+        if value.get('builtIn') == 1 and value.get('type') == 'dashboard':
+            if value.get('datasource', {}).get('uid') not in ('grafana', '-- Grafana --'):
+                errors.append(f'{at}: built-in annotations must use Grafana datasource')
         if value.get('kind') == 'DataQuery' and 'datasource' not in value:
             errors.append(f'{at}: DataQuery requires explicit datasource')
         if value.get('kind') == 'ElementReference' and value.get('name') not in spec.get('elements', {}):

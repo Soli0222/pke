@@ -39,10 +39,12 @@ def main():
     fields = {f.get('label'): f.get('value', '') for f in item.get('fields', [])}
     app_id, installation_id = fields.get('app-id', ''), fields.get('installation-id', '')
     private_key = fields.get('private-key', '')
+    if any(f.get('name') == 'private-key.pem' for f in item.get('files', [])):
+        private_key = run(['op', 'read', f'op://{args.vault}/{args.item}/private-key.pem'], sensitive=True)
     if not app_id.isdecimal() or not installation_id.isdecimal():
         raise RuntimeError('app-id and installation-id must be numeric 1Password fields')
     if 'PRIVATE KEY-----' not in private_key or '\n' not in private_key:
-        raise RuntimeError('private-key must contain the complete multiline PEM')
+        raise RuntimeError('private-key.pem attachment or private-key field must contain the complete multiline PEM')
     config = ROOT / 'grafana/git-sync'
     connection = json.loads((config / 'connection.template.json').read_text())
     connection['spec']['github'] = {'appID': app_id, 'installationID': installation_id}

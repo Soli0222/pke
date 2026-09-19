@@ -21,13 +21,18 @@ class BootstrapTests(unittest.TestCase):
         self.calls = []
         self.secret_paths = []
         self.existing = False
+        self.attachment = False
 
     def fake_run(self, args, **kwargs):
         self.calls.append(args)
         if args[0] == 'op':
             self.assertTrue(kwargs['sensitive'])
+            if args[1] == 'read':
+                self.assertTrue(args[2].endswith('/private-key.pem'))
+                return FAKE_KEY
             return json.dumps({'fields': [{'label': k, 'value': v} for k, v in
-                [('app-id', '123'), ('installation-id', '456'), ('private-key', FAKE_KEY)]]})
+                [('app-id', '123'), ('installation-id', '456'), ('private-key', 'broken' if self.attachment else FAKE_KEY)]],
+                'files': [{'name': 'private-key.pem'}] if self.attachment else []})
         if 'get' in args:
             return json.dumps({'items': [{'metadata': {'name': 'pke-github'}}] if self.existing else []})
         if '-p' in args:
@@ -53,6 +58,11 @@ class BootstrapTests(unittest.TestCase):
 
     def test_default_does_not_write(self):
         self.assertEqual(self.invoke(), [])
+
+    def test_attachment_takes_precedence_without_losing_newlines(self):
+        self.attachment = True
+        self.assertEqual(self.invoke(), [])
+        self.assertTrue(any(c[:2] == ['op', 'read'] for c in self.calls))
 
     def test_apply_writes_only_connection_then_repository(self):
         writes = self.invoke(apply=True)

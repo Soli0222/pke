@@ -10,8 +10,8 @@
         {
           "builtIn": 1,
           "datasource": {
-            "type": "prometheus",
-            "uid": "cfkr3kwq69r7ke"
+            "type": "datasource",
+            "uid": "grafana"
           },
           "enable": true,
           "hide": true,
@@ -27,8 +27,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "cfkr3kwq69r7ke"
+            "type": "datasource",
+            "uid": "grafana"
           },
           "enable": false,
           "hide": false,
