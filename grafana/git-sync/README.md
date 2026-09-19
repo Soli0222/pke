@@ -34,8 +34,10 @@ App作成後に秘密鍵を生成し、App IDとインストール後のURLのIn
 |---|---|
 | `app-id` | 数値のApp ID |
 | `installation-id` | 数値のInstallation ID |
-| `private-key` | 秘密鍵PEM全文（改行を保持、concealed field） |
+| 添付ファイル `private-key.pem` | 生成した秘密鍵ファイルをそのまま添付（推奨） |
+| `private-key`（代替） | 秘密鍵PEM全文（改行を保持、concealed field） |
 
+スクリプトは`private-key.pem`添付があればfieldより優先して読み取る。
 Appのprivate keyは1Passwordを正とし、Git・ログ・PRへ出力しない。
 Grafana自身の暗号化されたsecure storeへ登録し、Kubernetes Secretには複製しない。
 

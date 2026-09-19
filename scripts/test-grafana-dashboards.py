@@ -106,6 +106,15 @@ class ValidationTests(unittest.TestCase):
         resource['spec']['panels'][0]['datasource']['uid'] = '${DS_PROMETHEUS}'
         self.check(resource, 'unresolved import placeholder')
 
+    def test_builtin_annotations_keep_grafana_datasource(self):
+        resource = copy.deepcopy(V1)
+        annotation = {'builtIn': 1, 'type': 'dashboard',
+                      'datasource': {'uid': 'grafana', 'type': 'datasource'}}
+        resource['spec']['annotations'] = {'list': [annotation]}
+        self.check(resource)
+        annotation['datasource'] = {'uid': DS, 'type': 'prometheus'}
+        self.check(resource, 'built-in annotations must use Grafana datasource')
+
     def test_broken_layout_reference(self):
         resource = copy.deepcopy(V2)
         resource['spec']['layout']['spec']['items'][0]['name'] = 'missing'
