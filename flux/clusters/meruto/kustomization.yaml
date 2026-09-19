@@ -19,3 +19,4 @@ resources:
 - kustomizations/traefik.yaml
 - kustomizations/vector.yaml
 - kustomizations/flux-monitoring.yaml
+- kustomizations/monitoring-rules.yaml

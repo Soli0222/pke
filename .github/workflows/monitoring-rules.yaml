@@ -1,0 +1,34 @@
+name: monitoring-rules
+
+on:
+  pull_request:
+    paths:
+      - 'charts/monitoring-rules/**'
+      - 'charts/ntfy/**'
+      - 'charts/blackbox-exporter-probes/**'
+      - 'flux/clusters/**'
+      - 'ansible/inventories/**'
+      - 'scripts/*monitoring*'
+      - 'scripts/validate-ntfy-alerts.py'
+      - 'scripts/validate_alert_inhibition.py'
+      - '.github/workflows/monitoring-rules.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: azure/setup-helm@v5.0.1
+        with:
+          version: v3.19.0
+      - name: Install YAML parser
+        run: python3 -m pip install 'PyYAML==6.0.3'
+      - name: Validate rules and inventory with real Alloy and promtool
+        run: python3 scripts/validate-monitoring-rules.py
+      - name: Validate routing, inhibition, ntfy priority and credentials rotation locally
+        run: python3 scripts/validate-ntfy-alerts.py

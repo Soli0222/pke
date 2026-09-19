@@ -1,0 +1,26 @@
+rules:
+- alert: EtcdNoLeader
+  expr: |-
+    max by (cluster, instance) (etcd_server_has_leader{job="etcd"}) == 0
+  summary: etcd 異常 {{ $labels.instance }}
+  description: leader が存在しません。単一 member 構成でも quorum 喪失を調査してください。
+- alert: EtcdHighLeaderChanges
+  expr: |-
+    increase(etcd_server_leader_changes_seen_total{job="etcd"}[15m]) > {{ .Values.groups.etcd.rules.EtcdHighLeaderChanges.threshold }}
+  summary: etcd 異常 {{ $labels.instance }}
+  description: 短期間に繰り返す leader change です。通常の一度の切替とは区別します。
+- alert: EtcdHighFsyncDuration
+  expr: |-
+    (histogram_quantile(0.99, sum by (cluster, instance, le) (rate(etcd_disk_wal_fsync_duration_seconds_bucket{job="etcd"}[5m]))) > {{ .Values.groups.etcd.rules.EtcdHighFsyncDuration.threshold }}) and on (cluster, instance) (sum by (cluster, instance) (increase(etcd_disk_wal_fsync_duration_seconds_count{job="etcd"}[5m])) >= {{ .Values.groups.etcd.rules.EtcdHighFsyncDuration.minimumObservations }})
+  summary: etcd 異常 {{ $labels.instance }}
+  description: WAL fsync p99 が高い状態です。5分の観測数が十分な場合だけ判定します。
+- alert: EtcdDbSizeExceedingQuota
+  expr: |-
+    (etcd_mvcc_db_total_size_in_bytes{job="etcd"} / on (cluster,instance) etcd_server_quota_backend_bytes{job="etcd"} > {{ .Values.groups.etcd.rules.EtcdDbSizeExceedingQuota.threshold }}) and on (cluster,instance) (etcd_server_quota_backend_bytes{job="etcd"} > 0)
+  summary: etcd 異常 {{ $labels.instance }}
+  description: 実 quota に対して DB サイズが大きい状態です。コンパクション・断片化を確認してください。
+- alert: EtcdHighFailedProposals
+  expr: |-
+    increase(etcd_server_proposals_failed_total{job="etcd"}[5m]) > {{ .Values.groups.etcd.rules.EtcdHighFailedProposals.threshold }}
+  summary: etcd 異常 {{ $labels.instance }}
+  description: proposal の失敗が増えています。counter reset は増加に数えません。

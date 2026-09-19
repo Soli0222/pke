@@ -1,0 +1,11 @@
+rules:
+- alert: FluxReconciliationFailed
+  expr: |-
+    label_replace(max by (cluster, kind, exported_namespace, name) (flux_resource_info{kind=~"{{ .Values.fluxKinds }}",ready="False",suspended="False",exported_namespace!~"{{ .Values.exclusions.namespaces }}",name!~"{{ .Values.exclusions.fluxResources }}"}) == 1, "namespace", "$1", "exported_namespace", "(.+)")
+  summary: Flux {{ $labels.kind }} {{ $labels.namespace }}/{{ $labels.name }}
+  description: Ready=False が継続しています。Operator の状態更新は既定5分間隔です。suspend は除外しています。
+- alert: FluxReconciliationStalled
+  expr: |-
+    label_replace(max by (cluster, kind, exported_namespace, name) (flux_resource_info{kind=~"{{ .Values.fluxKinds }}",ready="Unknown",suspended="False",exported_namespace!~"{{ .Values.exclusions.namespaces }}",name!~"{{ .Values.exclusions.fluxResources }}"}) == 1, "namespace", "$1", "exported_namespace", "(.+)")
+  summary: Flux {{ $labels.kind }} {{ $labels.namespace }}/{{ $labels.name }}
+  description: Ready=Unknown が継続しています。Operator の状態更新は既定5分間隔です。suspend は除外しています。

@@ -143,11 +143,6 @@ data:
       rule_namespace_selector { match_labels = {} }
     }
 
-    remote.kubernetes.secret "slack_webhook" {
-      namespace = "alloy"
-      name      = "alertmanager-slack-webhook"
-    }
-
     remote.kubernetes.secret "ntfy_publish" {
       namespace      = "alloy"
       name           = "ntfy-alertmanager"
@@ -162,56 +157,243 @@ data:
       global_config = `
         global:
           resolve_timeout: 5m
-          slack_api_url: ` + remote.kubernetes.secret.slack_webhook.data["api-url"] + `
         route:
-          receiver: slack_webhook
-          group_by: ['alertname', 'severity', 'cluster']
+          receiver: ntfy_pke_default
+          group_by:
+          - cluster
+          - alertname
+          - namespace
+          - severity
           group_wait: 30s
           group_interval: 5m
           repeat_interval: 12h
           routes:
-            # 全件 Slack に配送し、次の ntfy route も評価する。
-            - receiver: slack_webhook
-              continue: true
-            - receiver: ntfy_pke
-              routes:
-                - receiver: ntfy_natsume
-                  matchers: ['cluster="natsume"']
-                - receiver: ntfy_meruto
-                  matchers: ['cluster="meruto"']
+          - receiver: ntfy_natsume_default
+            matchers:
+            - cluster="natsume"
+            routes:
+            - receiver: ntfy_natsume_critical
+              matchers:
+              - severity="critical"
+              repeat_interval: 1h
+            - receiver: ntfy_natsume_warning
+              matchers:
+              - severity="warning"
+              repeat_interval: 12h
+          - receiver: ntfy_meruto_default
+            matchers:
+            - cluster="meruto"
+            routes:
+            - receiver: ntfy_meruto_critical
+              matchers:
+              - severity="critical"
+              repeat_interval: 1h
+            - receiver: ntfy_meruto_warning
+              matchers:
+              - severity="warning"
+              repeat_interval: 12h
+          - receiver: ntfy_pke_critical
+            matchers:
+            - severity="critical"
+            repeat_interval: 1h
+          - receiver: ntfy_pke_warning
+            matchers:
+            - severity="warning"
+            repeat_interval: 12h
+        inhibit_rules:
+        - source_matchers:
+          - alertname="KubePersistentVolumeSpaceCritical"
+          - severity="critical"
+          - cluster=~".+"
+          - namespace=~".+"
+          - persistentvolumeclaim=~".+"
+          target_matchers:
+          - alertname="KubePersistentVolumeSpaceLow"
+          - severity="warning"
+          - cluster=~".+"
+          - namespace=~".+"
+          - persistentvolumeclaim=~".+"
+          equal:
+          - cluster
+          - namespace
+          - persistentvolumeclaim
+        - source_matchers:
+          - alertname="HostFilesystemSpaceCritical"
+          - severity="critical"
+          - cluster=~".+"
+          - instance=~".+"
+          - mountpoint=~".+"
+          - device=~".+"
+          target_matchers:
+          - alertname="HostFilesystemSpaceLow"
+          - severity="warning"
+          - cluster=~".+"
+          - instance=~".+"
+          - mountpoint=~".+"
+          - device=~".+"
+          equal:
+          - cluster
+          - instance
+          - mountpoint
+          - device
+        - source_matchers:
+          - alertname="LonghornNodeSpaceCritical"
+          - severity="critical"
+          - cluster=~".+"
+          - node=~".+"
+          target_matchers:
+          - alertname="LonghornNodeSpaceLow"
+          - severity="warning"
+          - cluster=~".+"
+          - node=~".+"
+          equal:
+          - cluster
+          - node
+        - source_matchers:
+          - alertname="LonghornDiskSpaceCritical"
+          - severity="critical"
+          - cluster=~".+"
+          - node=~".+"
+          - disk=~".+"
+          target_matchers:
+          - alertname="LonghornDiskSpaceLow"
+          - severity="warning"
+          - cluster=~".+"
+          - node=~".+"
+          - disk=~".+"
+          equal:
+          - cluster
+          - node
+          - disk
+        - source_matchers:
+          - alertname="CertExpiryCritical"
+          - severity="critical"
+          - cluster=~".+"
+          - namespace=~".+"
+          - name=~".+"
+          target_matchers:
+          - alertname="CertExpiringSoon"
+          - severity="warning"
+          - cluster=~".+"
+          - namespace=~".+"
+          - name=~".+"
+          equal:
+          - cluster
+          - namespace
+          - name
+        - source_matchers:
+          - alertname="SSLCertExpiryCritical"
+          - severity="critical"
+          - cluster=~".+"
+          - namespace=~".+"
+          - job=~".+"
+          - instance=~".+"
+          target_matchers:
+          - alertname="SSLCertExpiringSoon"
+          - severity="warning"
+          - cluster=~".+"
+          - namespace=~".+"
+          - job=~".+"
+          - instance=~".+"
+          equal:
+          - cluster
+          - namespace
+          - job
+          - instance
+        - source_matchers:
+          - alertname="EndpointDown"
+          - severity="critical"
+          - cluster=~".+"
+          - namespace=~".+"
+          - job=~".+"
+          - instance=~".+"
+          - job="http-get"
+          target_matchers:
+          - alertname="HTTPStatusCodeError"
+          - severity="warning"
+          - cluster=~".+"
+          - namespace=~".+"
+          - job=~".+"
+          - instance=~".+"
+          - job="http-get"
+          equal:
+          - cluster
+          - namespace
+          - job
+          - instance
         receivers:
-          - name: slack_webhook
-            slack_configs:
-              - channel: '#alert'
-                title: 'Alert: {{ .GroupLabels.alertname }}'
-                text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-                send_resolved: true
-                username: 'Alertmanager'
-                icon_emoji: ':warning:'
-          - name: ntfy_natsume
-            webhook_configs:
-              - url: 'https://ntfy.pstr.space/natsume-alerts?template=alertmanager'
-                send_resolved: true
-                http_config:
-                  authorization:
-                    type: Bearer
-                    credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-          - name: ntfy_meruto
-            webhook_configs:
-              - url: 'https://ntfy.pstr.space/meruto-alerts?template=alertmanager'
-                send_resolved: true
-                http_config:
-                  authorization:
-                    type: Bearer
-                    credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-          - name: ntfy_pke
-            webhook_configs:
-              - url: 'https://ntfy.pstr.space/pke-alerts?template=alertmanager'
-                send_resolved: true
-                http_config:
-                  authorization:
-                    type: Bearer
-                    credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+        - name: ntfy_natsume_critical
+          webhook_configs:
+          - url: https://ntfy.pstr.space/natsume-alerts?template=alertmanager&tags=rotating_light
+            send_resolved: true
+            http_config:
+              authorization:
+                type: Bearer
+                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+        - name: ntfy_natsume_warning
+          webhook_configs:
+          - url: https://ntfy.pstr.space/natsume-alerts?template=alertmanager&tags=warning
+            send_resolved: true
+            http_config:
+              authorization:
+                type: Bearer
+                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+        - name: ntfy_natsume_default
+          webhook_configs:
+          - url: https://ntfy.pstr.space/natsume-alerts?template=alertmanager&tags=information_source
+            send_resolved: true
+            http_config:
+              authorization:
+                type: Bearer
+                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+        - name: ntfy_meruto_critical
+          webhook_configs:
+          - url: https://ntfy.pstr.space/meruto-alerts?template=alertmanager&tags=rotating_light
+            send_resolved: true
+            http_config:
+              authorization:
+                type: Bearer
+                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+        - name: ntfy_meruto_warning
+          webhook_configs:
+          - url: https://ntfy.pstr.space/meruto-alerts?template=alertmanager&tags=warning
+            send_resolved: true
+            http_config:
+              authorization:
+                type: Bearer
+                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+        - name: ntfy_meruto_default
+          webhook_configs:
+          - url: https://ntfy.pstr.space/meruto-alerts?template=alertmanager&tags=information_source
+            send_resolved: true
+            http_config:
+              authorization:
+                type: Bearer
+                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+        - name: ntfy_pke_critical
+          webhook_configs:
+          - url: https://ntfy.pstr.space/pke-alerts?template=alertmanager&tags=rotating_light
+            send_resolved: true
+            http_config:
+              authorization:
+                type: Bearer
+                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+        - name: ntfy_pke_warning
+          webhook_configs:
+          - url: https://ntfy.pstr.space/pke-alerts?template=alertmanager&tags=warning
+            send_resolved: true
+            http_config:
+              authorization:
+                type: Bearer
+                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
+        - name: ntfy_pke_default
+          webhook_configs:
+          - url: https://ntfy.pstr.space/pke-alerts?template=alertmanager&tags=information_source
+            send_resolved: true
+            http_config:
+              authorization:
+                type: Bearer
+                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
         `
       alertmanagerconfig_selector { match_labels = {} }
       alertmanagerconfig_namespace_selector { match_labels = {} }

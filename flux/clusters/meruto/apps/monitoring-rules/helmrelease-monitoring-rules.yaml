@@ -1,0 +1,27 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: monitoring-rules
+  namespace: monitoring-rules
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: ./charts/monitoring-rules
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 1h
+  values:
+    hosts:
+    - name: meruto-01
+      units:
+      - alloy.service
+      - k3s.service
+      - etcd.service
+      - falco-modern-bpf.service
+    databases: []
+    groups:
+      cnpg:
+        enabled: false

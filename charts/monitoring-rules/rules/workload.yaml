@@ -1,0 +1,41 @@
+rules:
+- alert: KubePodCrashLooping
+  expr: |-
+    (max by (cluster, namespace, pod, uid, container) (max_over_time(kube_pod_container_status_waiting_reason{namespace!~"{{ .Values.exclusions.namespaces }}",reason="CrashLoopBackOff"}[5m]) or max_over_time(kube_pod_init_container_status_waiting_reason{namespace!~"{{ .Values.exclusions.namespaces }}",reason="CrashLoopBackOff"}[5m])) == 1) and on (cluster, namespace, pod, uid) ((max by (cluster, namespace, pod, uid) (kube_pod_status_phase{namespace!~"{{ .Values.exclusions.namespaces }}",phase=~"Pending|Running|Unknown"}) == 1) unless on (cluster, namespace, pod, uid) (max by (cluster, namespace, pod, uid) (kube_pod_deletion_timestamp{namespace!~"{{ .Values.exclusions.namespaces }}"}) > 0))
+  summary: CrashLoop {{ $labels.namespace }}/{{ $labels.pod }} / {{ $labels.container }}
+  description: CrashLoopBackOff が繰り返されています。単なる restart 増加とは区別します。
+- alert: KubePodNotReady
+  expr: |-
+    (max by (cluster, namespace, pod, uid) (kube_pod_status_ready{namespace!~"{{ .Values.exclusions.namespaces }}",condition="false"}) == 1) and on (cluster, namespace, pod, uid) ((max by (cluster, namespace, pod, uid) (kube_pod_status_phase{namespace!~"{{ .Values.exclusions.namespaces }}",phase=~"Pending|Running|Unknown"}) == 1) unless on (cluster, namespace, pod, uid) (max by (cluster, namespace, pod, uid) (kube_pod_deletion_timestamp{namespace!~"{{ .Values.exclusions.namespaces }}"}) > 0))
+  summary: Pod NotReady {{ $labels.namespace }}/{{ $labels.pod }}
+  description: Pending / Running / Unknown の Pod が Ready になりません。完了・終了処理中 Pod は除外しています。
+- alert: KubeContainerWaiting
+  expr: |-
+    (max by (cluster, namespace, pod, uid, container) (kube_pod_container_status_waiting_reason{namespace!~"{{ .Values.exclusions.namespaces }}",reason=~"{{ .Values.groups.workload.rules.KubeContainerWaiting.reasons }}"}) == 1) and on (cluster, namespace, pod, uid) ((max by (cluster, namespace, pod, uid) (kube_pod_status_phase{namespace!~"{{ .Values.exclusions.namespaces }}",phase=~"Pending|Running|Unknown"}) == 1) unless on (cluster, namespace, pod, uid) (max by (cluster, namespace, pod, uid) (kube_pod_deletion_timestamp{namespace!~"{{ .Values.exclusions.namespaces }}"}) > 0))
+  summary: Container waiting {{ $labels.namespace }}/{{ $labels.pod }} / {{ $labels.container }}
+  description: image pull、コンテナ設定、作成待ちを events から確認してください。
+- alert: KubeContainerOOMKilled
+  expr: |-
+    (max by (cluster, namespace, pod, uid, container) (kube_pod_container_status_last_terminated_reason{namespace!~"{{ .Values.exclusions.namespaces }}",reason="OOMKilled"}) == 1) and on (cluster, namespace, pod, uid, container) (time() - max by (cluster, namespace, pod, uid, container) (kube_pod_container_status_last_terminated_timestamp{namespace!~"{{ .Values.exclusions.namespaces }}"}) < {{ .Values.groups.workload.rules.KubeContainerOOMKilled.recentSeconds }})
+  summary: OOMKilled {{ $labels.namespace }}/{{ $labels.pod }} / {{ $labels.container }}
+  description: 最近の OOM 終了を検知しました。古い last terminated reason だけでは通知しません。
+- alert: KubeDeploymentReplicasMismatch
+  expr: |-
+    max by (cluster, namespace, deployment) (kube_deployment_spec_replicas{namespace!~"{{ .Values.exclusions.namespaces }}"}) - max by (cluster, namespace, deployment) (kube_deployment_status_replicas_available{namespace!~"{{ .Values.exclusions.namespaces }}"}) > {{ .Values.groups.workload.rules.KubeDeploymentReplicasMismatch.threshold }}
+  summary: replica 不足 {{ $labels.namespace }} / {{ $labels.deployment }}
+  description: desired と available/ready の差が継続しています。通常の短い rollout は待機時間で除外します。
+- alert: KubeStatefulSetReplicasMismatch
+  expr: |-
+    max by (cluster, namespace, statefulset) (kube_statefulset_replicas{namespace!~"{{ .Values.exclusions.namespaces }}"}) - max by (cluster, namespace, statefulset) (kube_statefulset_status_replicas_ready{namespace!~"{{ .Values.exclusions.namespaces }}"}) > {{ .Values.groups.workload.rules.KubeStatefulSetReplicasMismatch.threshold }}
+  summary: replica 不足 {{ $labels.namespace }} / {{ $labels.statefulset }}
+  description: desired と available/ready の差が継続しています。通常の短い rollout は待機時間で除外します。
+- alert: KubeDaemonSetNotScheduled
+  expr: |-
+    max by (cluster, namespace, daemonset) (kube_daemonset_status_desired_number_scheduled{namespace!~"{{ .Values.exclusions.namespaces }}"}) - max by (cluster, namespace, daemonset) (kube_daemonset_status_current_number_scheduled{namespace!~"{{ .Values.exclusions.namespaces }}"}) > {{ .Values.groups.workload.rules.KubeDaemonSetNotScheduled.threshold }}
+  summary: DaemonSet 未配置 {{ $labels.namespace }}/{{ $labels.daemonset }}
+  description: 配置対象 node に Pod が作成されていません。toleration と node 条件を確認してください。
+- alert: KubeJobFailed
+  expr: |-
+    ((max by (cluster, namespace, job_name) (kube_job_failed{namespace!~"{{ .Values.exclusions.namespaces }}",condition="true"}) == 1) and on (cluster, namespace, job_name) (time() - max by (cluster, namespace, job_name) (kube_job_status_start_time{namespace!~"{{ .Values.exclusions.namespaces }}"}) < {{ .Values.groups.workload.rules.KubeJobFailed.recentSeconds }})) unless on (cluster, namespace, job_name) ((max by (cluster, namespace, job_name) (kube_job_status_start_time{namespace!~"{{ .Values.exclusions.namespaces }}"}) * on (cluster, namespace, job_name) group_left(cronjob) label_replace(max by (cluster, namespace, job_name, owner_name) (kube_job_owner{namespace!~"{{ .Values.exclusions.namespaces }}",owner_kind="CronJob"}), "cronjob", "$1", "owner_name", "(.+)")) < on (cluster, namespace, cronjob) group_left() max by (cluster, namespace, cronjob) (kube_cronjob_status_last_successful_time{namespace!~"{{ .Values.exclusions.namespaces }}"}))
+  summary: Job 失敗 {{ $labels.namespace }}/{{ $labels.job_name }}
+  description: 最近の失敗した実行です。CronJob の後続成功で解消し、古い失敗 Job の残存は期限後に除外します。

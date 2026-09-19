@@ -1,0 +1,53 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: monitoring-rules
+  namespace: monitoring-rules
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: ./charts/monitoring-rules
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 1h
+  values:
+    hosts:
+    - name: natsume-03
+      units:
+      - alloy.service
+      - k3s.service
+      - etcd.service
+      - falco-modern-bpf.service
+    - name: natsume-08
+      units:
+      - alloy.service
+      - k3s-agent.service
+      - falco-modern-bpf.service
+    databases:
+    - namespace: grafana
+      name: grafana-cluster
+      archive: false
+      replication: false
+      dumpCronJob: grafana-cluster-pg-dump
+    - namespace: misskey
+      name: misskey-cluster
+      archive: true
+      replication: false
+    - namespace: spotify-nowplaying
+      name: spn-cluster
+      archive: false
+      replication: false
+      dumpCronJob: spn-cluster-pg-dump
+    - namespace: spotify-reblend
+      name: reblend-cluster
+      archive: false
+      replication: false
+      dumpCronJob: reblend-cluster-pg-dump
+    - namespace: sui
+      name: sui-cluster
+      archive: false
+      replication: false
+      dumpCronJob: sui-cluster-pg-dump

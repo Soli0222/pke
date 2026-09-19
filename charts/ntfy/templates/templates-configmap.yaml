@@ -1,0 +1,16 @@
+{{- if .Values.ntfy.templates }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ntfy.fullname" . }}-templates
+  labels:
+    {{- include "ntfy.labels" . | nindent 4 }}
+data:
+  {{- range $name, $content := .Values.ntfy.templates }}
+  {{- if not (regexMatch "^[a-zA-Z0-9_-]+$" $name) }}
+  {{- fail "ntfy.templates keys must be simple file names without extensions" }}
+  {{- end }}
+  {{ $name }}.yml: |
+    {{- $content | nindent 4 }}
+  {{- end }}
+{{- end }}

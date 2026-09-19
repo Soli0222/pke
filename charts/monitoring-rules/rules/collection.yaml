@@ -1,0 +1,42 @@
+rules:
+- alert: TargetDown
+  expr: |-
+    min by (cluster, job, instance, namespace, pod, controller) (up{job!~"{{ .Values.exclusions.targetJobs }}"}) == 0
+  summary: 収集先 {{ $labels.job }} / {{ $labels.instance }} が応答しない
+  description: scrape の失敗が継続しています。接続先・NetworkPolicy・exporter を確認してください。
+- alert: KubeStateMetricsAbsent
+  expr: |-
+    absent_over_time(kube_node_info{job="kube-state-metrics"}[{{ .Values.absenceWindow }}])
+  summary: kube-state-metrics が欠測
+  description: Kubernetes 状態監視の入力がありません。collector と送信経路を確認してください。
+- alert: NodeExporterAbsent
+  expr: |-
+    {{ range $i, $host := .Values.hosts }}{{ if $i }} or {{ end }}absent_over_time(node_uname_info{job="integrations/unix",instance="{{ $host.name }}"}[{{ $.Values.absenceWindow }}]){{ end }}
+  summary: ホスト {{ $labels.instance }} の node metrics が欠測
+  description: ホスト停止、Alloy、ネットワーク、remote_write のいずれでも欠測します。ホスト停止と断定しないでください。
+  requires: hosts
+- alert: MetricsStale
+  expr: |-
+    label_replace(absent_over_time(alloy_build_info{job="alloy"}[{{ .Values.absenceWindow }}]), "telemetry_path", "kubernetes", "job", ".*") {{ range .Values.hosts }} or label_replace(absent_over_time(alloy_build_info{job="alloy-host",instance="{{ .name }}"}[{{ $.Values.absenceWindow }}]), "telemetry_path", "host", "job", ".*") {{ end }}
+  summary: '{{ $labels.telemetry_path }} の Alloy が欠測（{{ $labels.instance }}）'
+  description: 経路ごとの安定した build 指標が届いていません。全 up 系列の消失を待たずに検知します。
+- alert: AlloyRemoteWriteFailing
+  expr: |-
+    sum by (cluster, job, instance, hostname, component_id) (increase(prometheus_remote_storage_samples_failed_total{job=~"alloy|alloy-host"}[5m])) > {{ .Values.groups.collection.rules.AlloyRemoteWriteFailing.threshold }}
+  summary: Alloy 送信異常 {{ $labels.instance }} / {{ $labels.component_id }}
+  description: 再試行されず失敗した sample が増えています。送信先の応答とログを確認してください。
+- alert: AlloyRemoteWriteRetrying
+  expr: |-
+    sum by (cluster, job, instance, hostname, component_id) (rate(prometheus_remote_storage_samples_retried_total{job=~"alloy|alloy-host"}[5m])) > {{ .Values.groups.collection.rules.AlloyRemoteWriteRetrying.threshold }}
+  summary: Alloy 送信異常 {{ $labels.instance }} / {{ $labels.component_id }}
+  description: sample の再試行が継続しています。counter の累積値ではなく増加率で判定します。
+- alert: AlloyRemoteWriteBacklog
+  expr: |-
+    max by (cluster, job, instance, hostname, component_id) (prometheus_remote_storage_samples_pending{job=~"alloy|alloy-host"}) > {{ .Values.groups.collection.rules.AlloyRemoteWriteBacklog.threshold }}
+  summary: Alloy 送信異常 {{ $labels.instance }} / {{ $labels.component_id }}
+  description: shard 内の送信待ちが継続しています。この値は WAL 全体の未送信量ではありません。
+- alert: AlloyRemoteWriteStalled
+  expr: |-
+    time() - max by (cluster, job, instance, hostname, component_id) (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job=~"alloy|alloy-host"}) > {{ .Values.groups.collection.rules.AlloyRemoteWriteStalled.threshold }}
+  summary: Alloy 送信異常 {{ $labels.instance }} / {{ $labels.component_id }}
+  description: 最新の送信 sample 時刻が進んでいません。自己監視も送信不能なら MetricsStale で検知します。

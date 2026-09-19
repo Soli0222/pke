@@ -103,6 +103,8 @@ serviceMonitor:
 # This string is rendered with tpl, so service ports and release values can be
 # referenced from the configuration.
 ntfy:
+  # File names (without .yml) -> ntfy Go template content; deliberately not evaluated by Helm tpl.
+  templates: {}
   config: |
     base-url: "https://ntfy.example.com"
     listen-http: ":{{ .Values.service.port }}"
