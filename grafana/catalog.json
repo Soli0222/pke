@@ -1,0 +1,21 @@
+{
+  "datasources": {
+    "cfkr3kwq69r7ke": {
+      "name": "Mimir",
+      "type": "prometheus"
+    },
+    "cfkr3oclnhukgb": {
+      "name": "Loki",
+      "type": "loki"
+    },
+    "cfkr3wj12mvpca": {
+      "name": "Alertmanager",
+      "type": "alertmanager"
+    },
+    "bfso88kq5qvpce": {
+      "name": "Tempo",
+      "type": "tempo"
+    }
+  },
+  "dashboards": {}
+}

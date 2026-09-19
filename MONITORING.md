@@ -23,6 +23,7 @@ flowchart LR
 |---|---|
 | Kubernetes の収集・ルール同期 | [natsume Alloy](flux/clusters/natsume/apps/alloy/alloy-config.yaml)、[meruto Alloy](flux/clusters/meruto/apps/alloy/alloy-config.yaml) |
 | ホストの収集 | [install-alloy role](ansible/roles/install-alloy/)、[host_vars](ansible/inventories/host_vars/) |
+| Grafanaダッシュボード | [Git管理・検証・移行手順](grafana/README.md) |
 | Mimir / Ruler / Alertmanager | [Mimir HelmRelease](flux/clusters/natsume/apps/mimir/helmrelease-mimir.yaml) |
 | 共通アラート | [monitoring-rules chart](charts/monitoring-rules/README.md)、各クラスタの `apps/monitoring-rules/` |
 | アプリ固有のアラート・収集 | 各アプリの PrometheusRule / ServiceMonitor / PodMonitor / Probe |

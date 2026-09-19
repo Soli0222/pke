@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "PKE storage contract, not a complete Grafana/plugin schema. v1/v2 resource formats follow the Grafana Git Sync export documentation.",
+  "$defs": {
+    "panel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "panels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/panel"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "enum": [
+        "dashboard.grafana.app/v1",
+        "dashboard.grafana.app/v2"
+      ]
+    },
+    "kind": {
+      "const": "Dashboard"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,40}$"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "spec": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "apiVersion": {
+            "const": "dashboard.grafana.app/v1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "schemaVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "panels": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/panel"
+                }
+              },
+              "templating": {
+                "type": "object",
+                "properties": {
+                  "list": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "required": [
+                  "list"
+                ]
+              },
+              "time": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "to": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ]
+              }
+            },
+            "required": [
+              "title",
+              "schemaVersion",
+              "panels",
+              "time"
+            ]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "elements": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "Panel"
+                    },
+                    "spec": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object"
+                        },
+                        "vizConfig": {
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "data",
+                        "vizConfig"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "spec"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "layout": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "GridLayout",
+                      "RowsLayout",
+                      "AutoGridLayout",
+                      "TabsLayout"
+                    ]
+                  },
+                  "spec": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "spec"
+                ]
+              },
+              "variables": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "spec": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "spec"
+                  ]
+                }
+              },
+              "timeSettings": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "to": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ]
+              }
+            },
+            "required": [
+              "title",
+              "elements",
+              "layout",
+              "variables",
+              "timeSettings"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

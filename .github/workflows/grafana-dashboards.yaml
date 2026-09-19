@@ -1,0 +1,25 @@
+name: grafana-dashboards
+
+on:
+  pull_request:
+    paths:
+      - 'grafana/**'
+      - 'scripts/*grafana*'
+      - '.github/workflows/grafana-dashboards.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Install validator
+        run: python3 -m pip install -r grafana/requirements.txt
+      - name: Check valid and invalid dashboard fixtures
+        run: python3 scripts/test-grafana-dashboards.py
+      - name: Validate Git Sync files
+        run: python3 scripts/validate-grafana-dashboards.py
