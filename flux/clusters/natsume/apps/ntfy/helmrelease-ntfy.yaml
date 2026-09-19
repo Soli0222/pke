@@ -35,7 +35,7 @@ spec:
       templates:
         alertmanager: |
           title: >-
-            {{ if eq .status "resolved" }}✅ Resolved{{ else }}🚨 Firing{{ end }}: {{ .commonLabels.cluster | default "pke" }} / {{ .commonLabels.alertname }}
+            {{ if eq .status "resolved" }}Resolved{{ else }}Firing{{ end }}: {{ .commonLabels.cluster | default "pke" }} / {{ .commonLabels.alertname }}
           priority: >-
             {{ if eq .status "resolved" }}2{{ else if eq .commonLabels.severity "critical" }}5{{ else if eq .commonLabels.severity "warning" }}3{{ else }}2{{ end }}
           message: |

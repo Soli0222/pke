@@ -962,6 +962,8 @@ ntfy v2.28.0 の組み込み template と `?priority=5` の組み合わせは、
 そこで chart 0.1.2 に read-only template ConfigMap mount と checksum による再起動を追加した。
 `ntfy.templates.alertmanager` は同名の組み込み template に優先する。URL は従来と同じ `template=alertmanager` なので、Flux の適用順が前後しても template 未存在の404を起こさない。
 ntfy の切替完了前は既存の組み込み表示・既定 priority で受信し、切替後は上表と要約・説明・runbook を使う。
+通知アイコンは severity に対応する ntfy の tags に統一し、title は `Firing: <cluster> / <alertname>` または `Resolved: <cluster> / <alertname>` とする。
+title 内に絵文字を入れると tags のアイコンと重複するため、解消時も状態は文字で示す。
 SQLite を使う単一 Pod は Recreate で一時停止するため、merge 後は ntfy の rollout と Alertmanager の配送エラーも確認する。
 
 Slack receiver / route / Alloy Secret 参照 / OnePasswordItem CR は取り除く。
@@ -1000,8 +1002,13 @@ GitHub Actions の `monitoring-rules` workflow で両方を実行する。
 | meruto | prometheus.scrape.kubernetes_api | 192.168.10.3:6443 |
 | natsume | grafana-image-renderer | 10.1.0.120:8081 |
 
-API scrape の設定では HTTPS scheme / 認証が明示されておらず、HTTPS port との不整合が疑われる。修復はこのルール追加には含めない。
-Grafana renderer も原因調査・修復は別作業とし、除外して見えなくしない。
+同日の追加調査で、両 API の scrape URL が `http://<node>:6443/metrics` となり、400 Bad Request を返していることを確認した。
+両クラスタの Alloy に HTTPS、ServiceAccount の bearer token、CA 検証を設定する。
+両 API の証明書は対象 IP で CA 検証が通り、Alloy の ServiceAccount には `/metrics` の get 権限がある。
+
+Grafana renderer は Alloy からの scrape がタイムアウトする一方、port-forward 経由の `/metrics` は200を返した。
+既存 NetworkPolicy は Grafana Pod だけを許可しているため、`imageRenderer.networkPolicy.extraIngressSelectors` に alloy namespace の Alloy Pod を追加し、8081/TCP への通信を許可する。
+反映後は3件の `up=1` と TargetDown の解消を確認する。
 既存アプリルールの job 名不一致や他の未カバー項目も、この共通ルールで修復済みとは扱わない。
 
 ### merge 後の読み取り確認

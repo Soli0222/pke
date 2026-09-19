@@ -205,6 +205,11 @@ data:
       forward_to      = [prometheus.relabel.cluster_labels.receiver]
       scrape_interval = "30s"
       metrics_path    = "/metrics"
+      scheme          = "https"
+      bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+      tls_config {
+        ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+      }
       clustering { enabled = true }
     }
 
