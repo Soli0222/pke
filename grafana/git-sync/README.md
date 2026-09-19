@@ -38,6 +38,8 @@ App作成後に秘密鍵を生成し、App IDとインストール後のURLのIn
 | `private-key`（代替） | 秘密鍵PEM全文（改行を保持、concealed field） |
 
 スクリプトは`private-key.pem`添付があればfieldより優先して読み取る。
+PEMは改行を保ったまま読み、Grafana APIの`secure.privateKey.create`へ渡す直前にbase64へ変換する。
+1Passwordにはbase64化せず、元のPEMファイルを保存する。
 Appのprivate keyは1Passwordを正とし、Git・ログ・PRへ出力しない。
 Grafana自身の暗号化されたsecure storeへ登録し、Kubernetes Secretには複製しない。
 

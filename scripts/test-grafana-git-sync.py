@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Git Sync初回登録のwrite境界と秘密鍵の扱いを検証する。外部接続はしない。"""
 import contextlib
+import base64
 import importlib.util
 import io
 import json
@@ -42,7 +43,7 @@ class BootstrapTests(unittest.TestCase):
                 self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
                 self.assertEqual(stat.S_IMODE(path.parent.stat().st_mode), 0o700)
                 self.assertTrue(kwargs['sensitive'])
-                self.assertEqual(data['secure']['privateKey']['create'], FAKE_KEY)
+                self.assertEqual(base64.b64decode(data['secure']['privateKey']['create']).decode(), FAKE_KEY)
                 self.secret_paths.append(path)
         return '{}'
 
@@ -52,6 +53,7 @@ class BootstrapTests(unittest.TestCase):
         with patch.object(configure, 'run', self.fake_run), patch('sys.argv', argv), contextlib.redirect_stdout(output):
             configure.main()
         self.assertNotIn(FAKE_KEY, output.getvalue())
+        self.assertNotIn(base64.b64encode(FAKE_KEY.encode()).decode(), output.getvalue())
         self.assertTrue(self.secret_paths)
         self.assertTrue(all(not p.exists() for p in self.secret_paths))
         return [c for c in self.calls if 'push' in c and '--dry-run' not in c]
