@@ -1,0 +1,5 @@
+apiVersion: v2
+name: monitoring-rules
+description: PKE platform alert rules evaluated by Mimir
+version: 0.1.0
+type: application

@@ -1,0 +1,48 @@
+rules:
+- alert: KubeNodeNotReady
+  expr: |-
+    max by (cluster, node) (kube_node_status_condition{condition="Ready",status="true"}) == 0
+  summary: Node 状態異常 {{ $labels.node }}
+  description: Ready condition を確認してください。ホスト欠測だけを根拠に Pod 通知を抑制しません。
+- alert: KubeNodeMemoryPressure
+  expr: |-
+    max by (cluster, node) (kube_node_status_condition{condition="MemoryPressure",status="true"}) == 1
+  summary: Node 状態異常 {{ $labels.node }}
+  description: MemoryPressure condition を確認してください。ホスト欠測だけを根拠に Pod 通知を抑制しません。
+- alert: KubeNodeDiskPressure
+  expr: |-
+    max by (cluster, node) (kube_node_status_condition{condition="DiskPressure",status="true"}) == 1
+  summary: Node 状態異常 {{ $labels.node }}
+  description: DiskPressure condition を確認してください。ホスト欠測だけを根拠に Pod 通知を抑制しません。
+- alert: KubeletTooManyPods
+  expr: |-
+    max by (cluster, node) (kubelet_running_pods) / on (cluster, node) max by (cluster, node) (kube_node_status_allocatable{resource="pods"}) > {{ .Values.groups.kubernetes.rules.KubeletTooManyPods.threshold }}
+  summary: Pod 収容数逼迫 {{ $labels.node }}
+  description: 実際の allocatable pods に対する kubelet running pods の比率が高い状態です。
+- alert: KubePersistentVolumeSpaceLow
+  expr: |-
+    (min by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_available_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}) / max by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}) < {{ .Values.groups.kubernetes.rules.KubePersistentVolumeSpaceLow.threshold }}) and on (cluster, namespace, persistentvolumeclaim) (max by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}) > 0) and on (cluster, namespace, persistentvolumeclaim) ((max by (cluster, namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_status_phase{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}",phase="Bound"}) == 1) unless on (cluster, namespace, persistentvolumeclaim) (max by (cluster, namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_access_mode{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}",access_mode="ReadOnlyMany"}) == 1))
+  summary: PVC 空き容量低下 {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }}
+  description: 空き率を確認してください。read-only 宣言、未 Bound、容量0の volume はこの比率判定から除外します。
+  family: pvc-space
+- alert: KubePersistentVolumeSpaceCritical
+  expr: |-
+    (min by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_available_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}) / max by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}) < {{ .Values.groups.kubernetes.rules.KubePersistentVolumeSpaceCritical.threshold }}) and on (cluster, namespace, persistentvolumeclaim) (max by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}) > 0) and on (cluster, namespace, persistentvolumeclaim) ((max by (cluster, namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_status_phase{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}",phase="Bound"}) == 1) unless on (cluster, namespace, persistentvolumeclaim) (max by (cluster, namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_access_mode{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}",access_mode="ReadOnlyMany"}) == 1))
+  summary: PVC 空き容量低下 {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }}
+  description: 空き率を確認してください。read-only 宣言、未 Bound、容量0の volume はこの比率判定から除外します。
+  family: pvc-space
+- alert: KubePersistentVolumeStatsMissing
+  expr: |-
+    (((max by (cluster, namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_status_phase{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}",phase="Bound"}) == 1) unless on (cluster, namespace, persistentvolumeclaim) (max by (cluster, namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_access_mode{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}",access_mode="ReadOnlyMany"}) == 1)) unless on (cluster, namespace, persistentvolumeclaim) max by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"})) and on (cluster, namespace, persistentvolumeclaim) (max by (cluster, namespace, persistentvolumeclaim) (kube_pod_spec_volumes_persistentvolumeclaims_info{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"} and on (cluster, namespace, pod, uid) (kube_pod_status_phase{phase="Running"} == 1)))
+  summary: PVC 統計欠測 {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }}
+  description: Running Pod が使う Bound の書き込み可能 PVC に統計がありません。driver の統計対応有無を確認し、非対応なら根拠と対象除外を記録してください。
+- alert: KubePersistentVolumeStatsInvalid
+  expr: |-
+    (max by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}) <= 0) and on (cluster, namespace, persistentvolumeclaim) ((max by (cluster, namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_status_phase{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}",phase="Bound"}) == 1) unless on (cluster, namespace, persistentvolumeclaim) (max by (cluster, namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_access_mode{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}",access_mode="ReadOnlyMany"}) == 1))
+  summary: PVC 容量統計が0 {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }}
+  description: 容量0を空き率の正常値として扱いません。kubelet と storage driver を確認してください。
+- alert: KubePersistentVolumeFillingUp
+  expr: |-
+    (min by (cluster, namespace, persistentvolumeclaim) (predict_linear(kubelet_volume_stats_available_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}[{{ .Values.groups.kubernetes.rules.KubePersistentVolumeFillingUp.window }}], {{ .Values.groups.kubernetes.rules.KubePersistentVolumeFillingUp.horizonSeconds }})) < 0) and on (cluster, namespace, persistentvolumeclaim) (min by (cluster, namespace, persistentvolumeclaim) (count_over_time(kubelet_volume_stats_available_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}[{{ .Values.groups.kubernetes.rules.KubePersistentVolumeFillingUp.window }}])) >= {{ .Values.groups.kubernetes.rules.KubePersistentVolumeFillingUp.minimumSamples }}) and on (cluster, namespace, persistentvolumeclaim) (max by (cluster, namespace, persistentvolumeclaim) (changes(kubelet_volume_stats_capacity_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}[{{ .Values.groups.kubernetes.rules.KubePersistentVolumeFillingUp.window }}])) == 0) and on (cluster, namespace, persistentvolumeclaim) (max by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}) > 0) and on (cluster, namespace, persistentvolumeclaim) (min by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_available_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"})/max by (cluster, namespace, persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}"}) < 0.15) and on (cluster, namespace, persistentvolumeclaim) ((max by (cluster, namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_status_phase{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}",phase="Bound"}) == 1) unless on (cluster, namespace, persistentvolumeclaim) (max by (cluster, namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_access_mode{namespace!~"{{ .Values.exclusions.namespaces }}",persistentvolumeclaim!~"{{ .Values.exclusions.pvcs }}",access_mode="ReadOnlyMany"}) == 1))
+  summary: PVC 容量枯渇予測 {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }}
+  description: 十分な履歴と容量変更のない期間で予測しています。増設直後や履歴不足では判定しません。

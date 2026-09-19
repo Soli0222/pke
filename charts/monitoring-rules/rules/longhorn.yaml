@@ -1,0 +1,35 @@
+rules:
+- alert: LonghornVolumeFaulted
+  expr: |-
+    max by (cluster, volume, pvc_namespace, pvc) (longhorn_volume_robustness{volume!~"{{ .Values.exclusions.volumes }}",state="faulted"}) == 1
+  summary: Longhorn faulted {{ $labels.volume }} ({{ $labels.pvc_namespace }}/{{ $labels.pvc }})
+  description: volume が faulted です。detached であっても、replica とデータの状態を確認してください。
+- alert: LonghornVolumeDegraded
+  expr: |-
+    (max by (cluster, volume, pvc_namespace, pvc) (longhorn_volume_robustness{volume!~"{{ .Values.exclusions.volumes }}",state="degraded"}) == 1) and on (cluster,volume) (max by (cluster, volume) (longhorn_volume_state{volume!~"{{ .Values.exclusions.volumes }}",state="attached"}) == 1)
+  summary: Longhorn degraded {{ $labels.volume }} ({{ $labels.pvc_namespace }}/{{ $labels.pvc }})
+  description: 設定済み replica 数に対する健全性です。degraded は rebuild を15分待ち、意図した detached は除外します。
+- alert: LonghornNodeSpaceLow
+  expr: |-
+    ((max by (cluster, node) (longhorn_node_storage_capacity_bytes) - max by (cluster, node) (longhorn_node_storage_reservation_bytes) - max by (cluster, node) (longhorn_node_storage_usage_bytes)) / (max by (cluster, node) (longhorn_node_storage_capacity_bytes) - max by (cluster, node) (longhorn_node_storage_reservation_bytes)) < {{ .Values.groups.longhorn.rules.LonghornNodeSpaceLow.threshold }}) and on (cluster, node) (max by (cluster, node) (longhorn_node_storage_capacity_bytes) - max by (cluster, node) (longhorn_node_storage_reservation_bytes) > 0)
+  summary: Longhorn 容量 {{ $labels.node }} {{ $labels.disk }}
+  description: 予約領域を除く容量の空き率です。PVC 使用量や replica 健全性とは別に扱います。
+  family: longhorn-node-space
+- alert: LonghornNodeSpaceCritical
+  expr: |-
+    ((max by (cluster, node) (longhorn_node_storage_capacity_bytes) - max by (cluster, node) (longhorn_node_storage_reservation_bytes) - max by (cluster, node) (longhorn_node_storage_usage_bytes)) / (max by (cluster, node) (longhorn_node_storage_capacity_bytes) - max by (cluster, node) (longhorn_node_storage_reservation_bytes)) < {{ .Values.groups.longhorn.rules.LonghornNodeSpaceCritical.threshold }}) and on (cluster, node) (max by (cluster, node) (longhorn_node_storage_capacity_bytes) - max by (cluster, node) (longhorn_node_storage_reservation_bytes) > 0)
+  summary: Longhorn 容量 {{ $labels.node }} {{ $labels.disk }}
+  description: 予約領域を除く容量の空き率です。PVC 使用量や replica 健全性とは別に扱います。
+  family: longhorn-node-space
+- alert: LonghornDiskSpaceLow
+  expr: |-
+    ((max by (cluster, node, disk) (longhorn_disk_capacity_bytes) - max by (cluster, node, disk) (longhorn_disk_reservation_bytes) - max by (cluster, node, disk) (longhorn_disk_usage_bytes)) / (max by (cluster, node, disk) (longhorn_disk_capacity_bytes) - max by (cluster, node, disk) (longhorn_disk_reservation_bytes)) < {{ .Values.groups.longhorn.rules.LonghornDiskSpaceLow.threshold }}) and on (cluster, node, disk) (max by (cluster, node, disk) (longhorn_disk_capacity_bytes) - max by (cluster, node, disk) (longhorn_disk_reservation_bytes) > 0)
+  summary: Longhorn 容量 {{ $labels.node }} {{ $labels.disk }}
+  description: 予約領域を除く容量の空き率です。PVC 使用量や replica 健全性とは別に扱います。
+  family: longhorn-disk-space
+- alert: LonghornDiskSpaceCritical
+  expr: |-
+    ((max by (cluster, node, disk) (longhorn_disk_capacity_bytes) - max by (cluster, node, disk) (longhorn_disk_reservation_bytes) - max by (cluster, node, disk) (longhorn_disk_usage_bytes)) / (max by (cluster, node, disk) (longhorn_disk_capacity_bytes) - max by (cluster, node, disk) (longhorn_disk_reservation_bytes)) < {{ .Values.groups.longhorn.rules.LonghornDiskSpaceCritical.threshold }}) and on (cluster, node, disk) (max by (cluster, node, disk) (longhorn_disk_capacity_bytes) - max by (cluster, node, disk) (longhorn_disk_reservation_bytes) > 0)
+  summary: Longhorn 容量 {{ $labels.node }} {{ $labels.disk }}
+  description: 予約領域を除く容量の空き率です。PVC 使用量や replica 健全性とは別に扱います。
+  family: longhorn-disk-space

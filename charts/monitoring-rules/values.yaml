@@ -1,0 +1,410 @@
+interval: 1m
+runbookBaseURL: https://github.com/Soli0222/pke/blob/main/charts/monitoring-rules/README.md
+additionalAnnotations: {}
+absenceWindow: 5m
+hosts: []
+databases: []
+exclusions:
+  namespaces: ^$
+  hosts: ^$
+  targetJobs: ^$
+  pvcs: ^$
+  volumes: ^$
+  fluxResources: ^$
+  filesystems: tmpfs|devtmpfs|overlay|squashfs|nsfs|tracefs|proc|sysfs
+  mountpoints: ^/(dev|proc|sys|run)(/.*)?$|^/var/lib/(kubelet|rancher/k3s)/.*
+diskDevices: vd[a-z]+|sd[a-z]+|nvme[0-9]+n[0-9]+
+networkDevices: ens[0-9]+|enp.*|eth[0-9]+
+fluxKinds: Kustomization|HelmRelease|GitRepository|HelmRepository|HelmChart|OCIRepository|Bucket
+groups:
+  collection:
+    enabled: true
+    rules:
+      TargetDown:
+        enabled: true
+        for: 5m
+        severity: critical
+        annotations: {}
+      KubeStateMetricsAbsent:
+        enabled: true
+        for: 5m
+        severity: critical
+        annotations: {}
+      NodeExporterAbsent:
+        enabled: true
+        for: 5m
+        severity: critical
+        annotations: {}
+      MetricsStale:
+        enabled: true
+        for: 5m
+        severity: critical
+        annotations: {}
+      AlloyRemoteWriteFailing:
+        enabled: true
+        for: 5m
+        severity: warning
+        threshold: 0
+        annotations: {}
+      AlloyRemoteWriteRetrying:
+        enabled: true
+        for: 5m
+        severity: warning
+        threshold: 1
+        annotations: {}
+      AlloyRemoteWriteBacklog:
+        enabled: true
+        for: 5m
+        severity: warning
+        threshold: 10000
+        annotations: {}
+      AlloyRemoteWriteStalled:
+        enabled: true
+        for: 5m
+        severity: warning
+        threshold: 300
+        annotations: {}
+  workload:
+    enabled: true
+    rules:
+      KubePodCrashLooping:
+        enabled: true
+        for: 15m
+        severity: warning
+        annotations: {}
+      KubePodNotReady:
+        enabled: true
+        for: 15m
+        severity: warning
+        annotations: {}
+      KubeContainerWaiting:
+        enabled: true
+        for: 15m
+        severity: warning
+        reasons: ImagePullBackOff|ErrImagePull|CreateContainerConfigError|CreateContainerError|RunContainerError|InvalidImageName|ContainerCreating
+        annotations: {}
+      KubeContainerOOMKilled:
+        enabled: true
+        for: 0m
+        severity: warning
+        recentSeconds: 600
+        annotations: {}
+      KubeDeploymentReplicasMismatch:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0
+        annotations: {}
+      KubeStatefulSetReplicasMismatch:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0
+        annotations: {}
+      KubeDaemonSetNotScheduled:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0
+        annotations: {}
+      KubeJobFailed:
+        enabled: true
+        for: 5m
+        severity: warning
+        recentSeconds: 86400
+        annotations: {}
+  kubernetes:
+    enabled: true
+    rules:
+      KubeNodeNotReady:
+        enabled: true
+        for: 10m
+        severity: critical
+        annotations: {}
+      KubeNodeMemoryPressure:
+        enabled: true
+        for: 10m
+        severity: warning
+        annotations: {}
+      KubeNodeDiskPressure:
+        enabled: true
+        for: 10m
+        severity: warning
+        annotations: {}
+      KubeletTooManyPods:
+        enabled: true
+        for: 5m
+        severity: warning
+        threshold: 0.9
+        annotations: {}
+      KubePersistentVolumeSpaceLow:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0.1
+        annotations: {}
+      KubePersistentVolumeSpaceCritical:
+        enabled: true
+        for: 15m
+        severity: critical
+        threshold: 0.05
+        annotations: {}
+      KubePersistentVolumeStatsMissing:
+        enabled: true
+        for: 30m
+        severity: warning
+        annotations: {}
+      KubePersistentVolumeStatsInvalid:
+        enabled: true
+        for: 30m
+        severity: warning
+        annotations: {}
+      KubePersistentVolumeFillingUp:
+        enabled: true
+        for: 30m
+        severity: warning
+        window: 6h
+        horizonSeconds: 14400
+        minimumSamples: 300
+        annotations: {}
+  host:
+    enabled: true
+    rules:
+      HostMemoryLow:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0.1
+        annotations: {}
+      HostCPUHigh:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 90
+        annotations: {}
+      HostLoadHigh:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 2
+        annotations: {}
+      HostCPUStealHigh:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 10
+        annotations: {}
+      HostConntrackHigh:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0.8
+        annotations: {}
+      HostFilesystemSpaceLow:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0.1
+        annotations: {}
+      HostFilesystemSpaceCritical:
+        enabled: true
+        for: 15m
+        severity: critical
+        threshold: 0.05
+        annotations: {}
+      HostFilesystemFillingUp:
+        enabled: true
+        for: 30m
+        severity: warning
+        window: 6h
+        horizonSeconds: 86400
+        minimumSamples: 300
+        annotations: {}
+      HostInodesLow:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0.1
+        annotations: {}
+      HostDiskIOSaturation:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0.9
+        annotations: {}
+      HostOOMKill:
+        enabled: true
+        for: 0m
+        severity: warning
+        threshold: 0
+        annotations: {}
+      HostRebooted:
+        enabled: true
+        for: 0m
+        severity: warning
+        annotations: {}
+      HostClockUnsynchronized:
+        enabled: true
+        for: 15m
+        severity: warning
+        annotations: {}
+      HostNetworkErrors:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 1
+        annotations: {}
+      HostSystemdUnitFailed:
+        enabled: true
+        for: 5m
+        severity: critical
+        annotations: {}
+      HostSystemdUnitInactive:
+        enabled: true
+        for: 5m
+        severity: warning
+        annotations: {}
+  etcd:
+    enabled: true
+    rules:
+      EtcdNoLeader:
+        enabled: true
+        for: 1m
+        severity: critical
+        annotations: {}
+      EtcdHighLeaderChanges:
+        enabled: true
+        for: 5m
+        severity: warning
+        threshold: 3
+        annotations: {}
+      EtcdHighFsyncDuration:
+        enabled: true
+        for: 10m
+        severity: warning
+        threshold: 0.5
+        minimumObservations: 20
+        annotations: {}
+      EtcdDbSizeExceedingQuota:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0.8
+        annotations: {}
+      EtcdHighFailedProposals:
+        enabled: true
+        for: 5m
+        severity: warning
+        threshold: 5
+        annotations: {}
+  certificates:
+    enabled: true
+    rules:
+      CertManagerCertNotReady:
+        enabled: true
+        for: 15m
+        severity: warning
+        annotations: {}
+      CertExpiringSoon:
+        enabled: true
+        for: 24h
+        severity: warning
+        days: 30
+        annotations: {}
+      CertExpiryCritical:
+        enabled: true
+        for: 1h
+        severity: critical
+        days: 7
+        annotations: {}
+  cnpg:
+    enabled: true
+    rules:
+      CNPGCollectorDown:
+        enabled: true
+        for: 5m
+        severity: critical
+        annotations: {}
+      CNPGMetricsAbsent:
+        enabled: true
+        for: 5m
+        severity: critical
+        annotations: {}
+      CNPGPostmasterRestarted:
+        enabled: true
+        for: 0m
+        severity: warning
+        annotations: {}
+      CNPGReplicationLag:
+        enabled: true
+        for: 10m
+        severity: warning
+        threshold: 30
+        annotations: {}
+      CNPGWALArchiveFailing:
+        enabled: true
+        for: 15m
+        severity: warning
+        annotations: {}
+      CNPGWALArchiveStalled:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 1800
+        annotations: {}
+      CNPGDumpBackupStale:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 108000
+        annotations: {}
+  longhorn:
+    enabled: true
+    rules:
+      LonghornVolumeFaulted:
+        enabled: true
+        for: 5m
+        severity: critical
+        annotations: {}
+      LonghornVolumeDegraded:
+        enabled: true
+        for: 15m
+        severity: warning
+        annotations: {}
+      LonghornNodeSpaceLow:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0.1
+        annotations: {}
+      LonghornNodeSpaceCritical:
+        enabled: true
+        for: 15m
+        severity: critical
+        threshold: 0.05
+        annotations: {}
+      LonghornDiskSpaceLow:
+        enabled: true
+        for: 15m
+        severity: warning
+        threshold: 0.1
+        annotations: {}
+      LonghornDiskSpaceCritical:
+        enabled: true
+        for: 15m
+        severity: critical
+        threshold: 0.05
+        annotations: {}
+  flux:
+    enabled: true
+    rules:
+      FluxReconciliationFailed:
+        enabled: true
+        for: 15m
+        severity: warning
+        annotations: {}
+      FluxReconciliationStalled:
+        enabled: true
+        for: 15m
+        severity: warning
+        annotations: {}

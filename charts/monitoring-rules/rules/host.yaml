@@ -1,0 +1,85 @@
+rules:
+- alert: HostMemoryLow
+  expr: |-
+    node_memory_MemAvailable_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"} / node_memory_MemTotal_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"} < {{ .Values.groups.host.rules.HostMemoryLow.threshold }}
+  summary: ホスト異常 {{ $labels.instance }}
+  description: available memory が少ない状態です。
+- alert: HostCPUHigh
+  expr: |-
+    100 * (1 - avg by (cluster, instance) (rate(node_cpu_seconds_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",mode="idle"}[5m]))) > {{ .Values.groups.host.rules.HostCPUHigh.threshold }}
+  summary: ホスト異常 {{ $labels.instance }}
+  description: CPU 使用率が高い状態です。
+- alert: HostLoadHigh
+  expr: |-
+    node_load15{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"} / on (cluster, instance) count by (cluster, instance) (node_cpu_seconds_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",mode="idle"}) > {{ .Values.groups.host.rules.HostLoadHigh.threshold }}
+  summary: ホスト異常 {{ $labels.instance }}
+  description: CPU 数で正規化した15分 load が高い状態です。
+- alert: HostCPUStealHigh
+  expr: |-
+    100 * avg by (cluster, instance) (rate(node_cpu_seconds_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",mode="steal"}[5m])) > {{ .Values.groups.host.rules.HostCPUStealHigh.threshold }}
+  summary: ホスト異常 {{ $labels.instance }}
+  description: 仮想 CPU の steal が増えています。仮想化基盤の競合を確認してください。
+- alert: HostConntrackHigh
+  expr: |-
+    (node_nf_conntrack_entries{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"} / node_nf_conntrack_entries_limit{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"}) > {{ .Values.groups.host.rules.HostConntrackHigh.threshold }}
+  summary: ホスト異常 {{ $labels.instance }}
+  description: conntrack の上限に近づいています。
+- alert: HostFilesystemSpaceLow
+  expr: |-
+    (node_filesystem_avail_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} / node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} < {{ .Values.groups.host.rules.HostFilesystemSpaceLow.threshold }}) and (node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} > 0) and (node_filesystem_readonly{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} == 0)
+  summary: filesystem 空き容量低下 {{ $labels.instance }} {{ $labels.mountpoint }}
+  description: OS filesystem の空き率です。PVC / Longhorn の健全性とは別に調査してください。
+  family: host-filesystem
+- alert: HostFilesystemSpaceCritical
+  expr: |-
+    (node_filesystem_avail_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} / node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} < {{ .Values.groups.host.rules.HostFilesystemSpaceCritical.threshold }}) and (node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} > 0) and (node_filesystem_readonly{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} == 0)
+  summary: filesystem 空き容量低下 {{ $labels.instance }} {{ $labels.mountpoint }}
+  description: OS filesystem の空き率です。PVC / Longhorn の健全性とは別に調査してください。
+  family: host-filesystem
+- alert: HostFilesystemFillingUp
+  expr: |-
+    (predict_linear(node_filesystem_avail_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"}[{{ .Values.groups.host.rules.HostFilesystemFillingUp.window }}], {{ .Values.groups.host.rules.HostFilesystemFillingUp.horizonSeconds }}) < 0) and (count_over_time(node_filesystem_avail_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"}[{{ .Values.groups.host.rules.HostFilesystemFillingUp.window }}]) >= {{ .Values.groups.host.rules.HostFilesystemFillingUp.minimumSamples }}) and (changes(node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"}[{{ .Values.groups.host.rules.HostFilesystemFillingUp.window }}]) == 0) and (node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} > 0) and (node_filesystem_readonly{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} == 0) and (node_filesystem_avail_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} / node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} < 0.2)
+  summary: filesystem 容量枯渇予測 {{ $labels.instance }} {{ $labels.mountpoint }}
+  description: 容量変更のない十分な履歴で24時間先の枯渇を予測しました。
+- alert: HostInodesLow
+  expr: |-
+    (node_filesystem_files_free{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} / node_filesystem_files{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} < {{ .Values.groups.host.rules.HostInodesLow.threshold }}) and (node_filesystem_files{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} > 0) and (node_filesystem_readonly{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} == 0)
+  summary: inode 不足 {{ $labels.instance }} {{ $labels.mountpoint }}
+  description: 小さなファイルの大量生成を確認してください。
+- alert: HostDiskIOSaturation
+  expr: |-
+    rate(node_disk_io_time_seconds_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",device=~"{{ .Values.diskDevices }}"}[5m]) > {{ .Values.groups.host.rules.HostDiskIOSaturation.threshold }}
+  summary: disk I/O busy {{ $labels.instance }} {{ $labels.device }}
+  description: I/O を処理していた時間の比率です。仮想ディスクであり、IOPS 上限や並列デバイスの飽和を直接示すとは限りません。
+- alert: HostOOMKill
+  expr: |-
+    increase(node_vmstat_oom_kill{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"}[5m]) > {{ .Values.groups.host.rules.HostOOMKill.threshold }}
+  summary: ホスト OOM kill {{ $labels.instance }}
+  description: kernel OOM kill counter の増加です。counter reset は増加に数えません。
+- alert: HostRebooted
+  expr: |-
+    changes(node_boot_time_seconds{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"}[10m]) > 0
+  summary: ホスト再起動 {{ $labels.instance }}
+  description: boot 時刻が変化しました。計画した再起動か確認してください。初回観測だけでは発火しません。
+- alert: HostClockUnsynchronized
+  expr: |-
+    node_timex_sync_status{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"} == 0
+  summary: 時刻未同期 {{ $labels.instance }}
+  description: NTP / chrony と offset を確認してください。timex 非対応環境の欠測は別途扱います。
+- alert: HostNetworkErrors
+  expr: |-
+    (rate(node_network_receive_errs_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",device=~"{{ .Values.networkDevices }}"}[5m]) + rate(node_network_transmit_errs_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",device=~"{{ .Values.networkDevices }}"}[5m])) > {{ .Values.groups.host.rules.HostNetworkErrors.threshold }}
+  summary: network error {{ $labels.instance }} {{ $labels.device }}
+  description: 物理 interface の送受信 error が継続しています。仮想 interface は対象から除外しています。
+- alert: HostSystemdUnitFailed
+  expr: |-
+    {{ range $i, $host := .Values.hosts }}{{ if $i }} or {{ end }}max by (cluster, instance, name) (node_systemd_unit_state{job="integrations/unix",instance="{{ $host.name }}",name=~{{ $host.units | join "|" | replace "." "\\." | quote }},state="failed"}) == 1{{ end }}
+  summary: systemd failed {{ $labels.instance }} {{ $labels.name }}
+  description: inventory に宣言した常駐 unit の状態です。Alloy 自身が停止した場合は欠測監視を参照してください。
+  requires: hosts
+- alert: HostSystemdUnitInactive
+  expr: |-
+    {{ range $i, $host := .Values.hosts }}{{ if $i }} or {{ end }}max by (cluster, instance, name) (node_systemd_unit_state{job="integrations/unix",instance="{{ $host.name }}",name=~{{ $host.units | join "|" | replace "." "\\." | quote }},state="inactive"}) == 1{{ end }}
+  summary: systemd inactive {{ $labels.instance }} {{ $labels.name }}
+  description: inventory に宣言した常駐 unit の状態です。Alloy 自身が停止した場合は欠測監視を参照してください。
+  requires: hosts

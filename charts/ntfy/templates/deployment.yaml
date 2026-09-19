@@ -14,6 +14,7 @@ spec:
   template:
     metadata:
       annotations:
+        checksum/templates: {{ include (print $.Template.BasePath "/templates-configmap.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -60,6 +61,11 @@ spec:
               mountPath: /etc/ntfy/server.yml
               subPath: server.yml
               readOnly: true
+            {{- if .Values.ntfy.templates }}
+            - name: templates
+              mountPath: /etc/ntfy/templates
+              readOnly: true
+            {{- end }}
             - name: storage
               mountPath: /var/cache/ntfy
           {{- with .Values.startupProbe }}
@@ -96,6 +102,11 @@ spec:
         - name: config
           configMap:
             name: {{ include "ntfy.fullname" . }}
+        {{- if .Values.ntfy.templates }}
+        - name: templates
+          configMap:
+            name: {{ include "ntfy.fullname" . }}-templates
+        {{- end }}
         - name: storage
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:

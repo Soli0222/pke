@@ -4,6 +4,9 @@
 通知検証を省略した旨を記録し、各 Issue のほかの検証を満たした時点で完了扱いとする。
 以下に残る通知テスト手順は参考用であり、自動実行やクローズの必須条件にはしない。
 
+現行の共通ルール・通知経路・適用確認は [#741–#749 の節](#共通ルールと-ntfy-切替7417492026-09-19) を参照する。
+以下の #733–#740 の手順・記録には、段階導入時の Slack / ntfy 並行配送も残している。
+
 ## natsume の Ruler 通知先
 
 Mimir 3.2.1 の Ruler は、次の設定で同じ Mimir 内の Alertmanager に通知する。
@@ -848,7 +851,8 @@ pending は WAL 全体の未送信量を表すものではなく、送信進捗�
 `scripts/validate-cluster-labels.py` は3ホストの Falco 有効 / 無効、該当ホストの etcd を含む設定を描画し、Alloy v1.19.2 で validate する。
 追加した self exporter とホストの共通 relabel を使うローカル remote_write 試験で、build / queue メトリクスの `job=alloy-host`、`cluster`、`hostname` を確認する。
 今回さらに実 inventory を使う Ansible template render、新 playbook の syntax-check、各ホストの導入済み binary による全 Prometheus 設定の validate を実施した。
-Ansible の実機 check / diff は昇格認証が通らず未完了。一般ユーザーからも `/etc/alloy` を読めなかったため、本適用前に昇格可能な環境で差分を確認する。
+PR 作成時の実機 check / diff は昇格認証で停止していたが、2026-09-19 に SSH の multiplex を無効にして解消した。
+3台で check / diff と本適用を完了し、各5分以上の正常収集を確認した。[#739 の完了記録](https://github.com/Soli0222/pke/issues/739#issuecomment-5740698477)に検証時刻と rollback 用 backup パスを記載している。
 
 ```sh
 uv run --with pyyaml --with jinja2 python scripts/validate-cluster-labels.py
@@ -923,3 +927,116 @@ operator 用と DB 用の target を分け、重複収集がないことも確�
 今回の変更は文書のみで、両クラスタの manifest、DB 設定、storage、backup は変更しない。
 merge 後のクラスタ適用は不要で、rollback は文書変更の revert のみとなる。
 通知テストは実施しない。
+
+## 共通ルールと ntfy 切替（#741–#749、2026-09-19）
+
+ユーザー指示により #741–#749 は1本の PR にまとめ、#750 の外部監視は別に扱う。
+本番の合成通知テストは実施しない。発火・復帰・配送・抑制はローカルの合成データで検証し、merge 後は同期・評価・ラベルの確認で完了とする。
+
+### 配置と設定の正
+
+`charts/monitoring-rules` を各クラスタの `monitoring-rules` namespace に配置する。
+natsume は9グループ64ルール、meruto は CNPG を除く8グループ57ルール。
+Flux Kustomization は CRD と Alloy に依存する。Alloy の全 namespace / 全 PrometheusRule selector で新ルールも同期する。
+query の cluster matcher と評価結果の cluster label は、既存の Alloy による分離をそのまま使う。
+
+[chart README](charts/monitoring-rules/README.md) に対象・閾値・欠測の待機時間・予測の履歴条件・グループ別 runbook をまとめた。
+hosts と systemd units は Ansible inventory、DB 一覧と archive / replication は CNPG manifest と自動照合する。
+meruto に DB は期待しない。pg_dump の最終成功は監視するが、misskey の base backup freshness は未カバーであり、[CNPG の調査項目](CNPG.md#アラートからの調査)を残す。
+
+### 通知経路
+
+| 条件 | topic | ntfy priority | tags | repeat |
+|---|---|---|---|---|
+| natsume / meruto、critical | `<cluster>-alerts` | 5 | rotating_light | 1h |
+| natsume / meruto、warning | `<cluster>-alerts` | 3 | warning | 12h |
+| natsume / meruto、その他・severity 欠落 | `<cluster>-alerts` | 2 | information_source | 12h |
+| cluster 不明・欠落 | `pke-alerts` | severity と同じ | severity と同じ | severity と同じ |
+| resolved | 発火時と同じ topic | 2 | 発火時の severity と同じ | send_resolved=true |
+
+group_by は cluster / alertname / namespace / severity、group_wait=30s、group_interval=5m。
+severity が同じグループ内で混ざらないため、ntfy template は commonLabels.severity を使える。
+
+ntfy v2.28.0 の組み込み template と `?priority=5` の組み合わせは、実測で priority が反映されなかった。
+[parsePublishParams](https://github.com/binwiederhier/ntfy/blob/v2.28.0/server/server.go) と [template 処理](https://github.com/binwiederhier/ntfy/blob/v2.28.0/server/server_template.go) でも、named template は query の priority を描画しない。
+そこで chart 0.1.2 に read-only template ConfigMap mount と checksum による再起動を追加した。
+`ntfy.templates.alertmanager` は同名の組み込み template に優先する。URL は従来と同じ `template=alertmanager` なので、Flux の適用順が前後しても template 未存在の404を起こさない。
+ntfy の切替完了前は既存の組み込み表示・既定 priority で受信し、切替後は上表と要約・説明・runbook を使う。
+SQLite を使う単一 Pod は Recreate で一時停止するため、merge 後は ntfy の rollout と Alertmanager の配送エラーも確認する。
+
+Slack receiver / route / Alloy Secret 参照 / OnePasswordItem CR は取り除く。
+1Password の `alertmanager-slack-webhook` item 自体は削除せず、token も revoke しない。
+rollback 期間を終えて不要と判断した時点で、別途 item と Slack webhook を廃止する。
+
+inhibition は次の明示ペアだけに限定する。
+すべて source / target 双方で equal に使うラベルを `=~".+"` とし、識別子欠落どうしを一致させない。
+
+| critical → warning | equal |
+|---|---|
+| KubePersistentVolumeSpaceCritical → SpaceLow | cluster / namespace / persistentvolumeclaim |
+| HostFilesystemSpaceCritical → SpaceLow | cluster / instance / mountpoint / device |
+| LonghornNodeSpaceCritical → SpaceLow | cluster / node |
+| LonghornDiskSpaceCritical → SpaceLow | cluster / node / disk |
+| CertExpiryCritical → CertExpiringSoon | cluster / namespace / name |
+| SSLCertExpiryCritical → SSLCertExpiringSoon | cluster / namespace / job / instance |
+| EndpointDown → HTTPStatusCodeError | cluster / namespace / job / instance、job=http-get のみ |
+
+最後のペアは実際の Probe が http_2xx / http-get であることを render テストで固定する。
+HostDown / metrics absent / NodeNotReady を根拠に Pod や PVC を広く抑制する設定は入れない。
+
+### merge 前の検証と既知の発火候補
+
+`python3 scripts/validate-monitoring-rules.py` は production render、promtool check / unit test、実 Alloy による cluster scope、inventory と values の一致を検証する。
+`python3 scripts/validate-ntfy-alerts.py` は ConfigMap / mount、Alloy / Alertmanager syntax、30 routing case、63 inhibition case、9 receiver の firing / resolved / priority / tags、ACL、invalid token、rotation を検証する。
+本番 Secret を使わず、ローカルの ntfy / Alertmanager だけに合成データを送る。
+GitHub Actions の `monitoring-rules` workflow で両方を実行する。
+
+2026-09-19 に新規121式を現在の Mimir に読み取り専用で照合し、評価エラーは0だった。
+発火条件に一致したのは以下の既存 scrape 失敗3件。for が継続すれば投入後に TargetDown critical 通知が発生する。
+
+| cluster | job | instance |
+|---|---|---|
+| natsume | prometheus.scrape.kubernetes_api | 192.168.9.3:6443 |
+| meruto | prometheus.scrape.kubernetes_api | 192.168.10.3:6443 |
+| natsume | grafana-image-renderer | 10.1.0.120:8081 |
+
+API scrape の設定では HTTPS scheme / 認証が明示されておらず、HTTPS port との不整合が疑われる。修復はこのルール追加には含めない。
+Grafana renderer も原因調査・修復は別作業とし、除外して見えなくしない。
+既存アプリルールの job 名不一致や他の未カバー項目も、この共通ルールで修復済みとは扱わない。
+
+### merge 後の読み取り確認
+
+```sh
+kubectl --context natsume@soli -n flux-system get kustomization monitoring-rules
+kubectl --context meruto@soli -n flux-system get kustomization monitoring-rules
+kubectl --context natsume@soli -n monitoring-rules get helmrelease,prometheusrule
+kubectl --context meruto@soli -n monitoring-rules get helmrelease,prometheusrule
+kubectl --context natsume@soli -n ntfy rollout status deployment/ntfy --timeout=5m
+```
+
+Mimir の `/prometheus/config/v1/rules` で `natsume/monitoring-rules/` と `meruto/monitoring-rules/` に新規ルールが保存されたことを確認する。
+`/prometheus/api/v1/rules` で全新規ルールの health=ok、lastError が空、lastEvaluation が進むことを確認し、式と出力ラベルの cluster が保存先と一致することを照合する。
+Alertmanager の有効 receiver が ntfy のみになり、namespace / severity を含む grouping と repeat が反映されたことを、Secret 実値を出力せずに確認する。
+自然発生中の TargetDown は入力系列と警報を照合する。本番への障害注入や合成通知は行わない。
+
+### rollback
+
+ルールは該当 group / rule の enabled=false を values に設定して通常同期する。
+全撤去は両クラスタの root 登録と monitoring-rules Kustomization / app を revert する。
+Alloy が同期済み namespace を回収したことを Mimir でも確認する。meruto が停止中なら同期側の削除は進まないため、保存先を確認してから対象 namespace だけを回収する。
+ntfy chart 自体を戻すときも新しい chart version を付ける。
+
+Slack-only に戻す差分は、まず切替前の2ファイルを取得してから、旧設定の並行配送を解除する。
+
+```sh
+git restore --source=883430c49cd762fdc1d5cdd9fab7f0df847ab018 -- \
+  flux/clusters/natsume/apps/alloy/alloy-config.yaml \
+  flux/clusters/natsume/apps/alloy/onepassworditem.yaml
+```
+
+復元した `global_config` の `route.routes` を丸ごと削除し、root の `receiver: slack_webhook` だけを残す。
+`receivers` から3つの `ntfy_*` を削除し、`remote.kubernetes.secret "ntfy_publish"` の block も外す。
+Slack の remote secret、global.slack_api_url、slack receiver は復元した値を保つ。
+1Password item を残しているため、Slack の OnePasswordItem が再作成する Secret を Alloy が取得できる。
+この差分を review / validate して通常の PR で反映し、Secret を表示せずに設定同期とエラーを確認する。
+ntfy の保存済み通知・ACL・認証情報はそのまま残せる。

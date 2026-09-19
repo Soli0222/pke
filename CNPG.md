@@ -318,6 +318,25 @@ misskey を logical dump から戻す場合も、restore 先 image には pgroon
 pg_dump は logical dump なので、同じ major version 以上の PostgreSQL に `pg_restore` できる。
 ただし、pgroonga などの extension を使っている DB は、復元先にも同じ extension と必要な shared library が必要である。
 
+## アラートからの調査
+
+共通ルールの cluster は Kubernetes クラスタ、cnpg_cluster は DB 名である。
+現在の対象は natsume の5 DB だけで、meruto に DB を期待しない。
+
+- CollectorDown / MetricsAbsent: Cluster status、Pod / instance manager の状態、cnpg_collector_up と Alloy の target / NetworkPolicy を確認する。
+- PostmasterRestarted: cnpg_pg_postmaster_start_time の変化を Pod 再作成・計画作業・PostgreSQL logs と照合する。
+- WALArchiveFailing: misskey の last_failed_time と last_archived_time、barman plugin logs、ObjectStore、R2 認証と到達性を確認する。次の archive 成功で解消する。
+- WALArchiveStalled: misskey で最後の archive から30分以上経過した状態。archive_timeout=300秒と WAL 生成の有無を確認する。静かな DB では timeout だけで archive 成功を保証できない。
+- DumpBackupStale: grafana / sui / spotify-reblend / spotify-nowplaying の CronJob.lastSuccessfulTime と Job logs、R2 の dump object を確認する。30時間以内の成功がない状態を検知し、一度も実行されていないケースも含む。suspend と CronJob 自体の削除は別途調査する。
+
+misskey の base backup freshness は未カバー。
+2026-09-19 の実測では `cnpg_collector_last_available_backup_timestamp=0`、Backup CR は0件だった。
+ScheduledBackup の lastScheduleTime は更新されていたが、これはバックアップ成功の証拠にはならない。
+後続作業は plugin / Backup CR の生成・保持と R2 側の最終成功の調査、および成功時刻の収集方法の確立とする。
+WAL archive の成功や pg_dump CronJob の成功時刻から、misskey base backup の成功・復元可能性を推定しない。
+
+閾値、テスト、無効化は [monitoring-rules README](charts/monitoring-rules/README.md#cnpg) を参照する。
+
 ## 参考
 
 - [CloudNativePG Docs](https://cloudnative-pg.io/documentation/current/)

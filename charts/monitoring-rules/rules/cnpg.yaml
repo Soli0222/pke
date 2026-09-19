@@ -1,0 +1,43 @@
+rules:
+- alert: CNPGCollectorDown
+  expr: |-
+    {{ $parts := list }}{{ range $db := .Values.databases }}{{ $parts = append $parts (printf "max by (cluster, namespace, cnpg_cluster, pod) (cnpg_collector_up{namespace=\"%s\",cnpg_cluster=\"%s\"}) == 0" $db.namespace $db.name ) }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+  summary: DB collector 異常 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
+  description: PostgreSQL 接続と instance manager を確認してください。
+  requires: databases
+- alert: CNPGMetricsAbsent
+  expr: |-
+    {{ $parts := list }}{{ range $db := .Values.databases }}{{ $parts = append $parts (printf "absent_over_time(cnpg_collector_up{namespace=\"%s\",cnpg_cluster=\"%s\"}[5m])" $db.namespace $db.name ) }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+  summary: DB metrics 欠測 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
+  description: 期待 DB の collector 指標がありません。DB Pod と Alloy の経路を確認してください。
+  requires: databases
+- alert: CNPGPostmasterRestarted
+  expr: |-
+    {{ $parts := list }}{{ range $db := .Values.databases }}{{ $parts = append $parts (printf "changes(max by (cluster, namespace, cnpg_cluster) (cnpg_pg_postmaster_start_time{namespace=\"%s\",cnpg_cluster=\"%s\"})[10m:1m]) > 0" $db.namespace $db.name ) }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+  summary: Postmaster 再起動 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
+  description: 開始時刻が変化しました。Pod 再作成・計画作業とログを照合してください。
+  requires: databases
+- alert: CNPGReplicationLag
+  expr: |-
+    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.replication }}{{ $parts = append $parts (printf "max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_replication_lag{namespace=\"%s\",cnpg_cluster=\"%s\"}) > %v" $db.namespace $db.name $.Values.groups.cnpg.rules.CNPGReplicationLag.threshold) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+  summary: DB replication lag {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
+  description: replica がある DB だけを対象としています。単一 instance の欠測は異常にしません。
+  requires: databases
+- alert: CNPGWALArchiveFailing
+  expr: |-
+    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.archive }}{{ $parts = append $parts (printf "max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_last_failed_time{namespace=\"%s\",cnpg_cluster=\"%s\"}) > on (cluster, namespace, cnpg_cluster, pod) max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_last_archived_time{namespace=\"%[1]s\",cnpg_cluster=\"%[2]s\"})" $db.namespace $db.name ) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+  summary: WAL archive 失敗 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
+  description: 失敗時刻が最後の成功より新しい状態です。次の archive 成功で解消します。
+  requires: databases
+- alert: CNPGWALArchiveStalled
+  expr: |-
+    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.archive }}{{ $parts = append $parts (printf "max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_seconds_since_last_archival{namespace=\"%s\",cnpg_cluster=\"%s\"}) > %v" $db.namespace $db.name $.Values.groups.cnpg.rules.CNPGWALArchiveStalled.threshold) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+  summary: WAL archive 停滞 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
+  description: archive を有効にした DB で成功が30分ありません。archive_timeout と WAL 生成を確認してください。
+  requires: databases
+- alert: CNPGDumpBackupStale
+  expr: |-
+    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.dumpCronJob }}{{ $parts = append $parts (printf "label_replace(((time() - max by (cluster, namespace, cronjob) (kube_cronjob_status_last_successful_time{namespace=\"%s\",cronjob=\"%s\"}) > %v) or ((time() - max by (cluster, namespace, cronjob) (kube_cronjob_created{namespace=\"%[1]s\",cronjob=\"%[2]s\"}) > %[3]v) unless on (cluster, namespace, cronjob) kube_cronjob_status_last_successful_time{namespace=\"%[1]s\",cronjob=\"%[2]s\"})) and on (cluster, namespace, cronjob) (max by (cluster, namespace, cronjob) (kube_cronjob_spec_suspend{namespace=\"%[1]s\",cronjob=\"%[2]s\"}) == 0), \"cnpg_cluster\", \"%[4]s\", \"cronjob\", \".+\")" $db.namespace $db.dumpCronJob $.Values.groups.cnpg.rules.CNPGDumpBackupStale.threshold $db.name) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+  summary: pg_dump 最終成功が古い {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
+  description: 宣言した pg_dump CronJob が期限内に成功していません。未実行も検知しますが、R2 内のデータの復元可能性までは保証しません。
+  requires: databases

@@ -31,7 +31,22 @@ spec:
             key: auth-tokens
 
     ntfy:
+      # 同名の組み込み template を上書きする。更新前後とも従来 URL で受信できる。
+      templates:
+        alertmanager: |
+          title: >-
+            {{ if eq .status "resolved" }}✅ Resolved{{ else }}🚨 Firing{{ end }}: {{ .commonLabels.cluster | default "pke" }} / {{ .commonLabels.alertname }}
+          priority: >-
+            {{ if eq .status "resolved" }}2{{ else if eq .commonLabels.severity "critical" }}5{{ else if eq .commonLabels.severity "warning" }}3{{ else }}2{{ end }}
+          message: |
+            Status: {{ .status }}
+            {{ range .alerts }}
+            {{ .annotations.summary }}
+            {{ .annotations.description }}
+            {{ if .annotations.runbook_url }}Runbook: {{ .annotations.runbook_url }}{{ end }}
+            {{ end }}
       config: |
+        template-dir: "/etc/ntfy/templates"
         base-url: "https://ntfy.pstr.space"
         listen-http: ":{{ .Values.service.port }}"
         metrics-listen-http: ":{{ .Values.service.metricsPort }}"
