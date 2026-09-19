@@ -61,6 +61,7 @@ jobs:
               flate build "${RESOURCE}" \
                 --path "flux/clusters/${CLUSTER}" \
                 --api-versions "${API_VERSIONS}" \
+                --skip-secrets=true \
                 --no-progress
             ) > "${side}.yaml"
           done
@@ -72,6 +73,8 @@ jobs:
           RESOURCE: ${{ matrix.resource }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           GH_TOKEN: ${{ secrets.FLUX_DIFF_GIST_TOKEN || secrets.GITHUB_TOKEN }}
+          HAS_GIST_TOKEN: ${{ secrets.FLUX_DIFF_GIST_TOKEN != '' }}
+          PUBLIC_REPO: ${{ github.event.repository.private == false }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
         run: |
@@ -103,16 +106,37 @@ jobs:
               echo "</details>"
               echo "${delimiter}"
             } >> "$GITHUB_OUTPUT"
-          else
-            gist_url=$(gh gist create diff.patch \
+          elif [[ "$HAS_GIST_TOKEN" == true ]] && gist_url=$(gh gist create diff.patch \
               --desc "flate ${CLUSTER}/${RESOURCE} diff for ${REPO}#${PR_NUMBER}" \
-              | tail -n1)
+              | tail -n1); then
             {
               echo "message<<${delimiter}"
               echo "flate \`${CLUSTER}\` / \`${RESOURCE}\` diff は **${size} bytes** で 65536 字制限を超えるため Gist に退避しました: ${gist_url}"
               echo "${delimiter}"
             } >> "$GITHUB_OUTPUT"
+          else
+            # 公開コードから生成した差分のみを同じ repository の artifact に保存する。
+            # repository を非公開に変更した場合は、自動的にこの fallback を使わない。
+            if [[ "$PUBLIC_REPO" != true ]]; then
+              echo "::error::Large diff requires a configured Gist token in a private repository"
+              exit 1
+            fi
+            {
+              echo "upload_artifact=true"
+              echo "message<<${delimiter}"
+              echo "flate \`${CLUSTER}\` / \`${RESOURCE}\` diff は **${size} bytes** です。Gist を利用できないため、この [Actions run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}) の \`flate-${CLUSTER}-${RESOURCE}-diff\` artifact に保存しました。"
+              echo "${delimiter}"
+            } >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Upload large diff when Gist is unavailable
+        if: steps.comment.outputs.upload_artifact == 'true'
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: flate-${{ matrix.cluster }}-${{ matrix.resource }}-diff
+          path: diff.patch
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Sticky PR comment
         uses: marocchino/sticky-pull-request-comment@v3.0.5
