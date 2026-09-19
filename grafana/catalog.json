@@ -32,6 +32,21 @@
           "statタイトルとworkqueue additions/secの計算を整理"
         ]
       }
+    },
+    "ozk-lh-mon": {
+      "path": "dashboards/platform/longhorn.json",
+      "title": "Longhorn Monitoring",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/ozk-lh-mon",
+        "revision": "generation:1",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。gnetId=16888、記載著者ONZACK AG / Robin Hermann。取り込み元revisionとlicenseは未確認",
+          "stateラベルの0/1判定、cluster分離、node集計、現在のPVC→PV対応のjoinを修正",
+          "unknown robustnessを追加し、無条件の0補完を除去。alertlistをvolume状態表に変更"
+        ]
+      }
     }
   },
   "folders": {
