@@ -93,6 +93,21 @@
           "実メトリクスに合わせた評価待ち、送信成功率・遅延・pending・URLラベルの適用範囲を修正"
         ]
       }
+    },
+    "pke-host-systemd": {
+      "path": "dashboards/platform/host-systemd.json",
+      "title": "PKE / Host & Systemd",
+      "origin": {
+        "kind": "upstream",
+        "url": "https://grafana.com/grafana/dashboards/25304-systemd-service-monitoring/",
+        "revision": "Grafana Labs 25304 revision 2",
+        "license": "Apache-2.0; licenses/onzack-LICENSE (onzack/grafana-dashboards@72495db4eae80e5a34a02e9708cf3b4aa6853860)",
+        "changes": [
+          "ONZACKのstat・table・timeseries設定を再利用し、cluster/hostnameで分離",
+          "期待対象をAnsible inventoryから生成し、監視ルールhosts/unitsと照合。欠測とinactive/failedを区別",
+          "ホストCPU・メモリ・filesystemの要点とNode Exporter / Alloyへの対象・時間付きリンクを追加"
+        ]
+      }
     }
   },
   "folders": {

@@ -6,6 +6,9 @@ on:
       - 'grafana/**'
       - 'scripts/*grafana*'
       - '.github/workflows/grafana-dashboards.yaml'
+      - 'ansible/inventories/hosts.yaml'
+      - 'ansible/inventories/host_vars/*.yaml'
+      - 'flux/clusters/*/apps/monitoring-rules/helmrelease-monitoring-rules.yaml'
   workflow_dispatch:
 
 permissions:
@@ -25,3 +28,7 @@ jobs:
         run: python3 scripts/test-grafana-git-sync.py
       - name: Validate Git Sync files
         run: python3 scripts/validate-grafana-dashboards.py
+      - name: Check expected host inventory
+        run: python3 scripts/sync-grafana-host-inventory.py --check
+      - name: Check host absence and systemd state semantics
+        run: python3 scripts/test-grafana-host-inventory.py
