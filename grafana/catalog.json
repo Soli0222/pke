@@ -168,6 +168,51 @@
           "元の配置・色・凡例・24時間表示・クエリの演算を維持。Mimirを初期datasourceとして保存"
         ]
       }
+    },
+    "n5bu_kv45": {
+      "path": "dashboards/platform/traefik.json",
+      "title": "Traefik Official Standalone Dashboard",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/n5bu_kv45",
+        "revision": "generation:1",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。gnetId=17346、取り込み元revision/licenseは未確認",
+          "元の配置・色・凡例・表示期間・クエリの演算を維持し、全selectorをクラスタ分離",
+          "cluster → entrypoint / serviceを追加。初期値natsume、interval変数を維持、datasourceの初期参照をMimirへ修正。接続先のラベル参照をexported_serviceへ対応"
+        ]
+      }
+    },
+    "R7HGKm27k": {
+      "path": "dashboards/platform/redis.json",
+      "title": "Redis Overview",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/R7HGKm27k",
+        "revision": "generation:1",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。gnetId=18345、取り込み元revision/licenseは未確認",
+          "元の配置・色・凡例・表示期間・クエリの演算を維持し、全selectorをクラスタ分離",
+          "jobを指していたcluster変数をjobへ改名し、Kubernetes cluster → job → instanceで選択。初期値natsume"
+        ]
+      }
+    },
+    "NEzutrbMk": {
+      "path": "dashboards/platform/blackbox.json",
+      "title": "Blackbox Exporter (HTTP prober)",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/NEzutrbMk",
+        "revision": "generation:1",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。gnetId=13659、取り込み元revision/licenseは未確認",
+          "元の配置・色・凡例・表示期間・クエリの演算を維持し、全selectorをクラスタ分離",
+          "Observer clusterで観測元を選択し、job / 接続先URLを絞り込み。初期値meruto"
+        ]
+      }
     }
   },
   "folders": {
