@@ -258,6 +258,22 @@
           "収集・評価対象clusterとnatsumeの共通基盤を分離。webhookに限定し、ntfy全用途の受付と端末配送を区別"
         ]
       }
+    },
+    "wY4blRMGz": {
+      "path": "dashboards/platform/coredns.json",
+      "title": "CoreDNS",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/wY4blRMGz",
+        "revision": "generation:1",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。gnetId=14981、上流revision/licenseは未確認",
+          "配置・色・凡例・1時間表示を維持。Cluster初期natsume、instanceと全selectorをjob=corednsで分離",
+          "旧forward metricをproxy_name=forwardの現行proxy metricへ移行。接続cacheはhit+miss、応答cacheのmissはsuccess/denial両hitを除外",
+          "未公開のDNSSEC専用系列を除去。DO-bitパネルは同じ位置で対象外の説明を表示"
+        ]
+      }
     }
   },
   "folders": {

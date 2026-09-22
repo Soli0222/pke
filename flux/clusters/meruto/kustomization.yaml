@@ -19,4 +19,5 @@ resources:
 - kustomizations/traefik.yaml
 - kustomizations/vector.yaml
 - kustomizations/flux-monitoring.yaml
+- kustomizations/coredns-monitoring.yaml
 - kustomizations/monitoring-rules.yaml
