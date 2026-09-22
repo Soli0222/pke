@@ -1,6 +1,6 @@
 # navidrome
 
-![Version: 2.6.0](https://img.shields.io/badge/Version-2.6.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.64.0](https://img.shields.io/badge/AppVersion-0.64.0-informational?style=flat-square)
+![Version: 2.7.0](https://img.shields.io/badge/Version-2.7.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.64.1](https://img.shields.io/badge/AppVersion-0.64.1-informational?style=flat-square)
 
 A Helm chart for Navidrome - A modern Music Server and Streamer
 
@@ -71,9 +71,11 @@ A Helm chart for Navidrome - A modern Music Server and Streamer
 | config.inspect.backlogTimeout | int | `60000000000` |  |
 | config.inspect.enabled | bool | `true` |  |
 | config.inspect.maxRequests | int | `1` |  |
+| config.jellyfin.autoDiscovery | bool | `false` | Answer Jellyfin UDP discovery broadcasts on the local network. |
 | config.jellyfin.enabled | bool | `false` | Enable the experimental Jellyfin Music API. |
 | config.jellyfin.exposedPublicUsers | string | `""` | Comma-separated usernames exposed by the unauthenticated public users endpoint; empty exposes none. |
 | config.jellyfin.maxConcurrentStreams | int | `nil` | Concurrent Jellyfin collection streams; null omits the option and uses Navidrome's dynamic default, max(2, MaxOpenConns/2). |
+| config.jellyfin.quickConnect | bool | `true` | Allow Jellyfin Quick Connect sign-in. |
 | config.jellyfin.serverName | string | `""` | Server name advertised to Jellyfin clients; empty uses `Navidrome <version>`. |
 | config.jukebox.adminOnly | bool | `true` |  |
 | config.jukebox.default | string | `""` |  |

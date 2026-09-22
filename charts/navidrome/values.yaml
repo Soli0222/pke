@@ -276,6 +276,10 @@ config:
   jellyfin:
     # -- Enable the experimental Jellyfin Music API.
     enabled: false
+    # -- Answer Jellyfin UDP discovery broadcasts on the local network.
+    autoDiscovery: false
+    # -- Allow Jellyfin Quick Connect sign-in.
+    quickConnect: true
     # -- Server name advertised to Jellyfin clients; empty uses `Navidrome <version>`.
     serverName: ""
     # -- Comma-separated usernames exposed by the unauthenticated public users endpoint; empty exposes none.
