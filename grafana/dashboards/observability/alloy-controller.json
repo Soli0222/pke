@@ -1,0 +1,731 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "pke-alloy-controller"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [],
+            "type": "dashboard"
+          },
+          "type": "dashboard"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": false,
+          "hide": false,
+          "iconColor": "red",
+          "name": "flux events",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [
+              "flux"
+            ],
+            "type": "tags"
+          }
+        }
+      ]
+    },
+    "graphTooltip": 1,
+    "links": [
+      {
+        "icon": "doc",
+        "targetBlank": true,
+        "title": "Documentation",
+        "tooltip": "Component controller documentation",
+        "type": "link",
+        "url": "https://grafana.com/docs/alloy/latest/concepts/component_controller/"
+      },
+      {
+        "asDropdown": true,
+        "icon": "external link",
+        "includeVars": true,
+        "keepTime": true,
+        "tags": [
+          "alloy-mixin"
+        ],
+        "targetBlank": false,
+        "title": "Dashboards",
+        "type": "dashboards"
+      }
+    ],
+    "panels": [
+      {
+        "id": 1000,
+        "type": "text",
+        "title": "収集範囲と読み方",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 3
+        },
+        "options": {
+          "mode": "markdown",
+          "content": "`alloy`: Kubernetes / `alloy-host`: ホスト。namespaceのないホストも対象です。重複収集の`prometheus.scrape.alloy_metrics`は除外。 component状態と評価待ち・評価時間を確認します。"
+        }
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "The number of Alloy instances whose metrics are being sent and reported.\n",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "instances",
+            "noValue": "未収集 / 対象なし"
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 10,
+          "x": 0,
+          "y": 3
+        },
+        "options": {
+          "colorMode": "none",
+          "graphMode": "none"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "count(group by(cluster,job,instance) (alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"}))",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Running instances",
+        "type": "stat",
+        "id": 1
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "The number of running components across all running instances.\n",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "components",
+            "noValue": "未収集 / 対象なし"
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 10,
+          "x": 0,
+          "y": 7
+        },
+        "options": {
+          "colorMode": "none",
+          "graphMode": "none"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(alloy_component_controller_running_components{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"})",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Running components",
+        "type": "stat",
+        "id": 2
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "The percentage of components which are in a healthy state.\n",
+        "fieldConfig": {
+          "defaults": {
+            "max": 1,
+            "min": 0,
+            "noValue": "未収集 / 対象なし",
+            "unit": "percentunit"
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 10,
+          "x": 0,
+          "y": 11
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "text": {
+            "valueSize": 80
+          }
+        },
+        "pluginVersion": "9.0.6",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "(sum(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\",health_type=\"healthy\"}) or (0 * sum(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"}))) / (sum(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"}) > 0)",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Overall component health",
+        "type": "stat",
+        "id": 3
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "全componentの系列が存在する場合だけ、存在しないhealth_typeを0件と表示。収集欠測を正常0件にしない。",
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Unhealthy"
+              },
+              "properties": [
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Unknown"
+              },
+              "properties": [
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "blue",
+                        "value": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Exited"
+              },
+              "properties": [
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "orange",
+                        "value": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 14,
+          "x": 10,
+          "y": 3
+        },
+        "options": {
+          "orientation": "vertical",
+          "showUnfilled": true
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(alloy_component_controller_running_components{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\", health_type=\"healthy\"}) or (0 * sum(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"}))",
+            "instant": true,
+            "legendFormat": "Healthy",
+            "range": false,
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(alloy_component_controller_running_components{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\", health_type=\"unhealthy\"}) or (0 * sum(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"}))",
+            "instant": true,
+            "legendFormat": "Unhealthy",
+            "range": false,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(alloy_component_controller_running_components{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\", health_type=\"unknown\"}) or (0 * sum(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"}))",
+            "instant": true,
+            "legendFormat": "Unknown",
+            "range": false,
+            "refId": "C"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(alloy_component_controller_running_components{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\", health_type=\"exited\"}) or (0 * sum(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"}))",
+            "instant": true,
+            "legendFormat": "Exited",
+            "range": false,
+            "refId": "D"
+          }
+        ],
+        "title": "Components by health",
+        "type": "bargauge",
+        "id": 4
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "The frequency at which components get updated.\n",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "points",
+              "pointSize": 3,
+              "spanNulls": false
+            },
+            "unit": "ops",
+            "noValue": "未収集 / 対象なし"
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 0,
+          "y": 15
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by (cluster,job,instance,component_path,component_id) (rate(alloy_component_evaluation_seconds_count{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Component evaluation rate",
+        "type": "timeseries",
+        "id": 5
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "native/classic histogram両対応。評価がない区間はquantileを表示しない。",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "noValue": "評価なし / 未収集",
+            "custom": {
+              "spanNulls": false
+            }
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 8,
+          "y": 15
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "(histogram_quantile(0.99, sum(rate(alloy_component_evaluation_seconds{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval])))\nor\nhistogram_quantile(0.99, sum by (le) (rate(alloy_component_evaluation_seconds_bucket{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval])))) >= 0",
+            "instant": false,
+            "legendFormat": "99th percentile",
+            "range": true,
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "(histogram_quantile(0.50, sum(rate(alloy_component_evaluation_seconds{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval])))\nor\nhistogram_quantile(0.50, sum by (le) (rate(alloy_component_evaluation_seconds_bucket{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval])))) >= 0",
+            "instant": false,
+            "legendFormat": "50th percentile",
+            "range": true,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "((\n  histogram_sum(sum(rate(alloy_component_evaluation_seconds{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval]))) /\n  histogram_count(sum(rate(alloy_component_evaluation_seconds{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval])))\n)\nor\n(\n  sum(rate(alloy_component_evaluation_seconds_sum{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval])) /\n  sum(rate(alloy_component_evaluation_seconds_count{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval]))\n)) >= 0",
+            "instant": false,
+            "legendFormat": "Average",
+            "range": true,
+            "refId": "C"
+          }
+        ],
+        "title": "Component evaluation time",
+        "type": "timeseries",
+        "id": 6
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "現在収集されているcomponent評価待ち数。",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未収集 / 対象なし",
+            "custom": {
+              "spanNulls": false
+            }
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 16,
+          "y": 15
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "alloy_component_evaluation_queue_size{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"}",
+            "instant": false,
+            "legendFormat": "{{instance}} {{controller_path}} {{component_id}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Component evaluation queue",
+        "type": "timeseries",
+        "id": 7
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "Detailed histogram view of how long component evaluations take.\n\nThe goal is to design your config so that evaluations take as little\ntime as possible; under 100ms is a good goal.\n",
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 0,
+          "y": 25
+        },
+        "maxDataPoints": 30,
+        "options": {
+          "calculate": false,
+          "cellGap": 0,
+          "color": {
+            "scheme": "Spectral"
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          },
+          "filterValues": {
+            "le": 0.1
+          },
+          "tooltip": {
+            "show": true,
+            "yHistogram": true
+          },
+          "yAxis": {
+            "unit": "s"
+          }
+        },
+        "pluginVersion": "9.0.6",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(increase(alloy_component_evaluation_seconds{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval]))\nor ignoring (le)\nsum by (le) (increase(alloy_component_evaluation_seconds_bucket{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval]))",
+            "format": "heatmap",
+            "instant": false,
+            "legendFormat": "{{le}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Component evaluation histogram",
+        "type": "heatmap",
+        "id": 8
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "Detailed histogram of how long components wait to be evaluated after their dependency is updated.\n\nThe goal is to design your config so that most of the time components do not\nqueue for long; under 10ms is a good goal.\n",
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 8,
+          "y": 25
+        },
+        "maxDataPoints": 30,
+        "options": {
+          "calculate": false,
+          "cellGap": 0,
+          "color": {
+            "scheme": "Spectral"
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          },
+          "filterValues": {
+            "le": 0.1
+          },
+          "tooltip": {
+            "show": true,
+            "yHistogram": true
+          },
+          "yAxis": {
+            "unit": "s"
+          }
+        },
+        "pluginVersion": "9.0.6",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(increase(alloy_component_dependencies_wait_seconds{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval]))\nor ignoring (le)\nsum by (le) (increase(alloy_component_dependencies_wait_seconds_bucket{cluster=\"$cluster\", job=~\"${job:regex}\",instance=~\"${instance:regex}\"}[$__rate_interval]))",
+            "format": "heatmap",
+            "instant": false,
+            "legendFormat": "{{le}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Component dependency wait histogram",
+        "type": "heatmap",
+        "id": 9
+      }
+    ],
+    "refresh": "1m",
+    "schemaVersion": 42,
+    "tags": [
+      "alloy-mixin"
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "cluster",
+          "label": "Cluster",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(alloy_component_controller_running_components{job=~\"alloy|alloy-host\"}, cluster)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "options": [],
+          "current": {
+            "text": "natsume",
+            "value": "natsume"
+          },
+          "multi": false,
+          "includeAll": false
+        },
+        {
+          "name": "job",
+          "label": "Alloy type",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"alloy|alloy-host\"}, job)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "options": [],
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "multi": true,
+          "includeAll": true,
+          "allValue": "alloy|alloy-host"
+        },
+        {
+          "name": "instance",
+          "label": "Instance",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"${job:regex}\"}, instance)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "options": [],
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "time_options": [
+        "5m",
+        "15m",
+        "1h",
+        "6h",
+        "12h",
+        "24h",
+        "2d",
+        "7d",
+        "30d",
+        "90d"
+      ]
+    },
+    "timezone": "browser",
+    "title": "Alloy / Controller"
+  }
+}
