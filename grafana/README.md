@@ -110,6 +110,27 @@ UIで変更する場合はGit Syncのブランチ経由でPRを作り、同じ�
 継続的な書き込み元はGit Syncのみとし、CIで`gcx push`やdashboard APIによる更新をしない。
 接続・認証設定は[Git Syncの接続手順](git-sync/README.md)を参照する。
 
+## ホストとsystemdの期待対象
+
+`PKE / Host & Systemd`の期待対象はAnsible inventoryの`k3s_cluster`に所属するホストと、各host_varsの`cluster` / `alloy_systemd_units`から生成する。
+クラスタ別monitoring-rulesの`hosts` / `units`との不一致は検証エラーにする。
+ホストやunitを変更したら、同じPRで次を実行する。
+
+```sh
+python3 scripts/sync-grafana-host-inventory.py
+python3 scripts/sync-grafana-host-inventory.py --check
+python3 scripts/test-grafana-host-inventory.py
+```
+
+同期スクリプトはHost選択と期待状態のクエリだけを更新する。
+CIはinventory・監視ルールの変更時にも実行し、生成忘れと設定の不一致を検知する。
+PromQLの意味を確認するテストはDocker内のpromtoolを使い、fixtureだけで欠測・scrape失敗・inactive・failed・状態不整合を検証する。本番への障害注入はしない。
+
+Host選択と期待unitの一覧は実系列の有無に依存しない。
+有効な状態がないunitは「不明 / 欠測」と表示し、inactiveやfailedと区別する。
+状態の推移には現在のinventoryを表示期間全体へ適用するため、ホスト・unit追加前の期間も不明になる。
+Node Exporter FullとAlloyへのリンクは選択ホストと表示期間を引き継ぐ。
+
 ## 既存画面をUIDを保って移行する
 
 [公式の移行仕様](https://grafana.com/docs/grafana/latest/as-code/observability-as-code/git-sync/export-resources/)では、同一UIDの未管理画面があるとGit Syncが取り込めない。
