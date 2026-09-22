@@ -274,6 +274,66 @@
           "未公開のDNSSEC専用系列を除去。DO-bitパネルは同じ位置で対象外の説明を表示"
         ]
       }
+    },
+    "ddwe2ug4nfi0wb": {
+      "path": "dashboards/platform/falco.json",
+      "title": "Falco",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/ddwe2ug4nfi0wb",
+        "revision": "generation:2",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。上流revision/licenseは未確認",
+          "元の配置・パネル種別・色・凡例・表示期間・クエリの演算を維持。Git Sync向けにidentityを整理",
+          "Cluster初期値をnatsumeへ。Scap eventsのtotal系列に残る旧datasource参照とcluster/hostname未適用を修正。totalのirate期間をscrape間隔に対応するrate_intervalへ修正"
+        ]
+      }
+    },
+    "ix2215": {
+      "path": "dashboards/platform/ix2215.json",
+      "title": "IX2215",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/ix2215",
+        "revision": "generation:6",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。上流revision/licenseは未確認",
+          "元の配置・パネル種別・色・凡例・表示期間・クエリの演算を維持。Git Sync向けにidentityを整理",
+          "meruto専用の収集に合わせ、全selectorとInterface候補へcluster=merutoを明示"
+        ]
+      }
+    },
+    "Codex": {
+      "path": "dashboards/developer-tools/codex.json",
+      "title": "Codex",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/Codex",
+        "revision": "generation:6",
+        "license": "unknown",
+        "changes": [
+          "既存gcx更新画面を再利用。Original dashboardリンクはGrafana Labs 25338。取り込み元revision/licenseは未確認",
+          "元の配置・パネル種別・色・凡例・表示期間・クエリの演算を維持。Git Sync向けにidentityを整理",
+          "既存のmeruto / codex_cli_rs初期選択、MimirとLokiの切替、各クエリ・リンクを維持"
+        ]
+      }
+    },
+    "addvzmp": {
+      "path": "dashboards/developer-tools/claude-code.json",
+      "title": "Claude Code Metrics (Prometheus)",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/addvzmp",
+        "revision": "generation:1",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。gnetId=25255。取り込み元revision/licenseは未確認",
+          "元の配置・パネル種別・色・凡例・表示期間・クエリの演算を維持。Git Sync向けにidentityを整理",
+          "空のdatasource初期選択をMimirへ設定。入力がない場合の既存0補完を含め、クエリは変更しない"
+        ]
+      }
     }
   },
   "folders": {
@@ -284,6 +344,10 @@
     "pke-observability": {
       "path": "dashboards/observability/_folder.json",
       "title": "Observability"
+    },
+    "pke-developer-tools": {
+      "path": "dashboards/developer-tools/_folder.json",
+      "title": "Developer Tools"
     }
   }
 }
