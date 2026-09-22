@@ -133,6 +133,9 @@ Node Exporter FullとAlloyへのリンクは選択ホストと表示期間を引
 
 ## 既存画面をUIDを保って移行する
 
+既存画面の移行では、配置・パネル種別・色・凡例・折り畳み・既定の時間範囲を維持する。
+初期cluster設定と移行に必要な参照整理を基本とし、見た目やクエリの再設計は移行と分けて扱う。
+
 [公式の移行仕様](https://grafana.com/docs/grafana/latest/as-code/observability-as-code/git-sync/export-resources/)では、同一UIDの未管理画面があるとGit Syncが取り込めない。
 元の画面を削除する必要があり、version historyは引き継がれない。
 ダッシュボード定義の復元と履歴の保全は別に扱う。

@@ -149,9 +149,8 @@
         "license": "unknown",
         "changes": [
           "既存exportを再利用。gnetId=15661、取り込み元revision/licenseは未確認",
-          "cluster / namespace / pod / containerを保持したjoinと集計へ修正",
-          "taintなしと欠測、limitなしと正常0を分離。未収集のcontainer filesystem列を除去",
-          "namespace内のcontainer集計とPod単位network、PVC実容量と欠測一覧、ホスト詳細リンクを整理"
+          "移行前の配置・表示・クエリを維持し、Clusterの初期値をnatsumeに設定",
+          "Git Sync用のidentity整理と、クエリを持たないrowに残る古いdatasource参照の除去"
         ]
       }
     },
