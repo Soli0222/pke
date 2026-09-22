@@ -12,6 +12,7 @@ on:
       - 'flux/clusters/*/apps/*/helmrelease-*.yaml'
       - 'charts/monitoring-rules/**'
       - 'charts/blackbox-exporter-probes/**'
+      - 'flux/clusters/*/apps/coredns-monitoring/**'
   workflow_dispatch:
 
 permissions:
@@ -42,3 +43,5 @@ jobs:
         run: python3 scripts/sync-grafana-pipeline-inventory.py --check
       - name: Check pipeline absence and cluster semantics
         run: python3 scripts/test-grafana-pipeline.py
+      - name: Check CoreDNS metrics and cache ratios
+        run: python3 scripts/test-grafana-coredns.py

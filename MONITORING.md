@@ -204,6 +204,9 @@ API scrape は HTTPS・ServiceAccount token・CA 検証が必要。
 NetworkPolicy では、Longhorn manager の9500/TCP、Grafana renderer の8081/TCP に Alloy から到達できることを確認する。
 Flux controller / Operator は `apps/flux-monitoring/` の PodMonitor で収集する。
 Operator の `flux_resource_info` は値1と ready / suspended ラベルで状態を表し、対象 namespace は `exported_namespace`。状態更新は scrape より遅れるため、実リソースとも照合する。
+CoreDNSは両クラスタの`apps/coredns-monitoring/`にあるServiceMonitorから、K3s管理の`kube-dns` Serviceのmetricsポートを収集する。
+jobは`coredns`、clusterはAlloyの共通relabelで付ける。K3sのCorefile / Deployment / Serviceは監視用に上書きしない。
+[CoreDNS画面](https://grafana.str08.net/d/wY4blRMGz)は現行の`coredns_proxy_*{proxy_name="forward"}`を使う。DNSSEC DO-bit別の指標は公開されていないため対象外とし、古いDNSSEC専用cache系列も使用しない。
 
 remote_write は失敗・再試行 counter の増分、pending、最新送信時刻を合わせて確認する。
 pending は WAL 全体の未送信量ではない。送信経路が止まると自己監視指標も欠測する。

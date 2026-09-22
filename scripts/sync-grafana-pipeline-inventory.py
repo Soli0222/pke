@@ -37,6 +37,13 @@ def expected(root=ROOT):
     for cluster, nodes in sorted(hosts.items()):
         for title, job in [('Alloy / Kubernetes', 'alloy'), ('Kubernetes API', 'prometheus.scrape.kubernetes_api'), ('kube-state-metrics', 'kube-state-metrics')]:
             targets.append((cluster, title, {'job': job}))
+        monitor = root / f'flux/clusters/{cluster}/apps/coredns-monitoring/servicemonitor-coredns.yaml'
+        if monitor.exists():
+            document = yaml.safe_load(monitor.read_text())
+            endpoint = document['spec']['endpoints'][0]
+            if not any(r.get('targetLabel') == 'job' and r.get('replacement') == 'coredns' for r in endpoint.get('relabelings', [])):
+                raise ValueError('CoreDNS ServiceMonitor must use job=coredns')
+            targets.append((cluster, 'CoreDNS', {'job': 'coredns'}))
         paths.append((cluster, 'Alloy / Kubernetes', {'job': 'alloy'}))
         for host, units in sorted(nodes.items()):
             for title, job in [('Alloy', 'alloy-host'), ('Node exporter', 'integrations/unix'), ('Kubelet', 'prometheus.scrape.kubernetes_nodes'), ('cAdvisor', 'prometheus.scrape.kubernetes_cadvisor')]:

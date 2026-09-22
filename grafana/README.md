@@ -134,7 +134,7 @@ Node Exporter FullとAlloyへのリンクは選択ホストと表示期間を引
 ## Monitoring Pipelineの期待対象
 
 `PKE / Monitoring Pipeline`は収集元・評価対象のclusterを選び、natsumeで共用するMimir / Loki / Alertmanager / ntfyと区別して表示する。
-主要収集経路はKubernetes Alloy、API、kube-state-metricsと、inventoryにある各ホストのAlloy / node exporter / kubelet / cAdvisor / etcdである。
+主要収集経路はKubernetes Alloy、API、kube-state-metrics、収集設定があるCoreDNSと、inventoryにある各ホストのAlloy / node exporter / kubelet / cAdvisor / etcdである。
 各アプリexporterの完全な期待一覧ではなく、全jobの実測scrape失敗は別表で確認する。
 
 期待対象は`up`や評価metricから列挙せず、次の設定から生成する。

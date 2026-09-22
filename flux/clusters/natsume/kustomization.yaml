@@ -31,4 +31,5 @@ resources:
 - kustomizations/tempo.yaml
 - kustomizations/alloy.yaml
 - kustomizations/flux-monitoring.yaml
+- kustomizations/coredns-monitoring.yaml
 - kustomizations/monitoring-rules.yaml
