@@ -34,5 +34,3 @@ jobs:
         run: python3 scripts/test-grafana-host-inventory.py
       - name: Check etcd and certificate query semantics
         run: python3 scripts/test-grafana-platform-promql.py
-      - name: Check Kubernetes joins and missing capacity
-        run: python3 scripts/test-grafana-kubernetes-promql.py

@@ -40,7 +40,7 @@
       {
         "type": "link",
         "title": "Kubernetes",
-        "url": "/d/7cba95b3-6653-4ae7-a389-ff56cbeb864b?var-cluster=${cluster:percentencode}&var-node=${node:percentencode}&${__url_time_range}"
+        "url": "/d/7cba95b3-6653-4ae7-a389-ff56cbeb864b?var-Cluster=${cluster:percentencode}&var-Node=${node:percentencode}&${__url_time_range}"
       },
       {
         "type": "link",
