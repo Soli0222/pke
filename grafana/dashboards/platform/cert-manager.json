@@ -1,0 +1,810 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "cdhrcds8aosg0c"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [],
+            "type": "dashboard"
+          },
+          "type": "dashboard"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": false,
+          "hide": false,
+          "iconColor": "red",
+          "name": "flux events",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [
+              "flux"
+            ],
+            "type": "tags"
+          }
+        }
+      ]
+    },
+    "description": "The dashboard gives an overview of the SSL certs managed by cert-manager in Kubernetes",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+      {
+        "id": 1000,
+        "type": "text",
+        "title": "$cluster の証明書",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 3
+        },
+        "options": {
+          "mode": "markdown",
+          "content": "Certificate namespaceは証明書リソースのnamespaceです。Readyはcondition=Trueかつ値1だけを数えます。期限・更新予定は選択したnamespaceに従い、ACME通信はクラスタ全体を表示します。45日未満の一覧や更新予定時刻の変化は、該当なしなら空になります。"
+        }
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "condition=Trueの系列が存在し、値1の証明書だけを数える。全欠測は0件と表示しない。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "noValue": "未収集 / 対象なし",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 3
+        },
+        "id": 1,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "value",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "disableTextWrap": false,
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "sum(max by(cluster,exported_namespace,name) (certmanager_certificate_ready_status{cluster=\"$cluster\",job=\"cert-manager\",exported_namespace=~\"${namespace:regex}\",condition=\"True\"}) == bool 1)",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": true,
+            "interval": "",
+            "legendFormat": "__auto",
+            "range": false,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Ready certificates",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "期限14日未満（期限切れ含む）。証明書系列が存在する場合の0件と、全欠測を区別。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "noValue": "未収集 / 対象なし",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 8,
+          "y": 3
+        },
+        "id": 3,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "disableTextWrap": false,
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "sum(max by(cluster,exported_namespace,name) (certmanager_certificate_expiration_timestamp_seconds{cluster=\"$cluster\",job=\"cert-manager\",exported_namespace=~\"${namespace:regex}\"}) < bool (time() + 14 * 24 * 3600))",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": true,
+            "interval": "",
+            "legendFormat": "{{exported_namespace}}/{{name}}",
+            "range": false,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Expiring Certificates",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "ACME通信指標には証明書namespaceがないため、Cluster全体を表示。ACMEを使わない証明書の状態は示さない。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "mappings": [],
+            "noValue": "未収集 / 対象なし",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "text"
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 3
+        },
+        "id": 2,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "disableTextWrap": false,
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "sum(increase(certmanager_http_acme_client_request_count{cluster=\"$cluster\",job=\"cert-manager\"}[$__range]))",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": true,
+            "interval": "",
+            "legendFormat": "__auto",
+            "range": false,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "ACME requests (cluster-wide)",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "有効期限までの日数。45日未満だけを表示し、空なら該当なしまたは欠測。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red"
+                },
+                {
+                  "color": "orange",
+                  "value": 14
+                },
+                {
+                  "color": "green",
+                  "value": 30
+                },
+                {
+                  "color": "dark-green",
+                  "value": 60
+                }
+              ]
+            },
+            "unit": "d",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 0,
+          "y": 11
+        },
+        "id": 5,
+        "options": {
+          "displayMode": "gradient",
+          "maxVizHeight": 300,
+          "minVizHeight": 16,
+          "minVizWidth": 8,
+          "namePlacement": "left",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showUnfilled": true,
+          "sizing": "auto",
+          "valueMode": "color"
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "((max by(cluster,exported_namespace,name) (certmanager_certificate_expiration_timestamp_seconds{cluster=\"$cluster\",job=\"cert-manager\",exported_namespace=~\"${namespace:regex}\"}) - time()) / 86400) < 45",
+            "format": "time_series",
+            "instant": true,
+            "interval": "",
+            "legendFormat": "{{exported_namespace}} / {{name}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Time to Expiration (<45 days)",
+        "type": "bargauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "更新予定時刻までの日数。45日未満だけを表示。実際の更新成功イベントではない。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "d",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 12,
+          "y": 11
+        },
+        "id": 6,
+        "options": {
+          "displayMode": "gradient",
+          "maxVizHeight": 300,
+          "minVizHeight": 16,
+          "minVizWidth": 8,
+          "namePlacement": "left",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showUnfilled": true,
+          "sizing": "auto",
+          "valueMode": "color"
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "((max by(cluster,exported_namespace,name) (certmanager_certificate_renewal_timestamp_seconds{cluster=\"$cluster\",job=\"cert-manager\",exported_namespace=~\"${namespace:regex}\"}) - time()) / 86400) < 45",
+            "format": "time_series",
+            "instant": true,
+            "interval": "",
+            "legendFormat": "{{exported_namespace}} / {{name}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Time to Automatic Renewal (<45 days)",
+        "type": "bargauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "選択クラスタと証明書namespaceの有効期限までの日数。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "d",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 24,
+          "x": 0,
+          "y": 21
+        },
+        "id": 4,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "right",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "(max by(cluster,exported_namespace,name) (certmanager_certificate_expiration_timestamp_seconds{cluster=\"$cluster\",job=\"cert-manager\",exported_namespace=~\"${namespace:regex}\"}) - time()) / 86400",
+            "instant": false,
+            "interval": "",
+            "legendFormat": "{{cluster}} - {{exported_namespace}} - {{name}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Time to Expiration",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "15分内に更新予定時刻が変化した回数。証明書更新の成功回数とは区別する。空なら時刻変化なし、または欠測。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "bars",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "decimals": 1,
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 24,
+          "x": 0,
+          "y": 30
+        },
+        "id": 8,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "right",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "8.3.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "changes(certmanager_certificate_renewal_timestamp_seconds{cluster=\"$cluster\",job=\"cert-manager\", exported_namespace=~\"${namespace:regex}\"}[15m]) > 0",
+            "format": "time_series",
+            "instant": false,
+            "interval": "",
+            "legendFormat": "{{cluster}} - {{exported_namespace}} - {{name}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Renewal schedule timestamp changes",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "ACME通信指標には証明書namespaceがないため、Cluster全体を表示。ACMEを使わない証明書の状態は示さない。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "axisSoftMin": 0,
+              "fillOpacity": 80,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineWidth": 1,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              },
+              "spanNulls": false
+            },
+            "mappings": [],
+            "noValue": "未収集 / 対象なし",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "text"
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 39
+        },
+        "id": 10,
+        "options": {
+          "barRadius": 0,
+          "barWidth": 0.97,
+          "fullHighlight": false,
+          "groupWidth": 0.7,
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "orientation": "auto",
+          "showValue": "auto",
+          "stacking": "none",
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          },
+          "xTickLabelRotation": -30,
+          "xTickLabelSpacing": 0
+        },
+        "pluginVersion": "8.3.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "disableTextWrap": false,
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "sort_desc(sum by (cluster)(increase(certmanager_http_acme_client_request_count{cluster=\"$cluster\",job=\"cert-manager\"}[$__range])))",
+            "format": "table",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": true,
+            "interval": "",
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "ACME requests by cluster (range)",
+        "type": "barchart"
+      }
+    ],
+    "refresh": "1m",
+    "schemaVersion": 42,
+    "tags": [
+      "k8s",
+      "cert-manager"
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "cluster",
+          "label": "Cluster",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(certmanager_clock_time_seconds{job=\"cert-manager\"}, cluster)",
+            "refId": "StandardVariableQuery"
+          },
+          "current": {
+            "text": "natsume",
+            "value": "natsume"
+          },
+          "options": [],
+          "refresh": 1,
+          "sort": 1,
+          "multi": false,
+          "includeAll": false
+        },
+        {
+          "name": "namespace",
+          "label": "Certificate namespace",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(certmanager_certificate_ready_status{job=\"cert-manager\",cluster=\"$cluster\"}, exported_namespace)",
+            "refId": "StandardVariableQuery"
+          },
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "options": [],
+          "refresh": 1,
+          "sort": 1,
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Cert-manager-Kubernetes",
+    "weekStart": ""
+  }
+}
