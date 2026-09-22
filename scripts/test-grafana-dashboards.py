@@ -110,6 +110,38 @@ class ValidationTests(unittest.TestCase):
         resource['spec']['panels'][0]['datasource']['uid'] = '${DS_PROMETHEUS}'
         self.check(resource, 'unresolved import placeholder')
 
+    def test_query_option_variables_v1(self):
+        for interval in ('$interval', '${interval}', '${interval:raw}'):
+            for nested in (False, True):
+                with self.subTest(interval=interval, nested=nested):
+                    resource = copy.deepcopy(V1)
+                    panel = resource['spec']['panels'][0]
+                    panel['interval'] = interval
+                    if nested:
+                        resource['spec']['panels'] = [{'id': 2, 'type': 'row', 'panels': [panel]}]
+                    self.check(resource, 'undeclared query option variable interval')
+                    resource['spec']['templating'] = {'list': [{'name': 'interval', 'type': 'interval'}]}
+                    self.check(resource)
+
+    def test_query_option_variables_v2(self):
+        resource = copy.deepcopy(V2)
+        panel = resource['spec']['elements']['panel-1']['spec']
+        panel['data'] = {'kind': 'QueryGroup', 'spec': {
+            'queries': [{'kind': 'PanelQuery', 'spec': {'refId': 'A', 'query': panel['data']}}],
+            'queryOptions': {'interval': '$interval'}}}
+        self.check(resource, 'undeclared query option variable interval')
+        resource['spec']['variables'] = [{'kind': 'IntervalVariable', 'spec': {'name': 'interval'}}]
+        self.check(resource)
+
+    def test_target_interval_and_builtin_options(self):
+        resource = copy.deepcopy(V1)
+        panel = resource['spec']['panels'][0]
+        panel['targets'][0]['interval'] = '$removed'
+        self.check(resource, 'undeclared query option variable removed')
+        for interval in ('1m', '$__interval', '${__interval}', ''):
+            panel['targets'][0]['interval'] = interval
+            self.check(resource)
+
     def test_builtin_annotations_keep_grafana_datasource(self):
         resource = copy.deepcopy(V1)
         annotation = {'builtIn': 1, 'type': 'dashboard',
