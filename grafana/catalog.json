@@ -47,6 +47,22 @@
           "unknown robustnessを追加し、無条件の0補完を除去。alertlistをvolume状態表に変更"
         ]
       }
+    },
+    "cloudnative-pg": {
+      "path": "dashboards/platform/cloudnative-pg.json",
+      "title": "CloudNativePG",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.com/grafana/dashboards/20417",
+        "revision": "unknown",
+        "license": "unknown",
+        "changes": [
+          "既存exportのgnetIdは20417。取り込み元revision/licenseは未確認",
+          "cluster → namespace → cnpg_cluster → podの変数と全queryのクラスタ分離",
+          "既存のactivity・設定・extensionsパネルを再利用し、単一instance向けに状態・容量・バックアップを先頭へ整理",
+          "CPU/メモリはcAdvisor、PVCは実Podとの対応から取得。pg_dumpとMisskeyのbase backup / WALを分離し未確認を正常に補完しない"
+        ]
+      }
     }
   },
   "folders": {
