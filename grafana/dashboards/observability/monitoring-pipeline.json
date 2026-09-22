@@ -1,0 +1,2017 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "pke-monitoring-pipeline"
+  },
+  "spec": {
+    "title": "PKE / Monitoring Pipeline",
+    "description": "メトリクス収集・転送・ルール評価・通知の監視。収集元clusterとnatsume上の共通サービスを区別します。",
+    "schemaVersion": 42,
+    "editable": true,
+    "timezone": "browser",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "refresh": "1m",
+    "tags": [
+      "pke",
+      "monitoring"
+    ],
+    "links": [
+      {
+        "type": "link",
+        "title": "Alloy / Prometheus",
+        "url": "/d/pke-alloy-prometheus?var-cluster=$cluster",
+        "includeVars": false,
+        "keepTime": true,
+        "targetBlank": false
+      },
+      {
+        "type": "link",
+        "title": "Host & Systemd",
+        "url": "/d/pke-host-systemd?var-cluster=$cluster",
+        "includeVars": false,
+        "keepTime": true,
+        "targetBlank": false
+      },
+      {
+        "type": "link",
+        "title": "Mimir",
+        "url": "/d/pke-mimir-single-binary",
+        "includeVars": false,
+        "keepTime": true,
+        "targetBlank": false
+      },
+      {
+        "type": "link",
+        "title": "Loki",
+        "url": "/d/pke-loki-single-binary",
+        "includeVars": false,
+        "keepTime": true,
+        "targetBlank": false
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "cluster",
+          "label": "収集・評価対象クラスタ",
+          "type": "custom",
+          "query": "meruto,natsume",
+          "current": {
+            "text": "natsume",
+            "value": "natsume"
+          },
+          "options": [
+            {
+              "text": "meruto",
+              "value": "meruto",
+              "selected": false
+            },
+            {
+              "text": "natsume",
+              "value": "natsume",
+              "selected": true
+            }
+          ],
+          "includeAll": false,
+          "multi": false,
+          "hide": 0,
+          "skipUrlSync": false
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "type": "text",
+        "title": "監視経路",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 3
+        },
+        "options": {
+          "mode": "markdown",
+          "content": "**収集元 `$cluster` → Alloy → Mimir / Ruler → Alertmanager → ntfy**\n\nMimir・Loki・通知基盤はnatsumeで共用します。下段の通知指標は全クラスタ合算です。ntfyの受付は端末への配送保証ではありません。"
+        }
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 3,
+          "w": 6,
+          "h": 4
+        },
+        "id": 2,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(((label_replace(label_replace(min(up{cluster=\"meruto\",job=\"alloy\"} and (timestamp(up{cluster=\"meruto\",job=\"alloy\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_api\"} and (timestamp(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_api\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Kubernetes API\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"kube-state-metrics\"} and (timestamp(up{cluster=\"meruto\",job=\"kube-state-metrics\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"kube-state-metrics\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"integrations/unix\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"integrations/unix\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Node exporter / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Kubelet / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"cAdvisor / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"etcd\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"etcd\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"etcd / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"alloy\"} and (timestamp(up{cluster=\"natsume\",job=\"alloy\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_api\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_api\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Kubernetes API\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"kube-state-metrics\"} and (timestamp(up{cluster=\"natsume\",job=\"kube-state-metrics\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"kube-state-metrics\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Node exporter / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Kubelet / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"cAdvisor / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"etcd\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"etcd\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"etcd / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-08\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Node exporter / natsume-08\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Kubelet / natsume-08\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"cAdvisor / natsume-08\", \"\", \"\")) and on(cluster) label_replace(vector(1), \"cluster\", \"$cluster\", \"\", \"\")) == bool -1)",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "time_series"
+          }
+        ],
+        "title": "主要収集経路の欠測",
+        "type": "stat",
+        "description": "設定から生成した期待対象に対する件数。欠測時にも対象を一覧に残します。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 6,
+          "y": 3,
+          "w": 6,
+          "h": 4
+        },
+        "id": 3,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(((label_replace(label_replace(min(up{cluster=\"meruto\",job=\"alloy\"} and (timestamp(up{cluster=\"meruto\",job=\"alloy\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_api\"} and (timestamp(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_api\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Kubernetes API\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"kube-state-metrics\"} and (timestamp(up{cluster=\"meruto\",job=\"kube-state-metrics\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"kube-state-metrics\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"integrations/unix\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"integrations/unix\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Node exporter / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Kubelet / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"cAdvisor / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"etcd\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"etcd\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"etcd / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"alloy\"} and (timestamp(up{cluster=\"natsume\",job=\"alloy\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_api\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_api\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Kubernetes API\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"kube-state-metrics\"} and (timestamp(up{cluster=\"natsume\",job=\"kube-state-metrics\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"kube-state-metrics\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Node exporter / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Kubelet / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"cAdvisor / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"etcd\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"etcd\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"etcd / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-08\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Node exporter / natsume-08\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Kubelet / natsume-08\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"cAdvisor / natsume-08\", \"\", \"\")) and on(cluster) label_replace(vector(1), \"cluster\", \"$cluster\", \"\", \"\")) == bool 0)",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "time_series"
+          }
+        ],
+        "title": "主要収集経路のscrape失敗",
+        "type": "stat",
+        "description": "設定から生成した期待対象に対する件数。欠測時にも対象を一覧に残します。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 3,
+          "w": 6,
+          "h": 4
+        },
+        "id": 4,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum((((label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / meruto-01\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-03\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-08\", \"\", \"\")) and on(cluster) label_replace(vector(1), \"cluster\", \"$cluster\", \"\", \"\")) == bool -1) + (((label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / meruto-01\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-03\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-08\", \"\", \"\")) and on(cluster) label_replace(vector(1), \"cluster\", \"$cluster\", \"\", \"\")) > bool 300))",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "time_series"
+          }
+        ],
+        "title": "Alloy転送の欠測・5分超",
+        "type": "stat",
+        "description": "設定から生成した期待対象に対する件数。欠測時にも対象を一覧に残します。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 18,
+          "y": 3,
+          "w": 6,
+          "h": 4
+        },
+        "id": 5,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum((((label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fblackbox-exporter-probes%2Fblackbox-exporter-probes-blackbox-exporter%2F[^;]+;blackbox\\\\-exporter\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fblackbox-exporter-probes%2Fblackbox-exporter-probes-blackbox-exporter%2F[^;]+;blackbox\\\\-exporter\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"blackbox-exporter-probes / blackbox-exporter-probes-blackbox-exporter / blackbox-exporter\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-certificates / pke.certificates\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-collection / pke.collection\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-etcd / pke.etcd\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-flux / pke.flux\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-host / pke.host\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-kubernetes / pke.kubernetes\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-longhorn / pke.longhorn\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-workload / pke.workload\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Femoji-service%2Femoji-renderer%2F[^;]+;emoji\\\\-renderer\\\\.rules\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Femoji-service%2Femoji-renderer%2F[^;]+;emoji\\\\-renderer\\\\.rules\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"emoji-service / emoji-renderer / emoji-renderer.rules\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Floki%2Floki-loki-rules%2F[^;]+;loki_rules\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Floki%2Floki-loki-rules%2F[^;]+;loki_rules\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"loki / loki-loki-rules / loki_rules\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-certificates / pke.certificates\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-cnpg%2F[^;]+;pke\\\\.cnpg\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-cnpg%2F[^;]+;pke\\\\.cnpg\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-cnpg / pke.cnpg\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-collection / pke.collection\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-etcd / pke.etcd\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-flux / pke.flux\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-host / pke.host\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-kubernetes / pke.kubernetes\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-longhorn / pke.longhorn\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-workload / pke.workload\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fspotify-nowplaying%2Fspotify-nowplaying%2F[^;]+;spotify\\\\-nowplaying\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fspotify-nowplaying%2Fspotify-nowplaying%2F[^;]+;spotify\\\\-nowplaying\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"spotify-nowplaying / spotify-nowplaying / spotify-nowplaying\", \"\", \"\")) and on(cluster) label_replace(vector(1), \"cluster\", \"$cluster\", \"\", \"\")) == bool -1) + (((label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fblackbox-exporter-probes%2Fblackbox-exporter-probes-blackbox-exporter%2F[^;]+;blackbox\\\\-exporter\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fblackbox-exporter-probes%2Fblackbox-exporter-probes-blackbox-exporter%2F[^;]+;blackbox\\\\-exporter\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"blackbox-exporter-probes / blackbox-exporter-probes-blackbox-exporter / blackbox-exporter\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-certificates / pke.certificates\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-collection / pke.collection\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-etcd / pke.etcd\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-flux / pke.flux\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-host / pke.host\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-kubernetes / pke.kubernetes\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-longhorn / pke.longhorn\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-workload / pke.workload\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Femoji-service%2Femoji-renderer%2F[^;]+;emoji\\\\-renderer\\\\.rules\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Femoji-service%2Femoji-renderer%2F[^;]+;emoji\\\\-renderer\\\\.rules\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"emoji-service / emoji-renderer / emoji-renderer.rules\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Floki%2Floki-loki-rules%2F[^;]+;loki_rules\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Floki%2Floki-loki-rules%2F[^;]+;loki_rules\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"loki / loki-loki-rules / loki_rules\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-certificates / pke.certificates\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-cnpg%2F[^;]+;pke\\\\.cnpg\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-cnpg%2F[^;]+;pke\\\\.cnpg\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-cnpg / pke.cnpg\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-collection / pke.collection\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-etcd / pke.etcd\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-flux / pke.flux\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-host / pke.host\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-kubernetes / pke.kubernetes\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-longhorn / pke.longhorn\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-workload / pke.workload\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fspotify-nowplaying%2Fspotify-nowplaying%2F[^;]+;spotify\\\\-nowplaying\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fspotify-nowplaying%2Fspotify-nowplaying%2F[^;]+;spotify\\\\-nowplaying\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"spotify-nowplaying / spotify-nowplaying / spotify-nowplaying\", \"\", \"\")) and on(cluster) label_replace(vector(1), \"cluster\", \"$cluster\", \"\", \"\")) > bool 300))",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "time_series"
+          }
+        ],
+        "title": "ルール評価の欠測・5分超",
+        "type": "stat",
+        "description": "設定から生成した期待対象に対する件数。欠測時にも対象を一覧に残します。"
+      },
+      {
+        "id": 9,
+        "type": "row",
+        "title": "収集・転送 / $cluster",
+        "collapsed": false,
+        "gridPos": {
+          "x": 0,
+          "y": 7,
+          "w": 24,
+          "h": 1
+        },
+        "panels": []
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "-1": {
+                    "text": "欠測 / 未確認",
+                    "color": "orange"
+                  },
+                  "0": {
+                    "text": "失敗",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "取得成功",
+                    "color": "green"
+                  }
+                }
+              }
+            ]
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "状態"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 12
+        },
+        "id": 10,
+        "options": {
+          "showHeader": true,
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "(label_replace(label_replace(min(up{cluster=\"meruto\",job=\"alloy\"} and (timestamp(up{cluster=\"meruto\",job=\"alloy\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_api\"} and (timestamp(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_api\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Kubernetes API\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"kube-state-metrics\"} and (timestamp(up{cluster=\"meruto\",job=\"kube-state-metrics\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"kube-state-metrics\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"integrations/unix\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"integrations/unix\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Node exporter / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Kubelet / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"cAdvisor / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"meruto\",job=\"etcd\",instance=\"meruto-01\"} and (timestamp(up{cluster=\"meruto\",job=\"etcd\",instance=\"meruto-01\"}) > time() - 120)) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"etcd / meruto-01\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"alloy\"} and (timestamp(up{cluster=\"natsume\",job=\"alloy\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_api\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_api\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Kubernetes API\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"kube-state-metrics\"} and (timestamp(up{cluster=\"natsume\",job=\"kube-state-metrics\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"kube-state-metrics\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Node exporter / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Kubelet / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"cAdvisor / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"etcd\",instance=\"natsume-03\"} and (timestamp(up{cluster=\"natsume\",job=\"etcd\",instance=\"natsume-03\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"etcd / natsume-03\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-08\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"integrations/unix\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Node exporter / natsume-08\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_nodes\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Kubelet / natsume-08\", \"\", \"\") or label_replace(label_replace(min(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-08\"} and (timestamp(up{cluster=\"natsume\",job=\"prometheus.scrape.kubernetes_cadvisor\",instance=\"natsume-08\"}) > time() - 120)) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"cAdvisor / natsume-08\", \"\", \"\")) and on(cluster) label_replace(vector(1), \"cluster\", \"$cluster\", \"\", \"\")",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "table"
+          }
+        ],
+        "title": "主要収集経路（期待対象）",
+        "type": "table",
+        "description": "inventoryを基にAlloy・API・kube-state-metrics・node・kubelet・cAdvisor・etcdを確認。120秒以内のupを使用し、up=0と欠測を区別します。各アプリexporterの完全な期待一覧ではありません。",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "cluster": true
+              },
+              "renameByName": {
+                "target": "対象",
+                "group": "ルールグループ",
+                "Value": "状態"
+              },
+              "indexByName": {
+                "Time": 0,
+                "cluster": 1,
+                "target": 2,
+                "group": 2,
+                "Value": 3
+              }
+            }
+          }
+        ]
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 300
+                }
+              ]
+            },
+            "min": 0,
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "-1": {
+                    "text": "欠測 / 未確認",
+                    "color": "orange"
+                  }
+                }
+              }
+            ]
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "経過時間"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 7
+        },
+        "id": 12,
+        "options": {
+          "showHeader": true,
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "(label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"meruto\",job=\"alloy-host\",instance=\"meruto-01\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"target\", \"Alloy / meruto-01\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / Kubernetes\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-03\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-03\", \"\", \"\") or label_replace(label_replace(max(time() - (prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"} and (timestamp(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"natsume\",job=\"alloy-host\",instance=\"natsume-08\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"target\", \"Alloy / natsume-08\", \"\", \"\")) and on(cluster) label_replace(vector(1), \"cluster\", \"$cluster\", \"\", \"\")",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "table"
+          }
+        ],
+        "title": "Alloyの最終送信からの経過（期待経路）",
+        "type": "table",
+        "description": "各ホストとKubernetes Alloyを設定から列挙。送信経路が消えても欠測として残します。送信sampleの最新時刻からの経過で、120秒以上古い自己監視系列も欠測です。",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "cluster": true
+              },
+              "renameByName": {
+                "target": "対象",
+                "group": "ルールグループ",
+                "Value": "経過時間"
+              },
+              "indexByName": {
+                "Time": 0,
+                "cluster": 1,
+                "target": 2,
+                "group": 2,
+                "Value": 3
+              }
+            }
+          }
+        ]
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "経過時間"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 15,
+          "w": 12,
+          "h": 5
+        },
+        "id": 11,
+        "options": {
+          "showHeader": true,
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "min by(job,instance) (up{cluster=\"$cluster\"}) == 0",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "table"
+          }
+        ],
+        "title": "現在のscrape失敗（全job）",
+        "type": "table",
+        "description": "全jobのup=0。空は現在取得できた系列に失敗がないという意味で、系列消失を含む完全な正常判定ではありません。",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "Value": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 20,
+          "w": 12,
+          "h": 8
+        },
+        "id": 13,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "mean",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by(job,instance) (rate(prometheus_remote_storage_samples_total{cluster=\"$cluster\",job=~\"alloy|alloy-host\"}[$__rate_interval]))",
+            "legendFormat": "{{job}} / {{instance}}",
+            "instant": false,
+            "range": true,
+            "format": "time_series"
+          }
+        ],
+        "title": "Alloy送信sample / 秒",
+        "type": "timeseries",
+        "description": "正規自己監視jobのみ集計。Alloyの重複scrape jobは含みません。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 20,
+          "w": 12,
+          "h": 8
+        },
+        "id": 14,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "mean",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by(job,instance) (prometheus_remote_storage_samples_pending{cluster=\"$cluster\",job=~\"alloy|alloy-host\"})",
+            "legendFormat": "{{job}} / {{instance}}",
+            "instant": false,
+            "range": true,
+            "format": "time_series"
+          }
+        ],
+        "title": "Alloy送信待ちsample",
+        "type": "timeseries",
+        "description": "shard内の送信待ちです。WAL全体の未送信量ではありません。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 28,
+          "w": 24,
+          "h": 7
+        },
+        "id": 15,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "mean",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by(job,instance) (rate(prometheus_remote_storage_samples_failed_total{cluster=\"$cluster\",job=~\"alloy|alloy-host\"}[$__rate_interval]))",
+            "legendFormat": "failed / {{job}} / {{instance}}",
+            "instant": false,
+            "range": true,
+            "format": "time_series"
+          },
+          {
+            "refId": "B",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by(job,instance) (rate(prometheus_remote_storage_samples_retried_total{cluster=\"$cluster\",job=~\"alloy|alloy-host\"}[$__rate_interval]))",
+            "legendFormat": "retried / {{job}} / {{instance}}",
+            "instant": false,
+            "range": true,
+            "format": "time_series"
+          }
+        ],
+        "title": "Alloy送信失敗・再試行 / 秒",
+        "type": "timeseries",
+        "description": "counterの絶対値ではなく増加率。自己監視が欠測なら0と補完しません。"
+      },
+      {
+        "id": 20,
+        "type": "row",
+        "title": "ルール評価 / $cluster（Rulerの稼働先はnatsume）",
+        "collapsed": false,
+        "gridPos": {
+          "x": 0,
+          "y": 35,
+          "w": 24,
+          "h": 1
+        },
+        "panels": []
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 300
+                }
+              ]
+            },
+            "min": 0,
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "-1": {
+                    "text": "欠測 / 未確認",
+                    "color": "orange"
+                  }
+                }
+              }
+            ]
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "経過時間"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 36,
+          "w": 24,
+          "h": 11
+        },
+        "id": 21,
+        "options": {
+          "showHeader": true,
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "(label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fblackbox-exporter-probes%2Fblackbox-exporter-probes-blackbox-exporter%2F[^;]+;blackbox\\\\-exporter\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fblackbox-exporter-probes%2Fblackbox-exporter-probes-blackbox-exporter%2F[^;]+;blackbox\\\\-exporter\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"blackbox-exporter-probes / blackbox-exporter-probes-blackbox-exporter / blackbox-exporter\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-certificates / pke.certificates\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-collection / pke.collection\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-etcd / pke.etcd\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-flux / pke.flux\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-host / pke.host\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-kubernetes / pke.kubernetes\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-longhorn / pke.longhorn\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/meruto%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"}) > time() - 120))) or vector(-1), \"cluster\", \"meruto\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-workload / pke.workload\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Femoji-service%2Femoji-renderer%2F[^;]+;emoji\\\\-renderer\\\\.rules\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Femoji-service%2Femoji-renderer%2F[^;]+;emoji\\\\-renderer\\\\.rules\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"emoji-service / emoji-renderer / emoji-renderer.rules\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Floki%2Floki-loki-rules%2F[^;]+;loki_rules\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Floki%2Floki-loki-rules%2F[^;]+;loki_rules\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"loki / loki-loki-rules / loki_rules\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-certificates%2F[^;]+;pke\\\\.certificates\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-certificates / pke.certificates\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-cnpg%2F[^;]+;pke\\\\.cnpg\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-cnpg%2F[^;]+;pke\\\\.cnpg\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-cnpg / pke.cnpg\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-collection%2F[^;]+;pke\\\\.collection\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-collection / pke.collection\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-etcd%2F[^;]+;pke\\\\.etcd\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-etcd / pke.etcd\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-flux%2F[^;]+;pke\\\\.flux\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-flux / pke.flux\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-host%2F[^;]+;pke\\\\.host\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-host / pke.host\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-kubernetes%2F[^;]+;pke\\\\.kubernetes\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-kubernetes / pke.kubernetes\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-longhorn%2F[^;]+;pke\\\\.longhorn\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-longhorn / pke.longhorn\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fmonitoring-rules%2Fmonitoring-rules-workload%2F[^;]+;pke\\\\.workload\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"monitoring-rules / monitoring-rules-workload / pke.workload\", \"\", \"\") or label_replace(label_replace((time() - max(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fspotify-nowplaying%2Fspotify-nowplaying%2F[^;]+;spotify\\\\-nowplaying\"} and (timestamp(cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/natsume%2Fspotify-nowplaying%2Fspotify-nowplaying%2F[^;]+;spotify\\\\-nowplaying\"}) > time() - 120))) or vector(-1), \"cluster\", \"natsume\", \"\", \"\"), \"group\", \"spotify-nowplaying / spotify-nowplaying / spotify-nowplaying\", \"\", \"\")) and on(cluster) label_replace(vector(1), \"cluster\", \"$cluster\", \"\", \"\")",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "table"
+          }
+        ],
+        "title": "最終ルール評価からの経過（期待グループ）",
+        "type": "table",
+        "description": "ローカルchartの描画結果と外部chartの期待登録から生成。保存namespaceのcluster prefixで選び、Ruler metricのcluster=natsumeとは区別します。削除・未同期・欠測のグループも一覧に残ります。",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "cluster": true
+              },
+              "renameByName": {
+                "target": "対象",
+                "group": "ルールグループ",
+                "Value": "経過時間"
+              },
+              "indexByName": {
+                "Time": 0,
+                "cluster": 1,
+                "target": 2,
+                "group": 2,
+                "Value": 3
+              }
+            }
+          }
+        ]
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 1,
+              "lineWidth": 1,
+              "pointSize": 5,
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              }
+            },
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未確認"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "failed"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#E24D42",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "success"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#7EB26D",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "id": 22,
+        "links": [],
+        "options": {
+          "legend": {
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(cortex_prometheus_rule_evaluations_total{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/$cluster%2F.*\"}[$__rate_interval]))\n-\nsum(rate(cortex_prometheus_rule_evaluation_failures_total{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/$cluster%2F.*\"}[$__rate_interval]))\n",
+            "format": "time_series",
+            "legendFormat": "success",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "range": true,
+            "instant": false
+          },
+          {
+            "expr": "sum(rate(cortex_prometheus_rule_evaluation_failures_total{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/$cluster%2F.*\"}[$__rate_interval]))",
+            "format": "time_series",
+            "legendFormat": "failed",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "B",
+            "range": true,
+            "instant": false
+          },
+          {
+            "expr": "sum(rate(cortex_prometheus_rule_group_iterations_missed_total{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/$cluster%2F.*\"}[$__rate_interval]))",
+            "format": "time_series",
+            "legendFormat": "missed",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "C",
+            "range": true,
+            "instant": false
+          }
+        ],
+        "title": "ルール評価 / 秒",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 0,
+          "y": 47,
+          "w": 12,
+          "h": 8
+        },
+        "description": "Mimir公式mixinを単一jobと評価対象clusterの保存prefixに適合。success / failed / missedを表示します。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 47,
+          "w": 12,
+          "h": 8
+        },
+        "id": 23,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "mean",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "label_replace(sum by(rule_group) (increase(cortex_prometheus_rule_evaluation_failures_total{cluster=\"natsume\",job=\"mimir\",rule_group=~\".*/$cluster%2F.*\"}[5m])), \"group\", \"$1\", \"rule_group\", \".*;(.+)\")",
+            "legendFormat": "{{group}}",
+            "instant": false,
+            "range": true,
+            "format": "time_series"
+          }
+        ],
+        "title": "ルール評価失敗 / 5分",
+        "type": "timeseries",
+        "description": "対象clusterの全グループを表示。期待一覧外のグループも含みます。欠測を0に補完しません。"
+      },
+      {
+        "id": 30,
+        "type": "row",
+        "title": "共通基盤・通知 / natsume（全クラスタ合算）",
+        "collapsed": false,
+        "gridPos": {
+          "x": 0,
+          "y": 55,
+          "w": 24,
+          "h": 1
+        },
+        "panels": []
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "-1": {
+                    "text": "欠測 / 未確認",
+                    "color": "orange"
+                  },
+                  "0": {
+                    "text": "失敗",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "取得成功",
+                    "color": "green"
+                  }
+                }
+              }
+            ]
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 56,
+          "w": 6,
+          "h": 4
+        },
+        "id": 31,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "min(up{cluster=\"natsume\",job=\"mimir\"})",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "time_series"
+          }
+        ],
+        "title": "Mimir scrape",
+        "type": "stat",
+        "description": "natsume上の共通基盤。収集元clusterの選択とは独立です。欠測は未確認。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "-1": {
+                    "text": "欠測 / 未確認",
+                    "color": "orange"
+                  },
+                  "0": {
+                    "text": "失敗",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "取得成功",
+                    "color": "green"
+                  }
+                }
+              }
+            ]
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 6,
+          "y": 56,
+          "w": 6,
+          "h": 4
+        },
+        "id": 32,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "min(up{cluster=\"natsume\",job=\"loki/loki\"})",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "time_series"
+          }
+        ],
+        "title": "Loki scrape",
+        "type": "stat",
+        "description": "natsume上の共通基盤。収集元clusterの選択とは独立です。欠測は未確認。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "-1": {
+                    "text": "欠測 / 未確認",
+                    "color": "orange"
+                  },
+                  "0": {
+                    "text": "失敗",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "読込成功",
+                    "color": "green"
+                  }
+                }
+              }
+            ]
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 56,
+          "w": 6,
+          "h": 4
+        },
+        "id": 33,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "min(cortex_alertmanager_config_last_reload_successful{cluster=\"natsume\",job=\"mimir\"})",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "time_series"
+          }
+        ],
+        "title": "Alertmanager設定読込",
+        "type": "stat",
+        "description": "natsume上の共通基盤。収集元clusterの選択とは独立です。欠測は未確認。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "-1": {
+                    "text": "欠測 / 未確認",
+                    "color": "orange"
+                  },
+                  "0": {
+                    "text": "失敗",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "取得成功",
+                    "color": "green"
+                  }
+                }
+              }
+            ]
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 18,
+          "y": 56,
+          "w": 6,
+          "h": 4
+        },
+        "id": 34,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "min(up{cluster=\"natsume\",job=\"ntfy\"})",
+            "legendFormat": "",
+            "instant": true,
+            "range": false,
+            "format": "time_series"
+          }
+        ],
+        "title": "ntfy scrape",
+        "type": "stat",
+        "description": "natsume上の共通基盤。収集元clusterの選択とは独立です。欠測は未確認。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "Mimir公式mixinをraw metricに適合。sent / errors / droppedの増分。無通信の実測0を保持し、欠測を0に補完しません。",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 1,
+              "lineWidth": 1,
+              "pointSize": 5,
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              }
+            },
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "reqps",
+            "noValue": "未確認"
+          },
+          "overrides": []
+        },
+        "id": 36,
+        "links": [],
+        "options": {
+          "legend": {
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(cortex_prometheus_notifications_sent_total{cluster=\"natsume\",job=\"mimir\"}[$__rate_interval]))",
+            "format": "time_series",
+            "legendFormat": "sent",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "range": true,
+            "instant": false
+          },
+          {
+            "expr": "sum(rate(cortex_prometheus_notifications_errors_total{cluster=\"natsume\",job=\"mimir\"}[$__rate_interval]))",
+            "format": "time_series",
+            "legendFormat": "errors",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "B",
+            "range": true,
+            "instant": false
+          },
+          {
+            "expr": "sum(rate(cortex_prometheus_notifications_dropped_total{cluster=\"natsume\",job=\"mimir\"}[$__rate_interval]))",
+            "format": "time_series",
+            "legendFormat": "dropped",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "C",
+            "range": true,
+            "instant": false
+          }
+        ],
+        "title": "Ruler → Alertmanager / 秒（全クラスタ）",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 0,
+          "y": 60,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 1,
+              "lineWidth": 1,
+              "pointSize": 5,
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              }
+            },
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未確認"
+          },
+          "overrides": []
+        },
+        "id": 37,
+        "links": [],
+        "options": {
+          "legend": {
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(rate(cortex_alertmanager_notifications_total{cluster=\"natsume\",job=\"mimir\",integration=\"webhook\"}[$__rate_interval]))",
+            "legendFormat": "webhook attempts",
+            "range": true,
+            "instant": false
+          }
+        ],
+        "title": "Alertmanager → webhook / 秒（全クラスタ）",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 12,
+          "y": 60,
+          "w": 12,
+          "h": 8
+        },
+        "description": "現在のntfy経路であるwebhookの通知試行数。古いslack counterは除外。失敗counterは未収集のため成功数とは表記しません。受信端末への配送保証ではありません。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 68,
+          "w": 12,
+          "h": 5
+        },
+        "id": 38,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(increase(ntfy_messages_published_success{cluster=\"natsume\",job=\"ntfy\"}[$__range]))",
+            "legendFormat": "受付成功",
+            "instant": true,
+            "range": false,
+            "format": "time_series"
+          },
+          {
+            "refId": "B",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(increase(ntfy_messages_published_failure{cluster=\"natsume\",job=\"ntfy\"}[$__range]))",
+            "legendFormat": "受付失敗",
+            "instant": true,
+            "range": false,
+            "format": "time_series"
+          }
+        ],
+        "title": "ntfyのpublish増分（表示期間・全用途）",
+        "type": "stat",
+        "description": "ntfy全用途のpublish counter増分。topic・送信元ラベルがないため、アラート通知だけの成功数や端末への配送数ではありません。counter欠測は未確認。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "noValue": "未確認",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 68,
+          "w": 12,
+          "h": 5
+        },
+        "id": 39,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "mean",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by(http_code) (rate(ntfy_http_requests_total{cluster=\"natsume\",job=\"ntfy\",http_method=\"POST\"}[$__rate_interval]))",
+            "legendFormat": "HTTP {{http_code}}",
+            "instant": false,
+            "range": true,
+            "format": "time_series"
+          }
+        ],
+        "title": "ntfy POST応答 / 秒（全用途）",
+        "type": "timeseries",
+        "description": "アラート専用ではありません。HTTP応答とpublish受付を併せて確認してください。"
+      },
+      {
+        "id": 40,
+        "type": "text",
+        "title": "確認できる範囲",
+        "gridPos": {
+          "x": 0,
+          "y": 73,
+          "w": 24,
+          "h": 4
+        },
+        "options": {
+          "mode": "markdown",
+          "content": "主要収集経路と期待ルールグループは設定から生成します。個別アプリの全exporter消失を保証する一覧ではありません。\n\n発火・抑制中のアラートは **[Grafana Alerting](/alerting/list)** でMimir / Alertmanagerを選んで確認してください。空のalertlistは監視経路正常の証明に使いません。natsume全断時の独立通知経路はありません。"
+        }
+      }
+    ]
+  }
+}

@@ -131,6 +131,39 @@ Host選択と期待unitの一覧は実系列の有無に依存しない。
 状態の推移には現在のinventoryを表示期間全体へ適用するため、ホスト・unit追加前の期間も不明になる。
 Node Exporter FullとAlloyへのリンクは選択ホストと表示期間を引き継ぐ。
 
+## Monitoring Pipelineの期待対象
+
+`PKE / Monitoring Pipeline`は収集元・評価対象のclusterを選び、natsumeで共用するMimir / Loki / Alertmanager / ntfyと区別して表示する。
+主要収集経路はKubernetes Alloy、API、kube-state-metricsと、inventoryにある各ホストのAlloy / node exporter / kubelet / cAdvisor / etcdである。
+各アプリexporterの完全な期待一覧ではなく、全jobの実測scrape失敗は別表で確認する。
+
+期待対象は`up`や評価metricから列挙せず、次の設定から生成する。
+
+- ホストとetcdはAnsible inventoryおよび監視ルールのhosts / unitsを照合する。
+- 共通ルールとBlackboxのgroupは、各クラスタのHelmRelease valuesを使ったローカルchartの描画結果から取得する。
+- 外部chartのgroup名は[pipeline-rule-groups.yaml](pipeline-rule-groups.yaml)へ登録し、参照先の有効化設定を確認する。外部chart更新時はgroup名を描画結果またはRuler APIと照合する。
+
+```sh
+python3 scripts/sync-grafana-pipeline-inventory.py
+python3 scripts/sync-grafana-pipeline-inventory.py --check
+python3 scripts/test-grafana-pipeline.py
+```
+
+同期にはHelmとPyYAML、時系列テストにはDockerを使う。
+CIはinventory、対象chart・HelmReleaseの変更時にも生成差分と意味を検証する。
+ルールの追加・削除・group名変更は期待一覧と同じPRで反映する。
+
+主要収集経路の状態は120秒以内の`up`を使い、`up=0`と欠測を区別する。
+Alloyの最終送信・Rulerの最終評価も、自己監視系列自体が120秒以上古ければ未確認とし、経過時間が5分を超えた対象を上段で数える。
+固定の正常件数では判定せず、対象が消えても期待一覧へ欠測として残す。
+この120秒・5分は画面上の確認基準であり、通知ルールの閾値やforを変更しない。
+
+Rulerのサーバーmetricは`cluster=natsume`で取得し、保存先の`rule_group`に含まれるcluster prefixで評価対象を選ぶ。
+共通基盤と通知は全クラスタ合算である。
+webhook通知の試行数から過去のslack系列を除外し、未収集の失敗counterを0で補完して成功数を作らない。
+ntfyのpublish counterは全用途合算の受付実績で、topic別・アラート専用の値でも、受信端末への配送保証でもない。
+発火・抑制の状態はGrafana AlertingのMimir / Alertmanagerで確認し、空のalertlistを正常の証明には使わない。
+
 ## 既存画面をUIDを保って移行する
 
 既存画面の移行では、配置・パネル種別・色・凡例・折り畳み・既定の時間範囲を維持する。

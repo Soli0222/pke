@@ -9,6 +9,9 @@ on:
       - 'ansible/inventories/hosts.yaml'
       - 'ansible/inventories/host_vars/*.yaml'
       - 'flux/clusters/*/apps/monitoring-rules/helmrelease-monitoring-rules.yaml'
+      - 'flux/clusters/*/apps/*/helmrelease-*.yaml'
+      - 'charts/monitoring-rules/**'
+      - 'charts/blackbox-exporter-probes/**'
   workflow_dispatch:
 
 permissions:
@@ -22,6 +25,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - name: Install validator
         run: python3 -m pip install -r grafana/requirements.txt
+      - uses: azure/setup-helm@v5.0.1
       - name: Check valid and invalid dashboard fixtures
         run: python3 scripts/test-grafana-dashboards.py
       - name: Check Git Sync setup boundaries
@@ -34,3 +38,7 @@ jobs:
         run: python3 scripts/test-grafana-host-inventory.py
       - name: Check etcd and certificate query semantics
         run: python3 scripts/test-grafana-platform-promql.py
+      - name: Check pipeline expectations
+        run: python3 scripts/sync-grafana-pipeline-inventory.py --check
+      - name: Check pipeline absence and cluster semantics
+        run: python3 scripts/test-grafana-pipeline.py
