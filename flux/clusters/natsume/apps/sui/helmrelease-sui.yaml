@@ -49,6 +49,7 @@ spec:
           - "sui@str08.net"
       cookieSecure: "true"
     mcp:
+      maxSessionsPerToken: "50"
       oauth:
         resourceUrl: "https://sui.str08.net/mcp"
     credentials:
