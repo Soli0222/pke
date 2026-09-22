@@ -317,7 +317,10 @@ def main():
                                         "severity": severity,
                                     },
                                     "annotations": {
-                                        "summary": "Local notification validation"
+                                        "summary": "Local notification validation",
+                                        "dashboard_url": "https://grafana.str08.net/d/pke-overview?var-cluster=meruto",
+                                        "panel_url": "https://grafana.str08.net/d/pke-overview?var-cluster=meruto&viewPanel=9",
+                                        "runbook_url": "https://github.com/Soli0222/pke/blob/main/MONITORING.md",
                                     },
                                 }
                             ],
@@ -337,6 +340,14 @@ def main():
                         assert "Local notification validation" in message["message"], (
                             message
                         )
+                        assert (
+                            "Grafana: https://grafana.str08.net/d/pke-overview?var-cluster=meruto&viewPanel=9"
+                            in message["message"]
+                        ), message
+                        assert (
+                            "Runbook: https://github.com/Soli0222/pke/blob/main/MONITORING.md"
+                            in message["message"]
+                        ), message
                         assert message["topic"] == topic and message.get(
                             "priority", 3
                         ) == (2 if state == "resolved" else expected_priority), message

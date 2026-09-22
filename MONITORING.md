@@ -1,5 +1,9 @@
 # 監視基盤の運用
 
+
+日常確認は [PKE / Overview](https://grafana.str08.net/d/pke-overview) を入口にし、要確認・未確認の分野から詳細画面へ進む。
+収集・評価・通知経路は [Monitoring Pipeline](https://grafana.str08.net/d/pke-monitoring-pipeline) で確認する。
+ntfyの共通ルール通知はGrafanaの対象パネルとRunbookへのリンクを含む。表示の読み方と制約は [ダッシュボード運用](grafana/README.md#overviewと調査リンク) を参照する。
 両クラスタとホストのメトリクス・ログを、natsume の Mimir / Loki に集約する。
 アラートは Mimir Ruler が評価し、同じ Mimir の Alertmanager から ntfy へ送る。
 本番では合成通知や障害注入を行わず、設定・収集・評価・ラベルを確認する。

@@ -32,3 +32,24 @@ spec:
     - name: navidrome
       targets:
       - https://navidrome.pstr.space
+    prometheusRule:
+      endpointDown:
+        annotations:
+          dashboard_url: 'https://grafana.str08.net/d/NEzutrbMk?var-cluster={{ $labels.cluster | urlquery }}&var-job=%24__all&var-instance={{ $labels.instance | urlquery }}&from=now-6h&to=now'
+          panel_url: 'https://grafana.str08.net/d/NEzutrbMk?var-cluster={{ $labels.cluster | urlquery }}&var-job=%24__all&var-instance={{ $labels.instance | urlquery }}&from=now-6h&to=now&viewPanel=2'
+      sslCertExpiry:
+        annotations:
+          dashboard_url: 'https://grafana.str08.net/d/NEzutrbMk?var-cluster={{ $labels.cluster | urlquery }}&var-job=%24__all&var-instance={{ $labels.instance | urlquery }}&from=now-6h&to=now'
+          panel_url: 'https://grafana.str08.net/d/NEzutrbMk?var-cluster={{ $labels.cluster | urlquery }}&var-job=%24__all&var-instance={{ $labels.instance | urlquery }}&from=now-6h&to=now&viewPanel=2'
+      sslCertExpiryCritical:
+        annotations:
+          dashboard_url: 'https://grafana.str08.net/d/NEzutrbMk?var-cluster={{ $labels.cluster | urlquery }}&var-job=%24__all&var-instance={{ $labels.instance | urlquery }}&from=now-6h&to=now'
+          panel_url: 'https://grafana.str08.net/d/NEzutrbMk?var-cluster={{ $labels.cluster | urlquery }}&var-job=%24__all&var-instance={{ $labels.instance | urlquery }}&from=now-6h&to=now&viewPanel=2'
+      slowResponse:
+        annotations:
+          dashboard_url: 'https://grafana.str08.net/d/NEzutrbMk?var-cluster={{ $labels.cluster | urlquery }}&var-job=%24__all&var-instance={{ $labels.instance | urlquery }}&from=now-6h&to=now'
+          panel_url: 'https://grafana.str08.net/d/NEzutrbMk?var-cluster={{ $labels.cluster | urlquery }}&var-job=%24__all&var-instance={{ $labels.instance | urlquery }}&from=now-6h&to=now&viewPanel=2'
+      httpStatusError:
+        annotations:
+          dashboard_url: 'https://grafana.str08.net/d/NEzutrbMk?var-cluster={{ $labels.cluster | urlquery }}&var-job=%24__all&var-instance={{ $labels.instance | urlquery }}&from=now-6h&to=now'
+          panel_url: 'https://grafana.str08.net/d/NEzutrbMk?var-cluster={{ $labels.cluster | urlquery }}&var-job=%24__all&var-instance={{ $labels.instance | urlquery }}&from=now-6h&to=now&viewPanel=2'

@@ -11,7 +11,10 @@
 {{- if eq ($rule.requires | default "") "databases" -}}{{- $eligible = not (empty $root.Values.databases) -}}{{- end -}}
 {{- if and $config.enabled $eligible -}}
 {{- $labels := mergeOverwrite (dict "severity" $config.severity "alert_family" ($rule.family | default $rule.alert)) ($rule.labels | default dict) -}}
-{{- $annotations := mergeOverwrite (dict "summary" $rule.summary "description" $rule.description "runbook_url" (printf "%s#%s" $root.Values.runbookBaseURL $.name)) (deepCopy $root.Values.additionalAnnotations) ($config.annotations | default dict) -}}
+{{- $links := $root.Files.Get "dashboard-links.yaml" | fromYaml -}}
+{{- $link := mergeOverwrite (deepCopy (index $links.groups $.name)) (index $links.rules $rule.alert | default dict) -}}
+{{- $dashboardURL := printf "%s/d/%s?%s&from=now-6h&to=now" (trimSuffix "/" $root.Values.dashboardBaseURL) $link.uid $link.query -}}
+{{- $annotations := mergeOverwrite (dict "summary" $rule.summary "description" $rule.description "runbook_url" (printf "%s#%s" $root.Values.runbookBaseURL $.name) "dashboard_url" $dashboardURL "panel_url" (printf "%s&viewPanel=%v" $dashboardURL $link.panel)) (deepCopy $root.Values.additionalAnnotations) ($config.annotations | default dict) -}}
 {{- $rules = append $rules (dict "alert" $rule.alert "expr" (tpl $rule.expr $root | trim) "for" $config.for "labels" $labels "annotations" $annotations) -}}
 {{- end -}}
 {{- end -}}

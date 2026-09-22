@@ -1,5 +1,6 @@
 interval: 1m
 runbookBaseURL: https://github.com/Soli0222/pke/blob/main/charts/monitoring-rules/README.md
+dashboardBaseURL: https://grafana.str08.net
 additionalAnnotations: {}
 absenceWindow: 5m
 hosts: []

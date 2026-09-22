@@ -45,3 +45,9 @@ jobs:
         run: python3 scripts/test-grafana-pipeline.py
       - name: Check CoreDNS metrics and cache ratios
         run: python3 scripts/test-grafana-coredns.py
+      - name: Check overview expectations and absence semantics
+        run: |
+          python3 scripts/sync-grafana-overview.py --check
+          python3 scripts/test-grafana-overview.py
+      - name: Check dashboard and alert navigation
+        run: python3 scripts/validate-grafana-navigation.py
