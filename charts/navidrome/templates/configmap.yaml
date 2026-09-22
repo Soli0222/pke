@@ -298,10 +298,16 @@ data:
     
     # Jellyfin configuration
     {{- $jellyfin := .Values.config.jellyfin | default dict }}
-    {{- if or (hasKey $jellyfin "enabled") $jellyfin.serverName $jellyfin.exposedPublicUsers (ne $jellyfin.maxConcurrentStreams nil) }}
+    {{- if or (hasKey $jellyfin "enabled") (hasKey $jellyfin "autoDiscovery") (hasKey $jellyfin "quickConnect") $jellyfin.serverName $jellyfin.exposedPublicUsers (ne $jellyfin.maxConcurrentStreams nil) }}
     [Jellyfin]
     {{- if hasKey $jellyfin "enabled" }}
     Enabled = {{ $jellyfin.enabled }}
+    {{- end }}
+    {{- if hasKey $jellyfin "autoDiscovery" }}
+    AutoDiscovery = {{ $jellyfin.autoDiscovery }}
+    {{- end }}
+    {{- if hasKey $jellyfin "quickConnect" }}
+    QuickConnect = {{ $jellyfin.quickConnect }}
     {{- end }}
     {{- with $jellyfin.serverName }}
     ServerName = {{ . | quote }}
