@@ -33,21 +33,6 @@
     "graphTooltip": 1,
     "links": [
       {
-        "type": "link",
-        "title": "Host & Systemd",
-        "url": "/d/pke-host-systemd?var-cluster=${cluster:percentencode}&var-hostname=${node:percentencode}&${__url_time_range}"
-      },
-      {
-        "type": "link",
-        "title": "Kubernetes",
-        "url": "/d/7cba95b3-6653-4ae7-a389-ff56cbeb864b?var-Cluster=${cluster:percentencode}&var-Node=${node:percentencode}&${__url_time_range}"
-      },
-      {
-        "type": "link",
-        "title": "Alloy / Controller",
-        "url": "/d/pke-alloy-controller?var-cluster=${cluster:percentencode}&var-job=alloy-host&var-instance=${node:percentencode}&${__url_time_range}"
-      },
-      {
         "icon": "external link",
         "tags": [],
         "targetBlank": true,
@@ -81,7 +66,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "Resource pressure via PSI",
         "fieldConfig": {
@@ -157,11 +142,7 @@
             "legendFormat": "CPU",
             "range": false,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -172,11 +153,7 @@
             "legendFormat": "Mem",
             "range": false,
             "refId": "B",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -187,21 +164,27 @@
             "legendFormat": "I/O",
             "range": false,
             "refId": "C",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
+          },
+          {
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "rate(node_pressure_irq_stalled_seconds_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "Irq",
+            "range": false,
+            "refId": "D",
+            "step": 240
           }
         ],
         "title": "Pressure",
-        "type": "bargauge",
-        "interval": "1m"
+        "type": "bargauge"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "Overall CPU busy percentage (averaged across all cores)",
         "fieldConfig": {
@@ -275,21 +258,16 @@
             "legendFormat": "",
             "range": false,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           }
         ],
         "title": "CPU Busy",
-        "type": "gauge",
-        "interval": "1m"
+        "type": "gauge"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "System load over all CPU cores together",
         "fieldConfig": {
@@ -363,21 +341,16 @@
             "instant": true,
             "range": false,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           }
         ],
         "title": "Sys Load",
-        "type": "gauge",
-        "interval": "1m"
+        "type": "gauge"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "Real RAM usage excluding cache and reclaimable memory",
         "fieldConfig": {
@@ -441,23 +414,18 @@
             "instant": true,
             "range": false,
             "refId": "B",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           }
         ],
         "title": "RAM Used",
-        "type": "gauge",
-        "interval": "1m"
+        "type": "gauge"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
-        "description": "SwapTotalが正のときだけ使用率を計算。SWAP Total=0はswap未構成。欠測を正常0%で埋めない。",
+        "description": "Percentage of swap space currently used by the system",
         "fieldConfig": {
           "defaults": {
             "color": {
@@ -493,8 +461,7 @@
                 }
               ]
             },
-            "unit": "percent",
-            "noValue": "swap未構成 / 未収集"
+            "unit": "percent"
           },
           "overrides": []
         },
@@ -525,25 +492,20 @@
           {
             "editorMode": "code",
             "exemplar": false,
-            "expr": "100 * (node_memory_SwapTotal_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} - node_memory_SwapFree_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}) / (node_memory_SwapTotal_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > 0)",
+            "expr": "(node_memory_SwapTotal_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > bool 0) * ((node_memory_SwapTotal_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} - node_memory_SwapFree_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}) / (node_memory_SwapTotal_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"})) * 100",
             "instant": true,
             "range": false,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           }
         ],
         "title": "SWAP Used",
-        "type": "gauge",
-        "interval": "1m"
+        "type": "gauge"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "Used Root FS",
         "fieldConfig": {
@@ -617,21 +579,16 @@
             "instant": true,
             "range": false,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           }
         ],
         "title": "Root FS Used",
-        "type": "gauge",
-        "interval": "1m"
+        "type": "gauge"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "",
         "fieldConfig": {
@@ -696,21 +653,16 @@
             "instant": true,
             "legendFormat": "__auto",
             "range": false,
-            "refId": "A",
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "refId": "A"
           }
         ],
         "title": "CPU Cores",
-        "type": "stat",
-        "interval": "1m"
+        "type": "stat"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "",
         "fieldConfig": {
@@ -780,21 +732,16 @@
             "instant": true,
             "range": false,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           }
         ],
         "title": "RAM Total",
-        "type": "stat",
-        "interval": "1m"
+        "type": "stat"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "",
         "fieldConfig": {
@@ -864,21 +811,16 @@
             "instant": true,
             "range": false,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           }
         ],
         "title": "SWAP Total",
-        "type": "stat",
-        "interval": "1m"
+        "type": "stat"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "",
         "fieldConfig": {
@@ -953,21 +895,16 @@
             "instant": true,
             "range": false,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           }
         ],
         "title": "RootFS Total",
-        "type": "stat",
-        "interval": "1m"
+        "type": "stat"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "",
         "fieldConfig": {
@@ -1037,16 +974,11 @@
             "instant": true,
             "range": false,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           }
         ],
         "title": "Uptime",
-        "type": "stat",
-        "interval": "1m"
+        "type": "stat"
       },
       {
         "collapsed": false,
@@ -1064,7 +996,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "CPU time spent busy vs idle, split by activity type",
         "fieldConfig": {
@@ -1228,11 +1160,7 @@
             "legendFormat": "Busy System",
             "range": true,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            }
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -1241,12 +1169,7 @@
             "legendFormat": "Busy User",
             "range": true,
             "refId": "B",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -1255,12 +1178,7 @@
             "legendFormat": "Busy Iowait",
             "range": true,
             "refId": "C",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -1269,12 +1187,7 @@
             "legendFormat": "Busy IRQs",
             "range": true,
             "refId": "D",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -1283,12 +1196,7 @@
             "legendFormat": "Busy Other",
             "range": true,
             "refId": "E",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -1297,22 +1205,16 @@
             "legendFormat": "Idle",
             "range": true,
             "refId": "F",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           }
         ],
         "title": "CPU Basic",
-        "type": "timeseries",
-        "interval": "1m"
+        "type": "timeseries"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "RAM and swap usage overview, including caches",
         "fieldConfig": {
@@ -1470,12 +1372,7 @@
             "legendFormat": "Total",
             "range": true,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -1484,12 +1381,7 @@
             "legendFormat": "Used",
             "range": true,
             "refId": "B",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -1498,12 +1390,7 @@
             "legendFormat": "Cache + Buffer",
             "range": true,
             "refId": "C",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -1512,12 +1399,7 @@
             "legendFormat": "Free",
             "range": true,
             "refId": "D",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -1526,22 +1408,16 @@
             "legendFormat": "Swap used",
             "range": true,
             "refId": "E",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           }
         ],
         "title": "Memory Basic",
-        "type": "timeseries",
-        "interval": "1m"
+        "type": "timeseries"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "Per-interface network traffic (receive and transmit) in bits per second",
         "fieldConfig": {
@@ -1638,12 +1514,7 @@
             "legendFormat": "Rx {{device}}",
             "range": true,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           },
           {
             "editorMode": "code",
@@ -1652,22 +1523,16 @@
             "legendFormat": "Tx {{device}}",
             "range": true,
             "refId": "B",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           }
         ],
         "title": "Network Traffic Basic",
-        "type": "timeseries",
-        "interval": "1m"
+        "type": "timeseries"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cfkr3kwq69r7ke"
+          "uid": "${ds_prometheus}"
         },
         "description": "Percentage of filesystem space used for each mounted device",
         "fieldConfig": {
@@ -1753,17 +1618,11 @@
             "legendFormat": "{{mountpoint}}",
             "range": true,
             "refId": "A",
-            "step": 240,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
-            },
-            "instant": false
+            "step": 240
           }
         ],
         "title": "Disk Space Used Basic",
-        "type": "timeseries",
-        "interval": "1m"
+        "type": "timeseries"
       },
       {
         "collapsed": true,
@@ -1778,7 +1637,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "CPU time usage split by state, normalized across all CPU cores",
             "fieldConfig": {
@@ -2019,12 +1878,7 @@
                 "legendFormat": "System - Processes executing in kernel mode",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2033,12 +1887,7 @@
                 "legendFormat": "User - Normal processes executing in user mode",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2047,12 +1896,7 @@
                 "legendFormat": "Nice - Niced processes executing in user mode",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2061,12 +1905,7 @@
                 "legendFormat": "Iowait - Waiting for I/O to complete",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2075,12 +1914,7 @@
                 "legendFormat": "Irq - Servicing interrupts",
                 "range": true,
                 "refId": "E",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2089,12 +1923,7 @@
                 "legendFormat": "Softirq - Servicing softirqs",
                 "range": true,
                 "refId": "F",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2103,12 +1932,7 @@
                 "legendFormat": "Steal - Time spent in other operating systems when running in a virtualized environment",
                 "range": true,
                 "refId": "G",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2117,12 +1941,7 @@
                 "legendFormat": "Idle - Waiting for something to happen",
                 "range": true,
                 "refId": "H",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2131,22 +1950,16 @@
                 "legendFormat": "Guest CPU usage",
                 "range": true,
                 "refId": "I",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "CPU",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Breakdown of physical memory and swap usage. Hardware-detected memory errors are also displayed",
             "fieldConfig": {
@@ -2402,12 +2215,7 @@
                 "legendFormat": "Apps - Memory used by user-space applications",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2416,12 +2224,7 @@
                 "legendFormat": "PageTables - Memory used to map between virtual and physical memory addresses",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2430,12 +2233,7 @@
                 "legendFormat": "SwapCache - Memory that keeps track of pages that have been fetched from swap but not yet been modified",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2444,12 +2242,7 @@
                 "legendFormat": "Slab - Memory used by the kernel to cache data structures for its own use (caches like inode, dentry, etc)",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2458,12 +2251,7 @@
                 "legendFormat": "Cache - Parked file data (file content) cache",
                 "range": true,
                 "refId": "E",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2472,12 +2260,7 @@
                 "legendFormat": "Buffers - Block device (e.g. harddisk) cache",
                 "range": true,
                 "refId": "F",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2486,12 +2269,7 @@
                 "legendFormat": "Unused - Free memory unassigned",
                 "range": true,
                 "refId": "G",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2500,12 +2278,7 @@
                 "legendFormat": "Swap - Swap space used",
                 "range": true,
                 "refId": "H",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2514,22 +2287,16 @@
                 "legendFormat": "Hardware Corrupted - Amount of RAM that the kernel identified as corrupted / not working",
                 "range": true,
                 "refId": "I",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Incoming and outgoing network traffic per interface",
             "fieldConfig": {
@@ -2630,12 +2397,7 @@
                 "legendFormat": "{{device}} - Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2644,22 +2406,16 @@
                 "legendFormat": "{{device}} - Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Network interface utilization as a percentage of its maximum capacity",
             "fieldConfig": {
@@ -2755,41 +2511,30 @@
             "targets": [
               {
                 "editorMode": "code",
-                "expr": "(rate(node_network_receive_bytes_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) / (node_network_speed_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > 0))",
+                "expr": "(node_network_speed_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > bool 0) * (rate(node_network_receive_bytes_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) / node_network_speed_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"})",
                 "format": "time_series",
                 "legendFormat": "{{device}} - Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
-                "expr": "(rate(node_network_transmit_bytes_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) / (node_network_speed_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > 0))",
+                "expr": "(node_network_speed_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > bool 0) * (rate(node_network_transmit_bytes_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) / node_network_speed_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"})",
                 "format": "time_series",
                 "legendFormat": "{{device}} - Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Saturation",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Disk I/O operations per second for each device",
             "fieldConfig": {
@@ -2889,12 +2634,7 @@
                 "legendFormat": "{{device}} - Read",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -2902,22 +2642,16 @@
                 "legendFormat": "{{device}} - Write",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Disk IOps",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Disk I/O throughput per device",
             "fieldConfig": {
@@ -3018,12 +2752,7 @@
                 "legendFormat": "{{device}} - Read",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3032,22 +2761,16 @@
                 "legendFormat": "{{device}} - Write",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Disk Throughput",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Amount of available disk space per mounted filesystem, excluding rootfs. Based on block availability to non-root users",
             "fieldConfig": {
@@ -3137,12 +2860,7 @@
                 "metric": "",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3152,12 +2870,7 @@
                 "legendFormat": "{{mountpoint}} - Free",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3167,22 +2880,16 @@
                 "legendFormat": "{{mountpoint}} - Size",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Filesystem Space Available",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Disk usage (used = total - available) per mountpoint",
             "fieldConfig": {
@@ -3271,22 +2978,16 @@
                 "legendFormat": "{{mountpoint}}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Filesystem Used",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Percentage of time the disk was actively processing I/O operations",
             "fieldConfig": {
@@ -3376,22 +3077,16 @@
                 "legendFormat": "{{device}}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Disk I/O Utilization",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "How often tasks experience CPU, memory, or I/O delays. 'Some' indicates partial slowdown; 'Full' indicates all tasks are stalled. Based on Linux PSI metrics:\nhttps://docs.kernel.org/accounting/psi.html",
             "fieldConfig": {
@@ -3504,12 +3199,7 @@
                 "legendFormat": "CPU - Some",
                 "range": true,
                 "refId": "CPU some",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3518,12 +3208,7 @@
                 "legendFormat": "Memory - Some",
                 "range": true,
                 "refId": "Memory some",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3532,12 +3217,7 @@
                 "legendFormat": "Memory - Full",
                 "range": true,
                 "refId": "Memory full",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3546,12 +3226,7 @@
                 "legendFormat": "I/O - Some",
                 "range": true,
                 "refId": "I/O some",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3560,12 +3235,7 @@
                 "legendFormat": "I/O - Full",
                 "range": true,
                 "refId": "I/O full",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3574,17 +3244,11 @@
                 "legendFormat": "IRQ - Full",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Pressure Stall Information",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "CPU / Memory / Net / Disk",
@@ -3603,7 +3267,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Displays committed memory usage versus the system's commit limit. Exceeding the limit is allowed under Linux overcommit policies but may increase OOM risks under high load",
             "fieldConfig": {
@@ -3713,12 +3377,7 @@
                 "legendFormat": "Committed_AS – Memory promised to processes (not necessarily used)",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3727,22 +3386,16 @@
                 "legendFormat": "CommitLimit - Max allowable committed memory",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Committed",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Memory currently dirty (modified but not yet written to disk), being actively written back, or held by writeback buffers. High dirty or writeback memory may indicate disk I/O pressure or delayed flushing",
             "fieldConfig": {
@@ -3831,12 +3484,7 @@
                 "legendFormat": "Writeback – Memory currently being flushed to disk",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3845,12 +3493,7 @@
                 "legendFormat": "WritebackTmp – FUSE temporary writeback buffers",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3859,12 +3502,7 @@
                 "legendFormat": "Dirty – Memory marked dirty (pending write to disk)",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3873,22 +3511,16 @@
                 "legendFormat": "NFS Unstable – Pages sent to NFS server, awaiting storage commit",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Writeback and Dirty",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Kernel slab memory usage, separated into reclaimable and non-reclaimable categories. Reclaimable memory can be freed under memory pressure (e.g., caches), while unreclaimable memory is locked by the kernel for core functions",
             "fieldConfig": {
@@ -3977,12 +3609,7 @@
                 "legendFormat": "SUnreclaim – Non-reclaimable slab memory (kernel objects)",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -3991,22 +3618,16 @@
                 "legendFormat": "SReclaimable – Potentially reclaimable slab memory (e.g., inode cache)",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Slab",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Memory used for mapped files (such as libraries) and shared memory (shmem and tmpfs), including variants backed by huge pages",
             "fieldConfig": {
@@ -4096,12 +3717,7 @@
                 "legendFormat": "Mapped – Memory mapped from files (e.g., libraries, mmap)",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4110,12 +3726,7 @@
                 "legendFormat": "Shmem – Shared memory used by processes and tmpfs",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4125,12 +3736,7 @@
                 "legendFormat": "ShmemHugePages – Shared memory (shmem/tmpfs) allocated with HugePages",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4140,22 +3746,16 @@
                 "legendFormat": "PMD Mapped – Shmem/tmpfs backed by Transparent HugePages (PMD)",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Shared and Mapped",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Proportion of memory pages in the kernel's active and inactive LRU lists relative to total RAM. Active pages have been recently used, while inactive pages are less recently accessed but still resident in memory",
             "fieldConfig": {
@@ -4276,12 +3876,7 @@
                 "legendFormat": "Inactive – Less recently used memory, more likely to be reclaimed",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4290,22 +3885,16 @@
                 "legendFormat": "Active – Recently used memory, retained unless under pressure",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory LRU Active / Inactive (%)",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Breakdown of memory pages in the kernel's active and inactive LRU lists, separated by anonymous (heap, tmpfs) and file-backed (caches, mmap) pages.",
             "fieldConfig": {
@@ -4395,12 +3984,7 @@
                 "legendFormat": "Inactive_file - File-backed memory on inactive LRU list",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4409,12 +3993,7 @@
                 "legendFormat": "Inactive_anon – Anonymous memory on inactive LRU (incl. tmpfs & swap cache)",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4423,12 +4002,7 @@
                 "legendFormat": "Active_file - File-backed memory on active LRU list",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4437,22 +4011,16 @@
                 "legendFormat": "Active_anon – Anonymous memory on active LRU (incl. tmpfs & swap cache)",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory LRU Active / Inactive Detail",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Tracks kernel memory used for CPU-local structures, per-thread stacks, and bounce buffers used for I/O on DMA-limited devices. These areas are typically small but critical for low-level operations",
             "fieldConfig": {
@@ -4542,12 +4110,7 @@
                 "legendFormat": "KernelStack – Kernel stack memory (per-thread, non-reclaimable)",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4557,12 +4120,7 @@
                 "legendFormat": "PerCPU – Dynamically allocated per-CPU memory (used by kernel modules)",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4572,22 +4130,16 @@
                 "legendFormat": "Bounce Memory – I/O buffer for DMA-limited devices",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Kernel / CPU / IO",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Usage of the kernel's vmalloc area, which provides virtual memory allocations for kernel modules and drivers. Includes total, used, and largest free block sizes",
             "fieldConfig": {
@@ -4706,12 +4258,7 @@
                 "legendFormat": "Vmalloc Free Chunk – Largest available block in vmalloc area",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4720,12 +4267,7 @@
                 "legendFormat": "Vmalloc Total – Total size of the vmalloc memory area",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4734,22 +4276,16 @@
                 "legendFormat": "Vmalloc Used – Portion of vmalloc area currently in use",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Vmalloc",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Memory used by anonymous pages (not backed by files), including standard and huge page allocations. Includes heap, stack, and memory-mapped anonymous regions",
             "fieldConfig": {
@@ -4838,12 +4374,7 @@
                 "legendFormat": "AnonHugePages – Anonymous memory using HugePages",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4852,22 +4383,16 @@
                 "legendFormat": "AnonPages – Anonymous memory (non-file-backed)",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Anonymous",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Memory that is locked in RAM and cannot be swapped out. Includes both kernel-unevictable memory and user-level memory locked with mlock()",
             "fieldConfig": {
@@ -4957,12 +4482,7 @@
                 "legendFormat": "Unevictable – Kernel-pinned memory (not swappable)",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -4971,22 +4491,16 @@
                 "legendFormat": "Mlocked – Application-locked memory via mlock()",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Unevictable and MLocked",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "How much memory is directly mapped in the kernel using different page sizes (4K, 2M, 1G). Helps monitor large page utilization in the direct map region",
             "fieldConfig": {
@@ -5079,12 +4593,7 @@
                 "legendFormat": "DirectMap 1G – Memory mapped with 1GB pages",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5094,12 +4603,7 @@
                 "legendFormat": "DirectMap 2M – Memory mapped with 2MB pages",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5109,22 +4613,16 @@
                 "legendFormat": "DirectMap 4K – Memory mapped with 4KB pages",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory DirectMap",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Displays HugePages memory usage in bytes, including allocated, free, reserved, and surplus memory. All values are calculated based on the number of huge pages multiplied by their configured size",
             "fieldConfig": {
@@ -5213,12 +4711,7 @@
                 "legendFormat": "HugePages Used – Currently allocated",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5227,12 +4720,7 @@
                 "legendFormat": "HugePages Reserved – Promised but unused",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5241,12 +4729,7 @@
                 "legendFormat": "HugePages Surplus – Dynamic pool extension",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5255,17 +4738,11 @@
                 "legendFormat": "HugePages Total – Reserved memory",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory HugePages",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "Memory Meminfo",
@@ -5284,7 +4761,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of memory pages being read from or written to disk (page-in and page-out operations). High page-out may indicate memory pressure or swapping activity",
             "fieldConfig": {
@@ -5385,12 +4862,7 @@
                 "legendFormat": "Pagesin - Page in ops",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5399,22 +4871,16 @@
                 "legendFormat": "Pagesout - Page out ops",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Pages In / Out",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate at which memory pages are being swapped in from or out to disk. High swap-out activity may indicate memory pressure",
             "fieldConfig": {
@@ -5515,12 +4981,7 @@
                 "legendFormat": "Pswpin - Pages swapped in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5529,22 +4990,16 @@
                 "legendFormat": "Pswpout - Pages swapped out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Pages Swap In / Out",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of memory page faults, split into total, major (disk-backed), and derived minor (non-disk) faults. High major fault rates may indicate memory pressure or insufficient RAM",
             "fieldConfig": {
@@ -5671,12 +5126,7 @@
                 "legendFormat": "Pgfault - Page major and minor fault ops",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5685,12 +5135,7 @@
                 "legendFormat": "Pgmajfault - Major page fault ops",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5699,22 +5144,16 @@
                 "legendFormat": "Pgminfault - Minor page fault ops",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Memory Page Faults",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of Out-of-Memory (OOM) kill events. A non-zero value indicates the kernel has terminated one or more processes due to memory exhaustion",
             "fieldConfig": {
@@ -5820,17 +5259,11 @@
                 "legendFormat": "OOM Kills",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "OOM Killer",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "Memory Vmstat",
@@ -5849,7 +5282,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Tracks the system clock's estimated and maximum error, as well as its offset from the reference clock (e.g., via NTP). Useful for detecting synchronization drift",
             "fieldConfig": {
@@ -5938,12 +5371,7 @@
                 "legendFormat": "Estimated error",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5953,12 +5381,7 @@
                 "legendFormat": "Offset local vs reference",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -5968,22 +5391,16 @@
                 "legendFormat": "Maximum error",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Time Synchronized Drift",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "NTP phase-locked loop (PLL) time constant used by the kernel to control time adjustments. Lower values mean faster correction but less stability",
             "fieldConfig": {
@@ -6072,22 +5489,16 @@
                 "legendFormat": "PLL Time Constant",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Time PLL Adjust",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Shows whether the system clock is synchronized to a reliable time source, and the current frequency correction ratio applied by the kernel to maintain synchronization",
             "fieldConfig": {
@@ -6176,12 +5587,7 @@
                 "legendFormat": "Sync status (1 = ok)",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -6191,12 +5597,7 @@
                 "legendFormat": "Frequency Adjustment",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -6207,12 +5608,7 @@
                 "legendFormat": "Tick Interval",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -6223,22 +5619,16 @@
                 "legendFormat": "TAI Offset",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Time Synchronized Status",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Displays the PPS signal's frequency offset and stability (jitter) in hertz. Useful for monitoring high-precision time sources like GPS or atomic clocks",
             "fieldConfig": {
@@ -6327,12 +5717,7 @@
                 "legendFormat": "PPS Frequency Offset",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -6342,22 +5727,16 @@
                 "legendFormat": "PPS Frequency Stability",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "PPS Frequency / Stability",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Tracks PPS signal timing jitter and shift compared to system clock",
             "fieldConfig": {
@@ -6446,12 +5825,7 @@
                 "legendFormat": "PPS Jitter",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -6461,22 +5835,16 @@
                 "legendFormat": "PPS Shift",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "PPS Time Accuracy",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of PPS synchronization diagnostics including calibration events, jitter violations, errors, and frequency stability exceedances",
             "fieldConfig": {
@@ -6569,12 +5937,7 @@
                 "legendFormat": "PPS Calibrations/sec",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -6584,12 +5947,7 @@
                 "legendFormat": "PPS Errors/sec",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -6599,12 +5957,7 @@
                 "legendFormat": "PPS Stability Exceeded/sec",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -6614,17 +5967,11 @@
                 "legendFormat": "PPS Jitter Events/sec",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "PPS Sync Events",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "System Timesync",
@@ -6643,7 +5990,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Processes currently in runnable or blocked states. Helps identify CPU contention or I/O wait bottlenecks.",
             "fieldConfig": {
@@ -6736,12 +6083,7 @@
                 "legendFormat": "Blocked (I/O Wait)",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -6750,22 +6092,16 @@
                 "legendFormat": "Runnable (Ready for CPU)",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Processes Status",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Current number of processes in each state (e.g., running, sleeping, zombie). Requires --collector.processes to be enabled in node_exporter",
             "fieldConfig": {
@@ -6940,22 +6276,16 @@
                 "legendFormat": "{{ state }}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Processes Detailed States",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of new processes being created on the system (forks/sec).",
             "fieldConfig": {
@@ -7044,22 +6374,16 @@
                 "legendFormat": "Process Forks per second",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Processes Forks",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Shows CPU saturation per core, calculated as the proportion of time spent waiting to run relative to total time demanded (running + waiting).",
             "fieldConfig": {
@@ -7166,12 +6490,7 @@
                 "legendFormat": "CPU {{ cpu }} - Running",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -7182,12 +6501,7 @@
                 "legendFormat": "CPU {{cpu}} - Waiting Queue",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -7197,22 +6511,16 @@
                 "legendFormat": "CPU {{cpu}}",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "CPU Saturation per Core",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of active PIDs on the system and the configured maximum allowed. Useful for detecting PID exhaustion risk. Requires --collector.processes in node_exporter",
             "fieldConfig": {
@@ -7332,12 +6640,7 @@
                 "legendFormat": "Number of PIDs",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -7347,22 +6650,16 @@
                 "legendFormat": "PIDs limit",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "PIDs Number and Limit",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of active threads on the system and the configured thread limit. Useful for monitoring thread pressure. Requires --collector.processes in node_exporter",
             "fieldConfig": {
@@ -7482,12 +6779,7 @@
                 "legendFormat": "Allocated threads",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -7497,17 +6789,11 @@
                 "legendFormat": "Threads limit",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Threads Number and Limit",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "System Processes",
@@ -7526,7 +6812,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Per-second rate of context switches and hardware interrupts. High values may indicate intense CPU or I/O activity",
             "fieldConfig": {
@@ -7615,12 +6901,7 @@
                 "legendFormat": "Context switches",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -7629,22 +6910,16 @@
                 "legendFormat": "Interrupts",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Context Switches / Interrupts",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "System load average over 1, 5, and 15 minutes. Reflects the number of active or waiting processes. Values above CPU core count may indicate overload",
             "fieldConfig": {
@@ -7763,12 +7038,7 @@
                 "legendFormat": "Load 1m",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -7777,12 +7047,7 @@
                 "legendFormat": "Load 5m",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -7791,12 +7056,7 @@
                 "legendFormat": "Load 15m",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -7805,22 +7065,16 @@
                 "legendFormat": "CPU Core Count",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "System Load",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Real-time CPU frequency scaling per core, including average minimum and maximum allowed scaling frequencies",
             "fieldConfig": {
@@ -7976,12 +7230,7 @@
                 "legendFormat": "CPU {{ cpu }}",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -7991,12 +7240,7 @@
                 "legendFormat": "Max",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -8006,22 +7250,16 @@
                 "legendFormat": "Min",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "CPU Frequency Scaling",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of scheduling timeslices executed per CPU. Reflects how frequently the scheduler switches tasks on each core",
             "fieldConfig": {
@@ -8110,24 +7348,18 @@
                 "legendFormat": "CPU {{ cpu }}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "CPU Schedule Timeslices",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Breaks down hardware interrupts by type and device. Useful for diagnosing IRQ load on network, disk, or CPU interfaces. Requires --collector.interrupts to be enabled in node_exporter PKEの現在の収集設定ではこの詳細系列は未収集。空表示は正常値0を意味しない。",
+            "description": "Breaks down hardware interrupts by type and device. Useful for diagnosing IRQ load on network, disk, or CPU interfaces. Requires --collector.interrupts to be enabled in node_exporter",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -8215,22 +7447,16 @@
                 "legendFormat": "{{ type }} - {{ info }}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "IRQ Detail",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of bits of entropy currently available to the system's random number generators (e.g., /dev/random). Low values may indicate that random number generation could block or degrade performance of cryptographic operations",
             "fieldConfig": {
@@ -8349,12 +7575,7 @@
                 "legendFormat": "Entropy available",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -8363,17 +7584,11 @@
                 "legendFormat": "Entropy pool max",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Entropy",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "System Misc",
@@ -8392,7 +7607,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Monitors hardware sensor temperatures and critical thresholds as exposed by Linux hwmon. Includes CPU, GPU, and motherboard sensors where available",
             "fieldConfig": {
@@ -8502,12 +7717,7 @@
                 "legendFormat": "{{ chip_name }} {{ sensor }}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "expr": "node_hwmon_temp_crit_alarm_celsius{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} * on(chip) group_left(chip_name) node_hwmon_chip_names{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}",
@@ -8516,13 +7726,7 @@
                 "interval": "",
                 "legendFormat": "{{ chip_name }} {{ sensor }} Critical Alarm",
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false,
-                "range": true
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -8532,12 +7736,7 @@
                 "legendFormat": "{{ chip_name }} {{ sensor }} Critical",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "expr": "node_hwmon_temp_crit_hyst_celsius{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} * on(chip) group_left(chip_name) node_hwmon_chip_names{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}",
@@ -8546,13 +7745,7 @@
                 "interval": "",
                 "legendFormat": "{{ chip_name }} {{ sensor }} Critical Hysteresis",
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false,
-                "range": true
+                "step": 240
               },
               {
                 "expr": "node_hwmon_temp_max_celsius{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} * on(chip) group_left(chip_name) node_hwmon_chip_names{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}",
@@ -8561,25 +7754,18 @@
                 "interval": "",
                 "legendFormat": "{{ chip_name }} {{ sensor }} Max",
                 "refId": "E",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false,
-                "range": true
+                "step": 240
               }
             ],
             "title": "Hardware Temperature Monitor",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Shows how hard each cooling device (fan/throttle) is working relative to its maximum capacity 分母が正の場合だけ評価し、未対応・処理なし・欠測を0で埋めない。",
+            "description": "Shows how hard each cooling device (fan/throttle) is working relative to its maximum capacity",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -8680,28 +7866,22 @@
             "targets": [
               {
                 "editorMode": "code",
-                "expr": "100 * node_cooling_device_cur_state{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} / (node_cooling_device_max_state{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > 0)",
+                "expr": "(node_cooling_device_max_state{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > bool 0) * (100 * node_cooling_device_cur_state{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} / node_cooling_device_max_state{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"})",
                 "format": "time_series",
                 "interval": "",
                 "legendFormat": "{{name}} - {{type}}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Cooling Device Utilization",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Shows the online status of power supplies (e.g., AC, battery). A value of 1-Yes indicates the power supply is active/online",
             "fieldConfig": {
@@ -8794,22 +7974,16 @@
                 "legendFormat": "{{ power_supply }} online",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Power Supply",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Displays the current fan speeds (RPM) from hardware sensors via the hwmon interface",
             "fieldConfig": {
@@ -8899,12 +8073,7 @@
                 "legendFormat": "{{ chip_name }} {{ sensor }}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -8915,17 +8084,11 @@
                 "legendFormat": "{{ chip_name }} {{ sensor }} rpm min",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Hardware Fan Speed",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "Hardware Misc",
@@ -8944,7 +8107,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Current number of systemd units in each operational state, such as active, failed, inactive, or transitioning",
             "fieldConfig": {
@@ -9109,12 +8272,7 @@
                 "legendFormat": "Activating",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -9124,12 +8282,7 @@
                 "legendFormat": "Active",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -9139,12 +8292,7 @@
                 "legendFormat": "Deactivating",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -9154,12 +8302,7 @@
                 "legendFormat": "Failed",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -9169,24 +8312,18 @@
                 "legendFormat": "Inactive",
                 "range": true,
                 "refId": "E",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Systemd Units State",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Current number of active connections per systemd socket, as reported by the Node Exporter systemd collector PKEの現在の収集設定ではこの詳細系列は未収集。空表示は正常値0を意味しない。",
+            "description": "Current number of active connections per systemd socket, as reported by the Node Exporter systemd collector",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -9274,24 +8411,18 @@
                 "legendFormat": "{{ name }}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Systemd Sockets Current",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Rate of accepted connections per second for each systemd socket PKEの現在の収集設定ではこの詳細系列は未収集。空表示は正常値0を意味しない。",
+            "description": "Rate of accepted connections per second for each systemd socket",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -9379,24 +8510,18 @@
                 "legendFormat": "{{ name }}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Systemd Sockets Accepted",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Rate of systemd socket connection refusals per second, typically due to service unavailability or backlog overflow PKEの現在の収集設定ではこの詳細系列は未収集。空表示は正常値0を意味しない。",
+            "description": "Rate of systemd socket connection refusals per second, typically due to service unavailability or backlog overflow",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -9484,17 +8609,11 @@
                 "legendFormat": "{{ name }}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Systemd Sockets Refused",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "Systemd",
@@ -9513,7 +8632,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of I/O operations completed per second for the device (after merges), including both reads and writes",
             "fieldConfig": {
@@ -9628,12 +8747,7 @@
                 "legendFormat": "{{device}} - Read",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -9641,22 +8755,16 @@
                 "legendFormat": "{{device}} - Write",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Disk Read/Write IOps",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of bytes read from or written to the device per second",
             "fieldConfig": {
@@ -9772,12 +8880,7 @@
                 "legendFormat": "{{device}} - Read",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -9788,23 +8891,18 @@
                 "legendFormat": "{{device}} - Write",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                }
+                "step": 240
               }
             ],
             "title": "Disk Read/Write Data",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Average time for requests issued to the device to be served. This includes the time spent by the requests in queue and the time spent servicing them. 分母が正の場合だけ評価し、未対応・処理なし・欠測を0で埋めない。",
+            "description": "Average time for requests issued to the device to be served. This includes the time spent by the requests in queue and the time spent servicing them.",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -9913,41 +9011,30 @@
             "targets": [
               {
                 "editorMode": "code",
-                "expr": "rate(node_disk_read_time_seconds_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) / (rate(node_disk_reads_completed_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) > 0)",
+                "expr": "(rate(node_disk_reads_completed_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) > bool 0) * (rate(node_disk_read_time_seconds_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) / rate(node_disk_reads_completed_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]))",
                 "interval": "",
                 "legendFormat": "{{device}} - Read",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
-                "expr": "rate(node_disk_write_time_seconds_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) / (rate(node_disk_writes_completed_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) > 0)",
+                "expr": "(rate(node_disk_writes_completed_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) > bool 0) * (rate(node_disk_write_time_seconds_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]) / rate(node_disk_writes_completed_total{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}[$__rate_interval]))",
                 "interval": "",
                 "legendFormat": "{{device}} - Write",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Disk Average Wait Time",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Average queue length of the requests that were issued to the device",
             "fieldConfig": {
@@ -10052,22 +9139,16 @@
                 "legendFormat": "{{device}}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Average Queue Size",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of read and write requests merged per second that were queued to the device",
             "fieldConfig": {
@@ -10182,12 +9263,7 @@
                 "legendFormat": "{{device}} - Read",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -10195,22 +9271,16 @@
                 "legendFormat": "{{device}} - Write",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Disk R/W Merged",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Percentage of time the disk spent actively processing I/O operations, including general I/O, discards (TRIM), and write cache flushes",
             "fieldConfig": {
@@ -10315,12 +9385,7 @@
                 "legendFormat": "{{device}} - General IO",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -10329,12 +9394,7 @@
                 "legendFormat": "{{device}} - Discard/TRIM",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -10343,22 +9403,16 @@
                 "legendFormat": "{{device}} - Flush (write cache)",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Time Spent Doing I/Os",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Per-second rate of discard (TRIM) and flush (write cache) operations. Useful for monitoring low-level disk activity on SSDs and advanced storage",
             "fieldConfig": {
@@ -10462,12 +9516,7 @@
                 "legendFormat": "{{device}} - Discards completed",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -10476,12 +9525,7 @@
                 "legendFormat": "{{device}} - Discards merged",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -10490,22 +9534,16 @@
                 "legendFormat": "{{device}} - Flush",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Disk Ops Discards / Flush",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Shows how many disk sectors are discarded (TRIMed) per second. Useful for monitoring SSD behavior and storage efficiency",
             "fieldConfig": {
@@ -10609,22 +9647,16 @@
                 "legendFormat": "{{device}}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Disk Sectors Discarded Successfully",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of in-progress I/O requests at the time of sampling (active requests in the disk queue)",
             "fieldConfig": {
@@ -10729,17 +9761,11 @@
                 "legendFormat": "{{device}}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Instantaneous Queue Size",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "Storage Disk",
@@ -10758,7 +9784,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of file descriptors currently allocated system-wide versus the system limit. Important for detecting descriptor exhaustion risks",
             "fieldConfig": {
@@ -10877,12 +9903,7 @@
                 "legendFormat": "Max open files",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -10891,22 +9912,16 @@
                 "legendFormat": "Open files",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "File Descriptor",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of free file nodes (inodes) available per mounted filesystem. A low count may prevent file creation even if disk space is available",
             "fieldConfig": {
@@ -10995,22 +10010,16 @@
                 "legendFormat": "{{mountpoint}}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "File Nodes Free",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Indicates filesystems mounted in read-only mode or reporting device-level I/O errors.",
             "fieldConfig": {
@@ -11100,12 +10109,7 @@
                 "legendFormat": "{{mountpoint}} - ReadOnly",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -11115,22 +10119,16 @@
                 "legendFormat": "{{mountpoint}} - Device error",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Filesystem in ReadOnly / Error",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of file nodes (inodes) available per mounted filesystem. Reflects maximum file capacity regardless of disk size",
             "fieldConfig": {
@@ -11219,17 +10217,11 @@
                 "legendFormat": "{{mountpoint}}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "File Nodes Size",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "Storage Filesystem",
@@ -11248,7 +10240,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of network packets received and transmitted per second, by interface.",
             "fieldConfig": {
@@ -11351,12 +10343,7 @@
                 "legendFormat": "{{device}} - Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -11366,22 +10353,16 @@
                 "legendFormat": "{{device}} - Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic by Packets",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of packet-level errors for each network interface. Receive errors may indicate physical or driver issues; transmit errors may reflect collisions or hardware faults",
             "fieldConfig": {
@@ -11483,12 +10464,7 @@
                 "legendFormat": "{{device}} - Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -11497,22 +10473,16 @@
                 "legendFormat": "{{device}} - Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic Errors",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of dropped packets per network interface. Receive drops can indicate buffer overflow or driver issues; transmit drops may result from outbound congestion or queuing limits",
             "fieldConfig": {
@@ -11614,12 +10584,7 @@
                 "legendFormat": "{{device}} - Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -11628,22 +10593,16 @@
                 "legendFormat": "{{device}} - Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic Drop",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of compressed network packets received and transmitted per interface. These are common in low-bandwidth or special interfaces like PPP or SLIP",
             "fieldConfig": {
@@ -11745,12 +10704,7 @@
                 "legendFormat": "{{device}} - Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -11759,22 +10713,16 @@
                 "legendFormat": "{{device}} - Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic Compressed",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of incoming multicast packets received per network interface. Multicast is used by protocols such as mDNS, SSDP, and some streaming or cluster services",
             "fieldConfig": {
@@ -11863,24 +10811,18 @@
                 "legendFormat": "{{device}} - Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic Multicast",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Rate of received packets that could not be processed due to missing protocol or handler in the kernel. May indicate unsupported traffic or misconfiguration PKEの現在の収集設定ではこの詳細系列は未収集。空表示は正常値0を意味しない。",
+            "description": "Rate of received packets that could not be processed due to missing protocol or handler in the kernel. May indicate unsupported traffic or misconfiguration",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -11967,22 +10909,16 @@
                 "legendFormat": "{{device}} - Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic NoHandler",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of frame errors on received packets, typically caused by physical layer issues such as bad cables, duplex mismatches, or hardware problems",
             "fieldConfig": {
@@ -12071,22 +11007,16 @@
                 "legendFormat": "{{device}} - Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic Frame",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Tracks FIFO buffer overrun errors on network interfaces. These occur when incoming or outgoing packets are dropped due to queue or buffer overflows, often indicating congestion or hardware limits",
             "fieldConfig": {
@@ -12188,12 +11118,7 @@
                 "legendFormat": "{{device}} - Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -12202,22 +11127,16 @@
                 "legendFormat": "{{device}} - Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic Fifo",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of packet collisions detected during transmission. Mostly relevant on half-duplex or legacy Ethernet networks",
             "fieldConfig": {
@@ -12319,22 +11238,16 @@
                 "legendFormat": "{{device}} - Tx out",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic Collision",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of carrier errors during transmission. These typically indicate physical layer issues like faulty cabling or duplex mismatches",
             "fieldConfig": {
@@ -12423,22 +11336,16 @@
                 "legendFormat": "{{device}} - Tx out",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Network Traffic Carrier Errors",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of ARP entries per interface. Useful for detecting excessive ARP traffic or table growth due to scanning or misconfiguration",
             "fieldConfig": {
@@ -12527,22 +11434,16 @@
                 "legendFormat": "{{ device }} ARP Table",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "ARP Entries",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Current and maximum connection tracking entries used by Netfilter (nf_conntrack). High usage approaching the limit may cause packet drops or connection issues",
             "fieldConfig": {
@@ -12661,12 +11562,7 @@
                 "legendFormat": "NF conntrack entries",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -12675,22 +11571,16 @@
                 "legendFormat": "NF conntrack limit",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "NF Conntrack",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Operational and physical link status of each network interface. Values are Yes for 'up' or link present, and No for 'down' or no carrier.",
             "fieldConfig": {
@@ -12780,12 +11670,7 @@
                 "legendFormat": "{{interface}} - Operational state UP",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -12793,22 +11678,16 @@
                 "format": "time_series",
                 "instant": false,
                 "legendFormat": "{{device}} - Physical link",
-                "refId": "B",
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "range": true
+                "refId": "B"
               }
             ],
             "title": "Network Operational Status",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Maximum speed of each network interface as reported by the operating system. This is a static hardware capability, not current throughput",
             "fieldConfig": {
@@ -12871,24 +11750,18 @@
                 "expr": "node_network_speed_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} * 8",
                 "format": "time_series",
                 "legendFormat": "{{ device }}",
-                "range": false,
+                "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": true
+                "step": 240
               }
             ],
             "title": "Speed",
-            "type": "bargauge",
-            "interval": "1m"
+            "type": "bargauge"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "MTU (Maximum Transmission Unit) in bytes for each network interface. Affects packet size and transmission efficiency",
             "fieldConfig": {
@@ -12950,19 +11823,13 @@
                 "expr": "node_network_mtu_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"}",
                 "format": "time_series",
                 "legendFormat": "{{ device }}",
-                "range": false,
+                "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": true
+                "step": 240
               }
             ],
             "title": "MTU",
-            "type": "bargauge",
-            "interval": "1m"
+            "type": "bargauge"
           }
         ],
         "title": "Network Traffic",
@@ -12981,7 +11848,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Tracks TCP socket usage and memory per node",
             "fieldConfig": {
@@ -13072,12 +11939,7 @@
                 "legendFormat": "Allocated Sockets",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -13087,12 +11949,7 @@
                 "legendFormat": "In-Use Sockets",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -13102,12 +11959,7 @@
                 "legendFormat": "Orphaned Sockets",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -13117,22 +11969,16 @@
                 "legendFormat": "TIME_WAIT Sockets",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Sockstat TCP",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of UDP and UDPLite sockets currently in use",
             "fieldConfig": {
@@ -13223,12 +12069,7 @@
                 "legendFormat": "UDPLite - In-Use Sockets",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -13238,22 +12079,16 @@
                 "legendFormat": "UDP - In-Use Sockets",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Sockstat UDP",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Total number of sockets currently in use across all protocols (TCP, UDP, UNIX, etc.), as reported by /proc/net/sockstat",
             "fieldConfig": {
@@ -13344,22 +12179,16 @@
                 "legendFormat": "Total sockets",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Sockstat Used",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of FRAG and RAW sockets currently in use. RAW sockets are used for custom protocols or tools like ping; FRAG sockets are used internally for IP packet defragmentation",
             "fieldConfig": {
@@ -13450,12 +12279,7 @@
                 "legendFormat": "FRAG - In-Use Sockets",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -13465,22 +12289,16 @@
                 "legendFormat": "RAW - In-Use Sockets",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Sockstat FRAG / RAW",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Kernel memory used by TCP, UDP, and IP fragmentation buffers",
             "fieldConfig": {
@@ -13571,12 +12389,7 @@
                 "legendFormat": "TCP",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -13586,12 +12399,7 @@
                 "legendFormat": "UDP",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -13599,24 +12407,18 @@
                 "interval": "",
                 "legendFormat": "Fragmentation",
                 "range": true,
-                "refId": "C",
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "refId": "C"
               }
             ],
             "title": "Sockstat Memory Size",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Average memory used per socket (TCP/UDP). Helps tune net.ipv4.tcp_rmem / tcp_wmem 分母が正の場合だけ評価し、未対応・処理なし・欠測を0で埋めない。",
+            "description": "Average memory used per socket (TCP/UDP). Helps tune net.ipv4.tcp_rmem / tcp_wmem",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -13699,43 +12501,32 @@
             "targets": [
               {
                 "editorMode": "code",
-                "expr": "node_sockstat_TCP_mem_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} / (node_sockstat_TCP_inuse{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > 0)",
+                "expr": "(node_sockstat_TCP_inuse{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > bool 0) * (node_sockstat_TCP_mem_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} / node_sockstat_TCP_inuse{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"})",
                 "format": "time_series",
                 "interval": "",
                 "legendFormat": "TCP",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
-                "expr": "node_sockstat_UDP_mem_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} / (node_sockstat_UDP_inuse{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > 0)",
+                "expr": "(node_sockstat_UDP_inuse{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} > bool 0) * (node_sockstat_UDP_mem_bytes{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"} / node_sockstat_UDP_inuse{cluster=\"$cluster\",instance=\"$node\",job=\"$job\"})",
                 "format": "time_series",
                 "interval": "",
                 "legendFormat": "UDP",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Sockstat Average Socket Memory",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "TCP/UDP socket memory usage in kernel (in pages)",
             "fieldConfig": {
@@ -13826,12 +12617,7 @@
                 "legendFormat": "TCP",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -13841,22 +12627,16 @@
                 "legendFormat": "UDP",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "TCP/UDP Kernel Buffer Memory Pages",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Packets processed and dropped by the softnet network stack per CPU. Drops may indicate CPU saturation or network driver limitations",
             "fieldConfig": {
@@ -13959,12 +12739,7 @@
                 "legendFormat": "CPU {{cpu}} - Processed",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -13974,22 +12749,16 @@
                 "legendFormat": "CPU {{cpu}} - Dropped",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Softnet Packets",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "How often the kernel was unable to process all packets in the softnet queue before time ran out. Frequent squeezes may indicate CPU contention or driver inefficiency",
             "fieldConfig": {
@@ -14083,22 +12852,16 @@
                 "legendFormat": "CPU {{cpu}} - Times Squeezed",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Softnet Out of Quota",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Tracks the number of packets processed or dropped by Receive Packet Steering (RPS), a mechanism to distribute packet processing across CPUs",
             "fieldConfig": {
@@ -14208,12 +12971,7 @@
                 "legendFormat": "CPU {{cpu}} - Processed",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -14223,17 +12981,11 @@
                 "legendFormat": "CPU {{cpu}} - Dropped",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Softnet RPS",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "Network Sockstat",
@@ -14252,7 +13004,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of octets sent and received at the IP layer, as reported by /proc/net/netstat",
             "fieldConfig": {
@@ -14355,12 +13107,7 @@
                 "legendFormat": "IP Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -14369,22 +13116,16 @@
                 "legendFormat": "IP Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Netstat IP In / Out Octets",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of TCP segments sent and received per second, including data and control segments",
             "fieldConfig": {
@@ -14490,12 +13231,7 @@
                 "interval": "",
                 "legendFormat": "TCP Rx in",
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "range": true
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -14505,22 +13241,16 @@
                 "legendFormat": "TCP Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "TCP In / Out",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of UDP datagrams sent and received per second, based on /proc/net/netstat",
             "fieldConfig": {
@@ -14622,12 +13352,7 @@
                 "legendFormat": "UDP Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -14637,22 +13362,16 @@
                 "legendFormat": "UDP Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "UDP In / Out",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of ICMP messages sent and received per second, including error and control messages",
             "fieldConfig": {
@@ -14758,12 +13477,7 @@
                 "legendFormat": "ICMP Rx in",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -14773,22 +13487,16 @@
                 "legendFormat": "ICMP Tx out",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "ICMP In / Out",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Tracks various TCP error and congestion-related events, including retransmissions, timeouts, dropped connections, and buffer issues",
             "fieldConfig": {
@@ -14878,12 +13586,7 @@
                 "legendFormat": "Listen Overflows",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -14893,12 +13596,7 @@
                 "legendFormat": "Listen Drops",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -14908,12 +13606,7 @@
                 "legendFormat": "SYN Retransmits",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -14921,12 +13614,7 @@
                 "interval": "",
                 "legendFormat": "Segment Retransmits",
                 "range": true,
-                "refId": "D",
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "refId": "D"
               },
               {
                 "editorMode": "code",
@@ -14934,12 +13622,7 @@
                 "interval": "",
                 "legendFormat": "Receive Errors",
                 "range": true,
-                "refId": "E",
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "refId": "E"
               },
               {
                 "editorMode": "code",
@@ -14947,12 +13630,7 @@
                 "interval": "",
                 "legendFormat": "RST Sent",
                 "range": true,
-                "refId": "F",
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "refId": "F"
               },
               {
                 "editorMode": "code",
@@ -14960,12 +13638,7 @@
                 "interval": "",
                 "legendFormat": "Receive Queue Drops",
                 "range": true,
-                "refId": "G",
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "refId": "G"
               },
               {
                 "editorMode": "code",
@@ -14973,12 +13646,7 @@
                 "interval": "",
                 "legendFormat": "Out-of-order Queued",
                 "range": true,
-                "refId": "H",
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "refId": "H"
               },
               {
                 "editorMode": "code",
@@ -14986,22 +13654,16 @@
                 "interval": "",
                 "legendFormat": "TCP Timeouts",
                 "range": true,
-                "refId": "I",
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "refId": "I"
               }
             ],
             "title": "TCP Errors",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of UDP and UDPLite datagram delivery errors, including missing listeners, buffer overflows, and protocol-specific issues",
             "fieldConfig": {
@@ -15094,12 +13756,7 @@
                 "legendFormat": "UDP Rx in Errors",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15109,12 +13766,7 @@
                 "legendFormat": "UDP No Listener",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15122,12 +13774,7 @@
                 "interval": "",
                 "legendFormat": "UDPLite Rx in Errors",
                 "range": true,
-                "refId": "C",
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "refId": "C"
               },
               {
                 "editorMode": "code",
@@ -15137,12 +13784,7 @@
                 "legendFormat": "UDP Rx in Buffer Errors",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15152,22 +13794,16 @@
                 "legendFormat": "UDP Tx out Buffer Errors",
                 "range": true,
                 "refId": "E",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "UDP Errors",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of incoming ICMP messages that contained protocol-specific errors, such as bad checksums or invalid lengths",
             "fieldConfig": {
@@ -15256,22 +13892,16 @@
                 "legendFormat": "ICMP Rx In",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "ICMP Errors",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of TCP SYN cookies sent, validated, and failed. These are used to protect against SYN flood attacks and manage TCP handshake resources under load",
             "fieldConfig": {
@@ -15376,12 +14006,7 @@
                 "legendFormat": "SYN Cookies Failed",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15391,12 +14016,7 @@
                 "legendFormat": "SYN Cookies Validated",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15406,22 +14026,16 @@
                 "legendFormat": "SYN Cookies Sent",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "TCP SynCookie",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of currently established TCP connections and the system's max supported limit. On Linux, MaxConn may return -1 to indicate a dynamic/unlimited configuration",
             "fieldConfig": {
@@ -15541,12 +14155,7 @@
                 "legendFormat": "Current Connections",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15556,22 +14165,16 @@
                 "legendFormat": "Max Connections",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "TCP Connections",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Number of UDP packets currently queued in the receive (RX) and transmit (TX) buffers. A growing queue may indicate a bottleneck",
             "fieldConfig": {
@@ -15660,12 +14263,7 @@
                 "legendFormat": "UDP Rx in Queue",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15675,22 +14273,16 @@
                 "legendFormat": "UDP Tx out Queue",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "UDP Queue",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Rate of TCP connection initiations per second. 'Active' opens are initiated by this host. 'Passive' opens are accepted from incoming connections",
             "fieldConfig": {
@@ -15780,12 +14372,7 @@
                 "legendFormat": "Active Opens",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15795,24 +14382,18 @@
                 "legendFormat": "Passive Opens",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "TCP Direct Transition",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Number of TCP sockets in key connection states. Requires the --collector.tcpstat flag on node_exporter PKEの現在の収集設定ではこの詳細系列は未収集。空表示は正常値0を意味しない。",
+            "description": "Number of TCP sockets in key connection states. Requires the --collector.tcpstat flag on node_exporter",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -15901,12 +14482,7 @@
                 "legendFormat": "Established",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15916,12 +14492,7 @@
                 "legendFormat": "FIN_WAIT2",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15931,12 +14502,7 @@
                 "legendFormat": "Listen",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15946,12 +14512,7 @@
                 "legendFormat": "TIME_WAIT",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -15961,24 +14522,18 @@
                 "legendFormat": "CLOSE_WAIT",
                 "range": true,
                 "refId": "E",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "TCP Stat Persistent",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Transient TCP connection states. These are typically short-lived during connection establishment and teardown PKEの現在の収集設定ではこの詳細系列は未収集。空表示は正常値0を意味しない。",
+            "description": "Transient TCP connection states. These are typically short-lived during connection establishment and teardown",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -16066,12 +14621,7 @@
                 "legendFormat": "SYN_SENT",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -16080,12 +14630,7 @@
                 "legendFormat": "SYN_RECV",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -16094,12 +14639,7 @@
                 "legendFormat": "FIN_WAIT1",
                 "range": true,
                 "refId": "C",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -16108,12 +14648,7 @@
                 "legendFormat": "CLOSE",
                 "range": true,
                 "refId": "D",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -16122,12 +14657,7 @@
                 "legendFormat": "LAST_ACK",
                 "range": true,
                 "refId": "E",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -16136,24 +14666,18 @@
                 "legendFormat": "CLOSING",
                 "range": true,
                 "refId": "F",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "TCP Stat Transient",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "TCP socket queue sizes. High rx_queued_bytes indicates application not reading fast enough. High tx_queued_bytes indicates network congestion or slow receiver PKEの現在の収集設定ではこの詳細系列は未収集。空表示は正常値0を意味しない。",
+            "description": "TCP socket queue sizes. High rx_queued_bytes indicates application not reading fast enough. High tx_queued_bytes indicates network congestion or slow receiver",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -16240,12 +14764,7 @@
                 "legendFormat": "RX Queued (waiting to be read)",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -16254,17 +14773,11 @@
                 "legendFormat": "TX Queued (waiting to be sent)",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "TCP Socket Queue",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           }
         ],
         "title": "Network Netstat",
@@ -16283,7 +14796,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Duration of each individual collector executed during a Node Exporter scrape. Useful for identifying slow or failing collectors",
             "fieldConfig": {
@@ -16376,24 +14889,18 @@
                 "legendFormat": "{{collector}}",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Node Exporter Scrape Time",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Alloy組み込みnode exporterには独立プロセスのこの系列はない。Exporterの実行状態は上部リンクのAlloy / Controllerでjob=alloy-hostを選択して確認する。",
+            "description": "Rate of CPU time used by the process exposing this metric (user + system mode)",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -16480,24 +14987,18 @@
                 "legendFormat": "Process CPU Usage",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Exporter Process CPU Usage",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Alloy組み込みnode exporterには独立プロセスのこの系列はない。Exporterの実行状態は上部リンクのAlloy / Controllerでjob=alloy-hostを選択して確認する。",
+            "description": "Tracks the memory usage of the process exposing this metric (e.g., node_exporter), including current virtual memory and maximum virtual memory limit",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -16638,12 +15139,7 @@
                 "legendFormat": "Virtual Memory",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -16652,24 +15148,18 @@
                 "legendFormat": "Virtual Memory Limit",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Exporter Processes Memory",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
-            "description": "Alloy組み込みnode exporterには独立プロセスのこの系列はない。Exporterの実行状態は上部リンクのAlloy / Controllerでjob=alloy-hostを選択して確認する。",
+            "description": "Number of file descriptors used by the exporter process versus its configured limit",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -16810,12 +15300,7 @@
                 "legendFormat": "Maximum open file descriptors",
                 "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -16824,22 +15309,16 @@
                 "legendFormat": "Open file descriptors",
                 "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": false
+                "step": 240
               }
             ],
             "title": "Exporter File Descriptor Usage",
-            "type": "timeseries",
-            "interval": "1m"
+            "type": "timeseries"
           },
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "cfkr3kwq69r7ke"
+              "uid": "${ds_prometheus}"
             },
             "description": "Shows whether each Node Exporter collector scraped successfully (1 = success, 0 = failure), and whether the textfile collector returned an error.",
             "fieldConfig": {
@@ -16908,14 +15387,9 @@
                 "format": "time_series",
                 "interval": "",
                 "legendFormat": "{{collector}}",
-                "range": false,
+                "range": true,
                 "refId": "A",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": true
+                "step": 240
               },
               {
                 "editorMode": "code",
@@ -16923,19 +15397,13 @@
                 "format": "time_series",
                 "interval": "",
                 "legendFormat": "textfile",
-                "range": false,
+                "range": true,
                 "refId": "B",
-                "step": 240,
-                "datasource": {
-                  "type": "prometheus",
-                  "uid": "cfkr3kwq69r7ke"
-                },
-                "instant": true
+                "step": 240
               }
             ],
             "title": "Node Exporter Scrape",
-            "type": "bargauge",
-            "interval": "1m"
+            "type": "bargauge"
           }
         ],
         "title": "Node Exporter",
@@ -16958,7 +15426,7 @@
             "uid": "cfkr3kwq69r7ke"
           },
           "query": {
-            "query": "label_values(node_uname_info,cluster)",
+            "query": "label_values(node_uname_info, cluster)",
             "refId": "StandardVariableQuery"
           },
           "current": {
@@ -16966,81 +15434,98 @@
             "value": "natsume"
           },
           "options": [],
-          "refresh": 2,
+          "refresh": 1,
           "sort": 1,
           "multi": false,
           "includeAll": false
         },
         {
-          "name": "job",
-          "label": "Job",
-          "type": "query",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cfkr3kwq69r7ke"
+          "current": {
+            "text": "Mimir",
+            "value": "cfkr3kwq69r7ke"
           },
-          "query": {
-            "query": "label_values(node_uname_info{cluster=\"$cluster\"},job)",
-            "refId": "StandardVariableQuery"
-          },
+          "includeAll": false,
+          "label": "Datasource",
+          "name": "ds_prometheus",
+          "options": [],
+          "query": "prometheus",
+          "refresh": 1,
+          "regex": "",
+          "type": "datasource"
+        },
+        {
           "current": {
             "text": "integrations/unix",
             "value": "integrations/unix"
           },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "definition": "label_values(node_uname_info{cluster=\"$cluster\"}, job)",
+          "includeAll": false,
+          "label": "Job",
+          "name": "job",
           "options": [],
-          "refresh": 2,
+          "query": {
+            "query": "label_values(node_uname_info{cluster=\"$cluster\"}, job)",
+            "refId": "Prometheus-job-Variable-Query"
+          },
+          "refresh": 1,
+          "regex": "",
           "sort": 1,
-          "multi": false,
-          "includeAll": false
+          "type": "query"
         },
         {
+          "current": {
+            "text": "natsume-03",
+            "value": "natsume-03"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "definition": "label_values(node_uname_info{cluster=\"$cluster\",job=\"$job\"}, nodename)",
+          "includeAll": false,
+          "label": "Nodename",
           "name": "nodename",
-          "label": "Host",
-          "type": "query",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cfkr3kwq69r7ke"
-          },
-          "query": {
-            "query": "label_values(node_uname_info{cluster=\"$cluster\",job=\"$job\"},nodename)",
-            "refId": "StandardVariableQuery"
-          },
-          "current": {
-            "text": "natsume-03",
-            "value": "natsume-03"
-          },
           "options": [],
-          "refresh": 2,
+          "query": {
+            "query": "label_values(node_uname_info{cluster=\"$cluster\",job=\"$job\"}, nodename)",
+            "refId": "Prometheus-nodename-Variable-Query"
+          },
+          "refresh": 1,
+          "regex": "",
           "sort": 1,
-          "multi": false,
-          "includeAll": false
+          "type": "query"
         },
         {
-          "name": "node",
-          "label": "Instance",
-          "type": "query",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cfkr3kwq69r7ke"
-          },
-          "query": {
-            "query": "label_values(node_uname_info{cluster=\"$cluster\",job=\"$job\",nodename=\"$nodename\"},instance)",
-            "refId": "StandardVariableQuery"
-          },
           "current": {
             "text": "natsume-03",
             "value": "natsume-03"
           },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "definition": "label_values(node_uname_info{cluster=\"$cluster\",job=\"$job\",nodename=\"$nodename\"}, instance)",
+          "includeAll": false,
+          "label": "Instance",
+          "name": "node",
           "options": [],
-          "refresh": 2,
+          "query": {
+            "query": "label_values(node_uname_info{cluster=\"$cluster\",job=\"$job\",nodename=\"$nodename\"}, instance)",
+            "refId": "Prometheus-node-Variable-Query"
+          },
+          "refresh": 1,
+          "regex": "",
           "sort": 1,
-          "multi": false,
-          "includeAll": false
+          "type": "query"
         }
       ]
     },
     "time": {
-      "from": "now-6h",
+      "from": "now-24h",
       "to": "now"
     },
     "timepicker": {},

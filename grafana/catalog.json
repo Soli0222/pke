@@ -164,8 +164,8 @@
         "license": "unknown",
         "changes": [
           "既存exportを再利用。gnetId=1860、取り込み元revision/licenseは未確認",
-          "cluster → job → host → instanceを追加し全クエリをクラスタ分離",
-          "既存の詳細パネルを維持。swap未構成と未知のlink speedのゼロ除算を除去"
+          "cluster → job → nodename / instanceの選択を追加し、全selectorをクラスタ分離。初期clusterはnatsume",
+          "元の配置・色・凡例・24時間表示・クエリの演算を維持。Mimirを初期datasourceとして保存"
         ]
       }
     }
