@@ -10,11 +10,15 @@ FluxはGrafanaの実行基盤と既存のPrometheusRuleを引き続き管理す�
 | 場所 | 用途 |
 |---|---|
 | `dashboards/<用途>/<名前>.json` | Git Sync対象のダッシュボード |
+| `dashboards/<用途>/_folder.json` | フォルダUIDと表示名の固定 |
 | `catalog.json` | UIDとファイルの対応、datasourceのUID、上流出典 |
 | `schemas/` | PKEの保存形式を検証するJSON Schema |
 | `requirements.txt` | 静的検証の依存パッケージ |
 
 用途別のサブディレクトリをGrafanaのフォルダに対応させる。
+各サブディレクトリには`_folder.json`を置き、`folder.grafana.app/v1beta1` / `Folder`のmetadata.nameとspec.titleを保存する。
+同じUID・path・titleをcatalogの`folders`へ登録する。
+既にGit Syncが作成したフォルダは実機のUIDを採用し、作り直さない。
 `platform`、`observability`、`applications`、`developer-tools`を基本とし、Overviewは同期ルートに置く。
 フォルダ名・パスの変更はGrafana側のフォルダ識別やリンクにも影響するため、単なる整理として移動しない。
 同期対象は`grafana/dashboards/`だけにし、catalog、schema、バックアップ、認証情報を混ぜない。

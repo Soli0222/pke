@@ -150,6 +150,7 @@ def validate(root):
     except (OSError, ValueError):
         return ['catalog.json: invalid or unreadable JSON'], 0
     seen = {}
+    seen_folders = {}
     for path in sorted((root / 'dashboards').rglob('*')):
         relative = path.relative_to(root).as_posix()
         if path.is_symlink():
@@ -167,11 +168,25 @@ def validate(root):
         except (OSError, ValueError):
             errors.append(f'{relative}: invalid JSON (including duplicate keys/NaN)')
             continue
-        problems = schema_errors(resource, 'dashboard.schema.json')
+        is_folder = path.name == '_folder.json'
+        problems = schema_errors(resource, 'folder.schema.json' if is_folder else 'dashboard.schema.json')
         if problems:
             errors.extend(f'{relative}: {e}' for e in problems)
             continue
         uid = resource['metadata']['name']
+        if is_folder:
+            if uid in seen_folders:
+                errors.append(f'{relative}: duplicate folder UID')
+            seen_folders[uid] = relative
+            entry = catalog.get('folders', {}).get(uid)
+            if entry is None or entry['path'] != relative or entry['title'] != resource['spec']['title']:
+                errors.append(f'{relative}: folder catalog UID/path/title does not match')
+            continue
+        for parent in path.parents:
+            if parent == root / 'dashboards':
+                break
+            if not (parent / '_folder.json').is_file():
+                errors.append(f'{relative}: parent folder is missing _folder.json')
         if uid in seen:
             errors.append(f'{relative}: duplicate dashboard UID ({seen[uid]})')
         seen[uid] = relative
@@ -186,6 +201,8 @@ def validate(root):
         errors.extend(f'{relative}: {e}' for e in content_errors(resource, catalog['datasources']))
     for uid in catalog['dashboards'].keys() - seen.keys():
         errors.append(f'catalog.json: dashboard {uid} is missing')
+    for uid in catalog.get('folders', {}).keys() - seen_folders.keys():
+        errors.append(f'catalog.json: folder {uid} is missing')
     if not (root / 'dashboards').is_dir():
         errors.append('dashboards directory is missing')
     return errors, len(seen)

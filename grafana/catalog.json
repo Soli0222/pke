@@ -33,5 +33,11 @@
         ]
       }
     }
+  },
+  "folders": {
+    "platform-c9cb9poj2if-v2tmxq6fjklrg5eojdu": {
+      "path": "dashboards/platform/_folder.json",
+      "title": "Platform"
+    }
   }
 }
