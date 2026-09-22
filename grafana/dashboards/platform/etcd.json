@@ -1,0 +1,3174 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "hzhXdzznZn"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [],
+            "type": "dashboard"
+          },
+          "type": "dashboard"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": false,
+          "hide": false,
+          "iconColor": "red",
+          "name": "flux events",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [
+              "flux"
+            ],
+            "type": "tags"
+          }
+        }
+      ]
+    },
+    "description": "Etcd Cluster Overview showing details scraped from the etcd Prometheus metrics endpoint.",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "links": [
+      {
+        "asDropdown": true,
+        "icon": "external link",
+        "includeVars": true,
+        "keepTime": true,
+        "tags": [
+          "etcd"
+        ],
+        "targetBlank": false,
+        "title": "Etcd Dashboards",
+        "tooltip": "",
+        "type": "dashboards",
+        "url": ""
+      }
+    ],
+    "liveNow": false,
+    "panels": [
+      {
+        "id": 1000,
+        "type": "text",
+        "title": "$cluster のetcd",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 3
+        },
+        "options": {
+          "mode": "markdown",
+          "content": "natsume / merutoは別々のetcdクラスタで、現在それぞれ1 memberです。peer通信は対象外のため空表示になります。Member数は観測数であり、欠測したmemberを正常数に含めません。Failed proposalsとLeader changesは表示期間内の増分です。"
+        }
+      },
+      {
+        "collapsed": false,
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 3
+        },
+        "id": 88,
+        "panels": [],
+        "title": "Status",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "transparent"
+                }
+              ]
+            },
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Has Leader"
+              },
+              "properties": [
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "0": {
+                          "color": "yellow",
+                          "index": 1,
+                          "text": "No"
+                        },
+                        "1": {
+                          "color": "dark-green",
+                          "index": 0,
+                          "text": "Yes"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 4,
+          "w": 6,
+          "h": 4
+        },
+        "id": 90,
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {},
+          "textMode": "auto"
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "min(etcd_server_has_leader{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"})",
+            "hide": false,
+            "instant": true,
+            "interval": "",
+            "legendFormat": "Has Leader",
+            "refId": "D",
+            "range": false
+          }
+        ],
+        "title": "Has Leader",
+        "type": "stat",
+        "description": "選択した各instanceにleaderがあるか。欠測は正常に補完しない。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "dark-purple",
+              "mode": "fixed"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "transparent"
+                }
+              ]
+            },
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 6,
+          "y": 4,
+          "w": 6,
+          "h": 4
+        },
+        "id": 93,
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {},
+          "textMode": "auto"
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "count(max by(cluster,server_id) (etcd_server_id{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}))",
+            "hide": false,
+            "instant": true,
+            "interval": "",
+            "legendFormat": "Members",
+            "refId": "C",
+            "range": false
+          }
+        ],
+        "title": "Observed members",
+        "type": "stat",
+        "description": "選択したクラスタ・instanceから観測したserver_idの数。収集が消えたmemberを含む期待数ではない。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "クラスタ・instanceを揃えて結合。quota残量は断片化率ではなく、defrag要否をこの表だけで断定しない。",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 2,
+            "noValue": "未収集",
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              }
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Memory used"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "bytes"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "DB quota used"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "percent"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "WAL fsync p99"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "s"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "DB commit p99"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "s"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Quota remaining"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "bytes"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "DB quota"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "bytes"
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 24,
+          "h": 8
+        },
+        "id": 74,
+        "maxDataPoints": 100,
+        "options": {
+          "showHeader": true,
+          "sortBy": []
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": false,
+            "expr": "max by(cluster,instance) ((etcd_mvcc_db_total_size_in_bytes{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"} / etcd_server_quota_backend_bytes{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"})*100)",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "refId": "B",
+            "range": false
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": false,
+            "expr": "max by(cluster,instance) (process_resident_memory_bytes{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"})",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "refId": "A",
+            "range": false
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": false,
+            "expr": "max by(cluster,instance) (sum(etcd_debugging_mvcc_keys_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}) by (cluster,instance))",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "refId": "C",
+            "range": false
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "max by(cluster,instance) (histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])) by (cluster,instance,le)))",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "refId": "D",
+            "range": false
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "max by(cluster,instance) (histogram_quantile(0.99, sum(rate(etcd_disk_backend_commit_duration_seconds_bucket{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])) by (cluster,instance,le)))",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "refId": "E",
+            "range": false
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "max by(cluster,instance) (sum(etcd_server_is_leader{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}) by (cluster,instance))",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "refId": "F",
+            "range": false
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": false,
+            "expr": "max by(cluster,instance) (sum(etcd_debugging_mvcc_db_compaction_keys_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}) by (cluster,instance))",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "refId": "G",
+            "range": false
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "max by(cluster,instance) (etcd_server_quota_backend_bytes{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"} - etcd_mvcc_db_total_size_in_bytes{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"})",
+            "format": "table",
+            "hide": false,
+            "instant": true,
+            "interval": "",
+            "legendFormat": "DB Capacity",
+            "refId": "I",
+            "range": false
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "max by(cluster,instance) (etcd_server_quota_backend_bytes{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"})",
+            "format": "table",
+            "hide": false,
+            "instant": true,
+            "interval": "",
+            "legendFormat": "",
+            "refId": "J",
+            "range": false
+          }
+        ],
+        "title": "Status",
+        "transformations": [
+          {
+            "id": "merge",
+            "options": {}
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "cluster": true
+              },
+              "renameByName": {
+                "instance": "Instance",
+                "Value #A": "Memory used",
+                "Value #B": "DB quota used",
+                "Value #C": "Keys",
+                "Value #D": "WAL fsync p99",
+                "Value #E": "DB commit p99",
+                "Value #F": "Is leader",
+                "Value #G": "Compacted keys",
+                "Value #I": "Quota remaining",
+                "Value #J": "DB quota"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "表示期間内のcounter増分の最大値。各memberが同じ変更を観測するため合算しない。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "light-blue",
+              "mode": "fixed"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "transparent"
+                }
+              ]
+            },
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 4,
+          "w": 6,
+          "h": 4
+        },
+        "id": 91,
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {},
+          "textMode": "auto"
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "max(increase(etcd_server_leader_changes_seen_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[$__range]))",
+            "instant": true,
+            "interval": "",
+            "legendFormat": "Leader Changes",
+            "refId": "A",
+            "range": false
+          }
+        ],
+        "title": "Leader changes (range)",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "表示期間内のfailed proposal counter増分。leader changeとは別の指標。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "light-blue",
+              "mode": "fixed"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "transparent"
+                }
+              ]
+            },
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 18,
+          "y": 4,
+          "w": 6,
+          "h": 4
+        },
+        "id": 92,
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {},
+          "textMode": "auto"
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "sum(increase(etcd_server_proposals_failed_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[$__range]))",
+            "hide": false,
+            "instant": true,
+            "interval": "",
+            "legendFormat": "Failed Proposals",
+            "refId": "B",
+            "range": false
+          }
+        ],
+        "title": "Failed proposals (range)",
+        "type": "stat"
+      },
+      {
+        "collapsed": false,
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        },
+        "id": 95,
+        "panels": [],
+        "title": "Traffic",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "Bps",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 0,
+          "y": 17
+        },
+        "id": 22,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "rate(etcd_network_client_grpc_received_bytes_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }}",
+            "metric": "etcd_network_client_grpc_received_bytes_total",
+            "refId": "A",
+            "step": 120
+          }
+        ],
+        "title": "Client Traffic In",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "Bps",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 6,
+          "y": 17
+        },
+        "id": 21,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "rate(etcd_network_client_grpc_sent_bytes_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }}",
+            "metric": "etcd_network_client_grpc_sent_bytes_total",
+            "refId": "A",
+            "step": 120
+          }
+        ],
+        "title": "Client Traffic Out",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "Bps",
+            "noValue": "単一memberでは対象外"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 12,
+          "y": 17
+        },
+        "id": 20,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "sum(rate(etcd_network_peer_received_bytes_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])) by (cluster,instance)",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }}",
+            "metric": "etcd_network_peer_received_bytes_total",
+            "refId": "A",
+            "step": 120
+          }
+        ],
+        "title": "Peer Traffic In (peer only)",
+        "type": "timeseries",
+        "description": "現在の両クラスタは各1 member。peerがないため空表示が対象外として正常。複数member構成なら収集を確認する。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "Bps",
+            "noValue": "単一memberでは対象外"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 18,
+          "y": 17
+        },
+        "id": 16,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "sum(rate(etcd_network_peer_sent_bytes_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])) by (cluster,instance)",
+            "format": "time_series",
+            "hide": false,
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }}",
+            "metric": "etcd_network_peer_sent_bytes_total",
+            "refId": "A",
+            "step": 120
+          }
+        ],
+        "title": "Peer Traffic Out (peer only)",
+        "type": "timeseries",
+        "description": "現在の両クラスタは各1 member。peerがないため空表示が対象外として正常。複数member構成なら収集を確認する。"
+      },
+      {
+        "collapsed": false,
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        },
+        "id": 97,
+        "panels": [],
+        "title": "Keys",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 9,
+          "x": 0,
+          "y": 25
+        },
+        "id": 58,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "etcd_debugging_mvcc_keys_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance }}",
+            "refId": "A"
+          }
+        ],
+        "title": "Keys (Stacked)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "ops",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 8,
+          "x": 9,
+          "y": 25
+        },
+        "id": 52,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "rate(etcd_mvcc_put_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance }} puts/s",
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "rate(etcd_mvcc_delete_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance }} deletes/s",
+            "refId": "B"
+          }
+        ],
+        "title": "Key Operations",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 7,
+          "x": 17,
+          "y": 25
+        },
+        "id": 48,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "etcd_debugging_mvcc_db_compaction_keys_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance  }}",
+            "refId": "A"
+          }
+        ],
+        "title": "Compaction Keys",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 32
+        },
+        "id": 76,
+        "panels": [],
+        "title": "General Info",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "bytes",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 33
+        },
+        "id": 29,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "process_resident_memory_bytes{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }}",
+            "metric": "process_resident_memory_bytes",
+            "refId": "A",
+            "step": 120
+          }
+        ],
+        "title": "Process Resident Memory",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "bytes",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 33
+        },
+        "id": 1,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "etcd_mvcc_db_total_size_in_bytes{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}",
+            "format": "time_series",
+            "hide": false,
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }} Total Size",
+            "metric": "",
+            "refId": "A",
+            "step": 120
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "etcd_mvcc_db_total_size_in_use_in_bytes{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance }} In Use",
+            "refId": "B"
+          }
+        ],
+        "title": "DB Total Size",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 29,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "suffix:s/s",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 6,
+          "x": 0,
+          "y": 40
+        },
+        "id": 7,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "rate(etcd_disk_wal_fsync_duration_seconds_sum{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }} WAL fsync",
+            "refId": "A",
+            "step": 30
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "rate(etcd_disk_backend_commit_duration_seconds_sum{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }} backend commit",
+            "refId": "B",
+            "step": 30
+          }
+        ],
+        "title": "Disk operation time / second",
+        "type": "timeseries",
+        "description": "WAL fsyncとbackend commitに費やした累積秒の毎秒増分。処理回数ではない。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "s",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 6,
+          "x": 6,
+          "y": 40
+        },
+        "id": 3,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])) by (cluster,instance,le))",
+            "format": "time_series",
+            "hide": false,
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }} WAL fsync",
+            "metric": "etcd_disk_wal_fsync_duration_seconds_bucket",
+            "refId": "A",
+            "step": 120
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "histogram_quantile(0.99, sum(rate(etcd_disk_backend_commit_duration_seconds_bucket{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])) by (cluster,instance,le))",
+            "format": "time_series",
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }} DB fsync",
+            "metric": "etcd_disk_backend_commit_duration_seconds_bucket",
+            "refId": "B",
+            "step": 120
+          }
+        ],
+        "title": "Disk Sync Duration",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 6,
+          "x": 12,
+          "y": 40
+        },
+        "id": 60,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "etcd_server_heartbeat_send_failures_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance }} heartbeat  failures",
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "etcd_server_health_failures{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance }} health failures",
+            "refId": "B"
+          }
+        ],
+        "title": "Failures",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 6,
+          "x": 18,
+          "y": 40
+        },
+        "id": 62,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "etcd_server_slow_apply_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance }} Slow Applies",
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "etcd_server_slow_read_indexes_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance }} Slow Read Indexes",
+            "refId": "B"
+          }
+        ],
+        "title": "Slow Operations",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "処理なし / 未収集"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 50
+        },
+        "id": 56,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "rate(etcd_disk_backend_defrag_duration_seconds_sum{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]) / (rate(etcd_disk_backend_defrag_duration_seconds_count{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]) > 0)",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance }}",
+            "refId": "A"
+          }
+        ],
+        "title": "Mean defrag duration",
+        "type": "timeseries",
+        "description": "観測された処理の平均時間（累積秒の増分 / 処理回数の増分）。処理がない区間は対象なしで、0秒とは表示しない。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "観測された処理の平均時間（累積秒の増分 / 処理回数の増分）。処理がない区間は対象なしで、0秒とは表示しない。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "処理なし / 未収集"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 50
+        },
+        "id": 9,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "rate(etcd_debugging_snap_save_total_duration_seconds_sum{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]) / (rate(etcd_debugging_snap_save_total_duration_seconds_count{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]) > 0)",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "The Total Latency Distributions of Save Called by Snapshot",
+            "refId": "A",
+            "step": 30
+          }
+        ],
+        "title": "Mean snapshot save duration",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 50
+        },
+        "id": 40,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(rate(etcd_server_proposals_failed_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]))",
+            "format": "time_series",
+            "intervalFactor": 2,
+            "legendFormat": "Proposal Failure Rate",
+            "metric": "etcd_server_proposals_failed_total",
+            "refId": "A",
+            "step": 60
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(etcd_server_proposals_pending{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"})",
+            "format": "time_series",
+            "intervalFactor": 2,
+            "legendFormat": "Proposal Pending Total",
+            "metric": "etcd_server_proposals_pending",
+            "refId": "B",
+            "step": 60
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(rate(etcd_server_proposals_committed_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]))",
+            "format": "time_series",
+            "intervalFactor": 2,
+            "legendFormat": "Proposal Commit Rate",
+            "metric": "etcd_server_proposals_committed_total",
+            "refId": "C",
+            "step": 60
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(rate(etcd_server_proposals_applied_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]))",
+            "format": "time_series",
+            "intervalFactor": 2,
+            "legendFormat": "Proposal Apply Rate",
+            "refId": "D",
+            "step": 60
+          }
+        ],
+        "title": "Raft Proposals",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 50
+        },
+        "id": 41,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(grpc_server_started_total{grpc_service=\"etcdserverpb.Watch\",grpc_type=\"bidi_stream\",cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}) - sum(grpc_server_handled_total{grpc_service=\"etcdserverpb.Watch\",grpc_type=\"bidi_stream\",cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"})",
+            "format": "time_series",
+            "intervalFactor": 2,
+            "legendFormat": "Watch Streams",
+            "metric": "grpc_server_handled_total",
+            "refId": "A",
+            "step": 60
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(grpc_server_started_total{grpc_service=\"etcdserverpb.Lease\",grpc_type=\"bidi_stream\",cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}) - sum(grpc_server_handled_total{grpc_service=\"etcdserverpb.Lease\",grpc_type=\"bidi_stream\",cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"})",
+            "format": "time_series",
+            "intervalFactor": 2,
+            "legendFormat": "Lease Streams",
+            "metric": "grpc_server_handled_total",
+            "refId": "B",
+            "step": 60
+          }
+        ],
+        "title": "Active Streams",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "ops",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 56
+        },
+        "id": 54,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "rate(etcd_debugging_mvcc_db_compaction_keys_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m])",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{ instance }} compact/s",
+            "refId": "A"
+          }
+        ],
+        "title": "Compaction Rate",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 56
+        },
+        "id": 19,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "increase(etcd_server_leader_changes_seen_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[1d])",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "{{ instance }}",
+            "metric": "etcd_server_leader_changes_seen_total",
+            "refId": "A",
+            "step": 60
+          }
+        ],
+        "title": "Leader changes / 24h",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "indicates how many proposals are queued to commit. Rising pending proposals suggests there is a high client load or the member cannot commit proposals.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 56
+        },
+        "id": 5,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "sum(etcd_server_proposals_pending{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"})",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "Proposals Pending",
+            "refId": "A",
+            "step": 60
+          }
+        ],
+        "title": "Proposals Pending",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "proposals_committed_total records the total number of consensus proposals committed. This gauge should increase over time if the cluster is healthy. Several healthy members of an etcd cluster may have different total committed proposals at once. This discrepancy may be due to recovering from peers after starting, lagging behind the leader, or being the leader and therefore having the most commits. It is important to monitor this metric across all the members in the cluster; a consistently large lag between a single member and its leader indicates that member is slow or unhealthy.\n\nproposals_applied_total records the total number of consensus proposals applied. The etcd server applies every committed proposal asynchronously. The difference between proposals_committed_total and proposals_applied_total should usually be small (within a few thousands even under high load). If the difference between them continues to rise, it indicates that the etcd server is overloaded. This might happen when applying expensive queries like heavy range queries or large txn operations.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 56
+        },
+        "id": 2,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [
+              "mean",
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "sum(rate(etcd_server_proposals_committed_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]))",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "Committed",
+            "metric": "",
+            "refId": "A",
+            "step": 60
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "sum(rate(etcd_server_proposals_applied_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]))",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "Total Applied",
+            "metric": "",
+            "refId": "B",
+            "step": 60
+          }
+        ],
+        "title": "Committed / applied proposals per second",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "ops",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 0,
+          "y": 62
+        },
+        "id": 23,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(rate(grpc_server_started_total{grpc_type=\"unary\",cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]))",
+            "format": "time_series",
+            "intervalFactor": 2,
+            "legendFormat": "RPC Rate",
+            "metric": "grpc_server_started_total",
+            "refId": "A",
+            "step": 60
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(rate(grpc_server_handled_total{grpc_type=\"unary\",grpc_code!=\"OK\",cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]))",
+            "format": "time_series",
+            "intervalFactor": 2,
+            "legendFormat": "RPC Failed Rate",
+            "metric": "grpc_server_handled_total",
+            "refId": "B",
+            "step": 60
+          }
+        ],
+        "title": "RPC Rate",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 30,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 12,
+          "y": 62
+        },
+        "id": 8,
+        "interval": "$interval",
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "pluginVersion": "8.2.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "sum(rate(etcd_network_client_grpc_received_bytes_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]))",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "Received",
+            "refId": "A",
+            "step": 30
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "exemplar": true,
+            "expr": "sum(rate(etcd_network_client_grpc_sent_bytes_total{cluster=\"$cluster\",job=\"etcd\",instance=~\"${instance:regex}\"}[5m]))",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 2,
+            "legendFormat": "Sent",
+            "refId": "B",
+            "step": 30
+          }
+        ],
+        "title": "GRPC Network",
+        "type": "timeseries"
+      }
+    ],
+    "refresh": "1m",
+    "schemaVersion": 42,
+    "tags": [
+      "etcd",
+      "prometheus"
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "cluster",
+          "label": "Cluster",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(etcd_server_id{job=\"etcd\"}, cluster)",
+            "refId": "StandardVariableQuery"
+          },
+          "current": {
+            "text": "natsume",
+            "value": "natsume"
+          },
+          "options": [],
+          "refresh": 1,
+          "sort": 1,
+          "multi": false,
+          "includeAll": false
+        },
+        {
+          "name": "instance",
+          "label": "Instance",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(etcd_server_id{job=\"etcd\",cluster=\"$cluster\"}, instance)",
+            "refId": "StandardVariableQuery"
+          },
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "options": [],
+          "refresh": 1,
+          "sort": 1,
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ]
+    },
+    "timezone": "browser",
+    "title": "Etcd Cluster Overview",
+    "weekStart": ""
+  }
+}

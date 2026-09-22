@@ -32,3 +32,5 @@ jobs:
         run: python3 scripts/sync-grafana-host-inventory.py --check
       - name: Check host absence and systemd state semantics
         run: python3 scripts/test-grafana-host-inventory.py
+      - name: Check etcd and certificate query semantics
+        run: python3 scripts/test-grafana-platform-promql.py

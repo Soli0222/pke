@@ -108,6 +108,36 @@
           "ホストCPU・メモリ・filesystemの要点とNode Exporter / Alloyへの対象・時間付きリンクを追加"
         ]
       }
+    },
+    "hzhXdzznZn": {
+      "path": "dashboards/platform/etcd.json",
+      "title": "Etcd Cluster Overview",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/hzhXdzznZn",
+        "revision": "generation:1",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。gnetId=15308。取り込み元revision/licenseは未確認",
+          "クラスタを分離し、member・leader・proposal・DB quotaと単一memberの対象外を整理",
+          "組み込みGrafana annotationを保持し、欠測を正常0に補完しない"
+        ]
+      }
+    },
+    "cdhrcds8aosg0c": {
+      "path": "dashboards/platform/cert-manager.json",
+      "title": "Cert-manager-Kubernetes",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/cdhrcds8aosg0c",
+        "revision": "generation:1",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。gnetId=20842。取り込み元revision/licenseは未確認",
+          "全証明書クエリをcluster/exported_namespaceで分離し、Readyの値判定と期限の単位を修正",
+          "組み込みGrafana annotationを保持し、欠測を正常0に補完しない"
+        ]
+      }
     }
   },
   "folders": {
