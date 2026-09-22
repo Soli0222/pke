@@ -1,0 +1,18 @@
+# 外部chartのgroup名はchart更新時に描画結果またはRuler APIと照合する。
+# 共通ルールとBlackboxは同期スクリプトがローカルchartから生成する。
+upstreamGroups:
+  - source: flux/clusters/natsume/apps/emoji-service/helmrelease-emoji-renderer.yaml
+    enabledPath: monitoring.prometheusRule.enabled
+    cluster: natsume
+    resource: emoji-renderer
+    group: emoji-renderer.rules
+  - source: flux/clusters/natsume/apps/spotify-nowplaying/helmrelease-spotify-nowplaying.yaml
+    enabledPath: monitoring.prometheusRule.enabled
+    cluster: natsume
+    resource: spotify-nowplaying
+    group: spotify-nowplaying
+  - source: flux/clusters/natsume/apps/loki/helmrelease-loki.yaml
+    enabledPath: monitoring.rules.enabled
+    cluster: natsume
+    resource: loki-loki-rules
+    group: loki_rules

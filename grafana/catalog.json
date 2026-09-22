@@ -243,6 +243,21 @@
           "サーバー稼働先のcluster=natsumeを全selectorへ明示し、収集元クラスタと区別。Git Sync向けのidentity整理"
         ]
       }
+    },
+    "pke-monitoring-pipeline": {
+      "path": "dashboards/observability/monitoring-pipeline.json",
+      "title": "PKE / Monitoring Pipeline",
+      "origin": {
+        "kind": "upstream",
+        "url": "https://github.com/grafana/mimir/tree/9e6bcfdd0e9afbc263d0ae15ce3f1b17308fe738/operations/mimir-mixin-compiled/dashboards",
+        "revision": "9e6bcfdd0e9afbc263d0ae15ce3f1b17308fe738",
+        "license": "AGPL-3.0; licenses/mimir-LICENSE",
+        "changes": [
+          "mimir-ruler panels 5/22とmimir-alertmanager panel 9を再利用。単一jobのraw metricへ適合し、未導入recording ruleへの依存を除去",
+          "inventoryとルール設定から期待する主要収集経路・Alloy・ルールグループを生成。消失・scrape失敗・評価や送信の停滞を区別",
+          "収集・評価対象clusterとnatsumeの共通基盤を分離。webhookに限定し、ntfy全用途の受付と端末配送を区別"
+        ]
+      }
     }
   },
   "folders": {
