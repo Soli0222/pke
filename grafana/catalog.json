@@ -138,6 +138,37 @@
           "組み込みGrafana annotationを保持し、欠測を正常0に補完しない"
         ]
       }
+    },
+    "7cba95b3-6653-4ae7-a389-ff56cbeb864b": {
+      "path": "dashboards/platform/kubernetes.json",
+      "title": "K8S Dashboard",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/7cba95b3-6653-4ae7-a389-ff56cbeb864b",
+        "revision": "generation:1",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。gnetId=15661、取り込み元revision/licenseは未確認",
+          "cluster / namespace / pod / containerを保持したjoinと集計へ修正",
+          "taintなしと欠測、limitなしと正常0を分離。未収集のcontainer filesystem列を除去",
+          "namespace内のcontainer集計とPod単位network、PVC実容量と欠測一覧、ホスト詳細リンクを整理"
+        ]
+      }
+    },
+    "rYdddlPWk": {
+      "path": "dashboards/platform/node-exporter-full.json",
+      "title": "Node Exporter Full",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/rYdddlPWk",
+        "revision": "generation:1",
+        "license": "unknown",
+        "changes": [
+          "既存exportを再利用。gnetId=1860、取り込み元revision/licenseは未確認",
+          "cluster → job → host → instanceを追加し全クエリをクラスタ分離",
+          "既存の詳細パネルを維持。swap未構成と未知のlink speedのゼロ除算を除去"
+        ]
+      }
     }
   },
   "folders": {
