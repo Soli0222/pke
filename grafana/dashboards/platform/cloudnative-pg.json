@@ -1,0 +1,2397 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "cloudnative-pg"
+  },
+  "spec": {
+    "title": "CloudNativePG",
+    "description": "CNPGの状態・容量・バックアップ。natsumeの5DBが対象、merutoにはDBなし。既存Grafana Labs 20417由来の詳細パネルを再利用。",
+    "schemaVersion": 42,
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [],
+            "type": "dashboard"
+          },
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "graphTooltip": 1,
+    "panels": [
+      {
+        "id": 1000,
+        "type": "text",
+        "title": "対象とバックアップの読み方",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 4
+        },
+        "options": {
+          "mode": "markdown",
+          "content": "**選択: $cluster / $namespace / $cnpg_cluster**\n\nnatsumeの5DBが対象です。merutoにはDBがなく、下のDBパネルは対象外です。すべて単一instanceのため、replication lagは表示しません。\n\n**grafana / sui / reblend / spn:** pg_dumpの最終成功を確認。**Misskey:** base backup + WAL archive。base backupの成功時刻は現在取得できず「未確認」です。WAL成功はbase backupの成功・復元可能性を保証しません。[DB運用手順](https://github.com/Soli0222/pke/blob/main/CNPG.md)"
+        }
+      },
+      {
+        "id": 1001,
+        "type": "stat",
+        "title": "Collector",
+        "description": "選択したDB collectorの応答。欠測は正常に補完しない。",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 4,
+          "w": 4,
+          "h": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "min(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"})",
+            "legendFormat": "{{pod}}",
+            "editorMode": "code",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未収集",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "異常",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "正常",
+                    "color": "green"
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 33,
+        "type": "stat",
+        "title": "Postgres Ready",
+        "description": "KubernetesのpostgresコンテナReady。",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "x": 4,
+          "y": 4,
+          "w": 4,
+          "h": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "min(kube_pod_container_status_ready{cluster=\"$cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\",container=\"postgres\"} and on(cluster,namespace,pod) max by (cluster,namespace,pod) (cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}))",
+            "legendFormat": "{{pod}}",
+            "editorMode": "code",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未収集",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "異常",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "正常",
+                    "color": "green"
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 1002,
+        "type": "stat",
+        "title": "接続数",
+        "description": "選択Podの接続数。",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "x": 8,
+          "y": 4,
+          "w": 4,
+          "h": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "sum(cnpg_backends_total{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"})",
+            "legendFormat": "{{pod}}",
+            "editorMode": "code",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未収集",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 1003,
+        "type": "stat",
+        "title": "接続使用率",
+        "description": "接続数 / max_connections。",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 4,
+          "w": 4,
+          "h": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "100 * sum(cnpg_backends_total{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}) / sum(cnpg_pg_settings_setting{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",name=\"max_connections\"})",
+            "legendFormat": "{{pod}}",
+            "editorMode": "code",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "noValue": "未収集",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 338,
+        "type": "stat",
+        "title": "Postmaster 起動時刻",
+        "description": "再起動の時刻。単一instanceのためfailover時刻とは呼ばない。",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "x": 16,
+          "y": 4,
+          "w": 4,
+          "h": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "max(cnpg_pg_postmaster_start_time{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}) * 1000",
+            "legendFormat": "{{pod}}",
+            "editorMode": "code",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "dateTimeAsIso",
+            "noValue": "未収集",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 1004,
+        "type": "stat",
+        "title": "PVC 使用率（最大）",
+        "description": "選択Podに実際にマウントされたPVCの使用量 / 容量。名前からPVCを推測しない。",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "x": 20,
+          "y": 4,
+          "w": 4,
+          "h": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "max(100 * (max by(cluster,namespace,persistentvolumeclaim) (kubelet_volume_stats_used_bytes{cluster=\"$cluster\",namespace=\"$namespace\"}) and on(cluster,namespace,persistentvolumeclaim) max by(cluster,namespace,persistentvolumeclaim) (kube_pod_spec_volumes_persistentvolumeclaims_info{cluster=\"$cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"} and on(cluster,namespace,pod) max by (cluster,namespace,pod) (cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}))) / on(cluster,namespace,persistentvolumeclaim) (max by(cluster,namespace,persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{cluster=\"$cluster\",namespace=\"$namespace\"}) and on(cluster,namespace,persistentvolumeclaim) max by(cluster,namespace,persistentvolumeclaim) (kube_pod_spec_volumes_persistentvolumeclaims_info{cluster=\"$cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"} and on(cluster,namespace,pod) max by (cluster,namespace,pod) (cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}))))",
+            "legendFormat": "{{pod}}",
+            "editorMode": "code",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "noValue": "未収集",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 1005,
+        "type": "stat",
+        "title": "pg_dump 最終成功",
+        "description": "grafana / sui / reblend / spnが対象。Misskeyは対象外。それ以外で空なら成功時刻が未確認。CronJob成功はR2データの復元試験を意味しない。 対象DBのcollectorが存在する場合だけ、成功時刻なしを「未確認」、別方式を「対象外」に区別。",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 8,
+          "h": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "(max(kube_cronjob_status_last_successful_time{cluster=\"$cluster\",namespace=\"$namespace\",cronjob=\"${cnpg_cluster}-pg-dump\"} > 0) * 1000) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster!=\"misskey-cluster\"}) * 0) - 1) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"}) * 0) - 2)",
+            "legendFormat": "{{pod}}",
+            "editorMode": "code",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "dateTimeAsIso",
+            "noValue": "未収集 / DBなし",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "-1": {
+                    "text": "未確認",
+                    "color": "orange"
+                  },
+                  "-2": {
+                    "text": "対象外",
+                    "color": "text"
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 360,
+        "type": "stat",
+        "title": "Misskey base backup 最終成功",
+        "description": "Misskeyのみ対象。現在この指標は0で、base backup成功時刻は未収集。0を成功・1970年・正常として表示しない。他DBはpg_dumpを参照。 対象DBのcollectorが存在する場合だけ、成功時刻なしを「未確認」、別方式を「対象外」に区別。",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "x": 8,
+          "y": 8,
+          "w": 8,
+          "h": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "(max(cnpg_collector_last_available_backup_timestamp{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"} > 0) * 1000) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"}) * 0) - 1) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster!=\"misskey-cluster\"}) * 0) - 2)",
+            "legendFormat": "{{pod}}",
+            "editorMode": "code",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "dateTimeAsIso",
+            "noValue": "未収集 / DBなし",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "-1": {
+                    "text": "未確認",
+                    "color": "orange"
+                  },
+                  "-2": {
+                    "text": "対象外",
+                    "color": "text"
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 362,
+        "type": "stat",
+        "title": "Misskey WAL archive 経過時間",
+        "description": "Misskeyのみ対象。他の4DBではWAL archive成功をバックアップ成功の指標にしない。 対象DBのcollectorが存在する場合だけ、成功時刻なしを「未確認」、別方式を「対象外」に区別。",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "x": 16,
+          "y": 8,
+          "w": 8,
+          "h": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "(max(cnpg_pg_stat_archiver_seconds_since_last_archival{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"})) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"}) * 0) - 1) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster!=\"misskey-cluster\"}) * 0) - 2)",
+            "legendFormat": "{{pod}}",
+            "editorMode": "code",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "noValue": "未収集 / DBなし",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "-1": {
+                    "text": "未確認",
+                    "color": "orange"
+                  },
+                  "-2": {
+                    "text": "対象外",
+                    "color": "text"
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "cores",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "fillOpacity": 5,
+              "showPoints": "never",
+              "spanNulls": false,
+              "axisPlacement": "auto",
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 12,
+          "w": 8,
+          "h": 7
+        },
+        "id": 273,
+        "options": {
+          "legend": {
+            "showLegend": true,
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "10.3.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "max by (cluster,namespace,pod,container) (rate(container_cpu_usage_seconds_total{cluster=\"$cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\",container=\"postgres\",job=\"prometheus.scrape.kubernetes_cadvisor\"}[$__rate_interval])) and on(cluster,namespace,pod) max by (cluster,namespace,pod) (cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"})",
+            "legendFormat": "{{pod}} / {{container}}",
+            "editorMode": "code",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "Postgres CPU 使用量",
+        "type": "timeseries",
+        "description": "cAdvisorの実メトリクス。Pod・namespace・containerを保持。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "fillOpacity": 5,
+              "showPoints": "never",
+              "spanNulls": false,
+              "axisPlacement": "auto",
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 8,
+          "y": 12,
+          "w": 8,
+          "h": 7
+        },
+        "id": 275,
+        "options": {
+          "legend": {
+            "showLegend": true,
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "10.3.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "max by (cluster,namespace,pod,container) (container_memory_working_set_bytes{cluster=\"$cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\",container=\"postgres\",job=\"prometheus.scrape.kubernetes_cadvisor\"}) and on(cluster,namespace,pod) max by (cluster,namespace,pod) (cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"})",
+            "legendFormat": "{{pod}} / {{container}}",
+            "editorMode": "code",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "Postgres メモリ使用量",
+        "type": "timeseries",
+        "description": "cAdvisor working set。実際のscrape jobで限定。"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "fillOpacity": 5,
+              "showPoints": "never",
+              "spanNulls": false,
+              "axisPlacement": "auto",
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 16,
+          "y": 12,
+          "w": 8,
+          "h": 7
+        },
+        "id": 1006,
+        "options": {
+          "legend": {
+            "showLegend": true,
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "10.3.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "A",
+            "expr": "max by(cluster,namespace,persistentvolumeclaim) (kubelet_volume_stats_used_bytes{cluster=\"$cluster\",namespace=\"$namespace\"}) and on(cluster,namespace,persistentvolumeclaim) max by(cluster,namespace,persistentvolumeclaim) (kube_pod_spec_volumes_persistentvolumeclaims_info{cluster=\"$cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"} and on(cluster,namespace,pod) max by (cluster,namespace,pod) (cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}))",
+            "legendFormat": "{{persistentvolumeclaim}} used",
+            "editorMode": "code",
+            "instant": false,
+            "range": true
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "refId": "B",
+            "expr": "max by(cluster,namespace,persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{cluster=\"$cluster\",namespace=\"$namespace\"}) and on(cluster,namespace,persistentvolumeclaim) max by(cluster,namespace,persistentvolumeclaim) (kube_pod_spec_volumes_persistentvolumeclaims_info{cluster=\"$cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"} and on(cluster,namespace,pod) max by (cluster,namespace,pod) (cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}))",
+            "legendFormat": "{{persistentvolumeclaim}} capacity",
+            "editorMode": "code",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "PVC 使用量 / 容量",
+        "type": "timeseries",
+        "description": "Pod→PVCの実ラベルで結合。欠測を0にしない。"
+      },
+      {
+        "id": 10,
+        "type": "row",
+        "title": "Database activity",
+        "collapsed": true,
+        "gridPos": {
+          "x": 0,
+          "y": 19,
+          "w": 24,
+          "h": 1
+        },
+        "panels": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "description": "選択したDBとPodに限定。正常時の0と欠測を区別。",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "short",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 0,
+              "y": 20,
+              "w": 12,
+              "h": 7
+            },
+            "id": 39,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "sum(cnpg_backends_total{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}) by (pod)",
+                "legendFormat": "total ({{pod}})",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "B",
+                "expr": "sum(cnpg_backends_total{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}) by (state, pod)",
+                "legendFormat": "{{state}} ({{pod}})",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "セッション状態",
+            "type": "timeseries"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "ops",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 12,
+              "y": 20,
+              "w": 12,
+              "h": 7
+            },
+            "id": 50,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "sum(rate(cnpg_pg_stat_database_xact_commit{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m])) by (pod)",
+                "legendFormat": "committed ({{pod}})",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "B",
+                "expr": "sum(rate(cnpg_pg_stat_database_xact_rollback{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m])) by (pod)",
+                "legendFormat": "rolled back ({{pod}})",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "Transactions / sec",
+            "type": "timeseries",
+            "description": "選択したDBとPodに限定。正常時の0と欠測を区別。"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "description": "選択したDBとPodに限定。正常時の0と欠測を区別。",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "s",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 0,
+              "y": 27,
+              "w": 12,
+              "h": 7
+            },
+            "id": 4,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "max by (pod) (cnpg_backends_max_tx_duration_seconds{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"})",
+                "legendFormat": "{{pod}}",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "最長トランザクション",
+            "type": "timeseries"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "description": "選択したDBとPodに限定。正常時の0と欠測を区別。",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "ops",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 12,
+              "y": 27,
+              "w": 12,
+              "h": 7
+            },
+            "id": 55,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "sum by(cluster,namespace,cnpg_cluster,pod) (rate(cnpg_pg_stat_database_deadlocks{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",datname!=\"\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m]))",
+                "legendFormat": "count ({{pod}})",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "Deadlocks / sec",
+            "type": "timeseries"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "description": "選択したDBとPodに限定。正常時の0と欠測を区別。",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "short",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 0,
+              "y": 34,
+              "w": 12,
+              "h": 7
+            },
+            "id": 54,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "cnpg_backends_waiting_total{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}",
+                "legendFormat": "{{pod}}",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "待機中クエリ",
+            "type": "timeseries"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "bytes",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 12,
+              "y": 34,
+              "w": 12,
+              "h": 7
+            },
+            "id": 22,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "pluginVersion": "8.0.5",
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "max by (cluster,namespace,cnpg_cluster,pod,datname) (cnpg_pg_database_size_bytes{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",datname!~\"template.*\",datname!=\"postgres\",namespace=\"$namespace\",pod=~\"${pod:regex}\"})",
+                "legendFormat": " {{pod}}: {{datname}}",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "Database size",
+            "type": "timeseries",
+            "description": "選択したDBとPodに限定。正常時の0と欠測を区別。"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "ops",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 0,
+              "y": 41,
+              "w": 12,
+              "h": 7
+            },
+            "id": 44,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "sum by(cluster,namespace,cnpg_cluster,pod) (rate(cnpg_pg_stat_database_tup_deleted{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",datname!=\"\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m]))",
+                "legendFormat": "deleted",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "B",
+                "expr": "sum by(cluster,namespace,cnpg_cluster,pod) (rate(cnpg_pg_stat_database_tup_inserted{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",datname!=\"\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m]))",
+                "legendFormat": "inserted",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "C",
+                "expr": "sum by(cluster,namespace,cnpg_cluster,pod) (rate(cnpg_pg_stat_database_tup_fetched{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",datname!=\"\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m]))",
+                "legendFormat": "fetched",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "D",
+                "expr": "sum by(cluster,namespace,cnpg_cluster,pod) (rate(cnpg_pg_stat_database_tup_returned{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",datname!=\"\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m]))",
+                "legendFormat": "returned",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "E",
+                "expr": "sum by(cluster,namespace,cnpg_cluster,pod) (rate(cnpg_pg_stat_database_tup_updated{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",datname!=\"\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m]))",
+                "legendFormat": "updated",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "Tuple I/O / sec",
+            "type": "timeseries",
+            "description": "選択したDBとPodに限定。正常時の0と欠測を区別。"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "ops",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 12,
+              "y": 41,
+              "w": 12,
+              "h": 7
+            },
+            "id": 46,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "sum by(cluster,namespace,cnpg_cluster,pod) (rate(cnpg_pg_stat_database_blks_hit{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",datname!=\"\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m]))",
+                "legendFormat": "hit ({{pod}})",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "B",
+                "expr": "sum by(cluster,namespace,cnpg_cluster,pod) (rate(cnpg_pg_stat_database_blks_read{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",datname!=\"\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m]))",
+                "legendFormat": "read ({{pod}})",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "Block I/O / sec",
+            "type": "timeseries",
+            "description": "選択したDBとPodに限定。正常時の0と欠測を区別。"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "Bps",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 0,
+              "y": 48,
+              "w": 12,
+              "h": 7
+            },
+            "id": 2,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "sum by(cluster,namespace,cnpg_cluster,pod) (rate(cnpg_pg_stat_database_temp_bytes{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",datname!=\"\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}[5m]))",
+                "legendFormat": "{{pod}}",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "Temporary bytes / sec",
+            "type": "timeseries",
+            "description": "選択したDBとPodに限定。正常時の0と欠測を区別。"
+          }
+        ]
+      },
+      {
+        "id": 231,
+        "type": "row",
+        "title": "WAL / Collector / Checkpoints",
+        "collapsed": true,
+        "gridPos": {
+          "x": 0,
+          "y": 20,
+          "w": 24,
+          "h": 1
+        },
+        "panels": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "ops",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 0,
+              "y": 21,
+              "w": 12,
+              "h": 7
+            },
+            "id": 52,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "rate(cnpg_pg_stat_archiver_archived_count{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"}[$__rate_interval])",
+                "legendFormat": "{{pod}} archived",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "B",
+                "expr": "rate(cnpg_pg_stat_archiver_failed_count{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"}[$__rate_interval])",
+                "legendFormat": "{{pod}} failed",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "Misskey WAL archive / sec",
+            "type": "timeseries",
+            "description": "Misskeyのみ対象。archive成功・失敗の増分。"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "short",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 12,
+              "y": 21,
+              "w": 12,
+              "h": 7
+            },
+            "id": 725,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "cnpg_collector_pg_wal{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",value=\"count\"}",
+                "legendFormat": "{{pod}}",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "WAL ファイル数",
+            "type": "timeseries",
+            "description": "選択DBのWALファイル数。バックアップ成功を表す値ではない。"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "short",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 0,
+              "y": 28,
+              "w": 12,
+              "h": 7
+            },
+            "id": 235,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "cnpg_collector_last_collection_error{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}",
+                "legendFormat": "{{pod}}",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "Collector error",
+            "type": "timeseries",
+            "description": "0が正常、1が収集エラー。欠測は正常に補完しない。"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "description": "現在のPostgreSQLで収集されるcheckpointerカウンターの増分。",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "ops",
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "fillOpacity": 5,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 12,
+              "y": 28,
+              "w": 12,
+              "h": 7
+            },
+            "id": 295,
+            "options": {
+              "legend": {
+                "showLegend": true,
+                "displayMode": "list",
+                "placement": "bottom"
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            },
+            "pluginVersion": "8.2.1",
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "A",
+                "expr": "rate(cnpg_pg_stat_checkpointer_checkpoints_req{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}[$__rate_interval])",
+                "legendFormat": "{{pod}} requested",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "refId": "B",
+                "expr": "rate(cnpg_pg_stat_checkpointer_checkpoints_timed{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}[$__rate_interval])",
+                "legendFormat": "{{pod}} timed",
+                "editorMode": "code",
+                "instant": false,
+                "range": true
+              }
+            ],
+            "title": "Checkpoints / sec",
+            "type": "timeseries"
+          }
+        ]
+      },
+      {
+        "id": 41,
+        "type": "row",
+        "title": "Configuration / Extensions",
+        "collapsed": true,
+        "gridPos": {
+          "x": 0,
+          "y": 21,
+          "w": 24,
+          "h": 1
+        },
+        "panels": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "custom": {
+                  "align": "auto",
+                  "cellOptions": {
+                    "type": "auto"
+                  },
+                  "filterable": true,
+                  "inspect": false
+                },
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "dark-purple"
+                    }
+                  ]
+                },
+                "unitScale": true
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "x": 0,
+              "y": 22,
+              "w": 24,
+              "h": 10
+            },
+            "id": 150,
+            "options": {
+              "cellHeight": "sm",
+              "footer": {
+                "countRows": false,
+                "fields": "",
+                "reducer": [
+                  "sum"
+                ],
+                "show": false
+              },
+              "showHeader": true,
+              "sortBy": []
+            },
+            "pluginVersion": "10.3.1",
+            "repeatDirection": "v",
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                },
+                "exemplar": true,
+                "expr": "cnpg_pg_settings_setting{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",namespace=\"$namespace\",pod=~\"${pod:regex}\"}",
+                "format": "table",
+                "instant": true,
+                "interval": "",
+                "legendFormat": "{{pod}}",
+                "refId": "A"
+              }
+            ],
+            "title": "PostgreSQL settings",
+            "transformations": [
+              {
+                "id": "organize",
+                "options": {
+                  "excludeByName": {
+                    "Time": true,
+                    "__name__": true,
+                    "container": true,
+                    "endpoint": true,
+                    "instance": true,
+                    "job": true,
+                    "name": false,
+                    "namespace": true,
+                    "pod": false
+                  },
+                  "indexByName": {
+                    "Time": 0,
+                    "Value": 9,
+                    "__name__": 1,
+                    "container": 2,
+                    "endpoint": 3,
+                    "instance": 4,
+                    "job": 5,
+                    "name": 7,
+                    "namespace": 8,
+                    "pod": 6
+                  },
+                  "renameByName": {
+                    "__name__": "",
+                    "name": "parameter"
+                  }
+                }
+              },
+              {
+                "id": "groupingToMatrix",
+                "options": {
+                  "columnField": "pod",
+                  "rowField": "parameter",
+                  "valueField": "Value"
+                }
+              },
+              {
+                "id": "organize",
+                "options": {
+                  "excludeByName": {},
+                  "indexByName": {},
+                  "renameByName": {
+                    "parameter\\pod": "parameter"
+                  }
+                }
+              }
+            ],
+            "type": "table"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "description": "Show the installed extensions and their versions",
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "custom": {
+                  "align": "auto",
+                  "cellOptions": {
+                    "type": "auto",
+                    "wrapText": false
+                  },
+                  "filterable": false,
+                  "inspect": false
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Update Available"
+                  },
+                  "properties": [
+                    {
+                      "id": "unit",
+                      "value": "bool"
+                    },
+                    {
+                      "id": "mappings",
+                      "value": [
+                        {
+                          "options": {
+                            "0": {
+                              "color": "transparent",
+                              "index": 1
+                            },
+                            "1": {
+                              "color": "red",
+                              "index": 0
+                            }
+                          },
+                          "type": "value"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "custom.cellOptions",
+                      "value": {
+                        "applyToRow": true,
+                        "mode": "gradient",
+                        "type": "color-background"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "gridPos": {
+              "x": 0,
+              "y": 32,
+              "w": 24,
+              "h": 10
+            },
+            "id": 792,
+            "options": {
+              "cellHeight": "sm",
+              "footer": {
+                "countRows": false,
+                "fields": "",
+                "reducer": [
+                  "sum"
+                ],
+                "show": false
+              },
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": false,
+                  "displayName": "Value"
+                }
+              ]
+            },
+            "pluginVersion": "11.4.0",
+            "targets": [
+              {
+                "disableTextWrap": false,
+                "exemplar": false,
+                "expr": "max(cnpg_pg_extensions_update_available{cluster=\"$cluster\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\", namespace=\"$namespace\"}) by (datname, extname, default_version, installed_version)",
+                "format": "table",
+                "fullMetaSearch": false,
+                "includeNullMetadata": true,
+                "instant": true,
+                "interval": "",
+                "legendFormat": "__auto",
+                "range": false,
+                "refId": "A",
+                "useBackend": false,
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "cfkr3kwq69r7ke"
+                }
+              }
+            ],
+            "title": "Installed extensions",
+            "transformations": [
+              {
+                "id": "sortBy",
+                "options": {
+                  "fields": {},
+                  "sort": [
+                    {
+                      "field": "extname"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "organize",
+                "options": {
+                  "excludeByName": {
+                    "Time": true
+                  },
+                  "includeByName": {},
+                  "indexByName": {
+                    "Time": 0,
+                    "Value": 5,
+                    "datname": 2,
+                    "default_version": 3,
+                    "extname": 1,
+                    "installed_version": 4
+                  },
+                  "renameByName": {
+                    "Value": "Update Available",
+                    "datname": "Database",
+                    "default_version": "Default Version",
+                    "extname": "Extension",
+                    "installed_version": "Installed Version"
+                  }
+                }
+              }
+            ],
+            "type": "table"
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "cluster",
+          "label": "Cluster",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(kube_node_info, cluster)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "current": {
+            "text": "natsume",
+            "value": "natsume"
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": false
+        },
+        {
+          "name": "namespace",
+          "label": "Namespace",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(cnpg_collector_up{cluster=\"$cluster\"}, namespace)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "current": {
+            "text": "grafana",
+            "value": "grafana"
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": false
+        },
+        {
+          "name": "cnpg_cluster",
+          "label": "CNPG Cluster",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\"}, cnpg_cluster)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "current": {
+            "text": "grafana-cluster",
+            "value": "grafana-cluster"
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": false
+        },
+        {
+          "name": "pod",
+          "label": "Pod",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\"}, pod)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "options": [],
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timezone": "browser",
+    "refresh": "1m",
+    "tags": [
+      "cloudnativepg",
+      "PKE"
+    ],
+    "links": [
+      {
+        "title": "DB運用手順",
+        "url": "https://github.com/Soli0222/pke/blob/main/CNPG.md",
+        "type": "link",
+        "targetBlank": true
+      }
+    ]
+  }
+}
