@@ -213,6 +213,36 @@
           "Observer clusterで観測元を選択し、job / 接続先URLを絞り込み。初期値meruto"
         ]
       }
+    },
+    "pke-mimir-single-binary": {
+      "path": "dashboards/observability/mimir-single-binary.json",
+      "title": "PKE / Mimir Single Binary",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/pke-mimir-single-binary",
+        "revision": "generation:2",
+        "license": "unknown",
+        "changes": [
+          "既存gcx作成画面を再利用。上流由来・licenseは未確認",
+          "元の配置・パネル種別・色・凡例・6時間表示・クエリの演算を維持",
+          "サーバー稼働先のcluster=natsumeを全selectorへ明示し、収集元クラスタと区別。Git Sync向けのidentity整理"
+        ]
+      }
+    },
+    "pke-loki-single-binary": {
+      "path": "dashboards/observability/loki-single-binary.json",
+      "title": "PKE / Loki Single Binary",
+      "origin": {
+        "kind": "existing",
+        "url": "https://grafana.str08.net/d/pke-loki-single-binary",
+        "revision": "generation:2",
+        "license": "unknown",
+        "changes": [
+          "既存gcx作成画面を再利用。上流由来・licenseは未確認",
+          "元の配置・パネル種別・色・凡例・6時間表示・クエリの演算を維持",
+          "サーバー稼働先のcluster=natsumeを全selectorへ明示し、収集元クラスタと区別。Git Sync向けのidentity整理"
+        ]
+      }
     }
   },
   "folders": {
