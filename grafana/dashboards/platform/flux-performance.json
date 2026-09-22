@@ -2512,6 +2512,7 @@
       ]
     },
     "timezone": "",
-    "title": "PKE / Flux Performance"
+    "title": "PKE / Flux Performance",
+    "description": "選択したクラスタのFluxリソースとコントローラーを表示します。"
   }
 }

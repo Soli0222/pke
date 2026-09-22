@@ -85,6 +85,27 @@
         ],
         "additionalProperties": false
       }
+    },
+    "folders": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "path",
+          "title"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^dashboards/.+/_folder\\.json$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "required": [

@@ -37,7 +37,11 @@ class ValidationTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         (self.root / 'dashboards/platform').mkdir(parents=True)
+        (self.root / 'dashboards/platform/_folder.json').write_text(json.dumps({
+            'apiVersion': 'folder.grafana.app/v1beta1', 'kind': 'Folder',
+            'metadata': {'name': 'test-platform'}, 'spec': {'title': 'Platform'}}))
         self.catalog = {'datasources': {DS: {'name': 'Mimir', 'type': 'prometheus'}},
+                        'folders': {'test-platform': {'path': 'dashboards/platform/_folder.json', 'title': 'Platform'}},
                         'dashboards': {'test-dashboard': {
                             'path': 'dashboards/platform/test.json', 'title': 'Test dashboard',
                             'origin': {'kind': 'custom', 'url': 'https://github.com/Soli0222/pke',
@@ -140,6 +144,16 @@ class ValidationTests(unittest.TestCase):
     def test_unsupported_sync_file(self):
         (self.root / 'dashboards/backup.yaml').write_text('kind: Dashboard')
         self.check(V1, 'only regular dashboard JSON')
+
+    def test_missing_folder_metadata(self):
+        (self.root / 'dashboards/platform/_folder.json').unlink()
+        self.check(V1, 'parent folder is missing _folder.json')
+
+    def test_duplicate_folder_uid(self):
+        (self.root / 'dashboards/other').mkdir()
+        source = self.root / 'dashboards/platform/_folder.json'
+        (self.root / 'dashboards/other/_folder.json').write_text(source.read_text())
+        self.check(V1, 'duplicate folder UID')
 
 
 if __name__ == '__main__':

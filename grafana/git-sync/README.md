@@ -25,6 +25,7 @@ mTLS ingressを変更せず、PR preview画像の自動投稿も無効にする�
 
 polling専用のためWebhooks権限は付けない。
 GrafanaのConnection schemaにある`spec.webhook.disabled`に従う。
+Appの権限変更後は、インストール先でも追加権限を承認する。
 App作成後に秘密鍵を生成し、App IDとインストール後のURLのInstallation IDを確認する。
 ユーザー認可用callback URLやOAuth client secretは不要。
 
@@ -82,3 +83,11 @@ Appの鍵を更新するときは、新しい鍵を作成して1Passwordへ保�
 初回作成用スクリプトを鍵更新のために迂回・再実行しない。
 
 参考: [GrafanaのコードによるGit Sync設定](https://grafana.com/docs/grafana/latest/as-code/observability-as-code/git-sync/git-sync-setup/set-up-code/)
+
+## 権限変更後も古いtokenが残る場合
+
+App本体とインストール済みAppの両方に必要な権限があるか確認する。
+Connectionのhealthが正常でも、Repositoryが権限変更前のinstallation tokenを期限まで保持する場合がある。
+Repositoryのspec・metadata・他のsecure参照を保持し、`secure.token`だけを`{"remove": true}`に置き換えてPUTすると、Connectionからtokenが再発行される。
+削除するのはRepositoryの一時tokenだけで、ConnectionのprivateKeyは変更しない。
+再発行後はstatus.tokenの更新時刻、health、同期commit、画面の保存内容を確認する。
