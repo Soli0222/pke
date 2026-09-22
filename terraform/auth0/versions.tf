@@ -4,7 +4,7 @@ terraform {
   required_providers {
     auth0 = {
       source  = "auth0/auth0"
-      version = "1.57.0"
+      version = "1.58.0"
     }
 
     random = {
