@@ -13,6 +13,7 @@ BUILTINS = {'grafana': 'grafana', '-- Grafana --': 'grafana',
             '__expr__': '__expr__', '-100': '__expr__', '-- Mixed --': 'mixed',
             '-- Dashboard --': 'datasource'}
 VARIABLE = re.compile(r'^\$(?:([A-Za-z_][\w]*)|\{([A-Za-z_][\w]*)\})$')
+VARIABLE_REFERENCE = re.compile(r'\$(?:\{([A-Za-z_]\w*)(?::[^}]+)?\}|([A-Za-z_]\w*))')
 
 
 def reject_duplicates(pairs):
@@ -111,6 +112,15 @@ def content_errors(resource, datasources):
             errors.append(f'{at}: unresolved import placeholder')
         if not isinstance(value, dict):
             continue
+        # PromQLが有効でも、パネルのMin intervalなどに削除済み変数が
+        # 残るとGrafanaはクエリを実行できない。v1/v2・折り畳み行も走査する。
+        for field in ('interval', 'timeFrom', 'timeShift'):
+            setting = value.get(field)
+            if isinstance(setting, str):
+                for match in VARIABLE_REFERENCE.finditer(setting):
+                    name = match.group(1) or match.group(2)
+                    if name not in names and not name.startswith('__'):
+                        errors.append(f'{at}.{field}: undeclared query option variable {name}')
         if '__inputs' in value:
             errors.append(f'{at}: import __inputs must be resolved and removed')
         if 'libraryPanel' in value or value.get('kind') == 'LibraryPanel':

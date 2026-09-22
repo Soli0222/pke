@@ -747,7 +747,7 @@
           "y": 17
         },
         "id": 22,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -843,7 +843,7 @@
           "y": 17
         },
         "id": 21,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -939,7 +939,7 @@
           "y": 17
         },
         "id": 20,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -1036,7 +1036,7 @@
           "y": 17
         },
         "id": 16,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -1151,7 +1151,7 @@
           "y": 25
         },
         "id": 58,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [
@@ -1247,7 +1247,7 @@
           "y": 25
         },
         "id": 52,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -1350,7 +1350,7 @@
           "y": 25
         },
         "id": 48,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -1461,7 +1461,7 @@
           "y": 33
         },
         "id": 29,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -1557,7 +1557,7 @@
           "y": 33
         },
         "id": 1,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [
@@ -1670,7 +1670,7 @@
           "y": 40
         },
         "id": 7,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -1780,7 +1780,7 @@
           "y": 40
         },
         "id": 3,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [
@@ -1890,7 +1890,7 @@
           "y": 40
         },
         "id": 60,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [
@@ -1995,7 +1995,7 @@
           "y": 40
         },
         "id": 62,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [
@@ -2104,7 +2104,7 @@
           "y": 50
         },
         "id": 56,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -2200,7 +2200,7 @@
           "y": 50
         },
         "id": 9,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -2295,7 +2295,7 @@
           "y": 50
         },
         "id": 40,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -2427,7 +2427,7 @@
           "y": 50
         },
         "id": 41,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -2534,7 +2534,7 @@
           "y": 56
         },
         "id": 54,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -2628,7 +2628,7 @@
           "y": 56
         },
         "id": 19,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -2725,7 +2725,7 @@
           "y": 56
         },
         "id": 5,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -2821,7 +2821,7 @@
           "y": 56
         },
         "id": 2,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [
@@ -2936,7 +2936,7 @@
           "y": 62
         },
         "id": 23,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
@@ -3043,7 +3043,7 @@
           "y": 62
         },
         "id": 8,
-        "interval": "$interval",
+        "interval": "1m",
         "options": {
           "legend": {
             "calcs": [],
