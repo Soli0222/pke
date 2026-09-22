@@ -1,0 +1,1025 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "pke-alloy-prometheus"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [],
+            "type": "dashboard"
+          },
+          "type": "dashboard"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": false,
+          "hide": false,
+          "iconColor": "red",
+          "name": "flux events",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [
+              "flux"
+            ],
+            "type": "tags"
+          }
+        }
+      ]
+    },
+    "graphTooltip": 1,
+    "links": [
+      {
+        "icon": "doc",
+        "targetBlank": true,
+        "title": "Documentation",
+        "tooltip": "Component documentation",
+        "type": "link",
+        "url": "https://grafana.com/docs/alloy/latest/reference/components/prometheus.remote_write/"
+      },
+      {
+        "asDropdown": true,
+        "icon": "external link",
+        "includeVars": true,
+        "keepTime": true,
+        "tags": [
+          "alloy-mixin"
+        ],
+        "targetBlank": false,
+        "title": "Dashboards",
+        "type": "dashboards"
+      }
+    ],
+    "panels": [
+      {
+        "id": 1000,
+        "type": "text",
+        "title": "収集範囲と読み方",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 3
+        },
+        "options": {
+          "mode": "markdown",
+          "content": "`alloy`: Kubernetes / `alloy-host`: ホスト。namespaceのないホストも対象です。重複収集の`prometheus.scrape.alloy_metrics`は除外。 失敗・retry・送信遅延・pendingを併せて確認してください。pendingは送信キューの指標で、WAL全体の滞留量ではありません。"
+        }
+      },
+      {
+        "collapsed": false,
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 3
+        },
+        "title": "Alloy metrics endpoints",
+        "type": "row",
+        "id": 1
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "選択Alloy自身のmetrics endpointのup。Alloyが収集する全targetの成功率ではない。",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "noValue": "未収集 / 対象なし",
+            "custom": {
+              "spanNulls": false
+            }
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 0,
+          "y": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(up{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"}) / count(up{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"})",
+            "instant": false,
+            "legendFormat": "% of targets successfully scraped",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Alloy自己メトリクスのscrape成功率",
+        "type": "timeseries",
+        "id": 2
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "選択Alloy自身のmetrics endpointの収集時間。",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "noValue": "未収集 / 対象なし",
+            "custom": {
+              "spanNulls": false
+            }
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 12,
+          "y": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "quantile(0.99, scrape_duration_seconds{job=~\"${job:regex}\",instance=~\"${instance:regex}\", cluster=\"$cluster\"})",
+            "instant": false,
+            "legendFormat": "p99",
+            "range": true,
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "quantile(0.95, scrape_duration_seconds{job=~\"${job:regex}\",instance=~\"${instance:regex}\", cluster=\"$cluster\"})",
+            "instant": false,
+            "legendFormat": "p95",
+            "range": true,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "quantile(0.50, scrape_duration_seconds{job=~\"${job:regex}\",instance=~\"${instance:regex}\", cluster=\"$cluster\"})",
+            "instant": false,
+            "legendFormat": "p50",
+            "range": true,
+            "refId": "C"
+          }
+        ],
+        "title": "Alloy自己メトリクスのscrape時間",
+        "type": "timeseries",
+        "id": 3
+      },
+      {
+        "collapsed": false,
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 14
+        },
+        "title": "prometheus.remote_write",
+        "type": "row",
+        "id": 4
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "送信成功 / (成功 + 失敗)。送信がない区間は割合を表示しない。retryは下段で別に確認。",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "noValue": "未収集 / 対象なし",
+            "custom": {
+              "spanNulls": false
+            }
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 0,
+          "y": 15
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(rate(prometheus_remote_storage_samples_total{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\",component_id=~\"${component:regex}\",url=~\"${url:regex}\"}[$__rate_interval])) / ((sum(rate(prometheus_remote_storage_samples_total{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\",component_id=~\"${component:regex}\",url=~\"${url:regex}\"}[$__rate_interval])) + sum(rate(prometheus_remote_storage_samples_failed_total{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\",component_id=~\"${component:regex}\",url=~\"${url:regex}\"}[$__rate_interval]))) > 0)",
+            "instant": false,
+            "legendFormat": "% of samples successfully sent",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Remote write success rate in $cluster",
+        "type": "timeseries",
+        "id": 5
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "Latency of writes to the remote system made by\nprometheus.remote_write.\n",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "noValue": "未収集 / 対象なし",
+            "custom": {
+              "spanNulls": false
+            }
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 12,
+          "y": 15
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "(histogram_quantile(0.99, sum by (le) (\n  rate(prometheus_remote_storage_sent_batch_duration_seconds_bucket{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\", url=~\"${url:regex}\"}[$__rate_interval])\n))) >= 0",
+            "instant": false,
+            "legendFormat": "99th percentile",
+            "range": true,
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "(histogram_quantile(0.50, sum by (le) (\n  rate(prometheus_remote_storage_sent_batch_duration_seconds_bucket{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\", url=~\"${url:regex}\"}[$__rate_interval])\n))) >= 0",
+            "instant": false,
+            "legendFormat": "50th percentile",
+            "range": true,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "(sum(rate(prometheus_remote_storage_sent_batch_duration_seconds_sum{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\",url=~\"${url:regex}\"}[$__rate_interval])) /\nsum(rate(prometheus_remote_storage_sent_batch_duration_seconds_count{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\",url=~\"${url:regex}\"}[$__rate_interval]))) >= 0",
+            "instant": false,
+            "legendFormat": "Average",
+            "range": true,
+            "refId": "C"
+          }
+        ],
+        "title": "Write latency in $cluster",
+        "type": "timeseries",
+        "id": 6
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "取り込み済み最新timestampと宛先への送信済みtimestampの差。WALの全滞留件数ではない。0秒も表示。",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "noValue": "未収集 / 対象なし",
+            "custom": {
+              "spanNulls": false
+            }
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 0,
+          "y": 25
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "clamp_min(prometheus_remote_storage_highest_timestamp_in_seconds{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\",component_id=~\"${component:regex}\"} - on(cluster,job,instance,component_path,component_id) group_right prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\",component_id=~\"${component:regex}\",url=~\"${url:regex}\"}, 0)",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "送信済みサンプルの遅延",
+        "type": "timeseries",
+        "id": 7
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "Rate of data containing samples and metadata sent by\nprometheus.remote_write.\n",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 20,
+              "gradientMode": "hue",
+              "stacking": {
+                "mode": "normal"
+              },
+              "spanNulls": false
+            },
+            "unit": "Bps",
+            "noValue": "未収集 / 対象なし"
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 8,
+          "y": 25
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by (cluster,job,instance,component_path,component_id) (\n    rate(prometheus_remote_storage_bytes_total{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\", url=~\"${url:regex}\"}[$__rate_interval]) +\n    rate(prometheus_remote_storage_metadata_bytes_total{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\", url=~\"${url:regex}\"}[$__rate_interval])\n)",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Data write throughput",
+        "type": "timeseries",
+        "id": 8
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "Total number of shards which are concurrently sending samples read\nfrom the Write-Ahead Log.\n\nShards are bound to a minimum and maximum, displayed on the graph.\nThe lowest minimum and the highest maximum across all clients is\nshown.\n\nEach client has its own set of shards, minimum shards, and maximum\nshards; filter to a specific URL to display more granular\ninformation.\n",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "noValue": "未収集 / 対象なし",
+            "custom": {
+              "spanNulls": false
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Minimum"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      10,
+                      15
+                    ],
+                    "fill": "dash"
+                  }
+                },
+                {
+                  "id": "custom.showPoints",
+                  "value": "never"
+                },
+                {
+                  "id": "custom.hideFrom",
+                  "value": {
+                    "legend": true,
+                    "tooltip": false,
+                    "viz": false
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Maximum"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      10,
+                      15
+                    ],
+                    "fill": "dash"
+                  }
+                },
+                {
+                  "id": "custom.showPoints",
+                  "value": "never"
+                },
+                {
+                  "id": "custom.hideFrom",
+                  "value": {
+                    "legend": true,
+                    "tooltip": false,
+                    "viz": false
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 16,
+          "y": 25
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by (cluster,job,instance,component_path,component_id) (\n    prometheus_remote_storage_shards{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\", url=~\"${url:regex}\"}\n)",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "min (\n    prometheus_remote_storage_shards_min{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\", url=~\"${url:regex}\"}\n)",
+            "instant": false,
+            "legendFormat": "Minimum",
+            "range": true,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "max (\n    prometheus_remote_storage_shards_max{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\", url=~\"${url:regex}\"}\n)",
+            "instant": false,
+            "legendFormat": "Maximum",
+            "range": true,
+            "refId": "C"
+          }
+        ],
+        "title": "Shards",
+        "type": "timeseries",
+        "id": 9
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "Total outgoing samples sent by prometheus.remote_write.\n",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 20,
+              "gradientMode": "hue",
+              "stacking": {
+                "mode": "normal"
+              },
+              "spanNulls": false
+            },
+            "unit": "cps",
+            "noValue": "未収集 / 対象なし"
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 0,
+          "y": 35
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by (cluster,job,instance,component_path,component_id) (\n  rate(prometheus_remote_storage_samples_total{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\", url=~\"${url:regex}\"}[$__rate_interval])\n)",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Sent samples / second",
+        "type": "timeseries",
+        "id": 10
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "Rate of samples which prometheus.remote_write could not send due to\nnon-recoverable errors.\n",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 20,
+              "gradientMode": "hue",
+              "stacking": {
+                "mode": "normal"
+              },
+              "spanNulls": false
+            },
+            "unit": "cps",
+            "noValue": "未収集 / 対象なし"
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 8,
+          "y": 35
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by (cluster,job,instance,component_path,component_id) (\n  rate(prometheus_remote_storage_samples_failed_total{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\", url=~\"${url:regex}\"}[$__rate_interval])\n)",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Failed samples / second",
+        "type": "timeseries",
+        "id": 11
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "Rate of samples which prometheus.remote_write attempted to resend\nafter receiving a recoverable error.\n",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 20,
+              "gradientMode": "hue",
+              "stacking": {
+                "mode": "normal"
+              },
+              "spanNulls": false
+            },
+            "unit": "cps",
+            "noValue": "未収集 / 対象なし"
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 16,
+          "y": 35
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by (cluster,job,instance,component_path,component_id) (\n  rate(prometheus_remote_storage_samples_retried_total{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\", url=~\"${url:regex}\"}[$__rate_interval])\n)",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Retried samples / second",
+        "type": "timeseries",
+        "id": 12
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "WAL component単位のactive series。宛先URL別の指標ではないためDestinationで絞らない。",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未収集 / 対象なし",
+            "custom": {
+              "spanNulls": false
+            }
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 0,
+          "y": 45
+        },
+        "options": {
+          "legend": {
+            "showLegend": false
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum(prometheus_remote_write_wal_storage_active_series{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id=~\"${component:regex}\"})",
+            "instant": false,
+            "legendFormat": "Series",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Active series (total)",
+        "type": "timeseries",
+        "id": 13
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "WAL component単位のactive series。宛先URL別の指標ではないためDestinationで絞らない。",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未収集 / 対象なし",
+            "custom": {
+              "spanNulls": false
+            }
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 8,
+          "y": 45
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "prometheus_remote_write_wal_storage_active_series{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id!=\"\", component_id=~\"${component:regex}\"}",
+            "instant": false,
+            "legendFormat": "{{instance}} / {{component_path}} {{component_id}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Active series (by instance/component)",
+        "type": "timeseries",
+        "id": 14
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "WAL component単位のactive series。宛先URL別の指標ではないためDestinationで絞らない。",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "未収集 / 対象なし",
+            "custom": {
+              "spanNulls": false
+            }
+          }
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 16,
+          "y": 45
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by (component_path, component_id) (prometheus_remote_write_wal_storage_active_series{cluster=\"$cluster\", job=~\"${job:regex}\", instance=~\"${instance:regex}\", component_id!=\"\", component_id=~\"${component:regex}\"})",
+            "instant": false,
+            "legendFormat": "{{component_path}} {{component_id}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Active series (by component)",
+        "type": "timeseries",
+        "id": 15
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "送信キューで待つサンプル数。0でもWAL全体の追随や送信成功を保証しない。",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 20,
+              "gradientMode": "hue",
+              "stacking": {
+                "mode": "normal"
+              },
+              "spanNulls": false
+            },
+            "unit": "short",
+            "noValue": "未収集 / 対象なし"
+          }
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 55,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "sum by (cluster,job,instance,component_path,component_id) (prometheus_remote_storage_samples_pending{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\",component_id=~\"${component:regex}\",url=~\"${url:regex}\"})",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Pending samples",
+        "type": "timeseries",
+        "id": 1001
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "現在時刻と宛先へ最後に送信したサンプルtimestampの差。収集停止も含めた鮮度の手掛かり。",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 20,
+              "gradientMode": "hue",
+              "stacking": {
+                "mode": "normal"
+              },
+              "spanNulls": false
+            },
+            "unit": "s",
+            "noValue": "未収集 / 対象なし"
+          }
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 55,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "cfkr3kwq69r7ke"
+            },
+            "expr": "time() - prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\",component_id=~\"${component:regex}\",url=~\"${url:regex}\"}",
+            "instant": false,
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "送信済みtimestampの経過時間",
+        "type": "timeseries",
+        "id": 1002
+      }
+    ],
+    "refresh": "1m",
+    "schemaVersion": 42,
+    "tags": [
+      "alloy-mixin"
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "cluster",
+          "label": "Cluster",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(alloy_component_controller_running_components{job=~\"alloy|alloy-host\"}, cluster)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "options": [],
+          "current": {
+            "text": "natsume",
+            "value": "natsume"
+          },
+          "multi": false,
+          "includeAll": false
+        },
+        {
+          "name": "job",
+          "label": "Alloy type",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"alloy|alloy-host\"}, job)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "options": [],
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "multi": true,
+          "includeAll": true,
+          "allValue": "alloy|alloy-host"
+        },
+        {
+          "name": "instance",
+          "label": "Instance",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(alloy_component_controller_running_components{cluster=\"$cluster\",job=~\"${job:regex}\"}, instance)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "options": [],
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*"
+        },
+        {
+          "name": "component",
+          "label": "Remote write component",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(prometheus_remote_write_wal_samples_appended_total{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\"}, component_id)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "options": [],
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*"
+        },
+        {
+          "name": "url",
+          "label": "Destination",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "query": {
+            "query": "label_values(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{cluster=\"$cluster\",job=~\"${job:regex}\",instance=~\"${instance:regex}\",component_id=~\"${component:regex}\"}, url)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "sort": 1,
+          "options": [],
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "time_options": [
+        "5m",
+        "15m",
+        "1h",
+        "6h",
+        "12h",
+        "24h",
+        "2d",
+        "7d",
+        "30d",
+        "90d"
+      ]
+    },
+    "timezone": "browser",
+    "title": "Alloy / Prometheus Components"
+  }
+}

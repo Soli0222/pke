@@ -63,12 +63,46 @@
           "CPU/メモリはcAdvisor、PVCは実Podとの対応から取得。pg_dumpとMisskeyのbase backup / WALを分離し未確認を正常に補完しない"
         ]
       }
+    },
+    "pke-alloy-controller": {
+      "path": "dashboards/observability/alloy-controller.json",
+      "title": "Alloy / Controller",
+      "origin": {
+        "kind": "upstream",
+        "url": "https://github.com/grafana/alloy/blob/e1a0d54eb474ffb31ddb8e0dfb07f0bbae8bf4fc/operations/alloy-mixin/rendered/dashboards/alloy-controller.json",
+        "revision": "e1a0d54eb474ffb31ddb8e0dfb07f0bbae8bf4fc",
+        "license": "Apache-2.0; licenses/alloy-LICENSE",
+        "changes": [
+          "Mimir固定、cluster/job/instanceの選択でnamespaceのないホストにも対応。正規jobのみ選択して重複収集を除外",
+          "未収集annotationを組み込みGrafana annotationに置換。health欠測の無条件0補完を除去",
+          "実メトリクスに合わせた評価待ち、送信成功率・遅延・pending・URLラベルの適用範囲を修正"
+        ]
+      }
+    },
+    "pke-alloy-prometheus": {
+      "path": "dashboards/observability/alloy-prometheus-remote-write.json",
+      "title": "Alloy / Prometheus Components",
+      "origin": {
+        "kind": "upstream",
+        "url": "https://github.com/grafana/alloy/blob/e1a0d54eb474ffb31ddb8e0dfb07f0bbae8bf4fc/operations/alloy-mixin/rendered/dashboards/alloy-prometheus-remote-write.json",
+        "revision": "e1a0d54eb474ffb31ddb8e0dfb07f0bbae8bf4fc",
+        "license": "Apache-2.0; licenses/alloy-LICENSE",
+        "changes": [
+          "Mimir固定、cluster/job/instanceの選択でnamespaceのないホストにも対応。正規jobのみ選択して重複収集を除外",
+          "未収集annotationを組み込みGrafana annotationに置換。health欠測の無条件0補完を除去",
+          "実メトリクスに合わせた評価待ち、送信成功率・遅延・pending・URLラベルの適用範囲を修正"
+        ]
+      }
     }
   },
   "folders": {
     "platform-c9cb9poj2if-v2tmxq6fjklrg5eojdu": {
       "path": "dashboards/platform/_folder.json",
       "title": "Platform"
+    },
+    "pke-observability": {
+      "path": "dashboards/observability/_folder.json",
+      "title": "Observability"
     }
   }
 }
