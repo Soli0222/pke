@@ -631,7 +631,7 @@
             "instant": false,
             "interval": "",
             "legendFormat": "{{cluster}} - {{exported_namespace}} - {{name}}",
-            "range": false,
+            "range": true,
             "refId": "A"
           }
         ],
