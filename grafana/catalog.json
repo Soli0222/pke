@@ -334,6 +334,20 @@
           "空のdatasource初期選択をMimirへ設定。入力がない場合の既存0補完を含め、クエリは変更しない"
         ]
       }
+    },
+    "pke-overview": {
+      "path": "dashboards/overview.json",
+      "title": "PKE / Overview",
+      "origin": {
+        "kind": "custom",
+        "url": "https://github.com/Soli0222/pke/tree/main/grafana",
+        "revision": "PKE source",
+        "license": "PKE repository",
+        "changes": [
+          "設定とinventoryに基づく12分野の要確認・未確認を集計し、既存の詳細画面へ接続",
+          "merutoのDB/未設定probe、Misskey base backup未確認を正常0へ丸めない"
+        ]
+      }
     }
   },
   "folders": {

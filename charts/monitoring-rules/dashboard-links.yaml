@@ -1,0 +1,82 @@
+# panel IDと変数は scripts/validate-grafana-navigation.py がGit定義と照合する。
+groups:
+  collection:
+    uid: pke-monitoring-pipeline
+    panel: 10
+    query: var-cluster={{ $labels.cluster | urlquery }}
+  host:
+    uid: pke-host-systemd
+    panel: 1
+    query: var-cluster={{ $labels.cluster | urlquery }}&var-hostname={{ or $labels.hostname $labels.instance | urlquery }}
+  kubernetes:
+    uid: 7cba95b3-6653-4ae7-a389-ff56cbeb864b
+    panel: 52
+    query: var-Cluster={{ $labels.cluster | urlquery }}&var-Node={{ if $labels.node }}{{ $labels.node | urlquery }}{{ else }}%24__all{{ end }}&var-NameSpace={{ if
+      $labels.namespace }}{{ $labels.namespace | urlquery }}{{ else }}%24__all{{ end }}&var-Pod=%24__all&var-Container=%24__all
+  workload:
+    uid: 7cba95b3-6653-4ae7-a389-ff56cbeb864b
+    panel: 51
+    query: var-Cluster={{ $labels.cluster | urlquery }}&var-Node=%24__all&var-NameSpace={{ $labels.namespace | urlquery }}&var-Pod={{ if $labels.pod }}{{ $labels.pod
+      | urlquery }}{{ else }}%24__all{{ end }}&var-Container=%24__all
+  flux:
+    uid: pke-flux-performance
+    panel: 1005
+    query: var-cluster={{ $labels.cluster | urlquery }}&var-namespace=flux-system
+  longhorn:
+    uid: ozk-lh-mon
+    panel: 13
+    query: var-cluster={{ $labels.cluster | urlquery }}&var-volume={{ if $labels.volume }}{{ $labels.volume | urlquery }}{{ else }}%24__all{{ end }}
+  etcd:
+    uid: hzhXdzznZn
+    panel: 90
+    query: var-cluster={{ $labels.cluster | urlquery }}&var-instance={{ if $labels.instance }}{{ $labels.instance | urlquery }}{{ else }}%24__all{{ end }}
+  certificates:
+    uid: cdhrcds8aosg0c
+    panel: 1
+    query: var-cluster={{ $labels.cluster | urlquery }}&var-namespace={{ $labels.namespace | urlquery }}
+  cnpg:
+    uid: cloudnative-pg
+    panel: 1001
+    query: var-cluster={{ $labels.cluster | urlquery }}&var-namespace={{ $labels.namespace | urlquery }}&var-cnpg_cluster={{ $labels.cnpg_cluster | urlquery }}&var-pod={{
+      if $labels.pod }}{{ $labels.pod | urlquery }}{{ else }}%24__all{{ end }}
+rules:
+  HostMemoryLow:
+    panel: 8
+  HostCPUHigh:
+    panel: 7
+  HostSystemdUnitFailed:
+    panel: 5
+  HostSystemdUnitInactive:
+    panel: 5
+  CNPGDumpBackupStale:
+    panel: 1005
+  CNPGWALArchiveFailing:
+    panel: 362
+  CNPGWALArchiveStalled:
+    panel: 362
+  HostFilesystemSpaceLow:
+    panel: 9
+  HostFilesystemSpaceCritical:
+    panel: 9
+  HostFilesystemFillingUp:
+    panel: 9
+  HostInodesLow:
+    panel: 9
+  KubePersistentVolumeSpaceLow:
+    panel: 92
+  KubePersistentVolumeSpaceCritical:
+    panel: 92
+  KubePersistentVolumeStatsMissing:
+    panel: 92
+  KubePersistentVolumeStatsInvalid:
+    panel: 92
+  KubePersistentVolumeFillingUp:
+    panel: 92
+  LonghornNodeSpaceLow:
+    panel: 23
+  LonghornNodeSpaceCritical:
+    panel: 23
+  LonghornDiskSpaceLow:
+    panel: 32
+  LonghornDiskSpaceCritical:
+    panel: 32

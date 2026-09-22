@@ -164,6 +164,35 @@ webhook通知の試行数から過去のslack系列を除外し、未収集の�
 ntfyのpublish counterは全用途合算の受付実績で、topic別・アラート専用の値でも、受信端末への配送保証でもない。
 発火・抑制の状態はGrafana AlertingのMimir / Alertmanagerで確認し、空のalertlistを正常の証明には使わない。
 
+## Overviewと調査リンク
+
+[PKE / Overview](https://grafana.str08.net/d/pke-overview) は同期ルートの運用入口で、初期clusterはnatsume、期間は6時間、更新は1分とする。
+12分野の現在値を「要確認」と「未確認」に分け、詳細画面へclusterと表示期間を引き継ぐ。
+異常状態の件数であり、アラートの閾値・for・除外条件を再現した発火件数ではない。
+
+期待するNode、etcd、DB、probeはinventoryとクラスタ設定から生成する。
+Workload、Pod、PVC、Flux、証明書は現在観測した対象が基準で、一度も観測されていない個別resourceの存在までは保証しない。
+KSM/証明書collectorの異常・欠測は各分野の確認項目にも含む。
+120秒より古い系列は現在の状態判定に使わない。
+どちらも0の場合も、詳細画面の全機能や復元可能性を保証する表示ではない。
+
+DBのないclusterと、HTTP probeの設定がない観測元は対象外とする。
+日次pg_dumpとbase backupの鮮度には監視ルールのpg_dump期限を使う。
+Misskeyのbase backup成功時刻が未取得・0の場合は未確認であり、WAL成功をその代わりにしない。
+Longhornのunknown/detachedと、期待PVに状態指標がない場合も未確認へ残す。
+
+```sh
+python3 scripts/sync-grafana-overview.py
+python3 scripts/sync-grafana-overview.py --check
+python3 scripts/test-grafana-overview.py
+python3 scripts/validate-grafana-navigation.py
+```
+
+Node/DB/probe/監視ルール設定を変えた場合は同じPRで再生成する。
+通知のリンクはmonitoring-rulesの`dashboard-links.yaml`でgroup既定と個別ruleのpanelを管理する。
+UID・panel ID・変数名はGitの保存定義と静的照合し、RulerのURL展開をローカルのpromtoolで検証する。
+通知は発生時点の表示期間を持たないため直近6時間を開き、Overviewからは利用者が選択した期間を引き継ぐ。
+
 ## 既存画面をUIDを保って移行する
 
 既存画面の移行では、配置・パネル種別・色・凡例・折り畳み・既定の時間範囲を維持する。

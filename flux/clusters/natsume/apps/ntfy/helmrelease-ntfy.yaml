@@ -43,6 +43,7 @@ spec:
             {{ range .alerts }}
             {{ .annotations.summary }}
             {{ .annotations.description }}
+            {{ if .annotations.panel_url }}Grafana: {{ .annotations.panel_url }}{{ else if .annotations.dashboard_url }}Grafana: {{ .annotations.dashboard_url }}{{ end }}
             {{ if .annotations.runbook_url }}Runbook: {{ .annotations.runbook_url }}{{ end }}
             {{ end }}
       config: |

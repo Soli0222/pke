@@ -49,6 +49,18 @@ meruto の Alloy が停止しても既に同期されたルールの評価は続
 Pod は namespace / pod / uid / container、PVC は namespace / persistentvolumeclaim、ホストは instance と mountpoint / device / name、DB は namespace / cnpg_cluster、Flux は kind / namespace / name を使う。
 cert-manager と Flux Operator の `exported_namespace` は監視対象の namespace へコピーする。scrape 元 namespace と取り違えない。
 
+## ダッシュボードへの調査リンク
+
+各ルールは`dashboard_url`と`panel_url`をannotationに持つ。
+`dashboardBaseURL`を共通の接続先とし、`dashboard-links.yaml`でgroupの既定画面・変数と、個別ルールのpanelを指定する。
+namespaceは通知対象、Flux画面のnamespaceはexporterの`flux-system`を使い分ける。
+clusterはAlloyが式に加えたラベルからRulerで展開し、対象識別子はURLエスケープする。
+既存の`additionalAnnotations`やruleの`annotations`による上書きも使える。
+
+ntfyは各alertのpanel URLを優先し、なければdashboard URLを表示する。Runbookも併記する。
+通知のリンクは直近6時間を開く。通知先や判定閾値・待機時間には影響しない。
+入口の [PKE / Overview](https://grafana.str08.net/d/pke-overview) と [ダッシュボード運用](../../grafana/README.md#overviewと調査リンク) も参照する。
+
 ## 検証
 
 Python 3 + PyYAML、Helm 3、Docker、kubectl が必要。
