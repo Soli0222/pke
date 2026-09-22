@@ -1,0 +1,3404 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "ix2215"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [],
+            "type": "dashboard"
+          },
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "panels": [],
+        "title": "Device Overview",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 8,
+          "x": 0,
+          "y": 1
+        },
+        "id": 2,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "sysName{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "sysName",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "sysDescr{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "sysDescr",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "sysObjectID{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "sysObjectID",
+            "refId": "C"
+          }
+        ],
+        "title": "Device Info",
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {
+              "mode": "columns"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "Value": true,
+                "__name__": true,
+                "cluster": true,
+                "container": true,
+                "endpoint": true,
+                "instance": true,
+                "job": true,
+                "namespace": true,
+                "pod": true,
+                "service": true,
+                "target": true
+              },
+              "indexByName": {},
+              "renameByName": {
+                "sysDescr": "Software",
+                "sysName": "Name",
+                "sysObjectID": "Object ID"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 8,
+          "y": 1
+        },
+        "id": 3,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "sysUpTime{cluster=\"meruto\",target=\"ix2215\"} / 100",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "uptime",
+            "refId": "A"
+          }
+        ],
+        "title": "Uptime",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "orange",
+                  "value": 70
+                },
+                {
+                  "color": "red",
+                  "value": 90
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 12,
+          "y": 1
+        },
+        "id": 4,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "picoSchedRtUtl1Min{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "CPU",
+            "refId": "A"
+          }
+        ],
+        "title": "CPU 1m",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "orange",
+                  "value": 70
+                },
+                {
+                  "color": "red",
+                  "value": 90
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 15,
+          "y": 1
+        },
+        "id": 5,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "picoHeapUtil{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "heap",
+            "refId": "A"
+          }
+        ],
+        "title": "Heap",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "orange",
+                  "value": 60
+                },
+                {
+                  "color": "red",
+                  "value": 75
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 18,
+          "y": 1
+        },
+        "id": 6,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "picoCelsius{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "temp",
+            "refId": "A"
+          }
+        ],
+        "title": "Temperature",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 2,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "orange",
+                  "value": 3
+                },
+                {
+                  "color": "red",
+                  "value": 2.8
+                }
+              ]
+            },
+            "unit": "volt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 21,
+          "y": 1
+        },
+        "id": 7,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "picoVoltage{cluster=\"meruto\",target=\"ix2215\"} / 1000",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "voltage",
+            "refId": "A"
+          }
+        ],
+        "title": "Voltage",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 6
+        },
+        "id": 8,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "picoSchedRtUtl1Sec{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "1s",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoSchedRtUtl5Sec{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "5s",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoSchedRtUtl1Min{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "1m",
+            "refId": "C"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoSchedRtUtl1Hour{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "1h",
+            "refId": "D"
+          }
+        ],
+        "title": "CPU Trend",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 6
+        },
+        "id": 9,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "picoCelsius{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "celsius",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoHeapUtil{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "heap %",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoVoltage{cluster=\"meruto\",target=\"ix2215\"} / 1000",
+            "format": "time_series",
+            "legendFormat": "voltage V",
+            "refId": "C"
+          }
+        ],
+        "title": "Environment / Memory",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 13
+        },
+        "id": 10,
+        "panels": [],
+        "title": "Interfaces",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [
+              {
+                "options": {
+                  "1": {
+                    "color": "green",
+                    "text": "up"
+                  },
+                  "2": {
+                    "color": "red",
+                    "text": "down"
+                  },
+                  "3": {
+                    "color": "orange",
+                    "text": "testing"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Oper"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Name"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 180
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Description"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 220
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 8,
+          "x": 0,
+          "y": 14
+        },
+        "id": 11,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "ifOperStatus{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "{{ifName}}",
+            "refId": "A"
+          }
+        ],
+        "title": "Oper Status",
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {
+              "mode": "columns"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "cluster": true,
+                "container": true,
+                "endpoint": true,
+                "instance": true,
+                "job": true,
+                "namespace": true,
+                "pod": true,
+                "service": true,
+                "target": true
+              },
+              "renameByName": {
+                "Value": "Oper",
+                "Value #A": "Oper",
+                "ifDescr": "Description",
+                "ifIndex": "Index",
+                "ifName": "Name"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [
+              {
+                "options": {
+                  "1": {
+                    "color": "green",
+                    "text": "up"
+                  },
+                  "2": {
+                    "color": "red",
+                    "text": "down"
+                  },
+                  "3": {
+                    "color": "orange",
+                    "text": "testing"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Admin"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Name"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 180
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Description"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 220
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 8,
+          "x": 8,
+          "y": 14
+        },
+        "id": 12,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "ifAdminStatus{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "{{ifName}}",
+            "refId": "A"
+          }
+        ],
+        "title": "Admin Status",
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {
+              "mode": "columns"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "cluster": true,
+                "container": true,
+                "endpoint": true,
+                "instance": true,
+                "job": true,
+                "namespace": true,
+                "pod": true,
+                "service": true,
+                "target": true
+              },
+              "renameByName": {
+                "Value": "Admin",
+                "Value #A": "Admin",
+                "ifDescr": "Description",
+                "ifIndex": "Index",
+                "ifName": "Name"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "bps"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Speed"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Name"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 180
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Description"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 220
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 8,
+          "x": 16,
+          "y": 14
+        },
+        "id": 13,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "ifHighSpeed{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"} * 1000 * 1000",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "{{ifName}}",
+            "refId": "A"
+          }
+        ],
+        "title": "Interface Speed",
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {
+              "mode": "columns"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "cluster": true,
+                "container": true,
+                "endpoint": true,
+                "instance": true,
+                "job": true,
+                "namespace": true,
+                "pod": true,
+                "service": true,
+                "target": true
+              },
+              "renameByName": {
+                "Value": "Speed",
+                "Value #A": "Speed",
+                "ifDescr": "Description",
+                "ifIndex": "Index",
+                "ifName": "Name"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "bps"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 24,
+          "x": 0,
+          "y": 21
+        },
+        "id": 14,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "rate(ifHCInOctets{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}[5m]) * 8",
+            "format": "time_series",
+            "legendFormat": "{{ifName}} in",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "rate(ifHCOutOctets{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}[5m]) * 8",
+            "format": "time_series",
+            "legendFormat": "{{ifName}} out",
+            "refId": "B"
+          }
+        ],
+        "title": "Interface Throughput",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percentunit"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 30
+        },
+        "id": 15,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "(rate(ifHCInOctets{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}[$__rate_interval]) * 8) / (ifHighSpeed{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"} * 1000 * 1000 > 0)",
+            "format": "time_series",
+            "legendFormat": "{{ifName}} in",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "(rate(ifHCOutOctets{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}[$__rate_interval]) * 8) / (ifHighSpeed{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"} * 1000 * 1000 > 0)",
+            "format": "time_series",
+            "legendFormat": "{{ifName}} out",
+            "refId": "B"
+          }
+        ],
+        "title": "Interface Utilization",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "pps"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 30
+        },
+        "id": 16,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "rate(ifHCInUcastPkts{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "{{ifName}} in",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "rate(ifHCOutUcastPkts{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "{{ifName}} out",
+            "refId": "B"
+          }
+        ],
+        "title": "Packet Rate",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "pps"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 24,
+          "x": 0,
+          "y": 37
+        },
+        "id": 17,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "rate(ifInErrors{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}[5m]) + rate(ifOutErrors{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}[5m])",
+            "format": "time_series",
+            "legendFormat": "{{ifName}} errors",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "rate(ifInDiscards{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}[5m]) + rate(ifOutDiscards{cluster=\"meruto\",target=\"ix2215\", ifName=~\"$interface\"}[5m])",
+            "format": "time_series",
+            "legendFormat": "{{ifName}} discards",
+            "refId": "B"
+          }
+        ],
+        "title": "Errors / Discards",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 44
+        },
+        "id": 18,
+        "panels": [],
+        "title": "Interface Detail",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 45
+        },
+        "id": 19,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "ifOperStatus{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "oper",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "ifAdminStatus{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "admin",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "ifHighSpeed{cluster=\"meruto\",target=\"ix2215\"} * 1000 * 1000",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "speed",
+            "refId": "C"
+          },
+          {
+            "editorMode": "code",
+            "expr": "ifType_info{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "type",
+            "refId": "D"
+          }
+        ],
+        "title": "IF-MIB Detail",
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {
+              "mode": "columns"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "cluster": true,
+                "container": true,
+                "endpoint": true,
+                "instance": true,
+                "job": true,
+                "namespace": true,
+                "pod": true,
+                "service": true,
+                "target": true
+              },
+              "renameByName": {
+                "Value #A": "Oper",
+                "Value #B": "Admin",
+                "Value #C": "Speed bps",
+                "Value #D": "Type Info",
+                "ifDescr": "Description",
+                "ifIndex": "Index",
+                "ifName": "Name",
+                "ifType": "Type"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 53
+        },
+        "id": 20,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "picoExtIfDescr{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "descr",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoExtIfEffectiveMtu{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "mtu",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoExtIfDuplex{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "duplex",
+            "refId": "C"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoExtIfSpeed{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "speed",
+            "refId": "D"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoExtIfPhysicalAddress{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "mac",
+            "refId": "E"
+          }
+        ],
+        "title": "NEC Extended Interface Detail",
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {
+              "mode": "columns"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "cluster": true,
+                "container": true,
+                "endpoint": true,
+                "instance": true,
+                "job": true,
+                "namespace": true,
+                "pod": true,
+                "service": true,
+                "target": true
+              },
+              "renameByName": {
+                "Value #B": "MTU",
+                "Value #C": "Duplex",
+                "Value #D": "Speed",
+                "picoExtIfDescr": "Description",
+                "picoExtIfIndex": "Index",
+                "picoExtIfInstalledSlot": "Slot",
+                "picoExtIfPhysicalAddress": "MAC"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 61
+        },
+        "id": 21,
+        "panels": [],
+        "title": "NAT / Forwarding Cache",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 0,
+          "y": 62
+        },
+        "id": 22,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "sum(naptCacheEntries{cluster=\"meruto\",target=\"ix2215\"})",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "entries",
+            "refId": "A"
+          }
+        ],
+        "title": "NAPT Entries",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 4,
+          "y": 62
+        },
+        "id": 23,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "sum(naptCachePeak{cluster=\"meruto\",target=\"ix2215\"})",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "peak",
+            "refId": "A"
+          }
+        ],
+        "title": "NAPT Peak",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 2,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "ops"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 8,
+          "y": 62
+        },
+        "id": 24,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "sum(rate(naptCacheCreates{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval]))",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "creates/s",
+            "refId": "A"
+          }
+        ],
+        "title": "NAPT Creates",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 12,
+          "y": 62
+        },
+        "id": 25,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "sum(increase(naptCacheOverflows{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval]))",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "overflows",
+            "refId": "A"
+          }
+        ],
+        "title": "NAPT Overflows",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 16,
+          "y": 62
+        },
+        "id": 26,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "picoIPv4CacheEntries{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "IPv4",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoIPv4UFSCacheEntries{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "IPv4 UFS",
+            "refId": "B"
+          }
+        ],
+        "title": "IPv4 Cache",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 20,
+          "y": 62
+        },
+        "id": 27,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "picoIPv6CacheEntries{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "IPv6",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoIPv6UFSCacheEntries{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "IPv6 UFS",
+            "refId": "B"
+          }
+        ],
+        "title": "IPv6 Cache",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 67
+        },
+        "id": 28,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "sum(naptCacheEntries{cluster=\"meruto\",target=\"ix2215\"})",
+            "format": "time_series",
+            "legendFormat": "entries",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "sum(rate(naptCacheCreates{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval]))",
+            "format": "time_series",
+            "legendFormat": "creates/s",
+            "refId": "B"
+          }
+        ],
+        "title": "NAPT Entries / Creates",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 67
+        },
+        "id": 29,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "increase(picoIPv4CacheOverflows{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "IPv4",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(picoIPv4UFSCacheOverflows{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "IPv4 UFS",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(picoIPv6CacheOverflows{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "IPv6",
+            "refId": "C"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(picoIPv6UFSCacheOverflows{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "IPv6 UFS",
+            "refId": "D"
+          }
+        ],
+        "title": "Cache Overflows",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 74
+        },
+        "id": 30,
+        "panels": [],
+        "title": "IPsec / IKE",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 6,
+          "x": 0,
+          "y": 75
+        },
+        "id": 31,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "pipSecGlobalActiveTunnels{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "IPsec",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "pikeGlobalActiveTunnels{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "IKE",
+            "refId": "B"
+          }
+        ],
+        "title": "Active Tunnels",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 6,
+          "x": 6,
+          "y": 75
+        },
+        "id": 32,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "increase(pipSecGlobalInDrops{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "in",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(pipSecGlobalOutDrops{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "out",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(pipSecGlobalInReplayDrops{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "replay",
+            "refId": "C"
+          }
+        ],
+        "title": "IPsec Drops",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 6,
+          "x": 12,
+          "y": 75
+        },
+        "id": 33,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "increase(pikeGlobalAuthFails{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "auth",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(pikeGlobalDecryptFails{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "decrypt",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(pikeGlobalHashValidFails{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "hash",
+            "refId": "C"
+          }
+        ],
+        "title": "IKE Failures",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 6,
+          "x": 18,
+          "y": 75
+        },
+        "id": 34,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "increase(pipSecGlobalInAuthFails{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "auth in",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(pipSecGlobalInDecryptFails{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "decrypt in",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(pipSecGlobalNoSaFails{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "no SA",
+            "refId": "C"
+          }
+        ],
+        "title": "IPsec Failures",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "Bps"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 80
+        },
+        "id": 35,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "rate(pipSecGlobalInOctets{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "in",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "rate(pipSecGlobalOutOctets{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "out",
+            "refId": "B"
+          }
+        ],
+        "title": "IPsec Traffic",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "pps"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 80
+        },
+        "id": 36,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "rate(pipSecGlobalInPkts{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "in",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "rate(pipSecGlobalOutPkts{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "out",
+            "refId": "B"
+          }
+        ],
+        "title": "IPsec Packets",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 24,
+          "x": 0,
+          "y": 87
+        },
+        "id": 37,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "rate(pikeGlobalInP2Exchgs{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "in p2 exchanges",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "rate(pikeGlobalOutP2Exchgs{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "out p2 exchanges",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(pikeGlobalInP2ExchgRejects{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "in rejects",
+            "refId": "C"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(pikeGlobalOutP2ExchgRejects{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "out rejects",
+            "refId": "D"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(pikeGlobalInitTunnelFails{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "init fails",
+            "refId": "E"
+          },
+          {
+            "editorMode": "code",
+            "expr": "increase(pikeGlobalRespTunnelFails{cluster=\"meruto\",target=\"ix2215\"}[$__rate_interval])",
+            "format": "time_series",
+            "legendFormat": "resp fails",
+            "refId": "F"
+          }
+        ],
+        "title": "IKE Exchanges / Rejects",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 94
+        },
+        "id": 38,
+        "panels": [],
+        "title": "Login Sessions",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 6,
+          "x": 0,
+          "y": 95
+        },
+        "id": 39,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "count(picoLoginSessionStatus{cluster=\"meruto\",target=\"ix2215\"})",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "sessions",
+            "refId": "A"
+          }
+        ],
+        "title": "Session Count",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 18,
+          "x": 6,
+          "y": 95
+        },
+        "id": 40,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "picoLoginSessionStatus{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "status",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoLoginSessionPrivilege{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "privilege",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoLoginSessionProcessMode{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "mode",
+            "refId": "C"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoLoginSessionTerminalType{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "terminal",
+            "refId": "D"
+          },
+          {
+            "editorMode": "code",
+            "expr": "picoLoginSessionPeerIpAddress{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "peer ip",
+            "refId": "E"
+          }
+        ],
+        "title": "Session Detail",
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {
+              "mode": "columns"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "cluster": true,
+                "container": true,
+                "endpoint": true,
+                "instance": true,
+                "job": true,
+                "namespace": true,
+                "pod": true,
+                "service": true,
+                "target": true
+              },
+              "renameByName": {
+                "Value #A": "Status",
+                "Value #B": "Privilege",
+                "Value #C": "Mode",
+                "Value #D": "Terminal",
+                "picoLoginSessionIndex": "Index",
+                "picoLoginSessionPeerIpAddress": "Peer IP"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 100
+        },
+        "id": 41,
+        "panels": [],
+        "title": "SNMP Exporter Health",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 0,
+          "y": 101
+        },
+        "id": 42,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "snmp_scrape_duration_seconds{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "duration",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "snmp_scrape_walk_duration_seconds{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "walk {{module}}",
+            "refId": "B"
+          }
+        ],
+        "title": "Scrape Duration",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 8,
+          "y": 101
+        },
+        "id": 43,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "snmp_scrape_packets_sent{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "sent",
+            "refId": "A"
+          },
+          {
+            "editorMode": "code",
+            "expr": "snmp_scrape_packets_retried{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "retried",
+            "refId": "B"
+          },
+          {
+            "editorMode": "code",
+            "expr": "snmp_scrape_pdus_returned{cluster=\"meruto\",target=\"ix2215\"}",
+            "format": "time_series",
+            "legendFormat": "pdus",
+            "refId": "C"
+          }
+        ],
+        "title": "SNMP Packets",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "red",
+                    "text": "down"
+                  },
+                  "1": {
+                    "color": "green",
+                    "text": "up"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red"
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 16,
+          "y": 101
+        },
+        "id": 44,
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "up{cluster=\"meruto\",target=\"ix2215\"} or up{cluster=\"meruto\",job=\"ix2215-snmp-exporter-prometheus-snmp-exporter\"}",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "up",
+            "refId": "A"
+          }
+        ],
+        "title": "SNMP Scrape Up",
+        "type": "stat"
+      }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 42,
+    "tags": [
+      "ix2215",
+      "snmp",
+      "meruto"
+    ],
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "selected": true,
+            "text": "Mimir",
+            "value": "cfkr3kwq69r7ke"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "label": "Datasource",
+          "multi": false,
+          "name": "datasource",
+          "options": [],
+          "query": "prometheus",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "type": "datasource"
+        },
+        {
+          "allValue": ".*",
+          "current": {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "definition": "label_values(ifOperStatus{cluster=\"meruto\",target=\"ix2215\"}, ifName)",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Interface",
+          "multi": true,
+          "name": "interface",
+          "options": [],
+          "query": {
+            "query": "label_values(ifOperStatus{cluster=\"meruto\",target=\"ix2215\"}, ifName)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "IX2215",
+    "weekStart": ""
+  }
+}

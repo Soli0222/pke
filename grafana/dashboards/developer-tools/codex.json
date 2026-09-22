@@ -1,0 +1,2293 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "Codex"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "description": "OpenAI Codex CLI observability dashboard for OTLP data received by Alloy and stored in Mimir/Loki. Uses Prometheus metrics from Codex and recent logs from Loki.",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "links": [
+      {
+        "asDropdown": false,
+        "icon": "external link",
+        "includeVars": false,
+        "keepTime": false,
+        "tags": [],
+        "targetBlank": true,
+        "title": "Original dashboard",
+        "tooltip": "Grafana.com Codex dashboard",
+        "type": "link",
+        "url": "https://grafana.com/grafana/dashboards/25338-codex/"
+      }
+    ],
+    "liveNow": false,
+    "panels": [
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 22,
+        "title": "Summary KPIs",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Completed Codex turns, estimated from codex_turn_e2e_duration_ms_milliseconds_count.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "blue",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 1
+        },
+        "id": 1,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "(sum(increase(codex_turn_e2e_duration_ms_milliseconds_count{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])) or sum(max_over_time(codex_turn_e2e_duration_ms_milliseconds_count{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Turns",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Total token usage over the selected time range.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "purple",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 1
+        },
+        "id": 2,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "(sum(increase(codex_turn_token_usage_sum{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", token_type=\"total\"}[$__range])) or sum(max_over_time(codex_turn_token_usage_sum{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", token_type=\"total\"}[$__range])))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Total Tokens",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "cached_input divided by input tokens.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "green",
+              "mode": "fixed"
+            },
+            "decimals": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 1
+        },
+        "id": 3,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "100 * ((sum(increase(codex_turn_token_usage_sum{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", token_type=\"cached_input\"}[$__range])) or sum(max_over_time(codex_turn_token_usage_sum{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", token_type=\"cached_input\"}[$__range]))) / clamp_min((sum(increase(codex_turn_token_usage_sum{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", token_type=\"input\"}[$__range])) or sum(max_over_time(codex_turn_token_usage_sum{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", token_type=\"input\"}[$__range]))), 1))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Cache Hit",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Tool calls by Codex over the selected time range.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "orange",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 1
+        },
+        "id": 4,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "(sum(increase(codex_tool_call_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", tool=~\"$tool\"}[$__range])) or sum(max_over_time(codex_tool_call_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", tool=~\"$tool\"}[$__range])))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Tool Calls",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Successful tool calls divided by all tool calls.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "green",
+              "mode": "fixed"
+            },
+            "decimals": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 5
+        },
+        "id": 5,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "100 * (sum(max_over_time(codex_tool_call_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", tool=~\"$tool\", success=\"true\"}[$__range])) / clamp_min(sum(max_over_time(codex_tool_call_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", tool=~\"$tool\"}[$__range])), 1))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Tool Success",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "p95 end-to-end turn latency.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "light-blue",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 5
+        },
+        "id": 6,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "histogram_quantile(0.95, sum by (le) (increase(codex_turn_e2e_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range]) or max_over_time(codex_turn_e2e_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "p95 Turn",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "p95 time to first token.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "light-blue",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 5
+        },
+        "id": 7,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "histogram_quantile(0.95, sum by (le) (increase(codex_turn_ttft_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range]) or max_over_time(codex_turn_ttft_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "p95 First Token",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "p95 time to first model message.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "light-blue",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 5
+        },
+        "id": 8,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "histogram_quantile(0.95, sum by (le) (increase(codex_turn_ttfm_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range]) or max_over_time(codex_turn_ttfm_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "p95 First Message",
+        "type": "stat"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        },
+        "id": 23,
+        "title": "Token Usage",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Token usage per interval, split by token_type.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "bars",
+              "fillOpacity": 80,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 16,
+          "x": 0,
+          "y": 10
+        },
+        "id": 9,
+        "options": {
+          "legend": {
+            "calcs": [
+              "sum"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "sum by (token_type) (increase(codex_turn_token_usage_sum{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", token_type!=\"total\"}[$__range]))",
+            "instant": false,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{token_type}}",
+            "range": true,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Token Usage by Type",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Total tokens split by model.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              }
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 10
+        },
+        "id": 10,
+        "options": {
+          "displayLabels": [
+            "percent"
+          ],
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true,
+            "values": [
+              "value"
+            ]
+          },
+          "pieType": "donut",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "single",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "sum by (model) (increase(codex_turn_token_usage_sum{cluster=~\"$cluster\", job=~\"$job\", token_type=\"total\"}[$__range])) or sum by (model) (max_over_time(codex_turn_token_usage_sum{cluster=~\"$cluster\", job=~\"$job\", token_type=\"total\"}[$__range]))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{model}}",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Tokens by Model",
+        "type": "piechart"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        },
+        "id": 24,
+        "title": "Latency",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "End-to-end turn latency percentiles.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 19
+        },
+        "id": 11,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "histogram_quantile(0.5, sum by (le) (increase(codex_turn_e2e_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])))",
+            "instant": false,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "p50",
+            "range": true,
+            "refId": "A",
+            "step": 10
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "histogram_quantile(0.9, sum by (le) (increase(codex_turn_e2e_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])))",
+            "instant": false,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "p90",
+            "range": true,
+            "refId": "B",
+            "step": 10
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "histogram_quantile(0.95, sum by (le) (increase(codex_turn_e2e_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])))",
+            "instant": false,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "p95",
+            "range": true,
+            "refId": "C",
+            "step": 10
+          }
+        ],
+        "title": "Turn Latency Percentiles",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "TTFT and TTFM p95 latency.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 19
+        },
+        "id": 12,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "histogram_quantile(0.95, sum by (le) (increase(codex_turn_ttft_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])))",
+            "instant": false,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "TTFT p95",
+            "range": true,
+            "refId": "A",
+            "step": 10
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "histogram_quantile(0.95, sum by (le) (increase(codex_turn_ttfm_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])))",
+            "instant": false,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "TTFM p95",
+            "range": true,
+            "refId": "B",
+            "step": 10
+          }
+        ],
+        "timeFrom": "24h",
+        "title": "First Token / First Message",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 27
+        },
+        "id": 25,
+        "title": "Tool Health",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Tool call rate by tool and success.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "bars",
+              "fillOpacity": 70,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 28
+        },
+        "id": 13,
+        "options": {
+          "legend": {
+            "calcs": [
+              "sum"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "sum by (tool, success) (increase(codex_tool_call_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", tool=~\"$tool\"}[$__rate_interval]))",
+            "instant": false,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{tool}} success={{success}}",
+            "range": true,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Tool Calls by Tool",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "p95 tool call duration by tool.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 28
+        },
+        "id": 14,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "histogram_quantile(0.95, sum by (le, tool) (increase(codex_tool_call_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", tool=~\"$tool\"}[$__rate_interval])))",
+            "instant": false,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{tool}} p95",
+            "range": true,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Tool Latency p95",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 36
+        },
+        "id": 26,
+        "title": "Realtime API",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Realtime API websocket events by kind.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "bars",
+              "fillOpacity": 60,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 37
+        },
+        "id": 15,
+        "options": {
+          "legend": {
+            "calcs": [
+              "sum"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "sum by (kind) (increase(codex_websocket_event_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__rate_interval]))",
+            "instant": false,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{kind}}",
+            "range": true,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "WebSocket Events",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "p95 websocket event duration by event kind.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 37
+        },
+        "id": 16,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "topk(8, histogram_quantile(0.95, sum by (le, kind) (increase(codex_websocket_event_duration_ms_milliseconds_bucket{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__rate_interval]))))",
+            "instant": false,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{kind}}",
+            "range": true,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "WebSocket Event p95",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 45
+        },
+        "id": 27,
+        "title": "Safety & Access",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Codex approval requests over the selected time range.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "orange",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 8,
+          "x": 0,
+          "y": 46
+        },
+        "id": 19,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "(sum(increase(codex_approval_requested_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])) or sum(max_over_time(codex_approval_requested_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range])))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Approval Requests",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Approval request outcomes by approved label and tool.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              }
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 8,
+          "x": 8,
+          "y": 46
+        },
+        "id": 20,
+        "options": {
+          "displayLabels": [
+            "percent"
+          ],
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true,
+            "values": [
+              "value"
+            ]
+          },
+          "pieType": "donut",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "single",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "sum by (approved, tool) (max_over_time(codex_approval_requested_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range]))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{approved}} {{tool}}",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Approval Outcomes",
+        "type": "piechart"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Tool calls grouped by sandbox policy.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              }
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 8,
+          "x": 16,
+          "y": 46
+        },
+        "id": 21,
+        "options": {
+          "displayLabels": [
+            "percent"
+          ],
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true,
+            "values": [
+              "value"
+            ]
+          },
+          "pieType": "donut",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "single",
+            "sort": "desc"
+          }
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "sum by (sandbox_policy) (max_over_time(codex_tool_call_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}[$__range]))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{sandbox_policy}}",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Sandbox Policy",
+        "type": "piechart"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 53
+        },
+        "id": 28,
+        "title": "Details",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${mimir_ds}"
+        },
+        "description": "Current tool counter value over the selected range, grouped by tool, success, and sandbox policy.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "filterable": true,
+              "inspect": true
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 10,
+          "x": 0,
+          "y": 54
+        },
+        "id": 17,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true,
+          "sortBy": []
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${mimir_ds}"
+            },
+            "editorMode": "code",
+            "exemplar": true,
+            "expr": "sum by (tool, success, sandbox_policy) (max_over_time(codex_tool_call_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\", tool=~\"$tool\"}[$__range]))",
+            "instant": true,
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{tool}}",
+            "range": false,
+            "refId": "A",
+            "step": 10
+          }
+        ],
+        "title": "Tool Reliability by Tool",
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "loki",
+          "uid": "${loki_ds}"
+        },
+        "description": "Recent Codex OTLP logs from Loki.",
+        "gridPos": {
+          "h": 10,
+          "w": 14,
+          "x": 10,
+          "y": 54
+        },
+        "id": 18,
+        "maxDataPoints": 1000,
+        "options": {
+          "dedupStrategy": "none",
+          "enableLogDetails": true,
+          "prettifyLogMessage": true,
+          "showCommonLabels": false,
+          "showLabels": false,
+          "showTime": true,
+          "sortOrder": "Descending",
+          "wrapLogMessage": true
+        },
+        "pluginVersion": "",
+        "targets": [
+          {
+            "datasource": {
+              "type": "loki",
+              "uid": "${loki_ds}"
+            },
+            "expr": "{cluster=~\"$cluster\", job=~\"$job\"}",
+            "maxLines": 100,
+            "queryType": "range",
+            "refId": "A"
+          }
+        ],
+        "title": "Recent Codex Logs",
+        "type": "logs"
+      }
+    ],
+    "preload": false,
+    "refresh": "30s",
+    "schemaVersion": 42,
+    "tags": [
+      "codex",
+      "opentelemetry",
+      "mimir",
+      "loki"
+    ],
+    "templating": {
+      "list": [
+        {
+          "allowCustomValue": false,
+          "current": {
+            "text": "Mimir",
+            "value": "cfkr3kwq69r7ke"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "label": "Mimir",
+          "multi": false,
+          "name": "mimir_ds",
+          "options": [],
+          "query": "prometheus",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "type": "datasource"
+        },
+        {
+          "allowCustomValue": false,
+          "current": {
+            "text": "Loki",
+            "value": "cfkr3oclnhukgb"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "label": "Loki",
+          "multi": false,
+          "name": "loki_ds",
+          "options": [],
+          "query": "loki",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "type": "datasource"
+        },
+        {
+          "allValue": ".*",
+          "allowCustomValue": true,
+          "current": {
+            "text": "meruto",
+            "value": "meruto"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${mimir_ds}"
+          },
+          "definition": "label_values(target_info{job=~\"codex.*|codex_cli_rs\"}, cluster)",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Cluster",
+          "multi": true,
+          "name": "cluster",
+          "options": [],
+          "query": {
+            "query": "label_values(target_info{job=~\"codex.*|codex_cli_rs\"}, cluster)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "type": "query"
+        },
+        {
+          "allValue": ".*",
+          "allowCustomValue": true,
+          "current": {
+            "text": "codex_cli_rs",
+            "value": "codex_cli_rs"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${mimir_ds}"
+          },
+          "definition": "label_values(target_info{cluster=~\"$cluster\", job=~\"codex.*|codex_cli_rs\"}, job)",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Job",
+          "multi": true,
+          "name": "job",
+          "options": [],
+          "query": {
+            "query": "label_values(target_info{cluster=~\"$cluster\", job=~\"codex.*|codex_cli_rs\"}, job)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "type": "query"
+        },
+        {
+          "allValue": ".*",
+          "allowCustomValue": true,
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${mimir_ds}"
+          },
+          "definition": "label_values({__name__=~\"codex_.*\", cluster=~\"$cluster\", job=~\"$job\"}, model)",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Model",
+          "multi": true,
+          "name": "model",
+          "options": [],
+          "query": {
+            "query": "label_values({__name__=~\"codex_.*\", cluster=~\"$cluster\", job=~\"$job\"}, model)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "type": "query"
+        },
+        {
+          "allValue": ".*",
+          "allowCustomValue": true,
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${mimir_ds}"
+          },
+          "definition": "label_values(codex_tool_call_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}, tool)",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Tool",
+          "multi": true,
+          "name": "tool",
+          "options": [],
+          "query": {
+            "query": "label_values(codex_tool_call_total{cluster=~\"$cluster\", job=~\"$job\", model=~\"$model\"}, tool)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h"
+      ]
+    },
+    "timezone": "browser",
+    "title": "Codex",
+    "weekStart": ""
+  }
+}
