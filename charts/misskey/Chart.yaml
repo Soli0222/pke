@@ -2,6 +2,6 @@ apiVersion: v2
 name: misskey
 description: A Helm chart for Misskey - A decentralized social networking platform
 type: application
-version: 0.4.2
+version: 0.4.3
 # renovate: image=misskey/misskey
-appVersion: "2026.9.0"
+appVersion: "2026.9.1"
