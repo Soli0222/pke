@@ -1,0 +1,1711 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "ccat-1"
+  },
+  "spec": {
+    "title": "CCAT-1",
+    "description": "Cisco Catalystの機器リソース、全インターフェース、SNMP収集状態、syslogを確認する。Interfaceで表示対象を選択。",
+    "schemaVersion": 42,
+    "timezone": "browser",
+    "refresh": "1m",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "tags": [
+      "network",
+      "snmp",
+      "cisco",
+      "pke"
+    ],
+    "editable": true,
+    "panels": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "1=収集成功、0=失敗。120秒より古い系列は欠測として表示。",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "none",
+            "noValue": "No data",
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "UP",
+                    "color": "green"
+                  }
+                }
+              }
+            ]
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "id": 1,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "up{cluster=\"meruto\",target=\"ccat-1\"} and (time() - timestamp(up{cluster=\"meruto\",target=\"ccat-1\"}) < 120)",
+            "legendFormat": "SNMP",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "title": "SNMP collection",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "SNMP管理サブシステムの稼働時間。",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "s",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 6,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "id": 2,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "sysUpTime{cluster=\"meruto\",target=\"ccat-1\"} / 100",
+            "legendFormat": "uptime",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "title": "SNMP uptime",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "CPUの1分平均使用率。",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "id": 3,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "cpmCPUTotal1minRev{cluster=\"meruto\",target=\"ccat-1\"}",
+            "legendFormat": "CPU {{cpmCPUTotalIndex}}",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "title": "CPU · 1 minute",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "メモリプールごとの使用率。",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 18,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "id": 4,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "100 * ciscoMemoryPoolUsed{cluster=\"meruto\",target=\"ccat-1\"} / (ciscoMemoryPoolUsed{cluster=\"meruto\",target=\"ccat-1\"} + ciscoMemoryPoolFree{cluster=\"meruto\",target=\"ccat-1\"})",
+            "legendFormat": "{{ciscoMemoryPoolName}}",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": true,
+            "range": false
+          }
+        ],
+        "title": "Memory usage",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "CPU使用率の推移。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 4,
+          "w": 12,
+          "h": 8
+        },
+        "id": 5,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "cpmCPUTotal1minRev{cluster=\"meruto\",target=\"ccat-1\"}",
+            "legendFormat": "CPU {{cpmCPUTotalIndex}} · 1m",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          },
+          {
+            "refId": "B",
+            "expr": "cpmCPUTotal5minRev{cluster=\"meruto\",target=\"ccat-1\"}",
+            "legendFormat": "CPU {{cpmCPUTotalIndex}} · 5m",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "CPU usage",
+        "type": "timeseries",
+        "interval": "60s"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "機器が公開する全メモリプールの使用率。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 4,
+          "w": 12,
+          "h": 8
+        },
+        "id": 6,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "100 * ciscoMemoryPoolUsed{cluster=\"meruto\",target=\"ccat-1\"} / (ciscoMemoryPoolUsed{cluster=\"meruto\",target=\"ccat-1\"} + ciscoMemoryPoolFree{cluster=\"meruto\",target=\"ccat-1\"})",
+            "legendFormat": "{{ciscoMemoryPoolName}}",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "Memory usage by pool",
+        "type": "timeseries",
+        "interval": "60s"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "選択したインターフェースの現在値。欠測は正常として補完しない。",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [
+              {
+                "options": {
+                  "1": {
+                    "color": "green",
+                    "text": "up"
+                  },
+                  "2": {
+                    "color": "red",
+                    "text": "down"
+                  },
+                  "3": {
+                    "color": "orange",
+                    "text": "testing"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Oper"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Name"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 180
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Description"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 220
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 12,
+          "w": 8,
+          "h": 8
+        },
+        "id": 7,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "ifOperStatus{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}",
+            "instant": true,
+            "format": "table"
+          }
+        ],
+        "title": "Interface operating status",
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {
+              "mode": "columns"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "cluster": true,
+                "container": true,
+                "endpoint": true,
+                "instance": true,
+                "job": true,
+                "namespace": true,
+                "pod": true,
+                "service": true,
+                "target": true
+              },
+              "renameByName": {
+                "Value": "Oper",
+                "Value #A": "Oper",
+                "ifDescr": "Description",
+                "ifIndex": "Index",
+                "ifName": "Name"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "選択したインターフェースの現在値。欠測は正常として補完しない。",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [
+              {
+                "options": {
+                  "1": {
+                    "color": "green",
+                    "text": "up"
+                  },
+                  "2": {
+                    "color": "red",
+                    "text": "down"
+                  },
+                  "3": {
+                    "color": "orange",
+                    "text": "testing"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Admin"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Name"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 180
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Description"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 220
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "x": 8,
+          "y": 12,
+          "w": 8,
+          "h": 8
+        },
+        "id": 8,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "ifAdminStatus{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}",
+            "instant": true,
+            "format": "table"
+          }
+        ],
+        "title": "Interface administrative status",
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {
+              "mode": "columns"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "cluster": true,
+                "container": true,
+                "endpoint": true,
+                "instance": true,
+                "job": true,
+                "namespace": true,
+                "pod": true,
+                "service": true,
+                "target": true
+              },
+              "renameByName": {
+                "Value": "Admin",
+                "Value #A": "Admin",
+                "ifDescr": "Description",
+                "ifIndex": "Index",
+                "ifName": "Name"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "選択したインターフェースの現在値。欠測は正常として補完しない。",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "bps"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Speed"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Name"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 180
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Description"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 220
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "x": 16,
+          "y": 12,
+          "w": 8,
+          "h": 8
+        },
+        "id": 9,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "ifHighSpeed{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"} * 1000000",
+            "instant": true,
+            "format": "table"
+          }
+        ],
+        "title": "Interface speed",
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {
+              "mode": "columns"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "cluster": true,
+                "container": true,
+                "endpoint": true,
+                "instance": true,
+                "job": true,
+                "namespace": true,
+                "pod": true,
+                "service": true,
+                "target": true
+              },
+              "renameByName": {
+                "Value": "Speed",
+                "Value #A": "Speed",
+                "ifDescr": "Description",
+                "ifIndex": "Index",
+                "ifName": "Name"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "スイッチ視点の受信・送信ビットレート。64bitカウンタを使用。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "bps",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 20,
+          "w": 12,
+          "h": 8
+        },
+        "id": 10,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "rate(ifHCInOctets{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval]) * 8",
+            "legendFormat": "{{ifName}} · RX",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          },
+          {
+            "refId": "B",
+            "expr": "rate(ifHCOutOctets{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval]) * 8",
+            "legendFormat": "{{ifName}} · TX",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "Interface throughput",
+        "type": "timeseries",
+        "interval": "60s"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "公称リンク速度に対する使用率。速度が0のインターフェースは除外。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percentunit",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 20,
+          "w": 12,
+          "h": 8
+        },
+        "id": 11,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "rate(ifHCInOctets{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval]) * 8 / (ifHighSpeed{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"} * 1000000 > 0)",
+            "legendFormat": "{{ifName}} · RX",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          },
+          {
+            "refId": "B",
+            "expr": "rate(ifHCOutOctets{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval]) * 8 / (ifHighSpeed{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"} * 1000000 > 0)",
+            "legendFormat": "{{ifName}} · TX",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "Interface utilization",
+        "type": "timeseries",
+        "interval": "60s"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "送受信エラーの毎秒増加数。累積値ではない。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "pps",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 28,
+          "w": 12,
+          "h": 8
+        },
+        "id": 12,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "rate(ifInErrors{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval])",
+            "legendFormat": "{{ifName}} · RX",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          },
+          {
+            "refId": "B",
+            "expr": "rate(ifOutErrors{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval])",
+            "legendFormat": "{{ifName}} · TX",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "Interface errors",
+        "type": "timeseries",
+        "interval": "60s"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "送受信破棄の毎秒増加数。収集開始前の累積破棄を現在の障害と混同しない。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "pps",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 28,
+          "w": 12,
+          "h": 8
+        },
+        "id": 13,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "rate(ifInDiscards{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval])",
+            "legendFormat": "{{ifName}} · RX",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          },
+          {
+            "refId": "B",
+            "expr": "rate(ifOutDiscards{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval])",
+            "legendFormat": "{{ifName}} · TX",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "Interface discards",
+        "type": "timeseries",
+        "interval": "60s"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "ユニキャストの送受信パケット数。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "pps",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 36,
+          "w": 12,
+          "h": 8
+        },
+        "id": 14,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "rate(ifHCInUcastPkts{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval])",
+            "legendFormat": "{{ifName}} · RX",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          },
+          {
+            "refId": "B",
+            "expr": "rate(ifHCOutUcastPkts{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval])",
+            "legendFormat": "{{ifName}} · TX",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "Unicast packet rate",
+        "type": "timeseries",
+        "interval": "60s"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "ブロードキャスト・マルチキャストの受信レート。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "pps",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 36,
+          "w": 12,
+          "h": 8
+        },
+        "id": 15,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "rate(ifHCInBroadcastPkts{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval])",
+            "legendFormat": "{{ifName}} · broadcast",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          },
+          {
+            "refId": "B",
+            "expr": "rate(ifHCInMulticastPkts{cluster=\"meruto\",target=\"ccat-1\",ifName=~\"${interface:regex}\"}[$__rate_interval])",
+            "legendFormat": "{{ifName}} · multicast",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "Broadcast / multicast received",
+        "type": "timeseries",
+        "interval": "60s"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "モジュールごとのSNMP取得時間。収集間隔は60秒。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "s",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 44,
+          "w": 12,
+          "h": 8
+        },
+        "id": 16,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "snmp_scrape_duration_seconds{cluster=\"meruto\",target=\"ccat-1\"}",
+            "legendFormat": "{{module}}",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "SNMP scrape duration",
+        "type": "timeseries",
+        "interval": "60s"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfkr3kwq69r7ke"
+        },
+        "description": "各scrapeで発生した再試行回数。scrapeごとの値なのでrateは適用しない。",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 44,
+          "w": 12,
+          "h": 8
+        },
+        "id": 17,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "snmp_scrape_packets_retried{cluster=\"meruto\",target=\"ccat-1\"}",
+            "legendFormat": "{{module}}",
+            "editorMode": "code",
+            "format": "time_series",
+            "instant": false,
+            "range": true
+          }
+        ],
+        "title": "SNMP retries per scrape",
+        "type": "timeseries",
+        "interval": "60s"
+      },
+      {
+        "id": 18,
+        "title": "CCAT-1 syslog",
+        "description": "受信時刻で表示。ログがないだけでは正常・転送成功とは判断しない。本文の機器時刻は別。",
+        "type": "logs",
+        "gridPos": {
+          "x": 0,
+          "y": 52,
+          "w": 24,
+          "h": 10
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "cfkr3oclnhukgb"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "{cluster=\"meruto\",source=\"syslog\",host=\"ccat-1\"} | json | line_format \"{{.message}}\"",
+            "queryType": "range"
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "showLabels": false,
+          "wrapLogMessage": true,
+          "sortOrder": "Descending",
+          "enableLogDetails": true
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "allValue": ".*",
+          "current": {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfkr3kwq69r7ke"
+          },
+          "definition": "label_values(ifOperStatus{cluster=\"meruto\",target=\"ccat-1\"}, ifName)",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Interface",
+          "multi": true,
+          "name": "interface",
+          "options": [],
+          "query": {
+            "query": "label_values(ifOperStatus{cluster=\"meruto\",target=\"ccat-1\"}, ifName)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "type": "query"
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "IX2215",
+        "url": "/d/ix2215",
+        "type": "link",
+        "includeVars": false,
+        "keepTime": true,
+        "targetBlank": false
+      }
+    ]
+  }
+}

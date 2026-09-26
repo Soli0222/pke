@@ -3,7 +3,7 @@
 meruto の SNMP exporter が CCAT-1 (`192.168.10.254`) を SNMP v2c で60秒ごとに読み取り、Alloy 経由で natsume の Mimir に送る。
 `if_mib` と `cisco_device` は chart が指定する exporter イメージの標準モジュールを使う。
 インターフェースの64bit通信量、errors / discards、リンク状態、CPU・メモリ、SNMP uptimeを収集する。機器が実装していないOIDは取得できない。
-`Gi1/0/1` はIX2215側、`Gi1/0/8` はMac側。SNMPの `ifIndex` はポート番号から推測せず、`ifName` / `ifDescr` で識別する。
+SNMPの `ifIndex` はポート番号から推測せず、`ifName` / `ifDescr` で識別する。
 
 ## Community の登録
 
@@ -74,3 +74,9 @@ Vector更新後はIXのログも継続して届くことを確認する。
 UDP syslogが途絶えた場合、送信がないだけなのか、Vectorの受信・転送経路で失われているのかを分ける。
 Serviceの転送先Podが変わった際は、ノードのconntrackに古いUDP転送先が残っていないか確認する。
 ログがないことだけで機器が正常とは判定しない。
+
+## ダッシュボード
+
+[CCAT-1](https://grafana.str08.net/d/ccat-1) はPlatformフォルダで管理する。
+全インターフェースを初期表示し、Interfaceで対象を絞り込む。機器リソース・通信量・エラー・破棄・SNMP収集状態・syslogを確認できる。
+定義は `grafana/dashboards/platform/ccat-1.json` に置き、Git Syncで反映する。

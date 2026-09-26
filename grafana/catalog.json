@@ -348,6 +348,19 @@
           "merutoのDB/未設定probe、Misskey base backup未確認を正常0へ丸めない"
         ]
       }
+    },
+    "ccat-1": {
+      "path": "dashboards/platform/ccat-1.json",
+      "title": "CCAT-1",
+      "origin": {
+        "kind": "custom",
+        "url": "https://github.com/soli0222/pke",
+        "revision": "Git",
+        "license": "Repository license",
+        "changes": [
+          "CCAT-1の実メトリクスに合わせた機器・インターフェース・収集状態・syslogの汎用監視。全インターフェースを初期選択。"
+        ]
+      }
     }
   },
   "folders": {
