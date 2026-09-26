@@ -36,6 +36,7 @@ flowchart LR
 
 ホストと meruto は mTLS で `https://mimir.pstr.space/api/v1/push` と `https://loki.pstr.space/loki/api/v1/push` に送信する。
 meruto の Vector も syslog を Loki に送る。
+CCAT-1 のSNMP収集・syslog送信・community登録は [CCAT-1 の監視](flux/clusters/meruto/apps/ccat-snmp-exporter/README.md) を参照する。
 Mimir は単一 tenant `anonymous` を使い、Ruler の通知先は `http://mimir.mimir:8080/alertmanager`。
 通知先は ntfy のみで、外部 heartbeat 監視はない。natsume / Mimir 全断時の通知はこの構成ではできない。
 

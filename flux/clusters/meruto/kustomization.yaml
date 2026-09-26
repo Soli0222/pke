@@ -10,6 +10,7 @@ resources:
 - kustomizations/cnpg.yaml
 - kustomizations/external-dns.yaml
 - kustomizations/ix2215-snmp-exporter.yaml
+- kustomizations/ccat-snmp-exporter.yaml
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/longhorn.yaml
 - kustomizations/longhorn-config.yaml

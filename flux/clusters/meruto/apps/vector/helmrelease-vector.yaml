@@ -51,11 +51,23 @@ spec:
           mode: udp
           decoding:
             codec: bytes
+      transforms:
+        identify_device:
+          type: remap
+          inputs:
+          - syslog
+          source: |
+            .device_host = "unknown"
+            if .host == "192.168.10.1" {
+              .device_host = "ix2215-1"
+            } else if .host == "192.168.10.254" {
+              .device_host = "ccat-1"
+            }
       sinks:
         loki:
           type: loki
           inputs:
-          - syslog
+          - identify_device
           endpoint: https://loki.pstr.space
           path: /loki/api/v1/push
           tenant_id: "fake"
@@ -67,4 +79,4 @@ spec:
           labels:
             cluster: meruto
             source: syslog
-            host: ix2215-1
+            host: '{{ "{{ device_host }}" }}'
