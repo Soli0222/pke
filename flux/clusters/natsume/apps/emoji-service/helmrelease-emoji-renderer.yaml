@@ -15,7 +15,7 @@ spec:
   chart:
     spec:
       chart: emoji-renderer
-      version: 0.2.6
+      version: 0.2.7
       sourceRef:
         kind: HelmRepository
         name: emoji-renderer-repo
