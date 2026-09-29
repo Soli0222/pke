@@ -55,6 +55,7 @@
     FALCO_FRONTEND: noninteractive
     FALCO_DRIVER_CHOICE: "{{ falco_driver_choice }}"
     FALCOCTL_ENABLED: "{{ 'yes' if falco_falcoctl_enabled | bool else 'no' }}"
+  notify: Restart Falco
 
 - name: Manage falcoctl artifact follow service
   ansible.builtin.systemd:

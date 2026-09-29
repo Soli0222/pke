@@ -23,7 +23,6 @@ K3s ノードの host_vars に `cluster: <name>` を必ず指定し、etcd は `
 natsume は `natsume-03` が server / etcd、`natsume-08` が agent。
 meruto は `meruto-01` が server / etcd。
 agent の join 先は `ansible/inventories/group_vars/k3s_agent.yaml` に定義する。
-`openclaw` グループは K3s クラスタとは別のホスト管理対象である。
 
 ストレージの対象を実ディスクの存在だけで拡張しない。
 `natsume-03` は Longhorn 600GB / TopoLVM 200GB を持つが、inventory の `longhorn_storage` / `topolvm_storage` に加えない。

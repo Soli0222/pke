@@ -21,8 +21,6 @@ Ansible でノードを構成し、Helmfile で基盤を導入した後、Flux C
 
 `natsume-03` と `meruto-01` が各クラスタの K3s server と external etcd を持ち、`natsume-08` は K3s agent です。
 各クラスタの etcd は単一 member です。
-Kubernetes 外の `amemado-01` は、Ansible の `openclaw` グループと `site-openclaw.yaml` で管理します。
-
 ノードの所属と接続先は [inventory](ansible/inventories/hosts.yaml) と [host_vars](ansible/inventories/host_vars/) に定義します。
 K3s クラスタ名は host_vars の `cluster`、Helmfile environment、Flux のディレクトリ名でそろえます。
 
@@ -77,6 +75,18 @@ state は Cloudflare R2 の S3 互換 backend に保存します。
 | etcd の更新 | `upgrade-etcd.yaml` |
 | etcd member の追加・削除 | `add-etcd-member.yaml` / `remove-etcd-member.yaml`。`-e etcd_member_host=<host>` で対象を指定 |
 | ホスト Alloy の監視設定更新 | `update-alloy-monitoring.yaml`。[反映手順](MONITORING.md#ホスト-alloy-の設定) |
+| ホスト Falco の更新 | `update-falco.yaml`。APT の最新版と設定を1台ずつ反映 |
+
+Falco の更新は `k3s_cluster` が対象です。
+`update-falco` ロールは `install-falco` を再利用し、パッケージまたは設定が変わった場合に Falco を再起動します。
+`--limit` で対象ホストを指定し、先に check mode で差分を確認します。
+次は natsume（`natsume@soli`）の例です。meruto（`meruto@soli`）は `--limit meruto-01` に替えます。
+この操作は SSH 経由で実行し、kubectl context は使いません。
+
+```sh
+ansible-playbook -i inventories/hosts.yaml update-falco.yaml --limit 'natsume-03,natsume-08' --check --diff
+ansible-playbook -i inventories/hosts.yaml update-falco.yaml --limit 'natsume-03,natsume-08'
+```
 
 ## ストレージとネットワーク
 

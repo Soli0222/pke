@@ -1,0 +1,8 @@
+---
+- name: Update Falco one host at a time
+  hosts: k3s_cluster
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  roles:
+    - update-falco

@@ -1,0 +1,6 @@
+---
+- name: Update Falco package and configuration
+  ansible.builtin.import_role:
+    name: install-falco
+  vars:
+    falco_package_state: latest
