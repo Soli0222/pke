@@ -65,10 +65,6 @@ spec:
       diagnosticReport:
         enabled: false
 
-      image:
-        repository: ghcr.io/soli0222/misskey
-        tag: "2026.9.1-psr.9.11"
-
       persistence:
         enabled: false
 

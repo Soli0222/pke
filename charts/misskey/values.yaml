@@ -204,7 +204,7 @@ web:
 
   image:
     # -- Image repository
-    repository: misskey/misskey
+    repository: ghcr.io/soli0222/misskey
     # -- Image tag (defaults to Chart.appVersion)
     tag: ""
     # -- Image pull policy

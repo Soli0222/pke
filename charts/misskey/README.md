@@ -1,6 +1,6 @@
 # misskey
 
-![Version: 0.4.3](https://img.shields.io/badge/Version-0.4.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2026.9.1](https://img.shields.io/badge/AppVersion-2026.9.1-informational?style=flat-square)
+![Version: 0.4.4](https://img.shields.io/badge/Version-0.4.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2026.10.0-psr.9.11"](https://img.shields.io/badge/AppVersion-2026.10.0--psr.9.11"-informational?style=flat-square)
 
 A Helm chart for Misskey - A decentralized social networking platform
 
@@ -201,7 +201,7 @@ A Helm chart for Misskey - A decentralized social networking platform
 | web.extraVolumeMounts | list | `[]` | Additional volume mounts added to the Misskey container |
 | web.extraVolumes | list | `[]` | Additional volumes added to the web Pod |
 | web.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
-| web.image.repository | string | `"misskey/misskey"` | Image repository |
+| web.image.repository | string | `"ghcr.io/soli0222/misskey"` | Image repository |
 | web.image.tag | string | `""` | Image tag (defaults to Chart.appVersion) |
 | web.imagePullSecrets | list | `[]` | Image pull secrets |
 | web.livenessProbe | object | `{"failureThreshold":4,"httpGet":{"path":"/healthz","port":"http"},"initialDelaySeconds":30,"periodSeconds":30,"timeoutSeconds":15}` | Liveness probe configuration |
