@@ -408,3 +408,31 @@ groups:
         for: 15m
         severity: warning
         annotations: {}
+  falco:
+    enabled: true
+    rules:
+      FalcoSecurityCritical:
+        enabled: true
+        for: 0m
+        severity: critical
+        annotations: {}
+      FalcoSecurityWarning:
+        enabled: true
+        for: 0m
+        severity: warning
+        annotations: {}
+      FalcoMetricsAbsent:
+        enabled: true
+        for: 5m
+        severity: critical
+        annotations: {}
+      FalcoKernelEventsDropped:
+        enabled: true
+        for: 0m
+        severity: warning
+        annotations: {}
+      FalcoOutputEventsDropped:
+        enabled: true
+        for: 0m
+        severity: warning
+        annotations: {}

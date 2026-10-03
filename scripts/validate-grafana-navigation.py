@@ -108,6 +108,7 @@ labels = {
     "cnpg_cluster": "db-a",
 }
 expected = {
+    "falco": {"cluster": "meruto", "hostname": "host a"},
     "collection": {"cluster": "meruto"},
     "host": {"cluster": "meruto", "hostname": "host a"},
     "kubernetes": {
@@ -155,6 +156,8 @@ for name, link in links["groups"].items():
         if fallback:
             for key in ["hostname", "pod", "node", "volume"]:
                 used.pop(key, None)
+            if name == "falco":
+                params["hostname"] = ""
             if name == "host":
                 params["hostname"] = "host:123"
             if name == "kubernetes":
@@ -249,5 +252,5 @@ subprocess.run(
     check=True,
 )
 print(
-    "Grafana navigation: Overview links, both alert catalogs and 20 Ruler URL cases passed"
+    "Grafana navigation: Overview links, both alert catalogs and 22 Ruler URL cases passed"
 )

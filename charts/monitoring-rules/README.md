@@ -1,6 +1,6 @@
 # monitoring-rules
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 PKE platform alert rules evaluated by Mimir
 
@@ -12,6 +12,13 @@ base backup は Barman plugin の `barman_cloud_cloudnative_pg_io_last_available
 Misskey は30時間、週次の4DBは7日12時間を期限とする。初回未成功も検知する。
 WAL archive の失敗・停滞は全DBで監視する。成功時刻だけでは復元可能性を保証しない。
 操作は [DB運用手順](../../CNPG.md) を参照する。
+
+## Falco
+
+検知 counter の増分・初回系列・起動直後の検知を Mimir で評価する。
+priority 0–3 は critical、4–5 は warning として既存の ntfy 経路へ通知する。
+Falco の欠測、カーネルイベントと出力イベントの破棄も監視する。
+例外条件・ログの確認・監視の制約は [Falco 運用手順](../../MONITORING.md#falco) を参照する。
 
 ## Values
 
@@ -140,6 +147,27 @@ WAL archive の失敗・停滞は全DBで監視する。成功時刻だけでは
 | groups.etcd.rules.EtcdNoLeader.enabled | bool | `true` |  |
 | groups.etcd.rules.EtcdNoLeader.for | string | `"1m"` |  |
 | groups.etcd.rules.EtcdNoLeader.severity | string | `"critical"` |  |
+| groups.falco.enabled | bool | `true` |  |
+| groups.falco.rules.FalcoKernelEventsDropped.annotations | object | `{}` |  |
+| groups.falco.rules.FalcoKernelEventsDropped.enabled | bool | `true` |  |
+| groups.falco.rules.FalcoKernelEventsDropped.for | string | `"0m"` |  |
+| groups.falco.rules.FalcoKernelEventsDropped.severity | string | `"warning"` |  |
+| groups.falco.rules.FalcoMetricsAbsent.annotations | object | `{}` |  |
+| groups.falco.rules.FalcoMetricsAbsent.enabled | bool | `true` |  |
+| groups.falco.rules.FalcoMetricsAbsent.for | string | `"5m"` |  |
+| groups.falco.rules.FalcoMetricsAbsent.severity | string | `"critical"` |  |
+| groups.falco.rules.FalcoOutputEventsDropped.annotations | object | `{}` |  |
+| groups.falco.rules.FalcoOutputEventsDropped.enabled | bool | `true` |  |
+| groups.falco.rules.FalcoOutputEventsDropped.for | string | `"0m"` |  |
+| groups.falco.rules.FalcoOutputEventsDropped.severity | string | `"warning"` |  |
+| groups.falco.rules.FalcoSecurityCritical.annotations | object | `{}` |  |
+| groups.falco.rules.FalcoSecurityCritical.enabled | bool | `true` |  |
+| groups.falco.rules.FalcoSecurityCritical.for | string | `"0m"` |  |
+| groups.falco.rules.FalcoSecurityCritical.severity | string | `"critical"` |  |
+| groups.falco.rules.FalcoSecurityWarning.annotations | object | `{}` |  |
+| groups.falco.rules.FalcoSecurityWarning.enabled | bool | `true` |  |
+| groups.falco.rules.FalcoSecurityWarning.for | string | `"0m"` |  |
+| groups.falco.rules.FalcoSecurityWarning.severity | string | `"warning"` |  |
 | groups.flux.enabled | bool | `true` |  |
 | groups.flux.rules.FluxReconciliationFailed.annotations | object | `{}` |  |
 | groups.flux.rules.FluxReconciliationFailed.enabled | bool | `true` |  |

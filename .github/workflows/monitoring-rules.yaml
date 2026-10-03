@@ -8,6 +8,8 @@ on:
       - 'charts/blackbox-exporter-probes/**'
       - 'flux/clusters/**'
       - 'ansible/inventories/**'
+      - 'ansible/roles/install-falco/**'
+      - 'scripts/validate-falco.py'
       - 'scripts/*monitoring*'
       - 'scripts/validate-ntfy-alerts.py'
       - 'scripts/validate_alert_inhibition.py'
@@ -27,7 +29,9 @@ jobs:
         with:
           version: v4.3.0
       - name: Install YAML parser
-        run: python3 -m pip install 'PyYAML==6.0.3'
+        run: python3 -m pip install 'PyYAML==6.0.3' 'Jinja2==3.1.6'
+      - name: Validate Falco config and rules without generating events
+        run: python3 scripts/validate-falco.py
       - name: Validate rules and inventory with real Alloy and promtool
         run: python3 scripts/validate-monitoring-rules.py
       - name: Validate routing, inhibition, ntfy priority and credentials rotation locally

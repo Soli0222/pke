@@ -75,6 +75,7 @@ state は Cloudflare R2 の S3 互換 backend に保存します。
 | etcd の更新 | `upgrade-etcd.yaml` |
 | etcd member の追加・削除 | `add-etcd-member.yaml` / `remove-etcd-member.yaml`。`-e etcd_member_host=<host>` で対象を指定 |
 | ホスト Alloy の監視設定更新 | `update-alloy-monitoring.yaml`。[反映手順](MONITORING.md#ホスト-alloy-の設定) |
+| ホスト Falco の設定 | `configure-falco.yaml`。パッケージ更新なしで設定を1台ずつ反映。[検知通知と例外](MONITORING.md#falco) |
 | ホスト Falco の更新 | `update-falco.yaml`。APT の最新版と設定を1台ずつ反映 |
 
 Falco の更新は `k3s_cluster` が対象です。

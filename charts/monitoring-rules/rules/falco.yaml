@@ -1,0 +1,37 @@
+rules:
+- alert: FalcoSecurityCritical
+  expr: |-
+    sum by (cluster, hostname, rule_name, priority) (
+      (increase(falcosecurity_falco_rules_matches_total{priority=~"0|1|2|3"}[5m]) > 0)
+      or ((falcosecurity_falco_rules_matches_total{priority=~"0|1|2|3"} > 0) unless falcosecurity_falco_rules_matches_total{priority=~"0|1|2|3"} offset 5m)
+      or ((falcosecurity_falco_rules_matches_total{priority=~"0|1|2|3"} > 0) and on (cluster, hostname)
+          (time() - falcosecurity_falco_start_timestamp_nanoseconds / 1e9 < 300))
+    ) > 0
+  summary: 'Falco: {{ $labels.rule_name }}（{{ $labels.hostname }}）'
+  description: '過去5分の検知、初回の正のカウンター、または起動直後の検知です。Falco priority={{ $labels.priority }}。侵害の確定ではありません。runbook の Loki クエリで cluster・hostname・rule を照合してください。'
+- alert: FalcoSecurityWarning
+  expr: |-
+    sum by (cluster, hostname, rule_name, priority) (
+      (increase(falcosecurity_falco_rules_matches_total{priority=~"4|5"}[5m]) > 0)
+      or ((falcosecurity_falco_rules_matches_total{priority=~"4|5"} > 0) unless falcosecurity_falco_rules_matches_total{priority=~"4|5"} offset 5m)
+      or ((falcosecurity_falco_rules_matches_total{priority=~"4|5"} > 0) and on (cluster, hostname)
+          (time() - falcosecurity_falco_start_timestamp_nanoseconds / 1e9 < 300))
+    ) > 0
+  summary: 'Falco: {{ $labels.rule_name }}（{{ $labels.hostname }}）'
+  description: '過去5分の検知、初回の正のカウンター、または起動直後の検知です。Falco priority={{ $labels.priority }}。侵害の確定ではありません。runbook の Loki クエリで cluster・hostname・rule を照合してください。'
+- alert: FalcoMetricsAbsent
+  requires: hosts
+  expr: |-
+    {{ range $i, $host := .Values.hosts }}{{ if $i }} or {{ end }}absent_over_time(falcosecurity_falco_version_info{hostname="{{ $host.name }}"}[{{ $.Values.absenceWindow }}]){{ end }}
+  summary: 'Falco メトリクスが欠測（{{ $labels.hostname }}）'
+  description: 'Falco の監視入力が5分間欠測し、その状態がさらに5分継続しています。Falco service、Alloy scrape、remote_write を確認してください。'
+- alert: FalcoKernelEventsDropped
+  expr: |-
+    sum by (cluster, hostname) (increase(falcosecurity_scap_n_drops_total[5m])) > 0
+  summary: 'カーネルイベントの取りこぼし（{{ $labels.hostname }}）'
+  description: '未検知・未記録のイベントがあり得ます。Falco の CPU、バッファ、出力先の詰まりを確認してください。'
+- alert: FalcoOutputEventsDropped
+  expr: |-
+    sum by (cluster, hostname) (increase(falcosecurity_falco_outputs_queue_num_drops_total[5m])) > 0
+  summary: '検知イベントの出力キューでの破棄（{{ $labels.hostname }}）'
+  description: '未検知・未記録のイベントがあり得ます。Falco の CPU、バッファ、出力先の詰まりを確認してください。'

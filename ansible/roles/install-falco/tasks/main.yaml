@@ -81,6 +81,29 @@
     mode: "0644"
   notify: Restart Falco
 
+- name: Create Falco custom rules directory
+  ansible.builtin.file:
+    path: /etc/falco/rules.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure narrow PKE exceptions
+  ansible.builtin.copy:
+    src: pke-rules.yaml
+    dest: /etc/falco/rules.d/pke-rules.yaml
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/bin/falco -V /etc/falco/falco_rules.yaml -V %s
+  notify: Restart Falco
+
+- name: Validate complete Falco configuration before restart
+  ansible.builtin.command: /usr/bin/falco --dry-run
+  changed_when: false
+  when: not ansible_check_mode
+
 - name: Enable Falco modern eBPF service
   ansible.builtin.systemd:
     name: "{{ falco_service_name }}"
