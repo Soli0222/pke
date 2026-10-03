@@ -230,3 +230,65 @@ chart の内容を戻す場合も新しい chart version を付ける。
 ルール削除や保存先 prefix の変更では、Mimir の保存済み namespace も確認する。
 同期元が停止していると古いルールが残るため、必要な場合は一覧から対象を特定して回収し、別クラスタのルールを削除しない。
 ホスト Alloy は控えた backup を validate して復元し、サービス再起動後に収集を再確認する。
+
+## Falco
+
+Falco はホストの syscall を監視し、検知カウンターを Alloy 経由で Mimir に送る。
+Mimir の `pke.falco` が評価し、既存の Alertmanager → ntfy 経路で通知する。
+Loki は JSON イベントの調査に使う。Loki のルール評価には依存しない。
+
+| 通知 | 条件 |
+|---|---|
+| FalcoSecurityCritical | Falco の Emergency / Alert / Critical / Error（priority 0–3）を検知 |
+| FalcoSecurityWarning | Falco の Warning / Notice（priority 4–5）を検知 |
+| FalcoMetricsAbsent | 対象ホストの version 指標が5分間欠測した状態が、さらに5分継続 |
+| FalcoKernelEventsDropped | 過去5分でカーネルイベントの取りこぼしが増加 |
+| FalcoOutputEventsDropped | 過去5分で検知イベントの出力破棄が増加 |
+
+検知通知は5分間の counter 増分を使い、初回の正の系列と起動直後の正の counter も拾う。
+`include_empty_values: true` でも未検知ルールの系列が存在するとは限らないため、ゼロ値の事前観測を前提にしない。
+検知通知に追加の待機時間は設けず、Mimir の評価間隔と Alertmanager の group_wait に従う。
+通知の単位は cluster・hostname・rule_name・priority。件数や個々の Pod はログで確認する。
+長い収集断の後は過去の正の counter を再通知することがある。
+次の scrape 前に Falco が停止して counter が失われる場合は、メトリクスだけではその検知を復元できない。
+通知の resolved は観測窓で新しい検知がなくなったことを示し、侵害からの復旧を保証しない。
+
+### 例外と変更
+
+[custom rules](ansible/roles/install-falco/files/pke-rules.yaml) は次の通常動作に限定する。
+
+- CNPG: DB の namespace と Pod 名、postgres コンテナ、イメージ、postgres 親プロセス、非対話実行、WAL アーカイブの完全なコマンド形式を照合する。任意のシェル実行やコマンド末尾の追加実行は除外しない。
+- Longhorn: longhorn-system 内の manager が実行する `longhorn backup cleanup-all-mounts` のみ。namespace 全体やすべてのネットワークへの入出力リダイレクトは除外しない。
+
+systemd の正規の資格情報読み取りには upstream の例外を使う。
+`cat /etc/shadow` を含む任意の機密ファイル読み取りは通知対象に残す。
+DB イメージや PostgreSQL major version の変更時は例外の親実行ファイルパスも確認する。
+Falco の container plugin は配布設定を使い、標準の CRI socket 一覧に K3s の socket を含む。
+
+設定だけの変更はパッケージを更新せず、次を対象ホスト1台ずつ実施する。
+Kubernetes の対応先は natsume が `natsume@soli`、meruto が `meruto@soli`。
+
+```sh
+uv run --no-project --with pyyaml --with jinja2 python scripts/validate-falco.py
+cd ansible
+ansible-playbook -i inventories/hosts.yaml configure-falco.yaml --limit natsume-08 --check --diff
+ansible-playbook -i inventories/hosts.yaml configure-falco.yaml --limit natsume-08
+```
+
+反映後は Falco service、設定・ルールの読み込み、Mimir の起動時刻・検知 counter・欠測・drop、通常イベントの JSON を確認する。
+本番で侵害模擬や合成通知は実施しない。
+
+### 通知から調査する
+
+通知の Grafana リンクは対象ホストの service 状態を開く。
+[Grafana Explore](https://grafana.str08.net/explore) で Loki を選び、通知の cluster・hostname・rule_name を入れる。
+
+```logql
+{cluster="natsume", hostname="natsume-08", syslog_identifier="falco"}
+| json
+| rule="Read sensitive file untrusted"
+```
+
+通知時刻の前後を確認し、`output_fields` の Pod・namespace・親プロセス・実行コマンド・対象ファイルを照合する。
+JSON 化より前のログは `| json` を外してメッセージ本文で検索する。
+例外を追加するときは実行主体・コマンド・対象リソースを限定し、隣接する不正操作を除外しないことを確認する。

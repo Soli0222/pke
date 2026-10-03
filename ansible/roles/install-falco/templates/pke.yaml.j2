@@ -5,14 +5,14 @@ engine:
     buf_size_preset: {{ falco_modern_ebpf_buf_size_preset }}
     drop_failed_exit: {{ falco_modern_ebpf_drop_failed_exit | bool | lower }}
 
-container_engines:
-  cri:
-    enabled: true
-    sockets:
-      - {{ falco_cri_socket }}
-    disable_async: {{ falco_cri_disable_async | bool | lower }}
-  containerd:
-    enabled: false
+# container plugin は配布設定で有効。標準 CRI socket に K3s も含まれる。
+# plugins は配列として追記されるため、同名 plugin をここで再定義しない。
+json_output: true
+json_include_output_property: true
+stdout_output:
+  enabled: true
+syslog_output:
+  enabled: false
 
 metrics:
   enabled: {{ falco_metrics_enabled | bool | lower }}
@@ -27,7 +27,7 @@ metrics:
   plugins_metrics_enabled: true
   jemalloc_stats_enabled: false
   convert_memory_to_mb: true
-  include_empty_values: false
+  include_empty_values: true
 
 webserver:
   enabled: true

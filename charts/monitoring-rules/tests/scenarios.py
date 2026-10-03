@@ -1019,4 +1019,96 @@ def scenarios():
             case["series"].append(
                 s(backup_metric, "1+60x11600", {**D, "cluster": "meruto"})
             )
+    # Falco: 単発・初回系列・同値への再起動・別クラスタ・回復を個別に検証。
+    fh = {**N, "hostname": "node-a"}
+    for alert, priority in [
+        ("FalcoSecurityCritical", "2"),
+        ("FalcoSecurityWarning", "4"),
+    ]:
+        fl = {**fh, "rule_name": "Read sensitive file untrusted", "priority": priority}
+        metric = "falcosecurity_falco_rules_matches_total"
+        add(
+            alert,
+            [s(metric, "0x4 1x35", fl)],
+            fl,
+            "single event after zero baseline",
+            [("4m", []), ("5m", [fl]), ("8m", [fl]), ("11m", [])],
+        )
+        add(
+            alert,
+            [s(metric, "_x5 1x35", fl)],
+            fl,
+            "first sample is already one",
+            [("4m", []), ("5m", [fl]), ("9m", [fl]), ("11m", [])],
+        )
+        add(
+            alert,
+            [
+                s(metric, "1x40", fl),
+                s(
+                    "falcosecurity_falco_start_timestamp_nanoseconds",
+                    "0x9 600000000000x30",
+                    fh,
+                ),
+            ],
+            fl,
+            "restart and first event between scrapes with unchanged counter",
+            [("8m", []), ("10m", [fl]), ("14m", [fl]), ("16m", [])],
+        )
+        add(
+            alert,
+            [s(metric, "0x4 1x35", {**fl, "cluster": "meruto"}), s(metric, "0x40", fl)],
+            fl,
+            "other cluster event is scoped",
+            [("6m", [{**fl, "cluster": "meruto"}]), ("12m", [])],
+        )
+        quiet(
+            alert,
+            [s(metric, "1x40", fl)],
+            "old counter does not continually alert",
+            "10m",
+        )
+        add(
+            alert,
+            [s(metric, "5x9 1x30", fl)],
+            fl,
+            "counter reset with event",
+            [("8m", []), ("11m", [fl]), ("16m", [])],
+        )
+    notice = {**fh, "rule_name": "Run shell untrusted", "priority": "5"}
+    add(
+        "FalcoSecurityWarning",
+        [s("falcosecurity_falco_rules_matches_total", "0x4 1x35", notice)],
+        notice,
+        "NOTICE is actionable",
+        [("6m", [notice]), ("12m", [])],
+    )
+    quiet(
+        "FalcoSecurityWarning",
+        [
+            s(
+                "falcosecurity_falco_rules_matches_total",
+                "0+1x40",
+                {**notice, "priority": "6"},
+            )
+        ],
+        "informational does not page",
+    )
+    absent("FalcoMetricsAbsent", "falcosecurity_falco_version_info", fh)
+    for alert, metric in [
+        ("FalcoKernelEventsDropped", "falcosecurity_scap_n_drops_total"),
+        (
+            "FalcoOutputEventsDropped",
+            "falcosecurity_falco_outputs_queue_num_drops_total",
+        ),
+    ]:
+        add(
+            alert,
+            [s(metric, "0x4 1x35", fh)],
+            fh,
+            "single drop and recovery",
+            [("4m", []), ("6m", [fh]), ("12m", [])],
+        )
+        quiet(alert, [s(metric, "10x9 0x30", fh)], "reset without drops", "11m")
+
     return cases

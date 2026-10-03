@@ -1,5 +1,9 @@
 # panel IDと変数は scripts/validate-grafana-navigation.py がGit定義と照合する。
 groups:
+  falco:
+    uid: pke-host-systemd
+    panel: 5
+    query: var-cluster={{ $labels.cluster | urlquery }}&var-hostname={{ $labels.hostname | urlquery }}
   collection:
     uid: pke-monitoring-pipeline
     panel: 10
