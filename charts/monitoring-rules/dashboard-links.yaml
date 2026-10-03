@@ -48,8 +48,8 @@ rules:
     panel: 5
   HostSystemdUnitInactive:
     panel: 5
-  CNPGDumpBackupStale:
-    panel: 1005
+  CNPGBaseBackupStale:
+    panel: 360
   CNPGWALArchiveFailing:
     panel: 362
   CNPGWALArchiveStalled:

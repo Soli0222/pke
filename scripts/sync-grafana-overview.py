@@ -195,28 +195,9 @@ def expected_queries(root=ROOT):
                         db["name"] + " / WAL",
                     )
                 )
-            threshold = (
-                values.get("groups", {})
-                .get("cnpg", {})
-                .get("rules", {})
-                .get("CNPGDumpBackupStale", {})
-                .get(
-                    "threshold",
-                    defaults["groups"]["cnpg"]["rules"]["CNPGDumpBackupStale"][
-                        "threshold"
-                    ],
-                )
-            )
-            if db.get("dumpCronJob"):
-                last = f"max({m('kube_cronjob_status_last_successful_time', namespace=db['namespace'], cronjob=db['dumpCronJob'])}) > 0"
-                backups.append(
-                    scalar(
-                        f"(time() - ({last})) > bool {threshold}",
-                        db["name"] + " / pg_dump",
-                    )
-                )
-            else:
-                last = f"max({m('cnpg_collector_last_available_backup_timestamp', **labels)}) > 0"
+            if db.get("baseBackupMaxAgeSeconds"):
+                threshold = db["baseBackupMaxAgeSeconds"]
+                last = f"max({m('barman_cloud_cloudnative_pg_io_last_available_backup_timestamp', **labels)}) > 0"
                 # A missing/zero timestamp is unverified, never a 1970 success.
                 backups.append(
                     scalar(

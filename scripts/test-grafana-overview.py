@@ -63,7 +63,7 @@ case(
     "absent nodes, DBs and probes survive in expectation",
     [],
     sum([check(1, 0, len(nodes), c) for c, nodes in hosts.items()], [])
-    + check(7, 0, 6)
+    + check(7, 0, 10)
     + check(12, 0, 5)
     + check(8, 0, 4, "meruto")
     + check(7, -2, -2, "meruto")
@@ -154,8 +154,8 @@ case(
     "misskey base backup zero is not a success",
     [
         metric(
-            "kube_cronjob_status_last_successful_time",
-            {"cluster": "natsume", "namespace": ns, "cronjob": name + "-pg-dump"},
+            "barman_cloud_cloudnative_pg_io_last_available_backup_timestamp",
+            {"cluster": "natsume", "namespace": ns, "cnpg_cluster": name},
             "1+60x5",
         )
         for ns, name in [
@@ -167,7 +167,7 @@ case(
     ]
     + [
         metric(
-            "cnpg_collector_last_available_backup_timestamp",
+            "barman_cloud_cloudnative_pg_io_last_available_backup_timestamp",
             {
                 "cluster": "natsume",
                 "namespace": "misskey",
@@ -206,12 +206,12 @@ case(
     check(11, 1, 0),
 )
 case(
-    "old base backup is not a current success",
+    "31h backup is stale for daily DB but valid for weekly DBs",
     [
         metric(
-            "kube_cronjob_status_last_successful_time",
-            {"cluster": "natsume", "namespace": ns, "cronjob": name + "-pg-dump"},
-            "1+60x1860",
+            "barman_cloud_cloudnative_pg_io_last_available_backup_timestamp",
+            {"cluster": "natsume", "namespace": ns, "cnpg_cluster": name},
+            "1+0x1860",
         )
         for ns, name in [
             ("grafana", "grafana-cluster"),
@@ -222,7 +222,7 @@ case(
     ]
     + [
         metric(
-            "cnpg_collector_last_available_backup_timestamp",
+            "barman_cloud_cloudnative_pg_io_last_available_backup_timestamp",
             {
                 "cluster": "natsume",
                 "namespace": "misskey",

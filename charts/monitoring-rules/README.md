@@ -1,8 +1,17 @@
 # monitoring-rules
 
-![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 PKE platform alert rules evaluated by Mimir
+
+## CNPG
+
+`databases` に namespace、name、archive、replication と `baseBackupMaxAgeSeconds` を指定する。
+base backup は Barman plugin の `barman_cloud_cloudnative_pg_io_last_available_backup_timestamp` を使う。
+`CNPGBaseBackupStale` は DB ごとの期限超過、成功時刻0、または5分間の欠測が15分続くと通知する。
+Misskey は30時間、週次の4DBは7日12時間を期限とする。初回未成功も検知する。
+WAL archive の失敗・停滞は全DBで監視する。成功時刻だけでは復元可能性を保証しない。
+操作は [DB運用手順](../../CNPG.md) を参照する。
 
 ## Values
 
@@ -42,11 +51,10 @@ PKE platform alert rules evaluated by Mimir
 | groups.cnpg.rules.CNPGCollectorDown.enabled | bool | `true` |  |
 | groups.cnpg.rules.CNPGCollectorDown.for | string | `"5m"` |  |
 | groups.cnpg.rules.CNPGCollectorDown.severity | string | `"critical"` |  |
-| groups.cnpg.rules.CNPGDumpBackupStale.annotations | object | `{}` |  |
-| groups.cnpg.rules.CNPGDumpBackupStale.enabled | bool | `true` |  |
-| groups.cnpg.rules.CNPGDumpBackupStale.for | string | `"15m"` |  |
-| groups.cnpg.rules.CNPGDumpBackupStale.severity | string | `"warning"` |  |
-| groups.cnpg.rules.CNPGDumpBackupStale.threshold | int | `108000` |  |
+| groups.cnpg.rules.CNPGBaseBackupStale.annotations | object | `{}` |  |
+| groups.cnpg.rules.CNPGBaseBackupStale.enabled | bool | `true` |  |
+| groups.cnpg.rules.CNPGBaseBackupStale.for | string | `"15m"` |  |
+| groups.cnpg.rules.CNPGBaseBackupStale.severity | string | `"warning"` |  |
 | groups.cnpg.rules.CNPGMetricsAbsent.annotations | object | `{}` |  |
 | groups.cnpg.rules.CNPGMetricsAbsent.enabled | bool | `true` |  |
 | groups.cnpg.rules.CNPGMetricsAbsent.for | string | `"5m"` |  |

@@ -48,7 +48,9 @@ def inventory_contract():
             hosts[cluster], key=lambda x: x["name"]
         )
         databases = {}
-        cronjobs = set()
+        stores = {}
+        schedules = {}
+        monitors = {}
         for path in (ROOT / f"flux/clusters/{cluster}/apps").rglob("*.yaml"):
             for doc in yaml.safe_load_all(path.read_text()):
                 if not doc:
@@ -60,10 +62,16 @@ def inventory_contract():
                     databases[
                         (doc["metadata"]["namespace"], doc["metadata"]["name"])
                     ] = doc["spec"]
-                if doc.get("kind") == "CronJob":
-                    cronjobs.add(
-                        (doc["metadata"]["namespace"], doc["metadata"]["name"])
-                    )
+                key = (
+                    doc.get("metadata", {}).get("namespace"),
+                    doc.get("metadata", {}).get("name"),
+                )
+                if doc.get("kind") == "ObjectStore":
+                    stores[key] = doc["spec"]
+                if doc.get("kind") == "ScheduledBackup":
+                    schedules[(key[0], doc["spec"]["cluster"]["name"])] = doc["spec"]
+                if doc.get("kind") == "PodMonitor":
+                    monitors[key] = doc["spec"]
         assert {(d["namespace"], d["name"]) for d in values["databases"]} == set(
             databases
         )
@@ -73,8 +81,45 @@ def inventory_contract():
             assert db["archive"] == any(
                 p.get("isWALArchiver") for p in spec.get("plugins", [])
             )
-            if db.get("dumpCronJob"):
-                assert (db["namespace"], db["dumpCronJob"]) in cronjobs
+            if db.get("baseBackupMaxAgeSeconds"):
+                key = (db["namespace"], db["name"])
+                schedule = schedules[key]
+                assert schedule["method"] == "plugin"
+                plugin = next(p for p in spec["plugins"] if p.get("isWALArchiver"))
+                assert (
+                    plugin["name"]
+                    == schedule["pluginConfiguration"]["name"]
+                    == "barman-cloud.cloudnative-pg.io"
+                )
+                store = stores[
+                    (db["namespace"], plugin["parameters"]["barmanObjectName"])
+                ]
+                assert store["retentionPolicy"] == "7d"
+                assert (
+                    store["configuration"]["endpointURL"]
+                    == "${CNPG_BACKUP_ENDPOINT_URL}"
+                )
+                fields = schedule["schedule"].split()
+                assert len(fields) == 6
+                interval = 86400 if fields[-1] == "*" else 7 * 86400
+                assert interval < db["baseBackupMaxAgeSeconds"] <= interval + 86400
+                assert any(
+                    r.get("targetLabel") == "cnpg_cluster"
+                    for endpoint in monitors[key]["podMetricsEndpoints"]
+                    for r in endpoint.get("relabelings", [])
+                )
+                flux = yaml.safe_load(
+                    (
+                        ROOT
+                        / f"flux/clusters/{cluster}/kustomizations/{db['namespace']}.yaml"
+                    ).read_text()
+                )["spec"]
+                assert {"cnpg", "cnpg-backup-config"} <= {
+                    d["name"] for d in flux["dependsOn"]
+                }
+                assert {"kind": "Secret", "name": "cnpg-backup-flux-vars"} in flux[
+                    "postBuild"
+                ]["substituteFrom"]
         if not databases:
             assert values["groups"]["cnpg"]["enabled"] is False
 
@@ -92,7 +137,7 @@ def main():
                 "namespace": "app",
                 "archive": True,
                 "replication": True,
-                "dumpCronJob": "db-pg-dump",
+                "baseBackupMaxAgeSeconds": 648000,
             },
             {
                 "name": "disabled-db",

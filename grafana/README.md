@@ -177,8 +177,8 @@ KSM/証明書collectorの異常・欠測は各分野の確認項目にも含む�
 どちらも0の場合も、詳細画面の全機能や復元可能性を保証する表示ではない。
 
 DBのないclusterと、HTTP probeの設定がない観測元は対象外とする。
-日次pg_dumpとbase backupの鮮度には監視ルールのpg_dump期限を使う。
-Misskeyのbase backup成功時刻が未取得・0の場合は未確認であり、WAL成功をその代わりにしない。
+base backupの鮮度には監視設定のDB別 `baseBackupMaxAgeSeconds` を使う。Misskeyは30時間、週次の4DBは7日12時間。
+Barman pluginのbase backup成功時刻が未取得・0の場合は未確認であり、WAL成功をその代わりにしない。
 Longhornのunknown/detachedと、期待PVに状態指標がない場合も未確認へ残す。
 
 ```sh

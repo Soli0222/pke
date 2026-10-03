@@ -801,35 +801,33 @@ def scenarios():
         ],
         "archive disabled",
     )
-    CJ = {**N, "namespace": "app", "cronjob": "db-pg-dump"}
-    CJO = {**CJ, "cnpg_cluster": "db"}
-    for never in (False, True):
-        series = [
-            s("kube_cronjob_created", "0x2200", CJ),
-            s("kube_cronjob_spec_suspend", "0x2200", CJ),
-        ]
-        series.append(
-            s(
-                "kube_cronjob_status_last_successful_time",
-                ("_x1999 " if never else "0x1999 ") + "120000x200",
-                CJ,
-            )
-        )
+    B = {**N, "namespace": "app", "cnpg_cluster": "db"}
+    backup_metric = "barman_cloud_cloudnative_pg_io_last_available_backup_timestamp"
+    add(
+        "CNPGBaseBackupStale",
+        [s(backup_metric, "1x11519 691200x61", D)],
+        B,
+        "weekly backup within grace, stale, then success",
+        checks=[("7d", []), ("181h", [B]), ("193h", [])],
+    )
+    for values, reason in [
+        ("0x25 1560x15", "no successful backup"),
+        ("_x25 1560x15", "missing plugin metrics"),
+    ]:
         add(
-            "CNPGDumpBackupStale",
-            series,
-            CJO,
-            "never executed" if never else "daily pg_dump stale and later success",
-            checks=[("29h", []), ("31h", [CJO]), ("34h", [])],
+            "CNPGBaseBackupStale",
+            [s(backup_metric, values, D)],
+            B,
+            reason,
         )
     quiet(
-        "CNPGDumpBackupStale",
+        "CNPGBaseBackupStale",
         [
-            s("kube_cronjob_created", "0x2000", CJ),
-            s("kube_cronjob_spec_suspend", "1x2000", CJ),
+            s(backup_metric, "1+60x45", D),
+            s(backup_metric, "0x45", {**D, "cnpg_cluster": "disabled-db"}),
+            s(backup_metric, "0x45", {**D, "cluster": "outside"}),
         ],
-        "suspended backup",
-        when="31h",
+        "unconfigured DB and unrelated cluster do not affect backup health",
     )
     L = {**N, "volume": "vol-a", "pvc_namespace": "app", "pvc": "data"}
     add(
@@ -1014,4 +1012,11 @@ def scenarios():
         "same name in different kind",
         checks=[("24m", [FLO])],
     )
+    # Test rules are scoped into both clusters; give the other cluster a healthy
+    # backup so absence in natsume cannot borrow its success or create noise.
+    for case in cases:
+        if case["alert"] == "CNPGBaseBackupStale":
+            case["series"].append(
+                s(backup_metric, "1+60x11600", {**D, "cluster": "meruto"})
+            )
     return cases

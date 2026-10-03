@@ -218,7 +218,7 @@ pending は WAL 全体の未送信量ではない。送信経路が止まると�
 Mimir の評価・通知エラーと Alertmanager の配送失敗も、counter の絶対値ではなく増分を見る。
 
 監視範囲の制約は残る。
-ホスト cAdvisor 単独の停止と Misskey の base backup 成功時刻は未カバー。
+ホスト cAdvisor 単独の停止は未カバー。CNPG の base backup は Barman plugin の成功時刻を DB ごとの期限で監視する。
 アプリ固有の式も実際の job 名・入力系列を確認し、評価エラーがないだけで監視できていると判断しない。
 
 ## 設定を戻す

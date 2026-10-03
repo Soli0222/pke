@@ -29,25 +29,26 @@ spec:
     databases:
     - namespace: grafana
       name: grafana-cluster
-      archive: false
+      archive: true
       replication: false
-      dumpCronJob: grafana-cluster-pg-dump
+      baseBackupMaxAgeSeconds: 648000 # 7日 + 12時間
     - namespace: misskey
       name: misskey-cluster
+      baseBackupMaxAgeSeconds: 108000 # 1日 + 6時間
       archive: true
       replication: false
     - namespace: spotify-nowplaying
       name: spn-cluster
-      archive: false
+      archive: true
       replication: false
-      dumpCronJob: spn-cluster-pg-dump
+      baseBackupMaxAgeSeconds: 648000 # 7日 + 12時間
     - namespace: spotify-reblend
       name: reblend-cluster
-      archive: false
+      archive: true
       replication: false
-      dumpCronJob: reblend-cluster-pg-dump
+      baseBackupMaxAgeSeconds: 648000 # 7日 + 12時間
     - namespace: sui
       name: sui-cluster
-      archive: false
+      archive: true
       replication: false
-      dumpCronJob: sui-cluster-pg-dump
+      baseBackupMaxAgeSeconds: 648000 # 7日 + 12時間

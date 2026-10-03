@@ -35,9 +35,9 @@ rules:
   summary: WAL archive 停滞 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
   description: archive を有効にした DB で成功が30分ありません。archive_timeout と WAL 生成を確認してください。
   requires: databases
-- alert: CNPGDumpBackupStale
+- alert: CNPGBaseBackupStale
   expr: |-
-    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.dumpCronJob }}{{ $parts = append $parts (printf "label_replace(((time() - max by (cluster, namespace, cronjob) (kube_cronjob_status_last_successful_time{namespace=\"%s\",cronjob=\"%s\"}) > %v) or ((time() - max by (cluster, namespace, cronjob) (kube_cronjob_created{namespace=\"%[1]s\",cronjob=\"%[2]s\"}) > %[3]v) unless on (cluster, namespace, cronjob) kube_cronjob_status_last_successful_time{namespace=\"%[1]s\",cronjob=\"%[2]s\"})) and on (cluster, namespace, cronjob) (max by (cluster, namespace, cronjob) (kube_cronjob_spec_suspend{namespace=\"%[1]s\",cronjob=\"%[2]s\"}) == 0), \"cnpg_cluster\", \"%[4]s\", \"cronjob\", \".+\")" $db.namespace $db.dumpCronJob $.Values.groups.cnpg.rules.CNPGDumpBackupStale.threshold $db.name) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
-  summary: pg_dump 最終成功が古い {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
-  description: 宣言した pg_dump CronJob が期限内に成功していません。未実行も検知しますが、R2 内のデータの復元可能性までは保証しません。
+    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.baseBackupMaxAgeSeconds }}{{ $parts = append $parts (printf "(time() - max by (cluster, namespace, cnpg_cluster) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace=\"%s\",cnpg_cluster=\"%s\"}) > %v) or (max by (cluster, namespace, cnpg_cluster) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace=\"%[1]s\",cnpg_cluster=\"%[2]s\"}) <= 0) or absent_over_time(barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace=\"%[1]s\",cnpg_cluster=\"%[2]s\"}[5m])" $db.namespace $db.name $db.baseBackupMaxAgeSeconds) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+  summary: base backup 成功未確認 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
+  description: Barman plugin の最終成功が DB ごとの期限を超過、0、または欠測しています。Backup の完了状態と ObjectStore、R2 を確認してください。WAL 成功だけでは base backup の成功・復元可能性を保証しません。
   requires: databases

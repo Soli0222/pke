@@ -10,6 +10,11 @@ spec:
   affinity:
     nodeSelector:
       kubernetes.io/hostname: natsume-08
+  plugins:
+  - name: barman-cloud.cloudnative-pg.io
+    isWALArchiver: true
+    parameters:
+      barmanObjectName: sui-backup-store
   storage:
     storageClass: topolvm
     size: 5Gi

@@ -12,11 +12,11 @@ Pooler は使わず、アプリは CNPG の Service に直接接続する。
 
 | Namespace | Cluster | DB / Owner | 容量 | バックアップ | 実行時刻（JST） |
 |---|---|---|---|---|---|
-| misskey | `misskey-cluster` | `misskey` | 150Gi | base backup + WAL archive | 01:30、WAL は継続 |
-| grafana | `grafana-cluster` | `grafana` | 10Gi | pg_dump | 03:00 |
-| sui | `sui-cluster` | `sui` | 5Gi | pg_dump | 03:05 |
-| spotify-reblend | `reblend-cluster` | `reblend` | 5Gi | pg_dump | 03:10 |
-| spotify-nowplaying | `spn-cluster` | `spn` | 5Gi | pg_dump | 03:15 |
+| misskey | `misskey-cluster` | `misskey` | 150Gi | base backup + WAL archive | 毎日 01:30 |
+| grafana | `grafana-cluster` | `grafana` | 10Gi | base backup + WAL archive | 日曜 03:00 |
+| sui | `sui-cluster` | `sui` | 5Gi | base backup + WAL archive | 日曜 03:15 |
+| spotify-reblend | `reblend-cluster` | `reblend` | 5Gi | base backup + WAL archive | 日曜 03:30 |
+| spotify-nowplaying | `spn-cluster` | `spn` | 5Gi | base backup + WAL archive | 日曜 03:45 |
 
 定義は [natsume の各アプリ](flux/clusters/natsume/apps/) の `cluster.yaml` にある。
 operator / Barman Cloud plugin のバージョンは [cnpg](flux/clusters/natsume/apps/cnpg/)、DB image と PostgreSQL 設定は各 Cluster を参照する。
@@ -24,21 +24,29 @@ Misskey の image には PGroonga が必要で、復元先にも同じ拡張と�
 
 ## バックアップの保存先と認証
 
-R2 の bucket は `cnpg-backup`、保持期間は両方式とも7日。
-Misskey の [ObjectStore](flux/clusters/natsume/apps/misskey/objectstore.yaml) は WAL / base backup を gzip 圧縮し、[ScheduledBackup](flux/clusters/natsume/apps/misskey/scheduledbackup.yaml) は UTC の6フィールド cron を使う。
-他の DB の `cronjob-pg-dump.yaml` は `Asia/Tokyo` で実行し、`pg_dump -Fc --no-owner --no-privileges` の出力を保存する。
-pg_dump の日時は UTC でファイル名に入る。
+全DBで Barman Cloud plugin による base backup と WAL archive を使う。
+WAL は継続保存し、base backup は上表の頻度で取得する。
+各アプリの `ObjectStore` は WAL / base backup を gzip 圧縮し、`ScheduledBackup` は UTC の6フィールド cron を使う。
+週次の4DBは `immediate: true` により ScheduledBackup 作成時にも初回バックアップを取得する。
+初回は定期実行の時刻分散が効かないため、導入時の負荷と完了状態を確認する。
+plugin の追加は sidecar を含む DB Pod の更新を伴う。単一 instance のため、更新時の接続断を見込む。
+初回 Backup が失敗した場合は原因を解消して手動で再取得し、週次の次回実行を待たない。
+base backup と WAL からの復元を確認するまでは、保管済みの dump を残す。
+
+R2 の bucket は `cnpg-backup`、`retentionPolicy: 7d` は7日間の復元可能期間を表す。
+その期間の起点より前の base backup と必要な WAL も保持するため、7日を超えるオブジェクトが残る。
+週次では復元時に再生する WAL が日次より多くなり、復元に時間がかかる場合がある。
+保持の仕組みは [Barman の retention policy](https://cloudnative-pg.io/plugin-barman-cloud/docs/retention/) を参照する。
 
 ```text
 s3://cnpg-backup/<cluster>/base/<backup-id>/
 s3://cnpg-backup/<cluster>/wals/
-s3://cnpg-backup/<cluster>/<cluster>-YYYYMMDD-HHMMSS.dump
 ```
 
 | 1Password item | 同期先とキー |
 |---|---|
 | `cnpg-backup-s3-secret` | 各 DB namespace の同名 Secret。`ACCESS_KEY_ID`、`ACCESS_SECRET_KEY`、`ENDPOINT` |
-| `cnpg-backup-flux-vars` | `flux-system/cnpg-backup-flux-vars`。`CNPG_BACKUP_ENDPOINT_URL` を Flux が Misskey の ObjectStore に注入 |
+| `cnpg-backup-flux-vars` | `flux-system/cnpg-backup-flux-vars`。`CNPG_BACKUP_ENDPOINT_URL` を Flux が各 DB の ObjectStore に注入 |
 
 AWS CLI を使う操作では、1Password から `AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`、`AWS_ENDPOINT_URL` を環境変数へ読み込んでおく。
 認証情報をシェル履歴や出力に残さない。
@@ -47,49 +55,42 @@ AWS CLI を使う操作では、1Password から `AWS_ACCESS_KEY_ID`、`AWS_SECR
 
 ```sh
 kubectl --context natsume@soli get clusters.postgresql.cnpg.io -A
-kubectl --context natsume@soli -n misskey get scheduledbackups,backups
-kubectl --context natsume@soli get cronjobs,jobs -A
+kubectl --context natsume@soli get scheduledbackups,backups -A
+kubectl --context natsume@soli get objectstores.barmancloud.cnpg.io -A
 aws s3 ls --endpoint-url "$AWS_ENDPOINT_URL" s3://cnpg-backup/ --recursive
 ```
 
-Misskey は Backup の `status.phase=completed`、plugin のログ、R2 の base backup と必要な WAL を確認する。
+各 DB の Backup の `status.phase=completed`、plugin のログ、R2 の base backup と必要な WAL を確認する。
 ScheduledBackup の `lastScheduleTime` は実行予定が処理された時刻であり、成功の証拠にはならない。
-pg_dump は CronJob の `lastSuccessfulTime`、失敗 Job のログ、R2 の dump を照合する。
-成功 Job は保持しない設定なので、Job が見当たらないだけで未実行とは判断しない。
+既存の PodMonitor は instance manager の metrics endpoint から plugin の指標も収集し、`cnpg_cluster` ラベルを付ける。
+最終成功は `barman_cloud_cloudnative_pg_io_last_available_backup_timestamp`、復元可能期間の起点は `barman_cloud_cloudnative_pg_io_first_recoverability_point` を確認する。
+従来の `cnpg_collector_last_available_backup_timestamp` は plugin の成功判定に使わない。
 
 バックアップの完了と復元可能性は、別名 DB への復元で確認する。
 WAL archive の成功だけで base backup の成功を判断しない。
 
 ## 手動バックアップを作る
 
-Misskey は `kubectl cnpg` plugin で実行する。
+全DBで `kubectl cnpg` plugin を使う。以下は Grafana の例。
+対象に合わせて namespace と Cluster 名を置き換える。
 
 ```sh
-kubectl cnpg backup misskey-cluster --context natsume@soli -n misskey \
+kubectl cnpg backup grafana-cluster --context natsume@soli -n grafana \
   --method=plugin --plugin-name=barman-cloud.cloudnative-pg.io
-kubectl --context natsume@soli -n misskey get backups -w
+kubectl --context natsume@soli -n grafana get backups -w
 ```
 
-他の DB は既存 CronJob から Job を作る。以下は Grafana の例。
+Backup の `status.phase=completed` と R2 への保存を確認する。
+手動実行でも ObjectStore の保持設定が適用される。
 
-```sh
-backup_job="grafana-cluster-pg-dump-manual-$(date -u +%Y%m%d%H%M%S)"
-kubectl --context natsume@soli -n grafana create job "$backup_job" \
-  --from=cronjob/grafana-cluster-pg-dump
-kubectl --context natsume@soli -n grafana logs -f "job/$backup_job"
-kubectl --context natsume@soli -n grafana get job "$backup_job"
-```
-
-Job の Complete と R2 への保存を確認する。
-CronJob と同じ処理を使うため、手動実行でも保持期限を過ぎた dump の削除が行われる。
-
-## Misskey を base backup と WAL から復元する
+## base backup と WAL から復元する
 
 base backup と、その時点から復元目標までの WAL が必要となる。
 復元は別名の Cluster に行い、元の DB とバックアップを残す。
 方式は [Barman Cloud plugin の復元手順](https://cloudnative-pg.io/plugin-barman-cloud/docs/usage/#restoring-a-cluster) に従う。
 
-以下を `misskey-restore.yaml` として保存し、`imageName` を復元元と互換性のある PGroonga image に置き換える。
+全DBで同じ方式を使い、namespace、Cluster 名、ObjectStore 名、image、容量を復元元に合わせる。
+以下は Misskey の例。`misskey-restore.yaml` として保存し、`imageName` を復元元と互換性のある PGroonga image に置き換える。
 復元先 namespace に `misskey-backup-store` と R2 Secret が存在すること、150Gi 以上を確保できるノードがあることを確認する。
 必要な resources・配置制約は現在の Cluster 定義を基に設定する。
 
@@ -130,8 +131,10 @@ kubectl cnpg status misskey-cluster-restored --context natsume@soli -n misskey
 運用に切り替える際は、復元元の archive を上書きしない保存先でバックアップを設定する。
 アプリの DB 認証は復元先に合わせて設定し、接続確認後に Service / Secret の参照を切り替える。
 
-## pg_dump から復元する
+## 保管済みの pg_dump から復元する
 
+R2 に保管済みの `<cluster>/<cluster>-YYYYMMDD-HHMMSS.dump` がある場合に使う。
+新規の定期 dump は取得しない。Barman の保持設定はこれらの dump を削除しないため、base backup からの復元確認後に保存要否を判断する。
 pg_dump は dump 作成時点への復元で、PITR はできない。
 以下は Grafana を別名 `grafana-cluster-restored` に復元する例。
 
@@ -145,6 +148,7 @@ pg_dump は dump 作成時点への復元で、PITR はできない。
 
 2. [Grafana の Cluster 定義](flux/clusters/natsume/apps/grafana/cluster.yaml)を基に、`metadata.name` を `grafana-cluster-restored` とした空の Cluster を作る。
    DB / owner は `grafana` にそろえ、復元元と互換性のある PostgreSQL image を明示する。
+   `spec.plugins` はコピーせず、元の archive に書き込まない。運用開始時に復元先専用の保存先で設定する。
    配置先の空き容量を確認し、Ready と新しい `grafana-cluster-restored-app` Secret の生成を待つ。
 
 3. 復元先への port-forward を別ターミナルで維持する。
@@ -168,7 +172,7 @@ pg_dump は dump 作成時点への復元で、PITR はできない。
    ```
 
 復元後はテーブル・拡張・データとアプリ接続を確認する。
-接続先 Service と Secret を Git のアプリ定義で変更し、バックアップ CronJob と PodMonitor、監視対象 DB 名もそろえる。
+接続先 Service と Secret を Git のアプリ定義で変更し、ObjectStore、ScheduledBackup、PodMonitor、監視対象 DB 名もそろえる。
 切替時はアプリの書き込みを止める時点と復元対象を決め、確認用の古い dump のまま運用を再開しない。
 
 ## アラートからの調査
@@ -180,9 +184,10 @@ meruto に DB はなく、operator の監視と DB の監視を区別する。
 |---|---|
 | CollectorDown / MetricsAbsent | Cluster status、DB Pod、PodMonitor、Alloy の scrape error、NetworkPolicy |
 | PostmasterRestarted | PostgreSQL の起動時刻、Pod 再作成、計画作業、ログ |
-| WALArchiveFailing / Stalled | Misskey の最終成功・失敗時刻、WAL 生成、plugin のログ、ObjectStore、R2 接続 |
-| DumpBackupStale | CronJob の最終成功、suspend、Job ログ、R2 の dump。CronJob 自体の削除も確認 |
+| WALArchiveFailing / Stalled | 対象 DB の最終成功・失敗時刻、WAL 生成、plugin のログ、ObjectStore、R2 接続 |
+| BaseBackupStale | Barman plugin の最終成功時刻、ScheduledBackup の suspend / スケジュール、Backup の完了状態、ObjectStore、R2 の base backup |
 
-Misskey の base backup の最終成功時刻はアラートで監視できていないため、Backup と R2 を直接確認する。
+base backup の期限は `baseBackupMaxAgeSeconds` で DB ごとに指定する。
+Misskey は30時間、週次の4DBは7日12時間。期限超過・成功時刻0・欠測を監視する。
 WAL archive の成功や ScheduledBackup の実行時刻で代用しない。
 閾値とルールの設定は [CNPG の監視ルール](charts/monitoring-rules/README.md#cnpg)を参照する。

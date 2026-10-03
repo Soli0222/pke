@@ -353,11 +353,10 @@ groups:
         severity: warning
         threshold: 1800
         annotations: {}
-      CNPGDumpBackupStale:
+      CNPGBaseBackupStale:
         enabled: true
         for: 15m
         severity: warning
-        threshold: 108000
         annotations: {}
   longhorn:
     enabled: true

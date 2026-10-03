@@ -45,7 +45,7 @@
         },
         "options": {
           "mode": "markdown",
-          "content": "**選択: $cluster / $namespace / $cnpg_cluster**\n\nnatsumeの5DBが対象です。merutoにはDBがなく、下のDBパネルは対象外です。すべて単一instanceのため、replication lagは表示しません。\n\n**grafana / sui / reblend / spn:** pg_dumpの最終成功を確認。**Misskey:** base backup + WAL archive。base backupの成功時刻は現在取得できず「未確認」です。WAL成功はbase backupの成功・復元可能性を保証しません。[DB運用手順](https://github.com/Soli0222/pke/blob/main/CNPG.md)"
+          "content": "**選択: $cluster / $namespace / $cnpg_cluster**\n\nnatsumeの5DBが対象です。merutoにはDBがなく、下のDBパネルは対象外です。すべて単一instanceのため、replication lagは表示しません。\n\n全DBでBarman Cloud pluginのbase backup + WAL archiveを使います。Misskeyは日次、他の4DBは週次です。成功時刻が未取得・0の場合は「未確認」です。WAL成功はbase backupの成功・復元可能性を保証しません。[DB運用手順](https://github.com/Soli0222/pke/blob/main/CNPG.md)"
         }
       },
       {
@@ -469,8 +469,8 @@
       {
         "id": 1005,
         "type": "stat",
-        "title": "pg_dump 最終成功",
-        "description": "grafana / sui / reblend / spnが対象。Misskeyは対象外。それ以外で空なら成功時刻が未確認。CronJob成功はR2データの復元試験を意味しない。 対象DBのcollectorが存在する場合だけ、成功時刻なしを「未確認」、別方式を「対象外」に区別。",
+        "title": "最古の復元可能時刻",
+        "description": "Barman plugin が報告する復元可能期間の起点。0・欠測は未確認。実際の復元可否は復元試験で確認する。",
         "datasource": {
           "type": "prometheus",
           "uid": "cfkr3kwq69r7ke"
@@ -488,7 +488,7 @@
               "uid": "cfkr3kwq69r7ke"
             },
             "refId": "A",
-            "expr": "(max(kube_cronjob_status_last_successful_time{cluster=\"$cluster\",namespace=\"$namespace\",cronjob=\"${cnpg_cluster}-pg-dump\"} > 0) * 1000) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster!=\"misskey-cluster\"}) * 0) - 1) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"}) * 0) - 2)",
+            "expr": "(max(barman_cloud_cloudnative_pg_io_first_recoverability_point{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"} > 0) * 1000) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}) * 0) - 1)",
             "legendFormat": "{{pod}}",
             "editorMode": "code",
             "instant": true,
@@ -548,8 +548,8 @@
       {
         "id": 360,
         "type": "stat",
-        "title": "Misskey base backup 最終成功",
-        "description": "Misskeyのみ対象。現在この指標は0で、base backup成功時刻は未収集。0を成功・1970年・正常として表示しない。他DBはpg_dumpを参照。 対象DBのcollectorが存在する場合だけ、成功時刻なしを「未確認」、別方式を「対象外」に区別。",
+        "title": "base backup 最終成功",
+        "description": "全DBが対象。Barman plugin の最終成功時刻。0・欠測を成功として表示しない。週次・日次の期限はOverviewと監視ルールで判定する。",
         "datasource": {
           "type": "prometheus",
           "uid": "cfkr3kwq69r7ke"
@@ -567,7 +567,7 @@
               "uid": "cfkr3kwq69r7ke"
             },
             "refId": "A",
-            "expr": "(max(cnpg_collector_last_available_backup_timestamp{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"} > 0) * 1000) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"}) * 0) - 1) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster!=\"misskey-cluster\"}) * 0) - 2)",
+            "expr": "(max(barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"} > 0) * 1000) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}) * 0) - 1)",
             "legendFormat": "{{pod}}",
             "editorMode": "code",
             "instant": true,
@@ -627,8 +627,8 @@
       {
         "id": 362,
         "type": "stat",
-        "title": "Misskey WAL archive 経過時間",
-        "description": "Misskeyのみ対象。他の4DBではWAL archive成功をバックアップ成功の指標にしない。 対象DBのcollectorが存在する場合だけ、成功時刻なしを「未確認」、別方式を「対象外」に区別。",
+        "title": "WAL archive 経過時間",
+        "description": "全DBで継続保存するWALの最終成功からの経過時間。WAL成功はbase backupの成功を保証しない。",
         "datasource": {
           "type": "prometheus",
           "uid": "cfkr3kwq69r7ke"
@@ -646,7 +646,7 @@
               "uid": "cfkr3kwq69r7ke"
             },
             "refId": "A",
-            "expr": "(max(cnpg_pg_stat_archiver_seconds_since_last_archival{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"})) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster=\"misskey-cluster\"}) * 0) - 1) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\",cnpg_cluster!=\"misskey-cluster\"}) * 0) - 2)",
+            "expr": "(max(cnpg_pg_stat_archiver_seconds_since_last_archival{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"})) or ((max(cnpg_collector_up{cluster=\"$cluster\",namespace=\"$namespace\",cnpg_cluster=\"$cnpg_cluster\",pod=~\"${pod:regex}\"}) * 0) - 1)",
             "legendFormat": "{{pod}}",
             "editorMode": "code",
             "instant": true,

@@ -60,7 +60,7 @@
           "既存exportのgnetIdは20417。取り込み元revision/licenseは未確認",
           "cluster → namespace → cnpg_cluster → podの変数と全queryのクラスタ分離",
           "既存のactivity・設定・extensionsパネルを再利用し、単一instance向けに状態・容量・バックアップを先頭へ整理",
-          "CPU/メモリはcAdvisor、PVCは実Podとの対応から取得。pg_dumpとMisskeyのbase backup / WALを分離し未確認を正常に補完しない"
+          "CPU/メモリはcAdvisor、PVCは実Podとの対応から取得。全DBのbase backup / WALを分離し未確認を正常に補完しない"
         ]
       }
     },
@@ -345,7 +345,7 @@
         "license": "PKE repository",
         "changes": [
           "設定とinventoryに基づく12分野の要確認・未確認を集計し、既存の詳細画面へ接続",
-          "merutoのDB/未設定probe、Misskey base backup未確認を正常0へ丸めない"
+          "merutoのDB/未設定probe、base backup未確認を正常0へ丸めない"
         ]
       }
     },

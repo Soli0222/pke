@@ -7,5 +7,6 @@ resources:
 - cluster.yaml
 - onepassworditem.yaml
 - onepassworditem-cnpg-backup.yaml
-- cronjob-pg-dump.yaml
+- objectstore.yaml
+- scheduledbackup.yaml
 - podmonitor.yaml
