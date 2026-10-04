@@ -189,9 +189,13 @@ def expected_queries(root=ROOT):
                         ],
                     )
                 )
+                keys = "cluster, namespace, cnpg_cluster, pod"
+                age = f"max by ({keys}) ({m('cnpg_pg_stat_archiver_seconds_since_last_archival', **labels)})"
+                ready = f"max by ({keys}) ({m('cnpg_collector_pg_wal_archive_status', **labels, value='ready')})"
+                # Idle databases are healthy; a missing queue metric remains unknown.
                 dbparts.append(
                     scalar(
-                        f"max({m('cnpg_pg_stat_archiver_seconds_since_last_archival', **labels)}) > bool {threshold}",
+                        f"max(({age} > bool {threshold}) * on ({keys}) ({ready} > bool 0))",
                         db["name"] + " / WAL",
                     )
                 )
