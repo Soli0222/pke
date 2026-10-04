@@ -1,6 +1,6 @@
 # monitoring-rules
 
-![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.3.1](https://img.shields.io/badge/Version-0.3.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 PKE platform alert rules evaluated by Mimir
 
@@ -10,7 +10,9 @@ PKE platform alert rules evaluated by Mimir
 base backup は Barman plugin の `barman_cloud_cloudnative_pg_io_last_available_backup_timestamp` を使う。
 `CNPGBaseBackupStale` は DB ごとの期限超過、成功時刻0、または5分間の欠測が15分続くと通知する。
 Misskey は30時間、週次の4DBは7日12時間を期限とする。初回未成功も検知する。
-WAL archive の失敗・停滞は全DBで監視する。成功時刻だけでは復元可能性を保証しない。
+WAL archive の失敗・停滞は全DBで監視する。
+停滞は同じ DB Pod に未送信 WAL（`cnpg_collector_pg_wal_archive_status{value="ready"}`）があり、最終成功から30分超の状態が15分続いた場合に通知する。
+未送信 WAL のないアイドル状態では通知しない。成功時刻だけでは復元可能性を保証しない。
 操作は [DB運用手順](../../CNPG.md) を参照する。
 
 ## Falco
