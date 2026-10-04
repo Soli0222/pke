@@ -152,6 +152,29 @@ def main():
             },
         ],
     }
+    # Mimir rejects groups above 20 rules. Growing inventory must create more groups.
+    expanded = copy.deepcopy(test_values)
+    expanded["hosts"] = [
+        {
+            "name": f"node-{i}",
+            "units": ["alloy.service", "k3s.service"],
+            "networkDevices": ["bond0"],
+        }
+        for i in range(30)
+    ]
+    expanded_groups = render(expanded)
+    assert all(len(g["rules"]) <= 20 for g in expanded_groups)
+    assert len({g["name"] for g in expanded_groups}) == len(expanded_groups)
+    assert (
+        sum(
+            r.get("record") == "pke_host_expected"
+            for g in expanded_groups
+            for r in g["rules"]
+        )
+        == 30
+    )
+    for c in ("natsume", "meruto"):
+        assert all(len(g["rules"]) <= 20 for g in render(production_values(c)))
     groups = render(test_values)
     rules = {r["alert"]: r for g in groups for r in g["rules"] if "alert" in r}
     for name, rule in rules.items():

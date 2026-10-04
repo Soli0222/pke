@@ -20,6 +20,7 @@ applications:
       - https://example.tld
 
 prometheusRule:
+  maxRulesPerGroup: 20
   enabled: true
   interval: 30s
   labels: {}
