@@ -70,6 +70,42 @@ case(
     + check(12, -2, -2, "meruto")
     + check(8, -2, -2, "natsume"),
 )
+# A stale archive timestamp is only actionable with queued WAL on the same Pod.
+wal_base = []
+values = yaml.safe_load(
+    (
+        ROOT
+        / "flux/clusters/natsume/apps/monitoring-rules/helmrelease-monitoring-rules.yaml"
+    ).read_text()
+)["spec"]["values"]
+for db in values["databases"]:
+    labels = {
+        "cluster": "natsume",
+        "namespace": db["namespace"],
+        "cnpg_cluster": db["name"],
+        "pod": db["name"] + "-1",
+    }
+    wal_base += [
+        metric("cnpg_collector_up", labels),
+        metric("cnpg_pg_stat_archiver_seconds_since_last_archival", labels, "3600x5"),
+        metric(
+            "cnpg_collector_pg_wal_archive_status", dict(labels, value="ready"), "0x5"
+        ),
+    ]
+case("idle WAL archive is healthy", wal_base, check(7, 0, 0))
+queued = json.loads(json.dumps(wal_base))
+queued[2]["values"] = "2x5"
+case("queued WAL and stale archive need attention", queued, check(7, 1, 0))
+fresh_archive = json.loads(json.dumps(queued))
+fresh_archive[1]["values"] = "60x5"
+case("queued WAL with recent archive is healthy", fresh_archive, check(7, 0, 0))
+missing_queue = wal_base[:2] + wal_base[3:]
+case("missing WAL queue remains unknown", missing_queue, check(7, 0, 1))
+other_pod = json.loads(json.dumps(queued))
+other_pod[2]["series"] = other_pod[2]["series"].replace(
+    f'pod="{values["databases"][0]["name"]}-1"', 'pod="other-pod"'
+)
+case("a different Pod cannot supply the WAL backlog", other_pod, check(7, 0, 1))
 node = []
 for c, nodes in hosts.items():
     for h in nodes:
