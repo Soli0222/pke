@@ -24,6 +24,11 @@ prometheusRule:
   interval: 30s
   labels: {}
   
+  probeMetricsAbsent:
+    for: 5m
+    severity: critical
+    annotations: {}
+
   endpointDown:
     for: 5m
     severity: critical

@@ -551,11 +551,14 @@ def scenarios():
         [s("node_disk_io_time_seconds_total", "0x4 60+60x20 1260x15", H, device="vda")],
         {**H, "device": "vda"},
     )
-    quiet(
-        "HostDiskIOSaturation",
-        [s("node_disk_io_time_seconds_total", "0+60x45", H, device="dm-0")],
-        "logical disk excluded",
-    )
+    for device in ("dm-0", "mmcblk0", "xvda"):
+        add(
+            "HostDiskIOSaturation",
+            [s("node_disk_io_time_seconds_total", "0+60x45", H, device=device)],
+            {**H, "device": device},
+            "exported block device",
+            [("24m", [{**H, "device": device}])],
+        )
     add(
         "HostOOMKill",
         [s("node_vmstat_oom_kill", "0x4 1x40", H)],
@@ -620,6 +623,45 @@ def scenarios():
                 )
             ],
             "unit not in inventory",
+        )
+    unit = {**N, "instance": "node-a", "name": "alloy.service"}
+    unitbase = [
+        s(
+            "node_systemd_unit_state",
+            "1x50",
+            {
+                "cluster": c,
+                "instance": "node-a",
+                "job": "integrations/unix",
+                "name": n,
+                "state": "active",
+            },
+        )
+        for c in ("natsume", "meruto")
+        for n in ("alloy.service", "etcd.service")
+    ]
+    unitbase[0] = s(
+        "node_systemd_unit_state",
+        "1x4 stale _x20 1x20",
+        {**H, "name": "alloy.service", "state": "active"},
+    )
+    add(
+        "HostSystemdUnitAbsent",
+        unitbase,
+        unit,
+        "unit disappears while host remains healthy",
+        [("4m", []), ("9m", []), ("16m", [unit]), ("30m", [])],
+    )
+    for device in ("eno1", "bond0"):
+        add(
+            "HostNetworkErrors",
+            [
+                s("node_network_receive_errs_total", "0+120x45", H, device=device),
+                s("node_network_transmit_errs_total", "0x45", H, device=device),
+            ],
+            {**H, "device": device},
+            "netplan device without old naming pattern",
+            [("24m", [{**H, "device": device}])],
         )
     E = {**N, "job": "etcd", "instance": "node-a"}
     add(
@@ -725,6 +767,24 @@ def scenarios():
             checks=[("25h", [CO])],
         )
     add("CNPGCollectorDown", [s("cnpg_collector_up", ZERO, D)], D)
+    new_db = {**N, "namespace": "new-app", "cnpg_cluster": "new-db", "pod": "new-db-1"}
+    add(
+        "CNPGCollectorDown",
+        [s("cnpg_collector_up", ZERO, new_db)],
+        new_db,
+        "new DB without an alert selector change",
+    )
+    add(
+        "CNPGPostmasterRestarted",
+        [s("cnpg_pg_postmaster_start_time", "0x4 300x40", new_db)],
+        {},
+        "new DB restart without an alert selector change",
+        [
+            ("4m", []),
+            ("6m", [{k: v for k, v in new_db.items() if k != "pod"}]),
+            ("16m", []),
+        ],
+    )
     # Declared DBs in both clusters have a heartbeat except the single failing DB.
     dbbase = [
         s(
@@ -1162,4 +1222,13 @@ def scenarios():
         )
         quiet(alert, [s(metric, "10x9 0x30", fh)], "reset without drops", "11m")
 
+    for case in cases:
+        if case["alert"] == "CNPGBaseBackupStale":
+            case["series"].append(
+                s(
+                    backup_metric,
+                    "1+60x12000",
+                    {"cluster": "meruto", "namespace": "app", "cnpg_cluster": "db"},
+                )
+            )
     return cases

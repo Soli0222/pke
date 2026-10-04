@@ -1,12 +1,13 @@
 # monitoring-rules
 
-![Version: 0.3.1](https://img.shields.io/badge/Version-0.3.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.4.0](https://img.shields.io/badge/Version-0.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 PKE platform alert rules evaluated by Mimir
 
 ## CNPG
 
-`databases` に namespace、name、archive、replication と `baseBackupMaxAgeSeconds` を指定する。
+`databases` は CNPG の `Cluster` と `ScheduledBackup` から生成する。
+通常の障害・再起動は DB 名を含まない共通式で評価し、欠測・archive・replication・backup 期限は `pke_cnpg_*` recording metrics と照合する。
 base backup は Barman plugin の `barman_cloud_cloudnative_pg_io_last_available_backup_timestamp` を使う。
 `CNPGBaseBackupStale` は DB ごとの期限超過、成功時刻0、または5分間の欠測が15分続くと通知する。
 Misskey は30時間、週次の4DBは7日12時間を期限とする。初回未成功も検知する。
@@ -22,6 +23,26 @@ priority 0–3 は critical、4–5 は warning として既存の ntfy 経路�
 Falco の欠測、カーネルイベントと出力イベントの破棄も監視する。
 例外条件・ログの確認・監視の制約は [Falco 運用手順](../../MONITORING.md#falco) を参照する。
 
+## 期待対象と収集の欠測
+
+PKE の `hosts` / `databases` は `python3 scripts/sync-monitoring-inventory.py` で生成する。
+Ansible の K3s inventory、`alloy_systemd_units`、`network_netplan` と CNPG manifest が正であり、HelmRelease の生成ブロックを直接編集しない。
+CI は `--check` で生成漏れを検出する。
+毎日の base backup は30時間、毎週は7日12時間を期限とする。
+それ以外の schedule や期限を使う場合は `ScheduledBackup.metadata.annotations` の `monitoring.pke.soli0222.com/backup-max-age-seconds` に正の秒数を指定する。
+
+期待対象は `pke.expectations` の recording rules で生成する。exporter が消失しても期待値は残る。
+`NodeExporterAbsent`、`MetricsStale`、`FalcoMetricsAbsent`、`HostSystemdUnitAbsent` はこの期待値と観測を照合する。
+unit の failed / inactive は対象 unit 全体を共通式で評価する。
+recording group 自体の欠落や評価失敗は Pipeline のルール同期・評価監視で確認する。
+
+## Host
+
+`HostNetworkErrors` は netplan に宣言した device を監視する。interface の命名規則には依存しない。
+`HostDiskIOSaturation` は node exporter が公開する block device 全体を監視し、device mapper などの論理デバイスも含む。
+同じ I/O が論理・物理デバイスの双方に現れる場合がある。busy time は IOPS 上限や並列処理の飽和そのものではないため、デバイス階層と latency を併せて確認する。
+`HostSystemdUnitAbsent` は5分間の欠測がさらに5分続くと通知する。unit の削除・改名、collector の状態を確認する。
+
 ## Values
 
 | Key | Type | Default | Description |
@@ -30,7 +51,6 @@ Falco の欠測、カーネルイベントと出力イベントの破棄も監�
 | additionalAnnotations | object | `{}` |  |
 | dashboardBaseURL | string | `"https://grafana.str08.net"` |  |
 | databases | list | `[]` |  |
-| diskDevices | string | `"vd[a-z]+|sd[a-z]+|nvme[0-9]+n[0-9]+"` |  |
 | exclusions.filesystems | string | `"tmpfs|devtmpfs|overlay|squashfs|nsfs|tracefs|proc|sysfs"` |  |
 | exclusions.fluxResources | string | `"^$"` |  |
 | exclusions.hosts | string | `"^$"` |  |
@@ -250,6 +270,10 @@ Falco の欠測、カーネルイベントと出力イベントの破棄も監�
 | groups.host.rules.HostRebooted.enabled | bool | `true` |  |
 | groups.host.rules.HostRebooted.for | string | `"0m"` |  |
 | groups.host.rules.HostRebooted.severity | string | `"warning"` |  |
+| groups.host.rules.HostSystemdUnitAbsent.enabled | bool | `true` | 期待 unit の欠測 |
+| groups.host.rules.HostSystemdUnitAbsent.for | string | `"5m"` | |
+| groups.host.rules.HostSystemdUnitAbsent.severity | string | `"warning"` | |
+| groups.host.rules.HostSystemdUnitAbsent.annotations | object | `{}` | |
 | groups.host.rules.HostSystemdUnitFailed.annotations | object | `{}` |  |
 | groups.host.rules.HostSystemdUnitFailed.enabled | bool | `true` |  |
 | groups.host.rules.HostSystemdUnitFailed.for | string | `"5m"` |  |
@@ -369,9 +393,8 @@ Falco の欠測、カーネルイベントと出力イベントの破棄も監�
 | groups.workload.rules.KubeStatefulSetReplicasMismatch.for | string | `"15m"` |  |
 | groups.workload.rules.KubeStatefulSetReplicasMismatch.severity | string | `"warning"` |  |
 | groups.workload.rules.KubeStatefulSetReplicasMismatch.threshold | int | `0` |  |
-| hosts | list | `[]` |  |
+| hosts | list | `[]` | 生成された name / units / networkDevices |
 | interval | string | `"1m"` |  |
-| networkDevices | string | `"ens[0-9]+|enp.*|eth[0-9]+"` |  |
 | runbookBaseURL | string | `"https://github.com/Soli0222/pke/blob/main/charts/monitoring-rules/README.md"` |  |
 
 ----------------------------------------------

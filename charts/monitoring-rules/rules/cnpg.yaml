@@ -1,43 +1,43 @@
 rules:
 - alert: CNPGCollectorDown
   expr: |-
-    {{ $parts := list }}{{ range $db := .Values.databases }}{{ $parts = append $parts (printf "max by (cluster, namespace, cnpg_cluster, pod) (cnpg_collector_up{namespace=\"%s\",cnpg_cluster=\"%s\"}) == 0" $db.namespace $db.name ) }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+    max by (cluster, namespace, cnpg_cluster, pod) (cnpg_collector_up) == 0
   summary: DB collector 異常 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
   description: PostgreSQL 接続と instance manager を確認してください。
   requires: databases
 - alert: CNPGMetricsAbsent
   expr: |-
-    {{ $parts := list }}{{ range $db := .Values.databases }}{{ $parts = append $parts (printf "absent_over_time(cnpg_collector_up{namespace=\"%s\",cnpg_cluster=\"%s\"}[5m])" $db.namespace $db.name ) }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+    pke_cnpg_expected unless on (cluster, namespace, cnpg_cluster) max by (cluster, namespace, cnpg_cluster) (max_over_time(cnpg_collector_up[5m]))
   summary: DB metrics 欠測 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
   description: 期待 DB の collector 指標がありません。DB Pod と Alloy の経路を確認してください。
   requires: databases
 - alert: CNPGPostmasterRestarted
   expr: |-
-    {{ $parts := list }}{{ range $db := .Values.databases }}{{ $parts = append $parts (printf "changes(max by (cluster, namespace, cnpg_cluster) (cnpg_pg_postmaster_start_time{namespace=\"%s\",cnpg_cluster=\"%s\"})[10m:1m]) > 0" $db.namespace $db.name ) }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+    changes(max by (cluster, namespace, cnpg_cluster) (cnpg_pg_postmaster_start_time)[10m:1m]) > 0
   summary: Postmaster 再起動 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
   description: 開始時刻が変化しました。Pod 再作成・計画作業とログを照合してください。
   requires: databases
 - alert: CNPGReplicationLag
   expr: |-
-    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.replication }}{{ $parts = append $parts (printf "max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_replication_lag{namespace=\"%s\",cnpg_cluster=\"%s\"}) > %v" $db.namespace $db.name $.Values.groups.cnpg.rules.CNPGReplicationLag.threshold) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+    max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_replication_lag) > {{ .Values.groups.cnpg.rules.CNPGReplicationLag.threshold }} and on (cluster, namespace, cnpg_cluster) pke_cnpg_replication_expected
   summary: DB replication lag {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
   description: replica がある DB だけを対象としています。単一 instance の欠測は異常にしません。
   requires: databases
 - alert: CNPGWALArchiveFailing
   expr: |-
-    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.archive }}{{ $parts = append $parts (printf "max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_last_failed_time{namespace=\"%s\",cnpg_cluster=\"%s\"}) > on (cluster, namespace, cnpg_cluster, pod) max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_last_archived_time{namespace=\"%[1]s\",cnpg_cluster=\"%[2]s\"})" $db.namespace $db.name ) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+    max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_last_failed_time) > on (cluster, namespace, cnpg_cluster, pod) max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_last_archived_time) and on (cluster, namespace, cnpg_cluster) pke_cnpg_archive_expected
   summary: WAL archive 失敗 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
   description: 失敗時刻が最後の成功より新しい状態です。次の archive 成功で解消します。
   requires: databases
 - alert: CNPGWALArchiveStalled
   expr: |-
-    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.archive }}{{ $parts = append $parts (printf "max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_seconds_since_last_archival{namespace=\"%s\",cnpg_cluster=\"%s\"}) > %v and on (cluster, namespace, cnpg_cluster, pod) max by (cluster, namespace, cnpg_cluster, pod) (cnpg_collector_pg_wal_archive_status{namespace=\"%[1]s\",cnpg_cluster=\"%[2]s\",value=\"ready\"}) > 0" $db.namespace $db.name $.Values.groups.cnpg.rules.CNPGWALArchiveStalled.threshold) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+    max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_seconds_since_last_archival) > {{ .Values.groups.cnpg.rules.CNPGWALArchiveStalled.threshold }} and on (cluster, namespace, cnpg_cluster, pod) max by (cluster, namespace, cnpg_cluster, pod) (cnpg_collector_pg_wal_archive_status{value="ready"}) > 0 and on (cluster, namespace, cnpg_cluster) pke_cnpg_archive_expected
   summary: WAL archive 停滞 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
   description: 未送信 WAL があり、最終 archive 成功からの経過時間が閾値を超えた状態が継続しています。ready WAL、plugin のログ、ObjectStore 接続を確認してください。
   requires: databases
 - alert: CNPGBaseBackupStale
   expr: |-
-    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.baseBackupMaxAgeSeconds }}{{ $parts = append $parts (printf "(time() - max by (cluster, namespace, cnpg_cluster) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace=\"%s\",cnpg_cluster=\"%s\"}) > %v) or (max by (cluster, namespace, cnpg_cluster) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace=\"%[1]s\",cnpg_cluster=\"%[2]s\"}) <= 0) or absent_over_time(barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace=\"%[1]s\",cnpg_cluster=\"%[2]s\"}[5m])" $db.namespace $db.name $db.baseBackupMaxAgeSeconds) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+    (time() - max by (cluster, namespace, cnpg_cluster) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp) > on (cluster, namespace, cnpg_cluster) pke_cnpg_backup_max_age_seconds) or (max by (cluster, namespace, cnpg_cluster) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp) <= 0 and on (cluster, namespace, cnpg_cluster) pke_cnpg_backup_max_age_seconds) or (pke_cnpg_backup_max_age_seconds unless on (cluster, namespace, cnpg_cluster) max by (cluster, namespace, cnpg_cluster) (max_over_time(barman_cloud_cloudnative_pg_io_last_available_backup_timestamp[5m])))
   summary: base backup 成功未確認 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
   description: Barman plugin の最終成功が DB ごとの期限を超過、0、または欠測しています。Backup の完了状態と ObjectStore、R2 を確認してください。WAL 成功だけでは base backup の成功・復元可能性を保証しません。
   requires: databases

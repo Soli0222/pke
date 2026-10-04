@@ -11,13 +11,13 @@ rules:
   description: Kubernetes 状態監視の入力がありません。collector と送信経路を確認してください。
 - alert: NodeExporterAbsent
   expr: |-
-    {{ range $i, $host := .Values.hosts }}{{ if $i }} or {{ end }}absent_over_time(node_uname_info{job="integrations/unix",instance="{{ $host.name }}"}[{{ $.Values.absenceWindow }}]){{ end }}
+    label_replace((pke_host_expected unless on (cluster, instance) max by (cluster, instance) (max_over_time(node_uname_info{job="integrations/unix"}[{{ .Values.absenceWindow }}]))), "job", "integrations/unix", "", "")
   summary: ホスト {{ $labels.instance }} の node metrics が欠測
   description: ホスト停止、Alloy、ネットワーク、remote_write のいずれでも欠測します。ホスト停止と断定しないでください。
   requires: hosts
 - alert: MetricsStale
   expr: |-
-    label_replace(absent_over_time(alloy_build_info{job="alloy"}[{{ .Values.absenceWindow }}]), "telemetry_path", "kubernetes", "job", ".*") {{ range .Values.hosts }} or label_replace(absent_over_time(alloy_build_info{job="alloy-host",instance="{{ .name }}"}[{{ $.Values.absenceWindow }}]), "telemetry_path", "host", "job", ".*") {{ end }}
+    label_replace(absent_over_time(alloy_build_info{job="alloy"}[{{ .Values.absenceWindow }}]), "telemetry_path", "kubernetes", "job", ".*") or label_replace(label_replace((pke_host_expected unless on (cluster, instance) max by (cluster, instance) (max_over_time(alloy_build_info{job="alloy-host"}[{{ .Values.absenceWindow }}]))), "job", "alloy-host", "", ""), "telemetry_path", "host", "", "")
   summary: '{{ $labels.telemetry_path }} の Alloy が欠測（{{ $labels.instance }}）'
   description: 経路ごとの安定した build 指標が届いていません。全 up 系列の消失を待たずに検知します。
 - alert: AlloyRemoteWriteFailing

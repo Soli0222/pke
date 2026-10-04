@@ -14,6 +14,7 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
+    # BEGIN generated monitoring inventory (scripts/sync-monitoring-inventory.py)
     hosts:
     - name: meruto-01
       units:
@@ -21,7 +22,10 @@ spec:
       - k3s.service
       - etcd.service
       - falco-modern-bpf.service
+      networkDevices:
+      - enp3s0
     databases: []
+    # END generated monitoring inventory
     groups:
       cnpg:
         enabled: false

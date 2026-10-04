@@ -1,0 +1,43 @@
+{{- $rules := list -}}
+{{- if or .Values.groups.collection.enabled .Values.groups.host.enabled .Values.groups.falco.enabled -}}
+{{- range .Values.hosts -}}
+{{- $host := . -}}
+{{- $rules = append $rules (dict "record" "pke_host_expected" "expr" "vector(1)" "labels" (dict "instance" .name)) -}}
+{{- range .units -}}
+{{- $rules = append $rules (dict "record" "pke_systemd_unit_expected" "expr" "vector(1)" "labels" (dict "instance" $host.name "name" .)) -}}
+{{- end -}}
+{{- range .networkDevices -}}
+{{- $rules = append $rules (dict "record" "pke_host_network_device_expected" "expr" "vector(1)" "labels" (dict "instance" $host.name "device" .)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if .Values.groups.cnpg.enabled -}}
+{{- range .Values.databases -}}
+{{- $labels := dict "namespace" .namespace "cnpg_cluster" .name -}}
+{{- $rules = append $rules (dict "record" "pke_cnpg_expected" "expr" "vector(1)" "labels" $labels) -}}
+{{- if .archive -}}
+{{- $rules = append $rules (dict "record" "pke_cnpg_archive_expected" "expr" "vector(1)" "labels" $labels) -}}
+{{- end -}}
+{{- if .replication -}}
+{{- $rules = append $rules (dict "record" "pke_cnpg_replication_expected" "expr" "vector(1)" "labels" $labels) -}}
+{{- end -}}
+{{- if .baseBackupMaxAgeSeconds -}}
+{{- $rules = append $rules (dict "record" "pke_cnpg_backup_max_age_seconds" "expr" (printf "vector(%v)" .baseBackupMaxAgeSeconds) "labels" $labels) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if $rules }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ printf "%s-expectations" .Release.Name | trunc 63 | trimSuffix "-" }}
+  labels:
+    app.kubernetes.io/name: monitoring-rules
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  groups:
+    - name: pke.expectations
+      interval: {{ .Values.interval }}
+      rules:
+{{ toYaml $rules | indent 8 }}
+{{- end }}

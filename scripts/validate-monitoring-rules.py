@@ -44,9 +44,10 @@ def inventory_contract():
             )
     for cluster in ("natsume", "meruto"):
         values = production_values(cluster)
-        assert sorted(values["hosts"], key=lambda x: x["name"]) == sorted(
-            hosts[cluster], key=lambda x: x["name"]
-        )
+        assert sorted(
+            [{k: h[k] for k in ("name", "units")} for h in values["hosts"]],
+            key=lambda x: x["name"],
+        ) == sorted(hosts[cluster], key=lambda x: x["name"])
         databases = {}
         stores = {}
         schedules = {}
@@ -99,10 +100,7 @@ def inventory_contract():
                     store["configuration"]["endpointURL"]
                     == "${CNPG_BACKUP_ENDPOINT_URL}"
                 )
-                fields = schedule["schedule"].split()
-                assert len(fields) == 6
-                interval = 86400 if fields[-1] == "*" else 7 * 86400
-                assert interval < db["baseBackupMaxAgeSeconds"] <= interval + 86400
+                assert db["baseBackupMaxAgeSeconds"] > 0
                 assert any(
                     r.get("targetLabel") == "cnpg_cluster"
                     for endpoint in monitors[key]["podMetricsEndpoints"]
@@ -125,12 +123,19 @@ def inventory_contract():
 
 
 def main():
+    run("python3", "scripts/sync-monitoring-inventory.py", "--check")
     inventory_contract()
     defaults = yaml.safe_load(
         (ROOT / "charts/monitoring-rules/values.yaml").read_text()
     )
     test_values = {
-        "hosts": [{"name": "node-a", "units": ["alloy.service", "etcd.service"]}],
+        "hosts": [
+            {
+                "name": "node-a",
+                "units": ["alloy.service", "etcd.service"],
+                "networkDevices": ["ens3", "eno1", "bond0"],
+            }
+        ],
         "databases": [
             {
                 "name": "db",
@@ -148,7 +153,7 @@ def main():
         ],
     }
     groups = render(test_values)
-    rules = {r["alert"]: r for g in groups for r in g["rules"]}
+    rules = {r["alert"]: r for g in groups for r in g["rules"] if "alert" in r}
     for name, rule in rules.items():
         assert not re.search(r"(?<![a-z_])cluster\s*=", rule["expr"]), name
         assert {"summary", "description", "runbook_url"} <= set(rule["annotations"]), (
@@ -174,7 +179,9 @@ def main():
             }
         },
     )
-    overridden = {r["alert"]: r for g in render(override) for r in g["rules"]}
+    overridden = {
+        r["alert"]: r for g in render(override) for r in g["rules"] if "alert" in r
+    }
     assert "HostCPUHigh" not in overridden
     memory = overridden["HostMemoryLow"]
     assert (
@@ -193,9 +200,22 @@ def main():
 
     added = copy.deepcopy(test_values)
     added["hosts"].append({"name": "node-b", "units": ["k3s-agent.service"]})
-    added_rules = {r["alert"]: r for g in render(added) for r in g["rules"]}
-    assert 'instance="node-b"' in added_rules["NodeExporterAbsent"]["expr"]
-    assert "k3s-agent" in added_rules["HostSystemdUnitInactive"]["expr"]
+    added_rules = {
+        r["alert"]: r for g in render(added) for r in g["rules"] if "alert" in r
+    }
+    assert (
+        added_rules["NodeExporterAbsent"]["expr"] == rules["NodeExporterAbsent"]["expr"]
+    )
+    assert any(
+        r.get("labels", {}).get("instance") == "node-b"
+        for g in render(added)
+        for r in g["rules"]
+        if "record" in r
+    )
+    assert (
+        added_rules["HostSystemdUnitInactive"]["expr"]
+        == rules["HostSystemdUnitInactive"]["expr"]
+    )
 
     module_path = ROOT / "charts/monitoring-rules/tests/scenarios.py"
     spec = importlib.util.spec_from_file_location("scenarios", module_path)
@@ -254,11 +274,18 @@ def main():
                             dict(
                                 g,
                                 name=f"{cluster}.{g['name']}",
-                                rules=[r for r in g["rules"] if r["alert"] == alert],
+                                rules=[
+                                    r
+                                    for r in g["rules"]
+                                    if r.get("alert") == alert or "record" in r
+                                ],
                             )
                             for cluster, gs in scoped.items()
                             for g in gs
-                            if any(r["alert"] == alert for r in g["rules"])
+                            if any(
+                                r.get("alert") == alert or "record" in r
+                                for r in g["rules"]
+                            )
                         ]
                     },
                     allow_unicode=True,
@@ -310,6 +337,7 @@ def main():
                     {
                         "rule_files": ["/work/" + rule_path.name],
                         "evaluation_interval": "1m",
+                        "group_eval_order": [f"{c}.pke.expectations" for c in scoped],
                         "tests": tests,
                     },
                     allow_unicode=True,

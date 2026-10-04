@@ -48,7 +48,7 @@ rules:
   description: 小さなファイルの大量生成を確認してください。
 - alert: HostDiskIOSaturation
   expr: |-
-    rate(node_disk_io_time_seconds_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",device=~"{{ .Values.diskDevices }}"}[5m]) > {{ .Values.groups.host.rules.HostDiskIOSaturation.threshold }}
+    rate(node_disk_io_time_seconds_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"}[5m]) > {{ .Values.groups.host.rules.HostDiskIOSaturation.threshold }}
   summary: disk I/O busy {{ $labels.instance }} {{ $labels.device }}
   description: I/O を処理していた時間の比率です。仮想ディスクであり、IOPS 上限や並列デバイスの飽和を直接示すとは限りません。
 - alert: HostOOMKill
@@ -68,18 +68,24 @@ rules:
   description: NTP / chrony と offset を確認してください。timex 非対応環境の欠測は別途扱います。
 - alert: HostNetworkErrors
   expr: |-
-    (rate(node_network_receive_errs_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",device=~"{{ .Values.networkDevices }}"}[5m]) + rate(node_network_transmit_errs_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",device=~"{{ .Values.networkDevices }}"}[5m])) > {{ .Values.groups.host.rules.HostNetworkErrors.threshold }}
+    (rate(node_network_receive_errs_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"}[5m]) + rate(node_network_transmit_errs_total{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}"}[5m])) > {{ .Values.groups.host.rules.HostNetworkErrors.threshold }} and on (cluster, instance, device) pke_host_network_device_expected
   summary: network error {{ $labels.instance }} {{ $labels.device }}
-  description: 物理 interface の送受信 error が継続しています。仮想 interface は対象から除外しています。
+  description: netplan に宣言した interface の送受信 error が継続しています。
 - alert: HostSystemdUnitFailed
   expr: |-
-    {{ range $i, $host := .Values.hosts }}{{ if $i }} or {{ end }}max by (cluster, instance, name) (node_systemd_unit_state{job="integrations/unix",instance="{{ $host.name }}",name=~{{ $host.units | join "|" | replace "." "\\." | quote }},state="failed"}) == 1{{ end }}
+    max by (cluster, instance, name) (node_systemd_unit_state{job="integrations/unix",state="failed"}) == 1 and on (cluster, instance, name) pke_systemd_unit_expected
   summary: systemd failed {{ $labels.instance }} {{ $labels.name }}
   description: inventory に宣言した常駐 unit の状態です。Alloy 自身が停止した場合は欠測監視を参照してください。
   requires: hosts
 - alert: HostSystemdUnitInactive
   expr: |-
-    {{ range $i, $host := .Values.hosts }}{{ if $i }} or {{ end }}max by (cluster, instance, name) (node_systemd_unit_state{job="integrations/unix",instance="{{ $host.name }}",name=~{{ $host.units | join "|" | replace "." "\\." | quote }},state="inactive"}) == 1{{ end }}
+    max by (cluster, instance, name) (node_systemd_unit_state{job="integrations/unix",state="inactive"}) == 1 and on (cluster, instance, name) pke_systemd_unit_expected
   summary: systemd inactive {{ $labels.instance }} {{ $labels.name }}
   description: inventory に宣言した常駐 unit の状態です。Alloy 自身が停止した場合は欠測監視を参照してください。
+  requires: hosts
+- alert: HostSystemdUnitAbsent
+  expr: |-
+    pke_systemd_unit_expected unless on (cluster, instance, name) max by (cluster, instance, name) (max_over_time(node_systemd_unit_state{job="integrations/unix"}[{{ .Values.absenceWindow }}]))
+  summary: systemd unit 欠測 {{ $labels.instance }} {{ $labels.name }}
+  description: inventory に宣言した unit の状態が取得できません。unit の削除・改名と systemd collector を確認してください。
   requires: hosts

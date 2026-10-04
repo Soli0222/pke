@@ -19,6 +19,28 @@ spec:
     - name: blackbox-exporter
       interval: {{ $root.Values.prometheusRule.interval | default "30s" }}
       rules:
+{{- range $app := $root.Values.applications }}
+{{- $job := default (default $app.name $root.Values.grobal.jobName) $app.jobName }}
+{{- range $app.targets }}
+        - record: pke_probe_expected
+          expr: vector(1)
+          labels:
+            job: {{ $job | quote }}
+            instance: {{ . | quote }}
+{{- end }}
+{{- end }}
+        - alert: ProbeMetricsAbsent
+          expr: pke_probe_expected unless on (cluster, job, instance) max by (cluster, job, instance) (max_over_time(probe_success[5m]))
+          for: {{ $root.Values.prometheusRule.probeMetricsAbsent.for }}
+          labels:
+            severity: {{ $root.Values.prometheusRule.probeMetricsAbsent.severity }}
+          annotations:
+            summary: 'Probe metrics missing: {{ "{{" }} $labels.instance {{ "}}" }}'
+            description: 'Probe に宣言した対象の結果が5分間ありません。Probe、Alloy の discovery と blackbox exporter を確認してください。'
+            runbook_url: https://github.com/Soli0222/pke/blob/main/charts/blackbox-exporter-probes/README.md
+{{- with $root.Values.prometheusRule.probeMetricsAbsent.annotations }}
+{{ toYaml . | indent 12 }}
+{{- end }}
         - alert: EndpointDown
           expr: probe_success == 0
           for: {{ $root.Values.prometheusRule.endpointDown.for | default "5m" }}

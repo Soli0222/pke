@@ -14,6 +14,7 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
+    # BEGIN generated monitoring inventory (scripts/sync-monitoring-inventory.py)
     hosts:
     - name: natsume-03
       units:
@@ -21,34 +22,41 @@ spec:
       - k3s.service
       - etcd.service
       - falco-modern-bpf.service
+      networkDevices:
+      - ens3
+      - ens7
     - name: natsume-08
       units:
       - alloy.service
       - k3s-agent.service
       - falco-modern-bpf.service
+      networkDevices:
+      - ens3
+      - ens7
     databases:
     - namespace: grafana
       name: grafana-cluster
       archive: true
       replication: false
-      baseBackupMaxAgeSeconds: 648000 # 7日 + 12時間
+      baseBackupMaxAgeSeconds: 648000
     - namespace: misskey
       name: misskey-cluster
-      baseBackupMaxAgeSeconds: 108000 # 1日 + 6時間
       archive: true
       replication: false
+      baseBackupMaxAgeSeconds: 108000
     - namespace: spotify-nowplaying
       name: spn-cluster
       archive: true
       replication: false
-      baseBackupMaxAgeSeconds: 648000 # 7日 + 12時間
+      baseBackupMaxAgeSeconds: 648000
     - namespace: spotify-reblend
       name: reblend-cluster
       archive: true
       replication: false
-      baseBackupMaxAgeSeconds: 648000 # 7日 + 12時間
+      baseBackupMaxAgeSeconds: 648000
     - namespace: sui
       name: sui-cluster
       archive: true
       replication: false
-      baseBackupMaxAgeSeconds: 648000 # 7日 + 12時間
+      baseBackupMaxAgeSeconds: 648000
+    # END generated monitoring inventory

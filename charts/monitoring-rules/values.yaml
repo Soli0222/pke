@@ -14,8 +14,6 @@ exclusions:
   fluxResources: ^$
   filesystems: tmpfs|devtmpfs|overlay|squashfs|nsfs|tracefs|proc|sysfs
   mountpoints: ^/(dev|proc|sys|run)(/.*)?$|^/var/lib/(kubelet|rancher/k3s)/.*
-diskDevices: vd[a-z]+|sd[a-z]+|nvme[0-9]+n[0-9]+
-networkDevices: ens[0-9]+|enp.*|eth[0-9]+
 fluxKinds: Kustomization|HelmRelease|GitRepository|HelmRepository|HelmChart|OCIRepository|Bucket
 groups:
   collection:
@@ -254,6 +252,11 @@ groups:
         for: 15m
         severity: warning
         threshold: 1
+        annotations: {}
+      HostSystemdUnitAbsent:
+        enabled: true
+        for: 5m
+        severity: warning
         annotations: {}
       HostSystemdUnitFailed:
         enabled: true
