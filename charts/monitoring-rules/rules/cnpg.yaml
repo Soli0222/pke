@@ -31,9 +31,9 @@ rules:
   requires: databases
 - alert: CNPGWALArchiveStalled
   expr: |-
-    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.archive }}{{ $parts = append $parts (printf "max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_seconds_since_last_archival{namespace=\"%s\",cnpg_cluster=\"%s\"}) > %v" $db.namespace $db.name $.Values.groups.cnpg.rules.CNPGWALArchiveStalled.threshold) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
+    {{ $parts := list }}{{ range $db := .Values.databases }}{{ if $db.archive }}{{ $parts = append $parts (printf "max by (cluster, namespace, cnpg_cluster, pod) (cnpg_pg_stat_archiver_seconds_since_last_archival{namespace=\"%s\",cnpg_cluster=\"%s\"}) > %v and on (cluster, namespace, cnpg_cluster, pod) max by (cluster, namespace, cnpg_cluster, pod) (cnpg_collector_pg_wal_archive_status{namespace=\"%[1]s\",cnpg_cluster=\"%[2]s\",value=\"ready\"}) > 0" $db.namespace $db.name $.Values.groups.cnpg.rules.CNPGWALArchiveStalled.threshold) }}{{ end }}{{ end }}{{ if $parts }}{{ join " or " $parts }}{{ else }}vector(0) > 1{{ end }}
   summary: WAL archive 停滞 {{ $labels.namespace }}/{{ $labels.cnpg_cluster }}
-  description: archive を有効にした DB で成功が30分ありません。archive_timeout と WAL 生成を確認してください。
+  description: 未送信 WAL があり、最終 archive 成功からの経過時間が閾値を超えた状態が継続しています。ready WAL、plugin のログ、ObjectStore 接続を確認してください。
   requires: databases
 - alert: CNPGBaseBackupStale
   expr: |-

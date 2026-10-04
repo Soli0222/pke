@@ -785,19 +785,70 @@ def scenarios():
         ],
         "archiver reset after success",
     )
+    archive_age = "cnpg_pg_stat_archiver_seconds_since_last_archival"
+    archive_queue = "cnpg_collector_pg_wal_archive_status"
     add(
         "CNPGWALArchiveStalled",
-        [s("cnpg_pg_stat_archiver_seconds_since_last_archival", "0x4 3600x20 0x15", D)],
+        [
+            s(archive_age, "0x4 3600x20 0x15", D),
+            s(archive_queue, "1x45", D, value="ready"),
+        ],
         D,
+        "queued WAL and stale archive, then archive succeeds",
+    )
+    add(
+        "CNPGWALArchiveStalled",
+        [s(archive_age, "3600x45", D), s(archive_queue, BAD, D, value="ready")],
+        D,
+        "backlog drains even while last archive remains old",
     )
     quiet(
         "CNPGWALArchiveStalled",
         [
+            s(archive_age, "86400x45", D),
+            s(archive_queue, "0x45", D, value="ready"),
+            s(archive_queue, "36x45", D, value="done"),
+        ],
+        "idle DB with old successful archive and no queued WAL",
+    )
+    quiet(
+        "CNPGWALArchiveStalled",
+        [
+            s(archive_age, "3600x45", D),
+            s(archive_queue, "0x4 1x5 0x35", D, value="ready"),
+        ],
+        "short backlog after idle period recovers before pending duration",
+        when="12m",
+    )
+    quiet(
+        "CNPGWALArchiveStalled",
+        [s(archive_age, "60x45", D), s(archive_queue, "2x45", D, value="ready")],
+        "queued WAL with continuing archive progress",
+    )
+    for field, other in [
+        ("cluster", "meruto"),
+        ("namespace", "other"),
+        ("cnpg_cluster", "other-db"),
+        ("pod", "db-2"),
+    ]:
+        quiet(
+            "CNPGWALArchiveStalled",
+            [
+                s(archive_age, "3600x45", D),
+                s(archive_queue, "2x45", {**D, field: other}, value="ready"),
+            ],
+            f"backlog from different {field} cannot match",
+        )
+    quiet(
+        "CNPGWALArchiveStalled",
+        [
+            s(archive_age, "3600x45", {**D, "cnpg_cluster": "disabled-db"}),
             s(
-                "cnpg_pg_stat_archiver_seconds_since_last_archival",
-                "3600x45",
+                archive_queue,
+                "2x45",
                 {**D, "cnpg_cluster": "disabled-db"},
-            )
+                value="ready",
+            ),
         ],
         "archive disabled",
     )

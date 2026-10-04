@@ -187,6 +187,9 @@ meruto に DB はなく、operator の監視と DB の監視を区別する。
 | WALArchiveFailing / Stalled | 対象 DB の最終成功・失敗時刻、WAL 生成、plugin のログ、ObjectStore、R2 接続 |
 | BaseBackupStale | Barman plugin の最終成功時刻、ScheduledBackup の suspend / スケジュール、Backup の完了状態、ObjectStore、R2 の base backup |
 
+WALArchiveStalled は同じ DB Pod の未送信 WAL（`ready`）が1件以上あり、最終成功から30分超の状態が15分続くと通知する。
+DB に活動がなく、新しい WAL の送信待ちがない場合は通知しない。
+
 base backup の期限は `baseBackupMaxAgeSeconds` で DB ごとに指定する。
 Misskey は30時間、週次の4DBは7日12時間。期限超過・成功時刻0・欠測を監視する。
 WAL archive の成功や ScheduledBackup の実行時刻で代用しない。
