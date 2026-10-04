@@ -22,7 +22,7 @@ rules:
 - alert: FalcoMetricsAbsent
   requires: hosts
   expr: |-
-    {{ range $i, $host := .Values.hosts }}{{ if $i }} or {{ end }}absent_over_time(falcosecurity_falco_version_info{hostname="{{ $host.name }}"}[{{ $.Values.absenceWindow }}]){{ end }}
+    max by (cluster, hostname) (label_replace(pke_host_expected, "hostname", "$1", "instance", "(.*)")) unless on (cluster, hostname) max by (cluster, hostname) (max_over_time(falcosecurity_falco_version_info[{{ .Values.absenceWindow }}]))
   summary: 'Falco メトリクスが欠測（{{ $labels.hostname }}）'
   description: 'Falco の監視入力が5分間欠測し、その状態がさらに5分継続しています。Falco service、Alloy scrape、remote_write を確認してください。'
 - alert: FalcoKernelEventsDropped

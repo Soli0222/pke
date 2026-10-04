@@ -216,6 +216,10 @@ def scope(groups_by_cluster, out):
                     assert (
                         f'cluster="{cluster}"' in rule["expr"]
                         or rule["expr"] == "vector(0) > 1"
+                        or (
+                            "record" in rule
+                            and re.fullmatch(r"vector\([0-9.]+\)", rule["expr"])
+                        )
                     ), rule
         return result
     finally:

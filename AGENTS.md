@@ -56,7 +56,8 @@ README だけの変更は version 更新を要しない。
 
 ノードの増減では `hosts.yaml` と `host_vars/<node>.yaml` を更新する。
 natsume の node DNS は `flux/clusters/natsume/apps/external-dns-config/node-dnsendpoints.yaml` も確認する。
-常駐サービスを変えたら `alloy_systemd_units` と監視ルールの hosts / units も更新する。
+常駐サービスを変えたら `alloy_systemd_units` を更新する。
+ホスト・unit・netplan・CNPG 定義を変えたら `python3 scripts/sync-monitoring-inventory.py` で監視の期待対象を再生成する。HelmRelease の生成ブロックは直接編集しない。
 
 新規 K3s クラスタには以下をそろえる。
 
@@ -68,7 +69,7 @@ natsume の node DNS は `flux/clusters/natsume/apps/external-dns-config/node-dn
 ## DB と監視の変更
 
 CNPG の DB は natsume のみで、すべて1 instance。
-DB を追加・変更するときはバックアップ、PodMonitor、`cnpg_cluster` ラベル、監視ルールの databases をそろえ、[CNPG.md](CNPG.md) を更新する。
+DB を追加・変更するときはバックアップ、PodMonitor、`cnpg_cluster` ラベルをそろえ、監視の期待対象を再生成する。あわせて[CNPG.md](CNPG.md) を更新する。
 operator の存在だけで DB の存在を判断しない。
 
 メトリクスの `cluster` は Kubernetes クラスタ、`cnpg_cluster` は DB 名に使う。

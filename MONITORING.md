@@ -61,7 +61,10 @@ Mimir の保存先は `natsume/<namespace>/<resource>/<uid>` または `meruto/<
 meruto が停止しても、同期済みルールは natsume の Ruler で評価され続ける。
 
 共通ルールの閾値・待機時間・調査手順は [chart README](charts/monitoring-rules/README.md) を参照する。
-クラスタ別の hosts / units は Ansible inventory、databases は CNPG manifest と一致させる。
+クラスタ別の hosts / units / networkDevices と databases は、Ansible inventory・netplan と CNPG manifest から `python3 scripts/sync-monitoring-inventory.py` で生成する。
+HelmRelease の生成ブロックは直接編集しない。CI の `--check` で生成漏れを検出する。
+欠測や DB の運用ポリシーは期待値の recording metrics と照合し、アラート式に対象名を列挙しない。
+Probe も `applications` から期待値を生成し、結果系列の消失を `ProbeMetricsAbsent` で監視する。
 meruto の CNPG DB グループは無効にする。
 
 ## ntfy の通知と認証

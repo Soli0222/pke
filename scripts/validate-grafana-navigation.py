@@ -60,6 +60,8 @@ for dashboard in dashboards.values():
 for cluster in ["natsume", "meruto"]:
     for group in render(production_values(cluster)):
         for rule in group["rules"]:
+            if "record" in rule:
+                continue
             annotations = rule["annotations"]
             assert {"dashboard_url", "panel_url", "runbook_url"} <= annotations.keys()
             verify(annotations["dashboard_url"])
@@ -89,6 +91,8 @@ with tempfile.TemporaryDirectory(prefix="pke-navigation-") as tmp:
         if doc and doc.get("kind") == "PrometheusRule":
             for group in doc["spec"]["groups"]:
                 for rule in group["rules"]:
+                    if "record" in rule:
+                        continue
                     verify(rule["annotations"]["dashboard_url"])
                     verify(rule["annotations"]["panel_url"])
 
