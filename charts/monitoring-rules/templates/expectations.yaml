@@ -36,8 +36,10 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   groups:
-    - name: pke.expectations
-      interval: {{ .Values.interval }}
+{{- range $index, $chunk := chunk (int .Values.maxRulesPerGroup) $rules }}
+    - name: pke.expectations{{ if $index }}.{{ $index }}{{ end }}
+      interval: {{ $.Values.interval }}
       rules:
-{{ toYaml $rules | indent 8 }}
+{{ toYaml $chunk | indent 8 }}
+{{- end }}
 {{- end }}

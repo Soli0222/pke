@@ -14,21 +14,24 @@ metadata:
 {{- with $root.Values.prometheusRule.labels }}
 {{ toYaml . | indent 4 }}
 {{- end }}
+{{- $expected := list -}}
+{{- range $app := $root.Values.applications -}}
+{{- $job := default (default $app.name $root.Values.grobal.jobName) $app.jobName -}}
+{{- range $app.targets -}}
+{{- $expected = append $expected (dict "record" "pke_probe_expected" "expr" "vector(1)" "labels" (dict "job" $job "instance" .)) -}}
+{{- end -}}
+{{- end }}
 spec:
   groups:
+{{- range $index, $chunk := chunk (int $root.Values.prometheusRule.maxRulesPerGroup) $expected }}
+    - name: blackbox-exporter.expectations.{{ $index }}
+      interval: {{ $root.Values.prometheusRule.interval | default "30s" }}
+      rules:
+{{ toYaml $chunk | indent 8 }}
+{{- end }}
     - name: blackbox-exporter
       interval: {{ $root.Values.prometheusRule.interval | default "30s" }}
       rules:
-{{- range $app := $root.Values.applications }}
-{{- $job := default (default $app.name $root.Values.grobal.jobName) $app.jobName }}
-{{- range $app.targets }}
-        - record: pke_probe_expected
-          expr: vector(1)
-          labels:
-            job: {{ $job | quote }}
-            instance: {{ . | quote }}
-{{- end }}
-{{- end }}
         - alert: ProbeMetricsAbsent
           expr: pke_probe_expected unless on (cluster, job, instance) max by (cluster, job, instance) (max_over_time(probe_success[5m]))
           for: {{ $root.Values.prometheusRule.probeMetricsAbsent.for }}

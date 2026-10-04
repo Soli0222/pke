@@ -1,6 +1,6 @@
 # monitoring-rules
 
-![Version: 0.4.0](https://img.shields.io/badge/Version-0.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.4.1](https://img.shields.io/badge/Version-0.4.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 PKE platform alert rules evaluated by Mimir
 
@@ -31,7 +31,8 @@ CI は `--check` で生成漏れを検出する。
 毎日の base backup は30時間、毎週は7日12時間を期限とする。
 それ以外の schedule や期限を使う場合は `ScheduledBackup.metadata.annotations` の `monitoring.pke.soli0222.com/backup-max-age-seconds` に正の秒数を指定する。
 
-期待対象は `pke.expectations` の recording rules で生成する。exporter が消失しても期待値は残る。
+期待対象は `pke.expectations` と `pke.expectations.<番号>` の recording rules で生成する。
+`maxRulesPerGroup`（既定20）ごとに分割し、対象数が増えても Mimir のグループ上限を超えないようにする。exporter が消失しても期待値は残る。
 `NodeExporterAbsent`、`MetricsStale`、`FalcoMetricsAbsent`、`HostSystemdUnitAbsent` はこの期待値と観測を照合する。
 unit の failed / inactive は対象 unit 全体を共通式で評価する。
 recording group 自体の欠落や評価失敗は Pipeline のルール同期・評価監視で確認する。
@@ -394,6 +395,7 @@ recording group 自体の欠落や評価失敗は Pipeline のルール同期・
 | groups.workload.rules.KubeStatefulSetReplicasMismatch.severity | string | `"warning"` |  |
 | groups.workload.rules.KubeStatefulSetReplicasMismatch.threshold | int | `0` |  |
 | hosts | list | `[]` | 生成された name / units / networkDevices |
+| maxRulesPerGroup | int | `20` | 期待値グループの分割サイズ。Mimir の上限以下に設定 |
 | interval | string | `"1m"` |  |
 | runbookBaseURL | string | `"https://github.com/Soli0222/pke/blob/main/charts/monitoring-rules/README.md"` |  |
 

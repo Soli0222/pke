@@ -1,4 +1,6 @@
 interval: 1m
+# Mimir ruler の1グループ当たりの上限に合わせる。
+maxRulesPerGroup: 20
 runbookBaseURL: https://github.com/Soli0222/pke/blob/main/charts/monitoring-rules/README.md
 dashboardBaseURL: https://grafana.str08.net
 additionalAnnotations: {}

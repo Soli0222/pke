@@ -40,6 +40,7 @@ def contract(docs):
     groups = [
         g for d in docs if d["kind"] == "PrometheusRule" for g in d["spec"]["groups"]
     ]
+    assert all(len(g["rules"]) <= 20 for g in groups)
     records = [
         r for g in groups for r in g["rules"] if r.get("record") == "pke_probe_expected"
     ]
@@ -79,6 +80,12 @@ def main():
                 },
             ]
         }
+        expanded = copy.deepcopy(values)
+        expanded["applications"][0]["targets"] = [
+            f"https://target-{i}.example" for i in range(45)
+        ]
+        expanded_groups = contract(render(expanded, out))
+        assert len(expanded_groups) == 4  # Three expected-target groups plus alerts.
         testgroups = contract(render(values, out))
         removed = copy.deepcopy(values)
         removed["applications"].pop()
