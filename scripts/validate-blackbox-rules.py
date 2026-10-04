@@ -51,6 +51,7 @@ def contract(docs):
 def main():
     with tempfile.TemporaryDirectory(prefix="pke-probe-tests-") as temp:
         out = Path(temp)
+        out.chmod(0o755)
         values = yaml.safe_load(
             (
                 ROOT
