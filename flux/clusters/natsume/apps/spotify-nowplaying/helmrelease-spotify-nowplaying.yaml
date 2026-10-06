@@ -51,10 +51,10 @@ spec:
     postgres:
       enabled: false
     externalPostgres:
-      host: spn-cluster-rw
+      host: spn-cluster-restored-rw
       port: 5432
       username: spn
       database: spn
       auth:
-        existingSecret: spn-cluster-app
+        existingSecret: spn-cluster-restored-app
         secretKey: password

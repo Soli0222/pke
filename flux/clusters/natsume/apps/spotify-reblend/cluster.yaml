@@ -1,10 +1,11 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: reblend-cluster
+  name: reblend-cluster-restored
   namespace: spotify-reblend
 spec:
   instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-system-trixie
   primaryUpdateMethod: switchover
   smartShutdownTimeout: 60
   affinity:
@@ -20,6 +21,16 @@ spec:
     size: 5Gi
     resizeInUseVolumes: false
   bootstrap:
-    initdb:
+    recovery:
+      source: origin
       database: reblend
       owner: reblend
+      recoveryTarget:
+        backupID: 20261003T183000
+  externalClusters:
+  - name: origin
+    plugin:
+      name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: reblend-backup-store-restore
+        serverName: reblend-cluster

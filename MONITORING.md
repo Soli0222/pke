@@ -45,7 +45,7 @@ Mimir は単一 tenant `anonymous` を使い、Ruler の通知先は `http://mim
 | ラベル | 意味 |
 |---|---|
 | `cluster` | Kubernetes は `natsume` / `meruto`。ホストは inventory の `cluster` に従う |
-| `cnpg_cluster` | CNPG の DB 名。例: `misskey-cluster` |
+| `cnpg_cluster` | CNPG の DB 名。例: `misskey-cluster-restored` |
 | `hostname` | ホストの Alloy が収集するノード名 |
 | `job` | 収集対象。Alloy 自己監視は Kubernetes が `alloy`、ホストが `alloy-host` |
 

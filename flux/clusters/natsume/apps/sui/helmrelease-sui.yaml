@@ -61,9 +61,9 @@ spec:
     postgresql:
       enabled: false
     externalPostgres:
-      host: sui-cluster-rw
+      host: sui-cluster-restored-rw
       port: 5432
       database: sui
       user: sui
-      existingSecret: sui-cluster-app
+      existingSecret: sui-cluster-restored-app
       existingSecretKey: password
