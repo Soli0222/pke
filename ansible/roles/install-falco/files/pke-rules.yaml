@@ -1,18 +1,15 @@
-# namespace だけでは除外しない。親プロセス、イメージ、WAL ファイル名まで限定する。
+# CNPG instance の管理ラベル、親プロセス、イメージ、WAL ファイル名まで限定する。
 # regex は Falco の full match。コマンド末尾への追加実行も除外しない。
 - macro: postgres_running_cnpg
   condition: >-
     (container.name = postgres and proc.pname = postgres and user.name = postgres
      and proc.tty = 0
+     and k8s.pod.label[app.kubernetes.io/managed-by] = cloudnative-pg
+     and k8s.pod.label[cnpg.io/podRole] = instance
      and ((container.image.repository = ghcr.io/cloudnative-pg/postgresql
-           and proc.pexepath = /usr/lib/postgresql/18/bin/postgres
-           and ((k8s.ns.name = grafana and k8s.pod.name regex "grafana-cluster-[0-9]+")
-             or (k8s.ns.name = sui and k8s.pod.name regex "sui-cluster-[0-9]+")
-             or (k8s.ns.name = spotify-reblend and k8s.pod.name regex "reblend-cluster-[0-9]+")
-             or (k8s.ns.name = spotify-nowplaying and k8s.pod.name regex "spn-cluster-[0-9]+")))
+           and proc.pexepath = /usr/lib/postgresql/18/bin/postgres)
        or (container.image.repository = ghcr.io/soli0222/pgroonga-cnpg/4.0.6-alpine
-           and proc.pexepath = /usr/local/bin/postgres
-           and k8s.ns.name = misskey and k8s.pod.name regex "misskey-cluster-[0-9]+"))
+           and proc.pexepath = /usr/local/bin/postgres))
      and proc.cmdline regex "sh -c (-- )?/controller/manager wal-archive --log-destination /controller/log/postgres[.]json pg_wal/([0-9A-F]{24}([.]partial|[.][0-9A-F]{8}[.]backup)?|[0-9A-F]{8}[.]history)")
   override:
     condition: replace
