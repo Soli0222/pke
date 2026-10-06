@@ -195,12 +195,8 @@ case(
             {"cluster": "natsume", "namespace": ns, "cnpg_cluster": name},
             "1+60x5",
         )
-        for ns, name in [
-            ("grafana", "grafana-cluster"),
-            ("sui", "sui-cluster"),
-            ("spotify-reblend", "reblend-cluster"),
-            ("spotify-nowplaying", "spn-cluster"),
-        ]
+        for ns, name in database_names.items()
+        if ns != "misskey"
     ]
     + [
         metric(
