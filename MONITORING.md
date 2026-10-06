@@ -239,6 +239,8 @@ chart の内容を戻す場合も新しい chart version を付ける。
 Falco はホストの syscall を監視し、検知カウンターを Alloy 経由で Mimir に送る。
 Mimir の `pke.falco` が評価し、既存の Alertmanager → ntfy 経路で通知する。
 Loki は JSON イベントの調査に使う。Loki のルール評価には依存しない。
+`install-falco` は systemd の `10-journal.conf` drop-in で標準出力・標準エラーを journal に送る。
+Falco の JSON イベントをホスト Alloy が journal から読み、Loki に転送する。
 
 | 通知 | 条件 |
 |---|---|
@@ -278,7 +280,8 @@ ansible-playbook -i inventories/hosts.yaml configure-falco.yaml --limit natsume-
 ansible-playbook -i inventories/hosts.yaml configure-falco.yaml --limit natsume-08
 ```
 
-反映後は Falco service、設定・ルールの読み込み、Mimir の起動時刻・検知 counter・欠測・drop、通常イベントの JSON を確認する。
+反映後は Falco service、設定・ルールの読み込み、`StandardOutput=journal` / `StandardError=journal`、Mimir の起動時刻・検知 counter・欠測・drop、通常イベントの JSON を確認する。
+`systemctl show falco-modern-bpf.service -p StandardOutput -p StandardError` と `journalctl -u falco-modern-bpf.service` でホスト側の出力を確認し、Loki の `cluster` / `hostname` / `syslog_identifier` と照合する。
 本番で侵害模擬や合成通知は実施しない。
 
 ### 通知から調査する
