@@ -262,13 +262,14 @@ Falco の JSON イベントをホスト Alloy が journal から読み、Loki �
 
 [custom rules](ansible/roles/install-falco/files/pke-rules.yaml) は次の通常動作に限定する。
 
-- CNPG: DB の namespace と Pod 名、postgres コンテナ、イメージ、postgres 親プロセス、非対話実行、WAL アーカイブの完全なコマンド形式を照合する。任意のシェル実行やコマンド末尾の追加実行は除外しない。
+- CNPG: `app.kubernetes.io/managed-by=cloudnative-pg` と `cnpg.io/podRole=instance`、postgres コンテナ、イメージ、postgres 親プロセス、非対話実行、WAL アーカイブの完全なコマンド形式を照合する。DB 名・Pod 名を変更しても同じ処理を識別できる。任意のシェル実行やコマンド末尾の追加実行は除外しない。
 - Longhorn: longhorn-system 内の manager が実行する `longhorn backup cleanup-all-mounts` のみ。namespace 全体やすべてのネットワークへの入出力リダイレクトは除外しない。
 
 systemd の正規の資格情報読み取りには upstream の例外を使う。
 `cat /etc/shadow` を含む任意の機密ファイル読み取りは通知対象に残す。
 DB イメージや PostgreSQL major version の変更時は例外の親実行ファイルパスも確認する。
 Falco の container plugin は配布設定を使い、標準の CRI socket 一覧に K3s の socket を含む。
+CNPG の管理ラベルは `k8s.pod.label[...]` で container runtime から取得する。ラベルが取得できない場合は例外にせず、検知対象に残す。
 
 設定だけの変更はパッケージを更新せず、次を対象ホスト1台ずつ実施する。
 Kubernetes の対応先は natsume が `natsume@soli`、meruto が `meruto@soli`。
