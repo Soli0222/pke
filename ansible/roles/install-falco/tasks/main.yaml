@@ -64,6 +64,23 @@
     enabled: "{{ falco_falcoctl_enabled | bool }}"
   failed_when: false
 
+- name: Create Falco systemd drop-in directory
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ falco_service_name }}.service.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Send Falco output to the journal
+  ansible.builtin.copy:
+    src: journal.conf
+    dest: "/etc/systemd/system/{{ falco_service_name }}.service.d/10-journal.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Falco
+
 - name: Create Falco config directory
   ansible.builtin.file:
     path: "{{ falco_config_dir }}"
