@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: sui-cluster-weekly-backup
+  name: sui-cluster-restored-weekly-backup
   namespace: sui
 spec:
   # 日曜 03:15 JST（土曜 18:15 UTC）
@@ -9,7 +9,7 @@ spec:
   immediate: true
   backupOwnerReference: self
   cluster:
-    name: sui-cluster
+    name: sui-cluster-restored
   method: plugin
   pluginConfiguration:
     name: barman-cloud.cloudnative-pg.io

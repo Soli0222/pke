@@ -55,13 +55,12 @@ cd ansible
 ansible-playbook -i inventories/hosts.yaml prepare-k3s-nodes.yaml --limit 'natsume-03,natsume-08'
 ansible-playbook -i inventories/hosts.yaml site-k3s.yaml --limit 'natsume-03,natsume-08'
 cd ../helmfile
-kubectl config use-context natsume@soli
 helmfile -e natsume apply
 ```
 
 `prepare-k3s-nodes.yaml` は OS・ネットワーク・ストレージ・Alloy・Falco、`site-k3s.yaml` は etcd・K3s・registry mTLS を構成します。
 Helmfile の hook が FluxInstance を適用し、`flux/clusters/<cluster>` の同期を開始します。
-Helmfile の release は environment の `kubeContext` を使いますが、hook の kubectl も同じ接続先になるよう current context をそろえてください。
+Helmfile の release と hook の kubectl は、どちらも environment の `kubeContext` を接続先に使います。
 
 Terraform は Kubernetes の構築とは独立しています。
 各ディレクトリの `setup.sh` で認証情報を読み込み、plan を確認してから apply します。

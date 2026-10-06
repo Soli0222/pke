@@ -77,11 +77,11 @@ spec:
       enabled: false
 
     externalPostgresql:
-      host: "misskey-cluster-rw"
+      host: "misskey-cluster-restored-rw"
       port: 5432
       database: misskey
       username: misskey
-      existingSecret: "misskey-cluster-app"
+      existingSecret: "misskey-cluster-restored-app"
       existingSecretKey: "password"
 
     redis:

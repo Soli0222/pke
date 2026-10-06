@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: spn-cluster-weekly-backup
+  name: spn-cluster-restored-weekly-backup
   namespace: spotify-nowplaying
 spec:
   # 日曜 03:45 JST（土曜 18:45 UTC）
@@ -9,7 +9,7 @@ spec:
   immediate: true
   backupOwnerReference: self
   cluster:
-    name: spn-cluster
+    name: spn-cluster-restored
   method: plugin
   pluginConfiguration:
     name: barman-cloud.cloudnative-pg.io

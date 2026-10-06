@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: misskey-cluster
+  name: misskey-cluster-restored
   namespace: misskey
 spec:
   instances: 1
@@ -51,6 +51,16 @@ spec:
     size: 150Gi
     resizeInUseVolumes: false
   bootstrap:
-    initdb:
+    recovery:
+      source: origin
       database: misskey
       owner: misskey
+      recoveryTarget:
+        backupID: 20261005T163000
+  externalClusters:
+  - name: origin
+    plugin:
+      name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: misskey-backup-store-restore
+        serverName: misskey-cluster

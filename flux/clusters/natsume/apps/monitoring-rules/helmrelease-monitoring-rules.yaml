@@ -35,27 +35,27 @@ spec:
       - ens7
     databases:
     - namespace: grafana
-      name: grafana-cluster
+      name: grafana-cluster-restored
       archive: true
       replication: false
       baseBackupMaxAgeSeconds: 648000
     - namespace: misskey
-      name: misskey-cluster
+      name: misskey-cluster-restored
       archive: true
       replication: false
       baseBackupMaxAgeSeconds: 108000
     - namespace: spotify-nowplaying
-      name: spn-cluster
+      name: spn-cluster-restored
       archive: true
       replication: false
       baseBackupMaxAgeSeconds: 648000
     - namespace: spotify-reblend
-      name: reblend-cluster
+      name: reblend-cluster-restored
       archive: true
       replication: false
       baseBackupMaxAgeSeconds: 648000
     - namespace: sui
-      name: sui-cluster
+      name: sui-cluster-restored
       archive: true
       replication: false
       baseBackupMaxAgeSeconds: 648000

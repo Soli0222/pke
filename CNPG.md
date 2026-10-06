@@ -12,11 +12,11 @@ Pooler は使わず、アプリは CNPG の Service に直接接続する。
 
 | Namespace | Cluster | DB / Owner | 容量 | バックアップ | 実行時刻（JST） |
 |---|---|---|---|---|---|
-| misskey | `misskey-cluster` | `misskey` | 150Gi | base backup + WAL archive | 毎日 01:30 |
-| grafana | `grafana-cluster` | `grafana` | 10Gi | base backup + WAL archive | 日曜 03:00 |
-| sui | `sui-cluster` | `sui` | 5Gi | base backup + WAL archive | 日曜 03:15 |
-| spotify-reblend | `reblend-cluster` | `reblend` | 5Gi | base backup + WAL archive | 日曜 03:30 |
-| spotify-nowplaying | `spn-cluster` | `spn` | 5Gi | base backup + WAL archive | 日曜 03:45 |
+| misskey | `misskey-cluster-restored` | `misskey` | 150Gi | base backup + WAL archive | 毎日 01:30 |
+| grafana | `grafana-cluster-restored` | `grafana` | 10Gi | base backup + WAL archive | 日曜 03:00 |
+| sui | `sui-cluster-restored` | `sui` | 5Gi | base backup + WAL archive | 日曜 03:15 |
+| spotify-reblend | `reblend-cluster-restored` | `reblend` | 5Gi | base backup + WAL archive | 日曜 03:30 |
+| spotify-nowplaying | `spn-cluster-restored` | `spn` | 5Gi | base backup + WAL archive | 日曜 03:45 |
 
 定義は [natsume の各アプリ](flux/clusters/natsume/apps/) の `cluster.yaml` にある。
 operator / Barman Cloud plugin のバージョンは [cnpg](flux/clusters/natsume/apps/cnpg/)、DB image と PostgreSQL 設定は各 Cluster を参照する。
@@ -26,6 +26,9 @@ Misskey の image には PGroonga が必要で、復元先にも同じ拡張と�
 
 全DBで Barman Cloud plugin による base backup と WAL archive を使う。
 WAL は継続保存し、base backup は上表の頻度で取得する。
+`ObjectStore` は稼働 DB の archive 用と復元元の読み取り用を分ける。
+`objectstore-restore.yaml` に保持期限は設定せず、`Cluster.spec.externalClusters` の `serverName` で復元元 prefix を指定する。
+稼働 DB の archive は現在の Cluster 名を prefix に使うため、復元元を上書きしない。
 各アプリの `ObjectStore` は WAL / base backup を gzip 圧縮し、`ScheduledBackup` は UTC の6フィールド cron を使う。
 週次の4DBは `immediate: true` により ScheduledBackup 作成時にも初回バックアップを取得する。
 初回は定期実行の時刻分散が効かないため、導入時の負荷と完了状態を確認する。
@@ -75,7 +78,7 @@ WAL archive の成功だけで base backup の成功を判断しない。
 対象に合わせて namespace と Cluster 名を置き換える。
 
 ```sh
-kubectl cnpg backup grafana-cluster --context natsume@soli -n grafana \
+kubectl cnpg backup grafana-cluster-restored --context natsume@soli -n grafana \
   --method=plugin --plugin-name=barman-cloud.cloudnative-pg.io
 kubectl --context natsume@soli -n grafana get backups -w
 ```
@@ -98,7 +101,7 @@ base backup と、その時点から復元目標までの WAL が必要となる
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: misskey-cluster-restored
+  name: misskey-recovery
   namespace: misskey
 spec:
   instances: 1
@@ -115,7 +118,7 @@ spec:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: misskey-backup-store
-        serverName: misskey-cluster
+        serverName: misskey-cluster-restored
 ```
 
 特定時点へ復元する PITR では、`bootstrap.recovery.recoveryTarget.targetTime` にタイムゾーン付きの復元時刻を指定する。
@@ -124,7 +127,7 @@ spec:
 
 ```sh
 kubectl --context natsume@soli apply -f misskey-restore.yaml
-kubectl cnpg status misskey-cluster-restored --context natsume@soli -n misskey
+kubectl cnpg status misskey-recovery --context natsume@soli -n misskey
 ```
 
 この例には復元先の WAL archive 設定を含めていない。
@@ -136,7 +139,7 @@ kubectl cnpg status misskey-cluster-restored --context natsume@soli -n misskey
 R2 に保管済みの `<cluster>/<cluster>-YYYYMMDD-HHMMSS.dump` がある場合に使う。
 新規の定期 dump は取得しない。Barman の保持設定はこれらの dump を削除しないため、base backup からの復元確認後に保存要否を判断する。
 pg_dump は dump 作成時点への復元で、PITR はできない。
-以下は Grafana を別名 `grafana-cluster-restored` に復元する例。
+以下は Grafana を別名 `grafana-recovery` に復元する例。
 
 1. R2 の対象 dump を選び、ローカルに取得する。
 
@@ -146,25 +149,25 @@ pg_dump は dump 作成時点への復元で、PITR はできない。
      "s3://cnpg-backup/grafana-cluster/<dump-file>" ./restore.dump
    ```
 
-2. [Grafana の Cluster 定義](flux/clusters/natsume/apps/grafana/cluster.yaml)を基に、`metadata.name` を `grafana-cluster-restored` とした空の Cluster を作る。
+2. [Grafana の Cluster 定義](flux/clusters/natsume/apps/grafana/cluster.yaml)を基に、`metadata.name` を `grafana-recovery` とした空の Cluster を作る。
    DB / owner は `grafana` にそろえ、復元元と互換性のある PostgreSQL image を明示する。
-   `spec.plugins` はコピーせず、元の archive に書き込まない。運用開始時に復元先専用の保存先で設定する。
-   配置先の空き容量を確認し、Ready と新しい `grafana-cluster-restored-app` Secret の生成を待つ。
+   `bootstrap` は `initdb` に替え、DB / owner を指定する。`spec.plugins` と `spec.externalClusters` はコピーせず、元の archive に書き込まない。運用開始時に復元先専用の保存先で設定する。
+   配置先の空き容量を確認し、Ready と新しい `grafana-recovery-app` Secret の生成を待つ。
 
 3. 復元先への port-forward を別ターミナルで維持する。
 
    ```sh
    kubectl --context natsume@soli -n grafana port-forward \
-     svc/grafana-cluster-restored-rw 15432:5432
+     svc/grafana-recovery-rw 15432:5432
    ```
 
 4. dump を作成した PostgreSQL と互換性のある `pg_restore` で投入する。
    以下は復元先 Secret を環境変数へ読み込み、値を出力せずに使う。
 
    ```sh
-   PGUSER="$(kubectl --context natsume@soli -n grafana get secret grafana-cluster-restored-app -o jsonpath='{.data.username}' | base64 -d)"
-   PGPASSWORD="$(kubectl --context natsume@soli -n grafana get secret grafana-cluster-restored-app -o jsonpath='{.data.password}' | base64 -d)"
-   PGDATABASE="$(kubectl --context natsume@soli -n grafana get secret grafana-cluster-restored-app -o jsonpath='{.data.dbname}' | base64 -d)"
+   PGUSER="$(kubectl --context natsume@soli -n grafana get secret grafana-recovery-app -o jsonpath='{.data.username}' | base64 -d)"
+   PGPASSWORD="$(kubectl --context natsume@soli -n grafana get secret grafana-recovery-app -o jsonpath='{.data.password}' | base64 -d)"
+   PGDATABASE="$(kubectl --context natsume@soli -n grafana get secret grafana-recovery-app -o jsonpath='{.data.dbname}' | base64 -d)"
    export PGUSER PGPASSWORD PGDATABASE
    pg_restore -h 127.0.0.1 -p 15432 --no-owner --no-privileges \
      --exit-on-error -j 4 ./restore.dump

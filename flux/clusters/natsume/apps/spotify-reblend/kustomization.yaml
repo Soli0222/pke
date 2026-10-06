@@ -8,5 +8,6 @@ resources:
 - onepassworditem.yaml
 - onepassworditem-cnpg-backup.yaml
 - objectstore.yaml
+- objectstore-restore.yaml
 - scheduledbackup.yaml
 - podmonitor.yaml

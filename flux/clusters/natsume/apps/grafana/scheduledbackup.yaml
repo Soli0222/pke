@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: grafana-cluster-weekly-backup
+  name: grafana-cluster-restored-weekly-backup
   namespace: grafana
 spec:
   # 日曜 03:00 JST（土曜 18:00 UTC）
@@ -9,7 +9,7 @@ spec:
   immediate: true
   backupOwnerReference: self
   cluster:
-    name: grafana-cluster
+    name: grafana-cluster-restored
   method: plugin
   pluginConfiguration:
     name: barman-cloud.cloudnative-pg.io

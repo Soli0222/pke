@@ -59,10 +59,10 @@ spec:
     postgres:
       enabled: false
     externalPostgres:
-      host: reblend-cluster-rw
+      host: reblend-cluster-restored-rw
       port: 5432
       username: reblend
       database: reblend
       auth:
-        existingSecret: reblend-cluster-app
+        existingSecret: reblend-cluster-restored-app
         secretKey: password

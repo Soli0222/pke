@@ -78,6 +78,7 @@ values = yaml.safe_load(
         / "flux/clusters/natsume/apps/monitoring-rules/helmrelease-monitoring-rules.yaml"
     ).read_text()
 )["spec"]["values"]
+database_names = {db["namespace"]: db["name"] for db in values["databases"]}
 for db in values["databases"]:
     labels = {
         "cluster": "natsume",
@@ -194,12 +195,8 @@ case(
             {"cluster": "natsume", "namespace": ns, "cnpg_cluster": name},
             "1+60x5",
         )
-        for ns, name in [
-            ("grafana", "grafana-cluster"),
-            ("sui", "sui-cluster"),
-            ("spotify-reblend", "reblend-cluster"),
-            ("spotify-nowplaying", "spn-cluster"),
-        ]
+        for ns, name in database_names.items()
+        if ns != "misskey"
     ]
     + [
         metric(
@@ -207,7 +204,7 @@ case(
             {
                 "cluster": "natsume",
                 "namespace": "misskey",
-                "cnpg_cluster": "misskey-cluster",
+                "cnpg_cluster": database_names["misskey"],
             },
             "0+0x5",
         )
@@ -249,12 +246,8 @@ case(
             {"cluster": "natsume", "namespace": ns, "cnpg_cluster": name},
             "1+0x1860",
         )
-        for ns, name in [
-            ("grafana", "grafana-cluster"),
-            ("sui", "sui-cluster"),
-            ("spotify-reblend", "reblend-cluster"),
-            ("spotify-nowplaying", "spn-cluster"),
-        ]
+        for ns, name in database_names.items()
+        if ns != "misskey"
     ]
     + [
         metric(
@@ -262,7 +255,7 @@ case(
             {
                 "cluster": "natsume",
                 "namespace": "misskey",
-                "cnpg_cluster": "misskey-cluster",
+                "cnpg_cluster": database_names["misskey"],
             },
             "1+0x1860",
         )
