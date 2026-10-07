@@ -219,8 +219,12 @@ kubectl --context "$PKE_CONTEXT" -n "$PKE_NAMESPACE" \
   logs "$PKE_DB_POD" -c postgres --since=24h > "$PKE_MAINT_DIR/postgres-before.log"
 kubectl --context "$PKE_CONTEXT" -n "$PKE_NAMESPACE" \
   exec "$PKE_DB_POD" -c postgres -- \
-  cat /var/lib/postgresql/data/pgdata/pgroonga.log > "$PKE_MAINT_DIR/pgroonga-before.log"
+  gzip -c /var/lib/postgresql/data/pgdata/pgroonga.log > "$PKE_MAINT_DIR/pgroonga-before.log.gz"
+gzip -t "$PKE_MAINT_DIR/pgroonga-before.log.gz"
 ```
+
+PGroongaログは大きくなるため、元ファイルを残したまま圧縮して転送する。
+転送が切れた場合は不完全なファイルを成功扱いせず、サーバー側に残った読み取り処理を確認してから別名で再取得する。
 
 dumpまたはarchive確認が失敗した場合、移行、REINDEX、FULLへ進まない。
 既存の物理バックアップとWAL archiveも残す。
