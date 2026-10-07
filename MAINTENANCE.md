@@ -96,6 +96,9 @@ SQL
 
 ```sh
 kubectl --context "$PKE_CONTEXT" -n flux-system \
+  get fluxinstances.fluxcd.controlplane.io flux -o json \
+  > "$PKE_MAINT_DIR/fluxinstance-before.json"
+kubectl --context "$PKE_CONTEXT" -n flux-system \
   get kustomizations.kustomize.toolkit.fluxcd.io flux-system misskey \
   -o custom-columns=NAME:.metadata.name,SUSPEND:.spec.suspend,REVISION:.status.lastAppliedRevision \
   > "$PKE_MAINT_DIR/flux-before.txt"
@@ -138,11 +141,14 @@ DB単位、role単位、roleとDBの組み合わせにある上書きを確認�
 
 ## 1. Misskeyの書き込みを停止する
 
-親のKustomizationから子の停止状態が上書きされないよう、root、Misskey、HelmReleaseの順に止める。
+Flux Operatorによるrootの停止解除を防ぐため、まずFluxInstanceの再調整を止める。
+続いて、親のKustomizationから子の停止状態が上書きされないよう、root、Misskey、HelmReleaseの順に止める。
 rootを止めている間も、他アプリの既存Kustomizationは動作を続けるが、rootからの構成更新は保留される。
 CNPG operatorとBarman pluginは停止しない。
 
 ```sh
+kubectl --context "$PKE_CONTEXT" -n flux-system \
+  annotate fluxinstance flux fluxcd.controlplane.io/reconcile=disabled --overwrite
 flux suspend kustomization flux-system --context "$PKE_CONTEXT" -n flux-system
 flux suspend kustomization misskey --context "$PKE_CONTEXT" -n flux-system
 flux suspend helmrelease misskey --context "$PKE_CONTEXT" -n "$PKE_NAMESPACE"
@@ -557,9 +563,13 @@ flux reconcile kustomization misskey --context "$PKE_CONTEXT" -n flux-system
 kubectl --context "$PKE_CONTEXT" -n "$PKE_NAMESPACE" \
   patch scheduledbackups.postgresql.cnpg.io "$PKE_SCHEDULE" --type merge \
   -p '{"spec":{"suspend":false}}'
+kubectl --context "$PKE_CONTEXT" -n flux-system \
+  annotate fluxinstance flux fluxcd.controlplane.io/reconcile=enabled --overwrite
 ```
 
 作業開始時にすでに停止していたリソースは、上のresumeやpatchの対象から外す。
+FluxInstanceのannotationも保存値へ戻す。開始時にannotationがなかった場合は追加したキーを削除する。
+FluxInstanceの再調整停止はFlux controllers自体の停止ではなく、他アプリの既存Kustomizationは動作を続ける。
 FluxのReadyに加えて、rootとMisskeyの `status.lastAppliedRevision` が移行設定を含むrevisionであること、`status.observedGeneration` が `metadata.generation` と一致することを確認する。
 ClusterはCNPG statusと実際のPostgreSQL設定で確認し、statusに存在しないobservedGenerationを完了条件にしない。
 
@@ -631,3 +641,4 @@ spec:
 - [PostgreSQLのVACUUM](https://www.postgresql.org/docs/18/sql-vacuum.html)
 - [PostgreSQLの不要領域測定](https://www.postgresql.org/docs/18/pgstattuple.html)
 - [CNPGのPostgreSQL設定](https://cloudnative-pg.io/docs/1.28/postgresql_conf/)
+- [FluxInstanceの再調整制御](https://fluxoperator.dev/docs/crd/fluxinstance/#reconciliation-configuration)
