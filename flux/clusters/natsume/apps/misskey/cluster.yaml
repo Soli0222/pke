@@ -16,7 +16,12 @@ spec:
       cpu: "3"
       memory: 6Gi
   postgresql:
+    shared_preload_libraries:
+    - pgroonga_wal_resource_manager
     parameters:
+      pgroonga.enable_wal_resource_manager: "on"
+      pgroonga.enable_wal: "off"
+      pgroonga.enable_crash_safe: "off"
       max_connections: "100"
       shared_buffers: 1536MB
       effective_cache_size: 4GB

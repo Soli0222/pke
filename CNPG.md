@@ -21,6 +21,11 @@ Pooler は使わず、アプリは CNPG の Service に直接接続する。
 定義は [natsume の各アプリ](flux/clusters/natsume/apps/) の `cluster.yaml` にある。
 operator / Barman Cloud plugin のバージョンは [cnpg](flux/clusters/natsume/apps/cnpg/)、DB image と PostgreSQL 設定は各 Cluster を参照する。
 Misskey の image には PGroonga が必要で、復元先にも同じ拡張と対応する PostgreSQL major version を用意する。
+Misskey は `pgroonga_wal_resource_manager` を preload し、`pgroonga.enable_wal_resource_manager=on` で PostgreSQL の WAL に PGroonga の更新を記録する。
+旧方式の `pgroonga.enable_wal` と `pgroonga.enable_crash_safe` は off とし、crash-safer は導入しない。
+primary の異常終了後には手動修復が必要になる場合がある。
+停止を伴う修復とバックアップ取得は [MAINTENANCE.md](MAINTENANCE.md) に従う。
+無停止の定期バックアップからの PGroonga 復元条件は、別名 Cluster で検証する。
 
 ## バックアップの保存先と認証
 
@@ -106,6 +111,13 @@ metadata:
 spec:
   instances: 1
   imageName: <PGroonga image compatible with the backup>
+  postgresql:
+    shared_preload_libraries:
+    - pgroonga_wal_resource_manager
+    parameters:
+      pgroonga.enable_wal_resource_manager: "on"
+      pgroonga.enable_wal: "off"
+      pgroonga.enable_crash_safe: "off"
   storage:
     storageClass: topolvm
     size: 150Gi
@@ -124,6 +136,9 @@ spec:
 特定時点へ復元する PITR では、`bootstrap.recovery.recoveryTarget.targetTime` にタイムゾーン付きの復元時刻を指定する。
 省略時は利用可能な WAL の末尾まで復元する。
 `serverName` は R2 上の復元元ディレクトリ名であり、復元先名に変えない。
+
+PGroonga の custom WAL を再生するため、復元先にも WAL 再生の開始前から resource manager の preload 設定が必要となる。
+メンテナンスで取得したバックアップの検証では、保全した Barman の ID を `bootstrap.recovery.recoveryTarget.backupID` に明示する。
 
 ```sh
 kubectl --context natsume@soli apply -f misskey-restore.yaml

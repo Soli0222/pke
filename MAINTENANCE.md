@@ -255,7 +255,13 @@ git diff -- flux/clusters/natsume/apps/misskey/cluster.yaml
 pke_psql -c 'ALTER DATABASE misskey RESET pgroonga.enable_wal;'
 kubectl --context "$PKE_CONTEXT" apply \
   -f flux/clusters/natsume/apps/misskey/cluster.yaml
+kubectl --context "$PKE_CONTEXT" -n "$PKE_NAMESPACE" \
+  patch clusters.postgresql.cnpg.io "$PKE_DB_CLUSTER" --type merge \
+  -p '{"spec":{"postgresql":{"parameters":{"autovacuum":"off"}}}}'
 ```
+
+設定適用で一時キーが失われないよう、autovacuum停止を再指定する。
+再起動後も `SHOW autovacuum` と既存workerの終了を確認する。
 
 DB単位の旧WAL設定の解除は新しい接続から有効になる。
 更新が自動再起動を伴った場合は、その完了を先に確認する。
