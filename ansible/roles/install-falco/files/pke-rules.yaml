@@ -24,3 +24,26 @@
         and proc.cmdline = "longhorn backup cleanup-all-mounts")
   override:
     condition: append
+
+# initramfs の root 行取り込み。grep 全般・任意の親プロセスは対象外。
+- rule: Read sensitive file untrusted
+  exceptions:
+  - name: pke_dracut_root_shadow
+    fields: [container.id, user.uid, proc.name, proc.exepath, proc.pname, proc.cmdline, fd.name, "proc.aname[2]", "proc.aname[3]", "proc.aname[4]"]
+    comps: ["=", "=", "=", "=", "=", "=", "=", "=", "=", "="]
+    values:
+    - [host, 0, grep, /usr/bin/grep, dracut, "grep ^root: /etc/shadow", /etc/shadow, update-initramf, dracut.postinst, dpkg]
+    - [host, 0, grep, /usr/bin/grep, dracut, "grep ^root: /etc/shadow", /etc/shadow, dracut, run-parts, sh]
+  override:
+    exceptions: append
+
+# instance-manager の受信 RPC socket。外向き接続・任意のシェルは対象外。
+- rule: Redirect STDOUT/STDIN to Network Connection in Container
+  exceptions:
+  - name: pke_longhorn_instance_manager_rpc
+    fields: [k8s.ns.name, container.name, container.image.repository, proc.name, proc.pname, proc.exepath, proc.cmdline, user.uid, proc.tty, evt.type, fd.l4proto, fd.is_server, fd.lport]
+    comps: ["=", "=", "=", "=", "=", in, "=", "=", "=", "=", "=", "=", in]
+    values:
+    - [longhorn-system, instance-manager, docker.io/longhornio/longhorn-instance-manager, longhorn-instan, longhorn-instan, [/tini, /usr/local/bin/longhorn-instance-manager], "longhorn-instan --debug daemon --listen :8500", 0, 0, dup3, tcp, true, [8500, 8501, 8503]]
+  override:
+    exceptions: append

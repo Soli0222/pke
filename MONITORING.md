@@ -263,7 +263,9 @@ Falco の JSON イベントをホスト Alloy が journal から読み、Loki �
 [custom rules](ansible/roles/install-falco/files/pke-rules.yaml) は次の通常動作に限定する。
 
 - CNPG: `app.kubernetes.io/managed-by=cloudnative-pg` と `cnpg.io/podRole=instance`、postgres コンテナ、イメージ、postgres 親プロセス、非対話実行、WAL アーカイブの完全なコマンド形式を照合する。DB 名・Pod 名を変更しても同じ処理を識別できる。任意のシェル実行やコマンド末尾の追加実行は除外しない。
-- Longhorn: longhorn-system 内の manager が実行する `longhorn backup cleanup-all-mounts` のみ。namespace 全体やすべてのネットワークへの入出力リダイレクトは除外しない。
+- dracut: ホストの root が実行する `/usr/bin/grep` の `grep ^root: /etc/shadow` に限定する。親の dracut と、dpkg の postinst または kernel hook のプロセス系列を照合する。別コマンド・別ファイル・任意の親からの読み取りは対象外。
+- Longhorn manager: longhorn-system 内の manager が実行する `longhorn backup cleanup-all-mounts` に限定する。
+- Longhorn instance-manager: 既知のイメージ、daemon の完全なコマンドと親プロセス、root・非対話実行を照合する。`dup3` による TCP の受信側 socket、制御用の8500 / 8501 / 8503だけを除外する。外向き接続・別ポート・任意のシェルは検知対象に残す。
 
 systemd の正規の資格情報読み取りには upstream の例外を使う。
 `cat /etc/shadow` を含む任意の機密ファイル読み取りは通知対象に残す。
