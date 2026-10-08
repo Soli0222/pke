@@ -2,11 +2,12 @@
 
 PKE の CloudNativePG（CNPG）は、natsume のアプリ用 PostgreSQL を管理する。
 この文書は構成とバックアップ方式を確認した後、必要な操作の節を参照するための運用手順である。
-kubectl の接続先は `natsume@soli` を使う。
+通常運用の kubectl の接続先は `natsume@soli` を使う。
+別クラスタで復元するときは、復元先の context を明示する。
 
 ## DB の構成
 
-CNPG operator は両クラスタに導入するが、DB の `Cluster` は natsume のみ。
+CNPG operator は両クラスタに導入するが、恒久運用の DB の `Cluster` は natsume のみ。
 すべて `instances: 1`、StorageClass は `topolvm` で、ノード障害時の自動フェイルオーバー用 replica はない。
 Pooler は使わず、アプリは CNPG の Service に直接接続する。
 
@@ -24,8 +25,9 @@ Misskey の image には PGroonga が必要で、復元先にも同じ拡張と�
 Misskey は `pgroonga_wal_resource_manager` を preload し、`pgroonga.enable_wal_resource_manager=on` で PostgreSQL の WAL に PGroonga の更新を記録する。
 旧方式の `pgroonga.enable_wal` と `pgroonga.enable_crash_safe` は off とし、crash-safer は導入しない。
 primary の異常終了後には手動修復が必要になる場合がある。
-停止を伴う修復とバックアップ取得は [MAINTENANCE.md](MAINTENANCE.md) に従う。
-無停止の定期バックアップからの PGroonga 復元条件は、別名 Cluster で検証する。
+Misskey の物理復元は、[通常の PITR と PGroonga の再構築](#misskey-は-pitr-後に-pgroonga-を再構築する)を標準手順とする。
+容量回収のための `VACUUM FULL` は、テーブルの膨張と一時容量を確認して対象を選ぶ。
+定期バックアップの復元確認には、この手順を別名 Cluster で実行する。
 
 ## バックアップの保存先と認証
 
@@ -97,10 +99,14 @@ base backup と、その時点から復元目標までの WAL が必要となる
 復元は別名の Cluster に行い、元の DB とバックアップを残す。
 方式は [Barman Cloud plugin の復元手順](https://cloudnative-pg.io/plugin-barman-cloud/docs/usage/#restoring-a-cluster) に従う。
 
-全DBで同じ方式を使い、namespace、Cluster 名、ObjectStore 名、image、容量を復元元に合わせる。
+namespace、Cluster 名、ObjectStore 名、image、容量を復元元と復元先に合わせる。
+Misskey は PostgreSQL の復元後に PGroonga の再構築を行い、他の DB にはこの追加操作を適用しない。
 以下は Misskey の例。`misskey-restore.yaml` として保存し、`imageName` を復元元と互換性のある PGroonga image に置き換える。
-復元先 namespace に `misskey-backup-store` と R2 Secret が存在すること、150Gi 以上を確保できるノードがあることを確認する。
+復元先 namespace に保持期限のない読み取り用 `misskey-backup-store-restore` と R2 Secret を用意する。
+元の Cluster、PVC、backup / WAL は残し、既存名と衝突するリソースを上書きしない。
+容量は復元データに加えて REINDEX 中の旧・新 index と WAL の余裕を確保し、StorageClass と実際の空きを確認する。
 必要な resources・配置制約は現在の Cluster 定義を基に設定する。
+復元先はアプリから分離し、検索再構築と検証が完了するまで Misskey web / worker などの接続・書き込みを開始しない。
 
 ```yaml
 apiVersion: postgresql.cnpg.io/v1
@@ -124,30 +130,163 @@ spec:
   bootstrap:
     recovery:
       source: misskey-source
+      database: misskey
+      owner: misskey
+      recoveryTarget:
+        backupID: "<復元に使うBarman backup ID>"
+        targetTime: "<復元目標の時刻。タイムゾーン付き>"
   externalClusters:
   - name: misskey-source
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
-        barmanObjectName: misskey-backup-store
+        barmanObjectName: misskey-backup-store-restore
         serverName: misskey-cluster-restored
 ```
 
-特定時点へ復元する PITR では、`bootstrap.recovery.recoveryTarget.targetTime` にタイムゾーン付きの復元時刻を指定する。
-省略時は利用可能な WAL の末尾まで復元する。
+placeholder を実際の値へ置き換え、対象 backup の DONE、データ本体と目標までの WAL を確認してから作成する。
+`backupID` は Kubernetes の Backup 名ではなく Barman の ID。別の backup が増えても開始点が変わらないよう明示する。
+特定時点へ復元する PITR では、`targetTime` にタイムゾーン付きの時刻を指定する。LSN を使う場合は `targetTime` を外し、`targetLSN` を指定する。
+利用可能な archive の末尾まで戻す場合は、`targetTime` / `targetLSN` を外す。
+timeline を数値指定する場合は、対応する history ファイルも確認する。省略時の `latest` を含め、実際に再生した timeline をログで照合する。
 `serverName` は R2 上の復元元ディレクトリ名であり、復元先名に変えない。
+`database` / `owner` は復元元と一致させる。省略時の既定値 `app` に任せると、昇格後の role 管理や生成 Secret が実 DB と一致しない場合がある。
 
-PGroonga の custom WAL を再生するため、復元先にも WAL 再生の開始前から resource manager の preload 設定が必要となる。
-メンテナンスで取得したバックアップの検証では、保全した Barman の ID を `bootstrap.recovery.recoveryTarget.backupID` に明示する。
+PostgreSQL WAL の custom resource manager を認識するため、復元先にも WAL 再生の開始前から preload 設定が必要となる。
+preload だけで PGroonga の検索更新まで復元できたとは判断しない。
 
 ```sh
-kubectl --context natsume@soli apply -f misskey-restore.yaml
-kubectl cnpg status misskey-recovery --context natsume@soli -n misskey
+PKE_RESTORE_CONTEXT=natsume@soli  # meruto で検証する場合は meruto@soli
+PKE_RESTORE_NAMESPACE=misskey
+PKE_RESTORE_CLUSTER=misskey-recovery
+PKE_RESTORE_DATABASE=misskey
+
+kubectl --context "$PKE_RESTORE_CONTEXT" create --dry-run=server -f misskey-restore.yaml &&
+  kubectl --context "$PKE_RESTORE_CONTEXT" create -f misskey-restore.yaml
+kubectl cnpg status "$PKE_RESTORE_CLUSTER" --context "$PKE_RESTORE_CONTEXT" -n "$PKE_RESTORE_NAMESPACE"
 ```
 
 この例には復元先の WAL archive 設定を含めていない。
-運用に切り替える際は、復元元の archive を上書きしない保存先でバックアップを設定する。
-アプリの DB 認証は復元先に合わせて設定し、接続確認後に Service / Secret の参照を切り替える。
+復元用の `externalClusters[].plugin` だけを指定し、元の prefix へ書き込む `spec.plugins`、Backup、ScheduledBackup を持ち込まない。
+
+### Misskey は PITR 後に PGroonga を再構築する
+
+以下では、前節の `PKE_RESTORE_*` を復元先の context・namespace・Cluster・DB 名に設定して使う。
+通常の primary 復元で PostgreSQL のテーブルを目標時点へ戻し、その内容から PGroonga index を再生成する。
+復元先に `spec.replica.enabled: true` は設定しない。
+現行の PGroonga は standby の WAL 再生を対象としており、通常の archive / PITR では検索 index の更新が欠落し得る。
+現行の [CNPG の replica 復元処理](https://github.com/cloudnative-pg/cloudnative-pg/blob/2a35abb4628f209d149825ef3c38011e0701ff2f/pkg/management/postgres/restore.go#L188)では `targetTime` が停止条件として適用されず、一時停止後の昇格でも追加 WAL が再生され得るため、指定時点への復元に standby → 昇格を使わない。
+設定の前提は [PGroonga の WAL resource manager](https://pgroonga.github.io/reference/modules/pgroonga-wal-resource-manager.html) と [CNPG の復元 API](https://cloudnative-pg.io/docs/1.28/recovery/)を参照する。
+
+PostgreSQL の復元、PGroonga の再構築、検索・更新の確認までを一連の復元手順とする。
+以下を順に実施し、確認が完了してからアプリを再開する。
+
+1. **PostgreSQL の復元完了を確認する。** Ready に加え、固定した backup ID、指定した target、実際の終了 LSN / transaction 時刻と timeline をログで照合する。
+   `pg_is_in_recovery()` が false になるまで REINDEX と書き込み検証を開始しない。
+   CNPG の通常再起動後に `pg_last_wal_replay_lsn()` が NULL になる場合は、復元 Job / Pod のログを使う。
+   `kubectl exec` の接続先は復元先の `.status.currentPrimary` から取得する。
+
+   ```sh
+   PKE_RESTORE_POD="$(kubectl --context "$PKE_RESTORE_CONTEXT" -n "$PKE_RESTORE_NAMESPACE" \
+     get clusters.postgresql.cnpg.io "$PKE_RESTORE_CLUSTER" -o jsonpath='{.status.currentPrimary}')"
+
+   pke_restore_psql() {
+     kubectl --context "$PKE_RESTORE_CONTEXT" -n "$PKE_RESTORE_NAMESPACE" \
+       exec -i "$PKE_RESTORE_POD" -c postgres -- \
+       psql -X -v ON_ERROR_STOP=1 -U postgres -d "$PKE_RESTORE_DATABASE" "$@"
+   }
+
+   pke_restore_psql -c 'SELECT pg_is_in_recovery(), pg_last_wal_replay_lsn(), pg_last_xact_replay_timestamp();'
+   ```
+
+2. **修復前の状態を保全する。** PostgreSQL / Groonga / Barman のログ、DB の行数、index 定義と valid / ready、PGroonga 設定を記録する。
+   検証用の復元では、再構築前の検索結果も残し、物理コピーと WAL だけで戻った範囲を REINDEX 後の成功と区別する。
+   生ログ、投稿 ID、認証情報を含む資料は Git の外に保存し、アクセス権を制限する。
+   Groonga 内部 DB が開けず再構築できない場合は、エラーを保存して調査する。内部ファイルや本物の投稿を自動削除して進めない。
+
+3. **PGroonga index を通常の REINDEX で再構築する。** アプリの接続を止めた復元先で行い、他の B-tree 等を一律に再構築しない。
+   対象 index を列挙して漏れを確認し、定義・tokenizer・normalizer 等の設定を保持する。
+   通常の REINDEX はテーブルから index を作り直す。[PostgreSQL の REINDEX](https://www.postgresql.org/docs/18/sql-reindex.html)と [PGroonga の内部オブジェクト整理](https://pgroonga.github.io/reference/functions/pgroonga-vacuum.html)を参照する。
+
+   ```sh
+   pke_restore_psql <<'SQL'
+   BEGIN READ ONLY;
+   SET LOCAL statement_timeout = '30s';
+   SELECT n.nspname, c.relname, pg_get_indexdef(c.oid)
+   FROM pg_class c
+   JOIN pg_namespace n ON n.oid = c.relnamespace
+   JOIN pg_am a ON a.oid = c.relam
+   WHERE c.relkind = 'i' AND a.amname = 'pgroonga';
+   COMMIT;
+   SQL
+
+   pke_restore_psql <<'SQL'
+   SET lock_timeout = '30s';
+   SET statement_timeout = 0;
+   REINDEX (VERBOSE) INDEX public.idx_note_text_with_pgroonga;
+   SELECT pgroonga_vacuum();
+   ANALYZE public.note;
+   SQL
+   ```
+
+   再構築を時間だけで打ち切らず、`pg_stat_progress_create_index`、バックエンド状態、ログと PVC 使用量で進捗を追跡する。
+   接続断や中断後は実行中の処理を確認してから再試行し、同じ処理を重複実行しない。
+   失敗した場合はアプリを再開せず、失敗ログと index 状態を残す。
+
+4. **設定と検索の整合性を確認する。** PGroonga / libgroonga / PostgreSQL のバージョン、preload、resource manager=on、旧 enable_wal=off、crash_safe=off、DB / role 単位の override と pending_restart を確認する。
+   custom GUC は接続内で PGroonga をロードしてから確認する。
+   index の valid / ready と EXPLAIN を確認し、代表 ID とバックアップ後の通常投稿の検索も復元時点に合わせて照合する。
+   本文・ID の一覧を公開資料に出力しない。
+   逐次評価との比較は同じ snapshot・同じ行集合で行い、対象行数と timeout を限定する。
+
+   以下は、ID 昇順の20,000行を対象に、逐次評価と PGroonga index の検索結果を比較する例。
+   両語で欠落と余分な一致が0であることを確認する。この比較は全投稿・全検索語の一致を保証しない。
+
+   ```sh
+   for PKE_RESTORE_TERM in 'ぎる' 'くな'; do
+     pke_restore_psql -v search_term="$PKE_RESTORE_TERM" <<'SQL' || break
+   BEGIN READ ONLY;
+   SET LOCAL statement_timeout = '60s';
+   SET LOCAL enable_seqscan = off;
+   EXPLAIN (COSTS OFF)
+     SELECT id FROM public.note WHERE text &@~ :'search_term';
+   WITH sample AS MATERIALIZED (
+     SELECT id, text FROM public.note ORDER BY id LIMIT 20000
+   ), sequential_matches AS MATERIALIZED (
+     SELECT id FROM sample WHERE text &@~ :'search_term'
+   ), index_matches AS MATERIALIZED (
+     SELECT id FROM public.note WHERE text &@~ :'search_term'
+   ), scoped_index AS MATERIALIZED (
+     SELECT i.id FROM index_matches i JOIN sample s USING (id)
+   )
+   SELECT :'search_term' AS term,
+     (SELECT count(*) FROM sample) AS rows_compared,
+     (SELECT count(*) FROM sequential_matches) AS sequential_matches,
+     (SELECT count(*) FROM scoped_index) AS index_matches,
+     (SELECT count(*) FROM (
+       SELECT id FROM sequential_matches EXCEPT SELECT id FROM scoped_index
+     ) d) AS missing_from_index,
+     (SELECT count(*) FROM (
+       SELECT id FROM scoped_index EXCEPT SELECT id FROM sequential_matches
+     ) d) AS extra_in_index;
+   COMMIT;
+   SQL
+   done
+   ```
+
+   この sample とは別に、選んだ backup の完了後から復元目標までの投稿についても、本文への逐次評価と index 検索を突き合わせる。
+   LSN の進行だけで検索更新の整合性を証明したとは扱わない。
+
+5. **復元先だけで更新と再起動を確認してから切り替える。** 専用 schema / table と PGroonga index を作り、INSERT・UPDATE・DELETE をそれぞれ COMMITする。
+   別接続から肯定・否定検索を確認し、必要なら復元先だけを通常再起動して永続性を確認する。本物の `note` に試験投稿を作らない。
+   DB / Groonga ログの decode・merge・flush 等のエラー、Pod・PVC と空き容量を確認する。
+   アプリ用 Secret の username / dbname が復元元の DB / owner と一致することを、値を公開せずに確認する。
+   運用に切り替える際は復元元と異なる archive prefix へバックアップを設定し、Service / Secret の参照と実アプリ接続を確認してから再開する。
+
+`VACUUM FULL` は復元時の既定操作に含めない。
+大きなテーブル膨張があり、テーブルの書き直しと WAL に十分な一時容量を確保できる場合だけ検討する。
+`note` に FULL を行う場合は同じ操作で index も再構築されるため、上の独立した REINDEX を重ねて実行しない。
+旧内部オブジェクト整理と検索検証は、どちらの再構築方法でも行う。
 
 ## 保管済みの pg_dump から復元する
 
@@ -196,7 +335,7 @@ pg_dump は dump 作成時点への復元で、PITR はできない。
 ## アラートからの調査
 
 `cluster` は Kubernetes クラスタ、`cnpg_cluster` は DB 名。
-meruto に DB はなく、operator の監視と DB の監視を区別する。
+meruto に恒久運用の DB はなく、operator の監視と DB の監視を区別する。
 
 | アラート | 確認するもの |
 |---|---|
