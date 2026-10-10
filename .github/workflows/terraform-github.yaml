@@ -1,0 +1,53 @@
+name: terraform-github
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/github/**'
+      - '.github/workflows/terraform-github.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-github-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: terraform/github
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: '1.16.5'
+          terraform_wrapper: false
+      - name: Install validation dependencies
+        run: |
+          python3 -m pip install -r requirements.txt
+          sudo apt-get update -qq
+          sudo apt-get install -y zsh
+      - name: Validate inventory and generated Terraform
+        run: |
+          python3 manage.py generate --check
+          terraform fmt -check
+          terraform init -backend=false -input=false -lockfile=readonly
+          terraform validate -no-color
+      - name: Check removed IDs against the PR base
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git show "$BASE_SHA:terraform/github/repositories.yaml" > "$RUNNER_TEMP/github-inventory-base.yaml"
+          python3 manage.py check-transition --base "$RUNNER_TEMP/github-inventory-base.yaml"
+      - name: Test validation, guards, authentication and secret handling
+        run: python3 -m unittest discover -s tests -v
+      - name: Test Terraform state migration and lifecycle without remote APIs
+        run: python3 tests/terraform_lifecycle.py

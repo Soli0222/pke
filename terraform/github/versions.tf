@@ -1,7 +1,9 @@
 terraform {
-  required_version = ">= 1.7.0"
+  required_version = ">= 1.11.0, < 2.0.0"
 
   required_providers {
+    # 旧 data.external を含む state の移行と mock テストで同じ schema を使う。
+    # 実行する external data source は定義しない。
     external = {
       source  = "hashicorp/external"
       version = "2.4.2"
@@ -19,6 +21,7 @@ terraform {
     }
     bucket                      = "tfstate"
     key                         = "github/terraform.tfstate"
+    use_lockfile                = true
     region                      = "auto"
     skip_credentials_validation = true
     skip_metadata_api_check     = true
@@ -29,16 +32,7 @@ terraform {
 }
 
 provider "github" {
-  owner = var.github_owner
-}
-
-variable "github_owner" {
-  description = "GitHub user or organization that owns the managed repositories."
-  type        = string
-  default     = "Soli0222"
-}
-
-output "managed_repositories" {
-  description = "Repositories managed by this Terraform configuration."
-  value       = sort(keys(local.repositories))
+  owner         = local.github_owner
+  legacy_client = false
+  cache_path    = "${path.module}/.terraform/github-cache"
 }

@@ -1,0 +1,344 @@
+{
+  "moved": [
+    {
+      "from": "github_repository.repositories[\"amemado\"]",
+      "to": "github_repository.repo_amemado"
+    },
+    {
+      "from": "github_branch_default.repositories[\"amemado\"]",
+      "to": "github_branch_default.repo_amemado"
+    },
+    {
+      "from": "github_repository.archived[\"antenna_del_spam\"]",
+      "to": "github_repository.repo_antenna_del_spam"
+    },
+    {
+      "from": "github_branch_default.repositories[\"antenna_del_spam\"]",
+      "to": "github_branch_default.repo_antenna_del_spam"
+    },
+    {
+      "from": "github_repository.archived[\"audioroute\"]",
+      "to": "github_repository.repo_audioroute"
+    },
+    {
+      "from": "github_branch_default.repositories[\"audioroute\"]",
+      "to": "github_branch_default.repo_audioroute"
+    },
+    {
+      "from": "github_repository.repositories[\"better-recommend\"]",
+      "to": "github_repository.repo_better-recommend"
+    },
+    {
+      "from": "github_branch_default.repositories[\"better-recommend\"]",
+      "to": "github_branch_default.repo_better-recommend"
+    },
+    {
+      "from": "github_repository.archived[\"Charmy\"]",
+      "to": "github_repository.repo_Charmy"
+    },
+    {
+      "from": "github_branch_default.repositories[\"Charmy\"]",
+      "to": "github_branch_default.repo_Charmy"
+    },
+    {
+      "from": "github_repository.archived[\"cloudflare-ingress-controller\"]",
+      "to": "github_repository.repo_cloudflare-ingress-controller"
+    },
+    {
+      "from": "github_branch_default.repositories[\"cloudflare-ingress-controller\"]",
+      "to": "github_branch_default.repo_cloudflare-ingress-controller"
+    },
+    {
+      "from": "github_repository.repositories[\"daypassed-bot\"]",
+      "to": "github_repository.repo_daypassed-bot"
+    },
+    {
+      "from": "github_branch_default.repositories[\"daypassed-bot\"]",
+      "to": "github_branch_default.repo_daypassed-bot"
+    },
+    {
+      "from": "github_repository.archived[\"debug-image\"]",
+      "to": "github_repository.repo_debug-image"
+    },
+    {
+      "from": "github_branch_default.repositories[\"debug-image\"]",
+      "to": "github_branch_default.repo_debug-image"
+    },
+    {
+      "from": "github_repository.repositories[\"diary-cli\"]",
+      "to": "github_repository.repo_diary-cli"
+    },
+    {
+      "from": "github_branch_default.repositories[\"diary-cli\"]",
+      "to": "github_branch_default.repo_diary-cli"
+    },
+    {
+      "from": "github_repository.repositories[\"emoji-bot-gateway\"]",
+      "to": "github_repository.repo_emoji-bot-gateway"
+    },
+    {
+      "from": "github_branch_default.repositories[\"emoji-bot-gateway\"]",
+      "to": "github_branch_default.repo_emoji-bot-gateway"
+    },
+    {
+      "from": "github_repository.repositories[\"emoji-renderer\"]",
+      "to": "github_repository.repo_emoji-renderer"
+    },
+    {
+      "from": "github_branch_default.repositories[\"emoji-renderer\"]",
+      "to": "github_branch_default.repo_emoji-renderer"
+    },
+    {
+      "from": "github_repository.repositories[\"exiforge\"]",
+      "to": "github_repository.repo_exiforge"
+    },
+    {
+      "from": "github_branch_default.repositories[\"exiforge\"]",
+      "to": "github_branch_default.repo_exiforge"
+    },
+    {
+      "from": "github_repository.archived[\"flow-sight\"]",
+      "to": "github_repository.repo_flow-sight"
+    },
+    {
+      "from": "github_branch_default.repositories[\"flow-sight\"]",
+      "to": "github_branch_default.repo_flow-sight"
+    },
+    {
+      "from": "github_repository.archived[\"helm-charts\"]",
+      "to": "github_repository.repo_helm-charts"
+    },
+    {
+      "from": "github_branch_default.repositories[\"helm-charts\"]",
+      "to": "github_branch_default.repo_helm-charts"
+    },
+    {
+      "from": "github_repository.repositories[\"homebrew-exiforge\"]",
+      "to": "github_repository.repo_homebrew-exiforge"
+    },
+    {
+      "from": "github_branch_default.repositories[\"homebrew-exiforge\"]",
+      "to": "github_branch_default.repo_homebrew-exiforge"
+    },
+    {
+      "from": "github_repository.repositories[\"keymap\"]",
+      "to": "github_repository.repo_keymap"
+    },
+    {
+      "from": "github_branch_default.repositories[\"keymap\"]",
+      "to": "github_branch_default.repo_keymap"
+    },
+    {
+      "from": "github_repository.repositories[\"kubecon-schedule\"]",
+      "to": "github_repository.repo_kubecon-schedule"
+    },
+    {
+      "from": "github_branch_default.repositories[\"kubecon-schedule\"]",
+      "to": "github_branch_default.repo_kubecon-schedule"
+    },
+    {
+      "from": "github_repository.repositories[\"Mac-NowPlaying\"]",
+      "to": "github_repository.repo_Mac-NowPlaying"
+    },
+    {
+      "from": "github_branch_default.repositories[\"Mac-NowPlaying\"]",
+      "to": "github_branch_default.repo_Mac-NowPlaying"
+    },
+    {
+      "from": "github_repository.archived[\"misskey-summarizer\"]",
+      "to": "github_repository.repo_misskey-summarizer"
+    },
+    {
+      "from": "github_branch_default.repositories[\"misskey-summarizer\"]",
+      "to": "github_branch_default.repo_misskey-summarizer"
+    },
+    {
+      "from": "github_repository.repositories[\"mk-stream\"]",
+      "to": "github_repository.repo_mk-stream"
+    },
+    {
+      "from": "github_branch_default.repositories[\"mk-stream\"]",
+      "to": "github_branch_default.repo_mk-stream"
+    },
+    {
+      "from": "github_repository.archived[\"mk-anniv\"]",
+      "to": "github_repository.repo_mk-anniv"
+    },
+    {
+      "from": "github_branch_default.repositories[\"mk-anniv\"]",
+      "to": "github_branch_default.repo_mk-anniv"
+    },
+    {
+      "from": "github_repository.repositories[\"note-tweet-connector\"]",
+      "to": "github_repository.repo_note-tweet-connector"
+    },
+    {
+      "from": "github_branch_default.repositories[\"note-tweet-connector\"]",
+      "to": "github_branch_default.repo_note-tweet-connector"
+    },
+    {
+      "from": "github_repository.repositories[\"pgroonga-cnpg\"]",
+      "to": "github_repository.repo_pgroonga-cnpg"
+    },
+    {
+      "from": "github_branch_default.repositories[\"pgroonga-cnpg\"]",
+      "to": "github_branch_default.repo_pgroonga-cnpg"
+    },
+    {
+      "from": "github_repository.repositories[\"picpress\"]",
+      "to": "github_repository.repo_picpress"
+    },
+    {
+      "from": "github_branch_default.repositories[\"picpress\"]",
+      "to": "github_branch_default.repo_picpress"
+    },
+    {
+      "from": "github_repository.repositories[\"pke\"]",
+      "to": "github_repository.repo_pke"
+    },
+    {
+      "from": "github_branch_default.repositories[\"pke\"]",
+      "to": "github_branch_default.repo_pke"
+    },
+    {
+      "from": "github_repository.repositories[\"polestar-hub\"]",
+      "to": "github_repository.repo_polestar-hub"
+    },
+    {
+      "from": "github_branch_default.repositories[\"polestar-hub\"]",
+      "to": "github_branch_default.repo_polestar-hub"
+    },
+    {
+      "from": "github_repository.repositories[\"polestar_wrapped\"]",
+      "to": "github_repository.repo_polestar_wrapped"
+    },
+    {
+      "from": "github_branch_default.repositories[\"polestar_wrapped\"]",
+      "to": "github_branch_default.repo_polestar_wrapped"
+    },
+    {
+      "from": "github_repository.repositories[\"rss-fetcher\"]",
+      "to": "github_repository.repo_rss-fetcher"
+    },
+    {
+      "from": "github_branch_default.repositories[\"rss-fetcher\"]",
+      "to": "github_branch_default.repo_rss-fetcher"
+    },
+    {
+      "from": "github_repository.repositories[\"shared-workflows\"]",
+      "to": "github_repository.repo_shared-workflows"
+    },
+    {
+      "from": "github_branch_default.repositories[\"shared-workflows\"]",
+      "to": "github_branch_default.repo_shared-workflows"
+    },
+    {
+      "from": "github_repository.repositories[\"spotify-nowplaying\"]",
+      "to": "github_repository.repo_spotify-nowplaying"
+    },
+    {
+      "from": "github_branch_default.repositories[\"spotify-nowplaying\"]",
+      "to": "github_branch_default.repo_spotify-nowplaying"
+    },
+    {
+      "from": "github_repository.repositories[\"spotify-reblend\"]",
+      "to": "github_repository.repo_spotify-reblend"
+    },
+    {
+      "from": "github_branch_default.repositories[\"spotify-reblend\"]",
+      "to": "github_branch_default.repo_spotify-reblend"
+    },
+    {
+      "from": "github_repository.repositories[\"soli-site\"]",
+      "to": "github_repository.repo_soli-site"
+    },
+    {
+      "from": "github_branch_default.repositories[\"soli-site\"]",
+      "to": "github_branch_default.repo_soli-site"
+    },
+    {
+      "from": "github_repository.repositories[\"spn-cli\"]",
+      "to": "github_repository.repo_spn-cli"
+    },
+    {
+      "from": "github_branch_default.repositories[\"spn-cli\"]",
+      "to": "github_branch_default.repo_spn-cli"
+    },
+    {
+      "from": "github_repository.repositories[\"sui\"]",
+      "to": "github_repository.repo_sui"
+    },
+    {
+      "from": "github_branch_default.repositories[\"sui\"]",
+      "to": "github_branch_default.repo_sui"
+    },
+    {
+      "from": "github_repository.repositories[\"summaly\"]",
+      "to": "github_repository.repo_summaly"
+    },
+    {
+      "from": "github_branch_default.repositories[\"summaly\"]",
+      "to": "github_branch_default.repo_summaly"
+    },
+    {
+      "from": "github_repository.archived[\"summaly-server\"]",
+      "to": "github_repository.repo_summaly-server"
+    },
+    {
+      "from": "github_branch_default.repositories[\"summaly-server\"]",
+      "to": "github_branch_default.repo_summaly-server"
+    },
+    {
+      "from": "github_repository.archived[\"subscription-manager\"]",
+      "to": "github_repository.repo_subscription-manager"
+    },
+    {
+      "from": "github_branch_default.repositories[\"subscription-manager\"]",
+      "to": "github_branch_default.repo_subscription-manager"
+    },
+    {
+      "from": "github_repository.repositories[\"vip-responder\"]",
+      "to": "github_repository.repo_vip-responder"
+    },
+    {
+      "from": "github_branch_default.repositories[\"vip-responder\"]",
+      "to": "github_branch_default.repo_vip-responder"
+    },
+    {
+      "from": "github_repository.repositories[\"VVCSoftware_VTM\"]",
+      "to": "github_repository.repo_VVCSoftware_VTM"
+    },
+    {
+      "from": "github_branch_default.repositories[\"VVCSoftware_VTM\"]",
+      "to": "github_branch_default.repo_VVCSoftware_VTM"
+    },
+    {
+      "from": "github_repository.repositories[\"webhook-test\"]",
+      "to": "github_repository.repo_webhook-test"
+    },
+    {
+      "from": "github_branch_default.repositories[\"webhook-test\"]",
+      "to": "github_branch_default.repo_webhook-test"
+    },
+    {
+      "from": "github_repository.repositories[\"private\"]",
+      "to": "github_repository.private"
+    },
+    {
+      "from": "github_repository.private",
+      "to": "github_repository.repo_private"
+    },
+    {
+      "from": "github_branch_default.repositories[\"private\"]",
+      "to": "github_branch_default.repo_private"
+    }
+  ],
+  "removed": [
+    {
+      "from": "github_actions_secret.repository",
+      "lifecycle": {
+        "destroy": false
+      }
+    }
+  ]
+}

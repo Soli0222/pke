@@ -4,6 +4,8 @@
 *.tfplan
 *.tfplan.*
 .terraform/
+imports.generated.tf.json
+__pycache__/
 
 # Variable files containing sensitive data
 terraform.tfvars

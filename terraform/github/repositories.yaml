@@ -1,33 +1,35 @@
-global:
-  repository:
-    allow_auto_merge: false
-    allow_forking: true
-    allow_merge_commit: true
-    allow_rebase_merge: true
-    allow_squash_merge: true
-    allow_update_branch: false
-    archived: false
-    default_branch: main
-    delete_branch_on_merge: true
-    description: ''
-    has_discussions: false
-    has_issues: true
-    has_projects: true
-    has_wiki: true
-    homepage_url: ''
-    is_template: false
-    merge_commit_message: PR_TITLE
-    merge_commit_title: MERGE_MESSAGE
-    squash_merge_commit_message: COMMIT_MESSAGES
-    squash_merge_commit_title: COMMIT_OR_PR_TITLE
-    topics:
-    - renovate
-    visibility: public
-    web_commit_signoff_required: false
-    security_and_analysis:
-      secret_scanning: enabled
-      secret_scanning_push_protection: enabled
-  actions_secrets:
+# repositories のキーは固定 ID。rename は name、archive は state を変更する。
+owner: Soli0222
+defaults:
+  allow_auto_merge: false
+  allow_forking: true
+  allow_merge_commit: true
+  allow_rebase_merge: true
+  allow_squash_merge: true
+  allow_update_branch: false
+  default_branch: main
+  delete_branch_on_merge: true
+  description: ''
+  has_discussions: false
+  has_issues: true
+  has_projects: true
+  has_wiki: true
+  homepage_url: ''
+  is_template: false
+  merge_commit_message: PR_TITLE
+  merge_commit_title: MERGE_MESSAGE
+  squash_merge_commit_message: COMMIT_MESSAGES
+  squash_merge_commit_title: COMMIT_OR_PR_TITLE
+  topics:
+  - renovate
+  visibility: public
+  web_commit_signoff_required: false
+  security_and_analysis:
+    secret_scanning: enabled
+    secret_scanning_push_protection: enabled
+  auto_init: true
+secret_sets:
+  renovate:
     RENOVATE_CLIENT_ID:
       onepassword:
         vault: Personal
@@ -38,102 +40,116 @@ global:
         vault: Personal
         item: PKE Renovate App
         file: private-key.pem
-
 repositories:
   amemado:
+    state: active
     has_wiki: false
     topics: []
     visibility: private
-
+    secret_sets:
+    - renovate
   antenna_del_spam:
-    archived: true
+    state: archived
     delete_branch_on_merge: false
     topics: []
     security_and_analysis:
       secret_scanning: disabled
       secret_scanning_push_protection: disabled
-
   audioroute:
-    archived: true
+    state: archived
     has_wiki: false
     topics: []
     visibility: private
     security_and_analysis:
       secret_scanning: disabled
       secret_scanning_push_protection: disabled
-
   better-recommend:
+    state: active
     auto_init: true
-
+    secret_sets:
+    - renovate
   Charmy:
-    archived: true
+    state: archived
     delete_branch_on_merge: false
     has_wiki: false
     topics: []
     security_and_analysis:
       secret_scanning: disabled
       secret_scanning_push_protection: disabled
-
   cloudflare-ingress-controller:
-    archived: true
+    state: archived
     delete_branch_on_merge: false
     topics: []
     security_and_analysis:
       secret_scanning_push_protection: disabled
-
-  daypassed-bot: {}
-
+  daypassed-bot:
+    state: active
+    secret_sets:
+    - renovate
   debug-image:
-    archived: true
+    state: archived
     delete_branch_on_merge: false
     topics: []
     security_and_analysis:
       secret_scanning_push_protection: disabled
-
-  diary-cli: {}
-
-  emoji-bot-gateway: {}
-
-  emoji-renderer: {}
-
+  diary-cli:
+    state: active
+    secret_sets:
+    - renovate
+  emoji-bot-gateway:
+    state: active
+    secret_sets:
+    - renovate
+  emoji-renderer:
+    state: active
+    secret_sets:
+    - renovate
   exiforge:
+    state: active
     topics: []
-
+    secret_sets:
+    - renovate
   flow-sight:
-    archived: true
+    state: archived
     delete_branch_on_merge: false
     topics: []
     security_and_analysis:
       secret_scanning_push_protection: disabled
-
   helm-charts:
-    archived: true
-    description: >-
-      Retired. Charts moved to the application repositories
-      (oci://ghcr.io/soli0222/charts) and to pke/charts/.
+    state: archived
+    description: Retired. Charts moved to the application repositories (oci://ghcr.io/soli0222/charts)
+      and to pke/charts/.
     security_and_analysis:
       secret_scanning_push_protection: disabled
-
   homebrew-exiforge:
+    state: active
     topics: []
-
+    secret_sets:
+    - renovate
   keymap:
+    state: active
     topics: []
-
+    secret_sets:
+    - renovate
   kubecon-schedule:
+    state: active
     topics: []
     visibility: private
-
+    secret_sets:
+    - renovate
+    has_wiki: false
   Mac-NowPlaying:
+    state: active
     topics: []
-
+    secret_sets:
+    - renovate
   misskey-summarizer:
-    archived: true
+    state: archived
     topics: []
     security_and_analysis:
       secret_scanning_push_protection: disabled
-
   mk-stream:
+    state: active
     security_and_analysis:
       secret_scanning: disabled
       secret_scanning_push_protection: disabled
@@ -148,16 +164,17 @@ repositories:
           vault: Personal
           item: Github Docker
           field: DOCKER_HUB_USERNAME
-
+    secret_sets:
+    - renovate
   mk-anniv:
-    archived: true
+    state: archived
     delete_branch_on_merge: false
     topics: []
     security_and_analysis:
       secret_scanning: disabled
       secret_scanning_push_protection: disabled
-
   note-tweet-connector:
+    state: active
     actions_secrets:
       DOCKER_HUB_ACCESS_TOKEN:
         onepassword:
@@ -169,28 +186,45 @@ repositories:
           vault: Personal
           item: Github Docker
           field: DOCKER_HUB_USERNAME
-
-  pgroonga-cnpg: {}
-
+    secret_sets:
+    - renovate
+  pgroonga-cnpg:
+    state: active
+    secret_sets:
+    - renovate
   picpress:
+    state: active
     topics: []
-
+    secret_sets:
+    - renovate
   pke:
+    state: active
     description: Polestar Kubernetes Engine
-
+    secret_sets:
+    - renovate
   polestar-hub:
+    state: active
     topics: []
-
+    secret_sets:
+    - renovate
   polestar_wrapped:
+    state: active
     topics: []
     visibility: private
-
-  rss-fetcher: {}
-
+    secret_sets:
+    - renovate
+    has_wiki: false
+  rss-fetcher:
+    state: active
+    secret_sets:
+    - renovate
   shared-workflows:
+    state: active
     description: Reusable GitHub Actions workflows shared across application repositories
-
+    secret_sets:
+    - renovate
   spotify-nowplaying:
+    state: active
     description: Web App for Easily Sharing Currently Playing Songs on Spotify
     homepage_url: https://spn.soli0222.com
     security_and_analysis:
@@ -207,47 +241,62 @@ repositories:
           vault: Personal
           item: Github Docker
           field: DOCKER_HUB_USERNAME
-
-  spotify-reblend: {}
-
+    secret_sets:
+    - renovate
+  spotify-reblend:
+    state: active
+    secret_sets:
+    - renovate
   soli-site:
+    state: active
     has_discussions: true
     topics: []
-
+    secret_sets:
+    - renovate
   spn-cli:
+    state: active
     topics: []
-
-  sui: {}
-
+    secret_sets:
+    - renovate
+  sui:
+    state: active
+    secret_sets:
+    - renovate
   summaly:
+    state: active
     default_branch: master
-    description: "\U0001F50D Get a summary of any web page"
+    description: 🔍 Get a summary of any web page
     has_wiki: false
-
+    secret_sets:
+    - renovate
   summaly-server:
-    archived: true
+    state: archived
     delete_branch_on_merge: false
     homepage_url: https://summaly-server.vercel.app
     topics: []
     security_and_analysis:
       secret_scanning: disabled
       secret_scanning_push_protection: disabled
-
   subscription-manager:
-    archived: true
+    state: archived
     delete_branch_on_merge: false
     topics: []
     security_and_analysis:
       secret_scanning_push_protection: disabled
-
-  vip-responder: {}
-
+  vip-responder:
+    state: active
+    secret_sets:
+    - renovate
   VVCSoftware_VTM:
+    state: active
     default_branch: master
     topics: []
     visibility: private
-
+    secret_sets:
+    - renovate
+    has_wiki: false
   webhook-test:
+    state: active
     actions_secrets:
       DOCKER_HUB_ACCESS_TOKEN:
         onepassword:
@@ -259,3 +308,14 @@ repositories:
           vault: Personal
           item: Github Docker
           field: DOCKER_HUB_USERNAME
+    secret_sets:
+    - renovate
+retired:
+  private:
+    name: private
+    action: delete
+excluded:
+  encrypt: 個別管理
+  skills: 個別管理
+  sunrise-notify: 個別管理
+exclude_forks: true
