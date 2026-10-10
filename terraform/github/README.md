@@ -16,13 +16,14 @@ Terraform は次の resource を管理する。
 | `data.external.onepassword_actions_secrets` | 1Password から secret value をまとめて読む external data source |
 
 `github_repository.repositories` と `github_repository.archived` は `prevent_destroy = true` を使う。
-Terraform から repository を破棄しない。
+通常の管理対象は削除を防止する。
+明示的な削除対象は `removals.tf` の `moved` で個別アドレスへ移し、`removed` の `destroy = true` で削除する。
 
 ## Provider と Backend
 
 | 対象 | 値 |
 |------|----|
-| Terraform | `>= 1.5.0` |
+| Terraform | `>= 1.7.0` |
 | GitHub provider | `integrations/github` `6.13.0` |
 | External provider | `hashicorp/external` `2.4.0` |
 | GitHub owner | `Soli0222` |
@@ -48,6 +49,7 @@ terraform plan
 | `versions.tf` | Terraform version、provider、backend、`github_owner`、output |
 | `locals.tf` | `repositories.yaml` の decode、global default と repository override の merge |
 | `repositories.tf` | `github_repository` と `github_branch_default` |
+| `removals.tf` | 承認済み repository の削除定義 |
 | `actions_secrets.tf` | 1Password backed `github_actions_secret` |
 | `op-read-secret.rb` | external provider から呼ぶ 1Password 読み取り helper |
 | `import-existing-repositories.sh` | 既存 repository と default branch の再開可能な import helper |
@@ -60,6 +62,7 @@ terraform plan
 `security_and_analysis` も global と repository 個別を merge する。
 
 現行の global default は repository を public にし、pull request merge 後の branch 削除を有効にする。
+新規 repository で `auto_init: true` を指定すると README を含む初期 commit を作成し、default branch を設定できる。
 secret scanning と push protection は global で有効にする。
 `mk-stream` と `spotify-nowplaying` は個別 override で secret scanning を無効にする。
 Private repository では `security_and_analysis` blockを生成しない。
@@ -78,6 +81,7 @@ YAML の管理対象から外し、Terraform 側の `ignore_changes` で plan no
 
 ```text
 amemado
+better-recommend
 daypassed-bot
 diary-cli
 emoji-bot-gateway

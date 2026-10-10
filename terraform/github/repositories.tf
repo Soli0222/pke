@@ -8,6 +8,7 @@ resource "github_repository" "repositories" {
   allow_rebase_merge          = each.value.allow_rebase_merge
   allow_squash_merge          = each.value.allow_squash_merge
   allow_update_branch         = each.value.allow_update_branch
+  auto_init                   = try(each.value.auto_init, false)
   archived                    = each.value.archived
   delete_branch_on_merge      = each.value.delete_branch_on_merge
   description                 = each.value.description
