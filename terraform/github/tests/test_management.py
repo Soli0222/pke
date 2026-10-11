@@ -146,14 +146,6 @@ class ManagementTests(unittest.TestCase):
         with self.assertRaises(config.ConfigError):
             manage.inspect_plan(plan, self.c)
 
-    def test_secret_handoff_is_forget_only_and_redacted(self):
-        plan = self.change('github_actions_secret.repository["pke/KEY"]', ['forget'],
-                           {'value': 'NEVER-PRINT-THIS'}, kind='github_actions_secret')
-        self.assertNotIn('NEVER-PRINT-THIS', json.dumps(manage.inspect_plan(plan, self.c)))
-        plan['resource_changes'][0]['change']['actions'] = ['delete']
-        with self.assertRaises(config.ConfigError):
-            manage.inspect_plan(plan, self.c)
-
     def test_archived_secret_sync_does_not_read_or_write(self):
         args = argparse.Namespace(all=False, repo=['helm-charts'], apply=True)
         with patch.object(manage, 'gh_api') as api, patch.object(manage, 'run') as run, contextlib.redirect_stdout(io.StringIO()):
@@ -227,13 +219,6 @@ class ManagementTests(unittest.TestCase):
                 command = 'unset GITHUB_TOKEN AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; gh() { printf fixture-token; }; op() { return 1; }; source "$1" >/dev/null 2>/dev/null; result=$?; [[ $result -ne 0 && -z ${GITHUB_TOKEN:-} && -z ${AWS_ACCESS_KEY_ID:-} && -z ${AWS_SECRET_ACCESS_KEY:-} ]]'
                 result = subprocess.run([shell, '-c', command, 'test', script], capture_output=True)
                 self.assertEqual(result.returncode, 0)
-
-    def test_repository_and_secret_membership_is_preserved(self):
-        # Inventory baseline protects this migration from silent removal of scope.
-        repos = config.resolved(self.c)
-        self.assertEqual(len(repos), 40)
-        self.assertEqual(sum(r['state'] == 'active' for r in repos.values()), 29)
-        self.assertEqual(sum(len(config.secrets_for(self.c, r)) for r in repos.values() if r['state'] == 'active'), 66)
 
 
 if __name__ == '__main__':

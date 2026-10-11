@@ -15,7 +15,7 @@ from config import BOOLS, STRINGS, ConfigError, ROOT, address, generate, load, r
 
 def tool_environment():
     # TRACE logs and injected Terraform flags could bypass locks or write the
-    # legacy plaintext state to disk even when stdout itself is redacted.
+    # secret values to disk even when stdout itself is redacted.
     return {k: v for k, v in os.environ.items()
             if not k.startswith(("TF_LOG", "TF_CLI_ARGS"))}
 
@@ -56,7 +56,6 @@ def imports(c, remote):
 def inspect_plan(plan, c):
     """Reject implicit destruction/replacement and return only safe metadata.
 
-    The first migration plan may still contain legacy plaintext secret values.
     Never print the raw JSON plan, including data source changes or diagnostics.
     """
     retired = {address(key): spec for key, spec in c["retired"].items()}
@@ -82,10 +81,8 @@ def inspect_plan(plan, c):
                 if repo and not repo["auto_init"] and repo["default_branch"] is not None:
                     raise ConfigError(f"{addr}: new empty repository needs default_branch: null or auto_init: true")
         elif "delete" in actions or "forget" in actions:
-            secret_handoff = (kind == "github_actions_secret" and
-                              addr.startswith('github_actions_secret.repository[') and actions == ["forget"])
             branch_handoff = kind == "github_branch_default" and addr in branches and actions == ["forget"]
-            if not (secret_handoff or branch_handoff):
+            if not branch_handoff:
                 raise ConfigError(f"{addr}: unexpected resource removal")
         if actions != ["no-op"] or item.get("previous_address") or change.get("importing"):
             fields = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k)) if kind in {"github_repository", "github_branch_default"} else []
@@ -131,7 +128,7 @@ def check_plan_command(args):
     summary = inspect_plan(json.loads(run(["terraform", "show", "-json", str(path)])), c)
     for item in summary:
         print(json.dumps(item, ensure_ascii=False))
-    print(f"Checked {len(summary)} changes/moves/imports.")
+    print(f"Checked {len(summary)} changes/imports.")
 
 
 def read_source(source):

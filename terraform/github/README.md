@@ -13,10 +13,9 @@ Terraform の通常の plan では secret の値を取得しない。
 | `config.py` | YAML の検証と Terraform 定義の生成 |
 | `repositories.generated.tf.json` | コミットする生成物。直接編集しない |
 | `versions.tf` | provider と R2 backend。version はこのファイルを正とする |
-| `migrations.tf.json` | 旧アドレスの移動と旧 secret リソースの管理解除 |
 | `manage.py` | 定義・import block の生成、inventory 照合、任意の plan 検査、secret 同期 |
 | `setup.sh` | GitHub と R2 の認証情報の準備 |
-| `tests/` | 入力検証、secret の扱い、mock provider による state 移行・ライフサイクル検証 |
+| `tests/` | 入力検証、secret の扱い、mock provider によるライフサイクル検証 |
 
 YAML のキーはリポジトリの固定 ID とし、GitHub 上の名前は `name` で上書きする。
 Terraform アドレスは `github_repository.repo_<ID>` で固定する。
@@ -76,6 +75,8 @@ Python の補助コマンド同士は checkout 内のローカルロックでも
 
 新規リポジトリは固定 ID と `state: active` を追加する。
 共通設定は `defaults`、個別設定は各 ID の下に置く。
+マージ方式の共通設定は Squash and merge のみを許可し、Merge commit と Rebase merge を無効にする。
+既存の active リポジトリと新規リポジトリに適用し、archived リポジトリには復帰時に適用する。
 `auto_init` の既定値で初期 commit を作り、default branch を管理する。
 初期 commit を作らない場合は `auto_init: false` と `default_branch: null` を指定し、push 後に branch 管理を有効にする。
 
@@ -182,22 +183,6 @@ secret 定義の削除や secret set からの除外では、既存の GitHub se
 削除する場合は active リポジトリの `actions_secrets` に `SECRET_NAME: null` を明示して同期する。
 archived リポジトリへの同期・削除は行わない。
 
-## 既存 state の移行
-
-初回も標準の Terraform コマンドを使う。
-既存 checkout で backend 設定の変更が検出された場合は `terraform init -reconfigure` を実行する。
-state の保存先は同じなので `-migrate-state` は不要である。
-`migrations.tf.json` が旧 active/archived のアドレスを固定アドレスへ移し、旧 Actions secret を `destroy = false` で管理から外す。
-GitHub の secret 自体は削除しない。
-旧 external data source は定義から除外され、現在の state から消える。
-移行定義は未適用の state に必要なため保持する。
-external provider の依存も旧 state の schema と移行テスト用に固定するが、通常の構成に external data source はない。
-
-移行 plan では repository の移動、secret の管理解除、明示された `retired` の処理、既存の設定差分を確認する。
-旧 state、バックアップ、初回の plan ファイルには平文の secret が残り得る。
-現在の state から取り除いても過去のコピーまでは消えない。
-保存 plan は使い終わったら削除し、過去の state コピーは保管先の保持方針に従って扱う。
-
 ## 保存 plan の追加検査（任意）
 
 削除対象と `retired` の照合などを追加で確認したい場合は、標準コマンドで保存した plan を検査できる。
@@ -222,9 +207,9 @@ python3 tests/terraform_lifecycle.py
 ```
 
 CI は backend と GitHub に接続せず、生成物の一致、YAML の検証、ID の削除方針、認証失敗時の停止、secret の取り扱いを確認する。
-Terraform の mock provider では旧 state の移行、archive・復帰・rename、削除・管理解除を検証する。
+Terraform の mock provider では作成、archive・復帰・rename、削除・管理解除を検証する。
 本番の権限、R2 lock の取得、GitHub API の設定制約は実際の plan/apply で確認する。
 
 GitHub provider は新しい REST client とローカル cache を使う。
 速度の比較は同じ構成・認証条件で plan の所要時間を測る。
-初回の移行・import と、移行後の通常 plan は分けて評価する。
+import を含む plan と通常の plan は分けて評価する。

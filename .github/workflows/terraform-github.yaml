@@ -49,5 +49,5 @@ jobs:
           python3 manage.py check-transition --base "$RUNNER_TEMP/github-inventory-base.yaml"
       - name: Test validation, guards, authentication and secret handling
         run: python3 -m unittest discover -s tests -v
-      - name: Test Terraform state migration and lifecycle without remote APIs
+      - name: Test Terraform lifecycle without remote APIs
         run: python3 tests/terraform_lifecycle.py

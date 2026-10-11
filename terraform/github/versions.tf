@@ -2,13 +2,6 @@ terraform {
   required_version = ">= 1.11.0, < 2.0.0"
 
   required_providers {
-    # 旧 data.external を含む state の移行と mock テストで同じ schema を使う。
-    # 実行する external data source は定義しない。
-    external = {
-      source  = "hashicorp/external"
-      version = "2.4.2"
-    }
-
     github = {
       source  = "integrations/github"
       version = "6.13.0"
