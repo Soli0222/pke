@@ -6,11 +6,11 @@
     "inventory_sha256": {
       "precondition": [
         {
-          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"4b5c5e023776ac2356631c96ea225c3e7a8ec15c8f18b30f9511ff5d7e324fda\"}",
+          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"ed623beb5ee05a1081db78631bc8b68052fe70a7e4a82f6bb4e0bf82656cb204\"}",
           "error_message": "Inventory changed: run python3 manage.py generate before planning."
         }
       ],
-      "value": "4b5c5e023776ac2356631c96ea225c3e7a8ec15c8f18b30f9511ff5d7e324fda"
+      "value": "ed623beb5ee05a1081db78631bc8b68052fe70a7e4a82f6bb4e0bf82656cb204"
     },
     "managed_repositories": {
       "value": [
@@ -33,6 +33,7 @@
         "homebrew-exiforge",
         "keymap",
         "kubecon-schedule",
+        "mf-account-reloader",
         "misskey-summarizer",
         "mk-anniv",
         "mk-stream",
@@ -209,6 +210,12 @@
         "branch": "main",
         "rename": false,
         "repository": "${github_repository.repo_kubecon-schedule.name}",
+        "wait_for_rename": false
+      },
+      "repo_mf-account-reloader": {
+        "branch": "main",
+        "rename": false,
+        "repository": "${github_repository.repo_mf-account-reloader.name}",
         "wait_for_rename": false
       },
       "repo_mk-stream": {
@@ -1411,6 +1418,60 @@
         "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
         "topics": [],
         "visibility": "private",
+        "web_commit_signoff_required": false
+      },
+      "repo_mf-account-reloader": {
+        "allow_auto_merge": false,
+        "allow_forking": true,
+        "allow_merge_commit": true,
+        "allow_rebase_merge": true,
+        "allow_squash_merge": true,
+        "allow_update_branch": false,
+        "archive_on_destroy": false,
+        "archived": false,
+        "auto_init": true,
+        "delete_branch_on_merge": true,
+        "description": "",
+        "has_discussions": false,
+        "has_issues": true,
+        "has_projects": true,
+        "has_wiki": true,
+        "homepage_url": "",
+        "is_template": false,
+        "lifecycle": {
+          "ignore_changes": [
+            "auto_init",
+            "gitignore_template",
+            "has_downloads",
+            "ignore_vulnerability_alerts_during_read",
+            "license_template",
+            "vulnerability_alerts"
+          ],
+          "prevent_destroy": true
+        },
+        "merge_commit_message": "PR_TITLE",
+        "merge_commit_title": "MERGE_MESSAGE",
+        "name": "mf-account-reloader",
+        "security_and_analysis": [
+          {
+            "secret_scanning": [
+              {
+                "status": "enabled"
+              }
+            ],
+            "secret_scanning_push_protection": [
+              {
+                "status": "enabled"
+              }
+            ]
+          }
+        ],
+        "squash_merge_commit_message": "COMMIT_MESSAGES",
+        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
+        "topics": [
+          "renovate"
+        ],
+        "visibility": "public",
         "web_commit_signoff_required": false
       },
       "repo_misskey-summarizer": {

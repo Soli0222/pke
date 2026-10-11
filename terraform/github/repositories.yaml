@@ -143,6 +143,10 @@ repositories:
     topics: []
     secret_sets:
     - renovate
+  mf-account-reloader:
+    state: active
+    secret_sets:
+    - renovate
   misskey-summarizer:
     state: archived
     topics: []
