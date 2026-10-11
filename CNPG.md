@@ -29,6 +29,27 @@ Misskey の物理復元は、[通常の PITR と PGroonga の再構築](#misskey
 容量回収のための `VACUUM FULL` は、テーブルの膨張と一時容量を確認して対象を選ぶ。
 定期バックアップの復元確認には、この手順を別名 Cluster で実行する。
 
+## Misskey の PGroonga image を更新する
+
+Renovate は `pgroonga-cnpg` の公開済み GitHub Release から PostgreSQL 18 / Alpine の更新を検出し、
+Cluster の `imageName` に含まれる PGroonga のバージョンを更新する PR を作る。
+PostgreSQL major の変更は追従対象に含めず、更新 PR は手動でマージする。
+image の変更は PostgreSQL minor と Groonga の更新も含むため、各リリースの変更内容を確認する。
+
+Misskey は1 instance のため、image 更新時に接続が切れる。
+[PGroonga のアップグレード手順](https://pgroonga.github.io/ja/upgrade/)に従い、互換性と作業時間を確認する。
+互換性のある更新は次の順で反映する。
+
+1. 完了したバックアップと復元手順を確認し、Misskey の接続・書き込みを止める。
+2. 更新 PR をマージし、`natsume@soli` の Flux 適用 revision、Cluster の generation と Ready、Pod の image を確認する。
+3. PGroonga を使用する各 DB で `ALTER EXTENSION pgroonga UPDATE;` を実行する。
+   `pgroonga_database` 拡張を使用している DB では、その拡張も更新する。
+4. `pg_extension.extversion` と `pg_available_extensions.default_version` を照合し、日本語検索、
+   インデックスの利用、PGroonga / PostgreSQL のログと WAL archive の成功を確認してからアプリを再開する。
+
+既存 index の再構築が必要かは、上流の互換性情報と検索検証で判断する。
+image を切り替えただけで、DB 内の拡張定義まで更新されたとは判断しない。
+
 ## バックアップの保存先と認証
 
 全DBで Barman Cloud plugin による base backup と WAL archive を使う。

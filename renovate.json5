@@ -45,6 +45,14 @@
     ],
   },
   packageRules: [
+    // DB image の更新は接続断と ALTER EXTENSION を伴うため、手動で反映する。
+    {
+      matchManagers: ['custom.regex'],
+      matchDepNames: ['Soli0222/pgroonga-cnpg'],
+      commitMessageTopic: 'PGroonga CNPG image',
+      addLabels: ['manager:cnpg'],
+      automerge: false,
+    },
     {
       matchManagers: [
         'terraform',
@@ -152,6 +160,20 @@
     },
   ],
   customManagers: [
+    // PGroonga のバージョンが image repository のパスに含まれるため、
+    // Docker tag (:18) ではなく公開済み GitHub Release を追跡する。
+    // PostgreSQL major 18 の Alpine Release のみを対象にする。
+    {
+      customType: 'regex',
+      managerFilePatterns: ['/^flux/clusters/.+/apps/.+/cluster\\.yaml$/'],
+      matchStrings: [
+        'imageName:\\s*ghcr\\.io/soli0222/pgroonga-cnpg/(?<currentValue>\\d+\\.\\d+\\.\\d+)-alpine:18(?:\\s|$)',
+      ],
+      depNameTemplate: 'Soli0222/pgroonga-cnpg',
+      datasourceTemplate: 'github-releases',
+      versioningTemplate: 'semver',
+      extractVersionTemplate: '^(?<version>\\d+\\.\\d+\\.\\d+)-alpine-18$',
+    },
     // charts/*/values.yaml の `repository:` + `tag:` の組。helm-values だけでは
     // 拾えない書き方を補う。helm-charts から移植。
     {
