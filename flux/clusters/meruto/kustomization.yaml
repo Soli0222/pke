@@ -15,6 +15,8 @@ resources:
 - kustomizations/longhorn.yaml
 - kustomizations/longhorn-config.yaml
 - kustomizations/topolvm.yaml
+- kustomizations/mf-account-reloader-auth.yaml
+- kustomizations/mf-account-reloader.yaml
 - kustomizations/navidrome.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml
 - kustomizations/traefik.yaml
