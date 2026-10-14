@@ -18,6 +18,7 @@ Pooler は使わず、アプリは CNPG の Service に直接接続する。
 | sui | `sui-cluster-restored` | `sui` | 5Gi | base backup + WAL archive | 日曜 03:15 |
 | spotify-reblend | `reblend-cluster-restored` | `reblend` | 5Gi | base backup + WAL archive | 日曜 03:30 |
 | spotify-nowplaying | `spn-cluster-restored` | `spn` | 5Gi | base backup + WAL archive | 日曜 03:45 |
+| ntfy | `ntfy-cluster` | `ntfy` | 5Gi | base backup + WAL archive | 日曜 04:00 |
 
 定義は [natsume の各アプリ](flux/clusters/natsume/apps/) の `cluster.yaml` にある。
 operator / Barman Cloud plugin のバージョンは [cnpg](flux/clusters/natsume/apps/cnpg/)、DB image と PostgreSQL 設定は各 Cluster を参照する。
@@ -58,7 +59,7 @@ WAL は継続保存し、base backup は上表の頻度で取得する。
 `objectstore-restore.yaml` に保持期限は設定せず、`Cluster.spec.externalClusters` の `serverName` で復元元 prefix を指定する。
 稼働 DB の archive は現在の Cluster 名を prefix に使うため、復元元を上書きしない。
 各アプリの `ObjectStore` は WAL / base backup を gzip 圧縮し、`ScheduledBackup` は UTC の6フィールド cron を使う。
-週次の4DBは `immediate: true` により ScheduledBackup 作成時にも初回バックアップを取得する。
+週次のDBは `immediate: true` により ScheduledBackup 作成時にも初回バックアップを取得する。
 初回は定期実行の時刻分散が効かないため、導入時の負荷と完了状態を確認する。
 plugin の追加は sidecar を含む DB Pod の更新を伴う。単一 instance のため、更新時の接続断を見込む。
 初回 Backup が失敗した場合は原因を解消して手動で再取得し、週次の次回実行を待たない。

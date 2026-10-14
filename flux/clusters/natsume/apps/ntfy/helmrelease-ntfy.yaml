@@ -19,6 +19,11 @@ spec:
       interval: 1h
   values:
     env:
+      - name: NTFY_DATABASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: ntfy-cluster-app
+            key: uri
       - name: NTFY_AUTH_USERS
         valueFrom:
           secretKeyRef:
@@ -53,8 +58,6 @@ spec:
         metrics-listen-http: ":{{ .Values.service.metricsPort }}"
         behind-proxy: true
 
-        cache-file: "/var/cache/ntfy/cache.db"
-        auth-file: "/var/cache/ntfy/user.db"
         auth-default-access: "deny-all"
         auth-access:
           - "alertmanager:natsume-alerts:write-only"

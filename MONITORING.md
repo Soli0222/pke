@@ -116,6 +116,15 @@ Alloy は Secret を1分ごとに取得し、再起動なしで再評価する�
 Mimir Alertmanager が保存済み設定を取り込む間隔は5分なので、保存成功と有効設定への反映には時間差がある。
 通常の取得待ちを同期失敗と判断して Alloy を再起動しない。
 ntfy は単一 Pod / Recreate のため、再起動中は配信先が一時停止する。
+通知履歴・ユーザー・ACL・token は CNPG の `ntfy-cluster` に保存する。
+DB 接続には CNPG が生成する `ntfy-cluster-app` Secret の `uri` を使い、ユーザー・token は引き続き 1Password から宣言する。
+添付ファイルは Longhorn の `ntfy` PVC に保存し、DB のバックアップには含まれない。
+DB の構成・バックアップ操作は [CNPG.md](CNPG.md) を参照する。
+
+SQLite からの切り替えは新規 DB への接続として行い、既存の通知履歴は取り込まない。
+1Password に宣言していないユーザー・token・ユーザー設定は再登録が必要となる。
+`cache-file` / `auth-file` / `web-push-file` と `NTFY_DATABASE_URL` は併用しない。
+切り替え後は旧 SQLite ファイルを参照しない。添付ファイルも DB に対応する通知がないものは ntfy が削除する。
 
 ## 変更を検証して反映する
 
