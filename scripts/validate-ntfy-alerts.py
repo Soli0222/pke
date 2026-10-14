@@ -14,7 +14,7 @@ from validate_alert_inhibition import validate_inhibition
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-NTFY = "binwiederhier/ntfy:v2.28.0"
+POSTGRES = "postgres:18-alpine"
 ALLOY = "grafana/alloy:v1.19.2"
 AMTOOL = "prom/alertmanager:v0.31.1"
 TOKENS = {
@@ -63,15 +63,21 @@ def main():
         docs = list(yaml.safe_load_all(rendered))
         deployment = next(d for d in docs if d and d["kind"] == "Deployment")
         env = deployment["spec"]["template"]["spec"]["containers"][0]["env"]
-        for key in ("NTFY_AUTH_USERS", "NTFY_AUTH_TOKENS"):
+        ntfy_image = deployment["spec"]["template"]["spec"]["containers"][0]["image"]
+        for key in ("NTFY_DATABASE_URL", "NTFY_AUTH_USERS", "NTFY_AUTH_TOKENS"):
             entry = next(e for e in env if e["name"] == key)
             assert "value" not in entry and "secretKeyRef" in entry["valueFrom"]
+        database_env = next(e for e in env if e["name"] == "NTFY_DATABASE_URL")
+        assert database_env["valueFrom"]["secretKeyRef"] == {
+            "name": "ntfy-cluster-app", "key": "uri"
+        }
         assert not any(d and d["kind"] == "Secret" for d in docs)
         config = yaml.safe_load(
             next(d for d in docs if d and d["kind"] == "ConfigMap")["data"][
                 "server.yml"
             ]
         )
+        assert not {"cache-file", "auth-file", "web-push-file", "database-url"} & config.keys()
         source = yaml.safe_load(
             (ROOT / "flux/clusters/natsume/apps/alloy/alloy-config.yaml").read_text()
         )["data"]["config.alloy"]
@@ -231,8 +237,6 @@ def main():
             {
                 "base-url": "http://localhost",
                 "listen-http": ":80",
-                "auth-file": "/data/user.db",
-                "cache-file": "/data/cache.db",
             }
         )
         (out / "ntfy.yaml").write_text(yaml.safe_dump(local))
@@ -240,8 +244,9 @@ def main():
             f"{name}:{HASH}:{role}"
             for name, role in [("soli", "admin"), ("alertmanager", "user")]
         )
-        volume = out.name
-        run("docker", "volume", "create", volume)
+        network = out.name
+        run("docker", "network", "create", network)
+        pg_cid = None
 
         def start(publisher):
             tokens = f"soli:{TOKENS['admin']},alertmanager:{publisher}"
@@ -251,17 +256,19 @@ def main():
                 "-d",
                 "--user",
                 "0:0",
+                "--network",
+                network,
                 "-p",
                 "127.0.0.1::80",
                 "-v",
                 f"{out}:/work:ro",
-                "-v",
-                f"{volume}:/data",
+                "-e",
+                "NTFY_DATABASE_URL=postgres://ntfy:local-validation@postgres:5432/ntfy?sslmode=disable",
                 "-e",
                 "NTFY_AUTH_USERS=" + users,
                 "-e",
                 "NTFY_AUTH_TOKENS=" + tokens,
-                NTFY,
+                ntfy_image,
                 "serve",
                 "--config",
                 "/work/ntfy.yaml",
@@ -283,6 +290,22 @@ def main():
                 raise
 
         try:
+            pg_cid = run(
+                "docker", "run", "-d", "--network", network,
+                "--network-alias", "postgres",
+                "--tmpfs", "/var/lib/postgresql",
+                "-e", "POSTGRES_USER=ntfy", "-e", "POSTGRES_DB=ntfy",
+                "-e", "POSTGRES_PASSWORD=local-validation", POSTGRES,
+            )
+            for _ in range(100):
+                if subprocess.run(
+                    ["docker", "exec", pg_cid, "pg_isready", "-h", "127.0.0.1", "-U", "ntfy", "-d", "ntfy"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                ).returncode == 0:
+                    break
+                time.sleep(0.1)
+            else:
+                raise RuntimeError("local PostgreSQL did not start")
             cid, base = start(TOKENS["publisher"])
             try:
                 for receiver in parsed["receivers"]:
@@ -397,15 +420,19 @@ def main():
                     )[0]
                     == 200
                 )
-                assert (
-                    request(base, "/other-topic/json?poll=1", TOKENS["admin"])[0] == 200
-                )
+                code, body = request(base, "/other-topic/json?poll=1", TOKENS["admin"])
+                assert code == 200 and any(
+                    json.loads(line).get("message") == json.dumps({"message": "admin retained"})
+                    for line in body.splitlines()
+                ), body
             finally:
                 run("docker", "rm", "-f", cid)
         finally:
-            run("docker", "volume", "rm", volume)
+            if pg_cid:
+                run("docker", "rm", "-f", pg_cid)
+            run("docker", "network", "rm", network)
         print(
-            "local ntfy: nine receivers firing/resolved with priority/tags, ACL, invalid token, rotation, retained admin: OK"
+            "local ntfy / PostgreSQL: nine receivers firing/resolved with priority/tags, ACL, invalid token, rotation, retained admin and messages: OK"
         )
 
 

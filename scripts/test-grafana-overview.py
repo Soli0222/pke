@@ -59,19 +59,6 @@ def case(name, series, checks):
     )
 
 
-case(
-    "absent nodes, DBs and probes survive in expectation",
-    [],
-    sum([check(1, 0, len(nodes), c) for c, nodes in hosts.items()], [])
-    + check(7, 0, 10)
-    + check(12, 0, 5)
-    + check(8, 0, 4, "meruto")
-    + check(7, -2, -2, "meruto")
-    + check(12, -2, -2, "meruto")
-    + check(8, -2, -2, "natsume"),
-)
-# A stale archive timestamp is only actionable with queued WAL on the same Pod.
-wal_base = []
 values = yaml.safe_load(
     (
         ROOT
@@ -79,6 +66,20 @@ values = yaml.safe_load(
     ).read_text()
 )["spec"]["values"]
 database_names = {db["namespace"]: db["name"] for db in values["databases"]}
+
+case(
+    "absent nodes, DBs and probes survive in expectation",
+    [],
+    sum([check(1, 0, len(nodes), c) for c, nodes in hosts.items()], [])
+    + check(7, 0, sum(1 + bool(db["archive"]) for db in values["databases"]))
+    + check(12, 0, sum(bool(db.get("baseBackupMaxAgeSeconds")) for db in values["databases"]))
+    + check(8, 0, 4, "meruto")
+    + check(7, -2, -2, "meruto")
+    + check(12, -2, -2, "meruto")
+    + check(8, -2, -2, "natsume"),
+)
+# A stale archive timestamp is only actionable with queued WAL on the same Pod.
+wal_base = []
 for db in values["databases"]:
     labels = {
         "cluster": "natsume",

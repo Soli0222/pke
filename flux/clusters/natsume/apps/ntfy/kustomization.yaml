@@ -3,4 +3,9 @@ kind: Kustomization
 resources:
 - namespace.yaml
 - onepassworditem.yaml
+- onepassworditem-cnpg-backup.yaml
+- cluster.yaml
+- objectstore.yaml
+- scheduledbackup.yaml
+- podmonitor.yaml
 - helmrelease-ntfy.yaml
