@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0
       - uses: hashicorp/setup-terraform@v4.0.1
         with:
-          terraform_version: '1.16.5'
+          terraform_version: 'v1.16.6'
           terraform_wrapper: false
       - name: Install validation dependencies
         run: |
