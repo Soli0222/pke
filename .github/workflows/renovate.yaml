@@ -18,6 +18,7 @@ jobs:
           permission-contents: write
           permission-issues: write
           permission-pull-requests: write
+          permission-statuses: write
           permission-workflows: write
 
       - name: Checkout
@@ -32,4 +33,5 @@ jobs:
           configurationFile: renovate.json5
           token: ${{ steps.app-token.outputs.token }}
         env:
+          RENOVATE_EXIT_CODE_FOR_ERRORS: "true"
           RENOVATE_REPOSITORIES: ${{ github.repository }}

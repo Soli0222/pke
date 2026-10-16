@@ -45,6 +45,56 @@
     ],
   },
   packageRules: [
+    // Flux manager はクラスタの境界を区別せず、同名・同 namespace の
+    // HelmRepository をすべて参照する。両クラスタで共通の chart は URL を1件に絞る。
+    {
+      matchManagers: ['flux'],
+      matchDatasources: ['helm'],
+      matchPackageNames: ['alloy'],
+      registryUrls: ['https://grafana.github.io/helm-charts'],
+    },
+    {
+      matchManagers: ['flux'],
+      matchDatasources: ['helm'],
+      matchPackageNames: ['cert-manager'],
+      registryUrls: ['https://charts.jetstack.io'],
+    },
+    {
+      matchManagers: ['flux'],
+      matchDatasources: ['helm'],
+      matchPackageNames: ['cloudnative-pg', 'plugin-barman-cloud'],
+      registryUrls: ['https://cloudnative-pg.github.io/charts'],
+    },
+    {
+      matchManagers: ['flux'],
+      matchDatasources: ['helm'],
+      matchPackageNames: ['external-dns'],
+      registryUrls: ['https://kubernetes-sigs.github.io/external-dns/'],
+    },
+    {
+      matchManagers: ['flux'],
+      matchDatasources: ['helm'],
+      matchPackageNames: ['kube-state-metrics', 'prometheus-operator-crds'],
+      registryUrls: ['https://prometheus-community.github.io/helm-charts'],
+    },
+    {
+      matchManagers: ['flux'],
+      matchDatasources: ['helm'],
+      matchPackageNames: ['longhorn'],
+      registryUrls: ['https://charts.longhorn.io'],
+    },
+    {
+      matchManagers: ['flux'],
+      matchDatasources: ['helm'],
+      matchPackageNames: ['topolvm'],
+      registryUrls: ['https://topolvm.github.io/topolvm'],
+    },
+    {
+      matchManagers: ['flux'],
+      matchDatasources: ['helm'],
+      matchPackageNames: ['traefik'],
+      registryUrls: ['https://traefik.github.io/charts'],
+    },
     // DB image の更新は接続断と ALTER EXTENSION を伴うため、手動で反映する。
     {
       matchManagers: ['custom.regex'],
