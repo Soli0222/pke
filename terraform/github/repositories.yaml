@@ -48,50 +48,10 @@ repositories:
     visibility: private
     secret_sets:
     - renovate
-  antenna_del_spam:
-    state: archived
-    delete_branch_on_merge: false
-    topics: []
-    security_and_analysis:
-      secret_scanning: disabled
-      secret_scanning_push_protection: disabled
-  audioroute:
-    state: archived
-    has_wiki: false
-    topics: []
-    visibility: private
-    security_and_analysis:
-      secret_scanning: disabled
-      secret_scanning_push_protection: disabled
-  better-recommend:
-    state: active
-    auto_init: true
-    secret_sets:
-    - renovate
-  Charmy:
-    state: archived
-    delete_branch_on_merge: false
-    has_wiki: false
-    topics: []
-    security_and_analysis:
-      secret_scanning: disabled
-      secret_scanning_push_protection: disabled
-  cloudflare-ingress-controller:
-    state: archived
-    delete_branch_on_merge: false
-    topics: []
-    security_and_analysis:
-      secret_scanning_push_protection: disabled
   daypassed-bot:
     state: active
     secret_sets:
     - renovate
-  debug-image:
-    state: archived
-    delete_branch_on_merge: false
-    topics: []
-    security_and_analysis:
-      secret_scanning_push_protection: disabled
   diary-cli:
     state: active
     secret_sets:
@@ -109,18 +69,6 @@ repositories:
     topics: []
     secret_sets:
     - renovate
-  flow-sight:
-    state: archived
-    delete_branch_on_merge: false
-    topics: []
-    security_and_analysis:
-      secret_scanning_push_protection: disabled
-  helm-charts:
-    state: archived
-    description: Retired. Charts moved to the application repositories (oci://ghcr.io/soli0222/charts)
-      and to pke/charts/.
-    security_and_analysis:
-      secret_scanning_push_protection: disabled
   homebrew-exiforge:
     state: active
     topics: []
@@ -147,11 +95,6 @@ repositories:
     state: active
     secret_sets:
     - renovate
-  misskey-summarizer:
-    state: archived
-    topics: []
-    security_and_analysis:
-      secret_scanning_push_protection: disabled
   mk-stream:
     state: active
     security_and_analysis:
@@ -170,13 +113,6 @@ repositories:
           field: DOCKER_HUB_USERNAME
     secret_sets:
     - renovate
-  mk-anniv:
-    state: archived
-    delete_branch_on_merge: false
-    topics: []
-    security_and_analysis:
-      secret_scanning: disabled
-      secret_scanning_push_protection: disabled
   note-tweet-connector:
     state: active
     actions_secrets:
@@ -273,20 +209,6 @@ repositories:
     has_wiki: false
     secret_sets:
     - renovate
-  summaly-server:
-    state: archived
-    delete_branch_on_merge: false
-    homepage_url: https://summaly-server.vercel.app
-    topics: []
-    security_and_analysis:
-      secret_scanning: disabled
-      secret_scanning_push_protection: disabled
-  subscription-manager:
-    state: archived
-    delete_branch_on_merge: false
-    topics: []
-    security_and_analysis:
-      secret_scanning_push_protection: disabled
   vip-responder:
     state: active
     secret_sets:
@@ -315,6 +237,42 @@ repositories:
     secret_sets:
     - renovate
 retired:
+  antenna_del_spam:
+    name: antenna_del_spam
+    action: forget
+  audioroute:
+    name: audioroute
+    action: forget
+  Charmy:
+    name: Charmy
+    action: forget
+  cloudflare-ingress-controller:
+    name: cloudflare-ingress-controller
+    action: forget
+  debug-image:
+    name: debug-image
+    action: forget
+  flow-sight:
+    name: flow-sight
+    action: forget
+  helm-charts:
+    name: helm-charts
+    action: forget
+  misskey-summarizer:
+    name: misskey-summarizer
+    action: forget
+  mk-anniv:
+    name: mk-anniv
+    action: forget
+  summaly-server:
+    name: summaly-server
+    action: forget
+  subscription-manager:
+    name: subscription-manager
+    action: forget
+  better-recommend:
+    name: better-recommend
+    action: forget
   private:
     name: private
     action: delete

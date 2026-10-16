@@ -6,36 +6,26 @@
     "inventory_sha256": {
       "precondition": [
         {
-          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"9a9ab0d75301f48ade6cd1c187caa958a41ccab15b4064b0ee5c6fd984fb4b2d\"}",
+          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"60a0231581607c3870fc5f5e5e5cf134460415f9b5b242d3bdd5d1428f54bc7a\"}",
           "error_message": "Inventory changed: run python3 manage.py generate before planning."
         }
       ],
-      "value": "9a9ab0d75301f48ade6cd1c187caa958a41ccab15b4064b0ee5c6fd984fb4b2d"
+      "value": "60a0231581607c3870fc5f5e5e5cf134460415f9b5b242d3bdd5d1428f54bc7a"
     },
     "managed_repositories": {
       "value": [
-        "Charmy",
         "Mac-NowPlaying",
         "VVCSoftware_VTM",
         "amemado",
-        "antenna_del_spam",
-        "audioroute",
-        "better-recommend",
-        "cloudflare-ingress-controller",
         "daypassed-bot",
-        "debug-image",
         "diary-cli",
         "emoji-bot-gateway",
         "emoji-renderer",
         "exiforge",
-        "flow-sight",
-        "helm-charts",
         "homebrew-exiforge",
         "keymap",
         "kubecon-schedule",
         "mf-account-reloader",
-        "misskey-summarizer",
-        "mk-anniv",
         "mk-stream",
         "note-tweet-connector",
         "pgroonga-cnpg",
@@ -49,10 +39,8 @@
         "spn-cli",
         "spotify-nowplaying",
         "spotify-reblend",
-        "subscription-manager",
         "sui",
         "summaly",
-        "summaly-server",
         "vip-responder",
         "webhook-test"
       ]
@@ -60,7 +48,19 @@
   },
   "removed": [
     {
+      "from": "github_repository.repo_Charmy",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
       "from": "github_branch_default.repo_Charmy",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
+      "from": "github_repository.repo_antenna_del_spam",
       "lifecycle": {
         "destroy": false
       }
@@ -72,7 +72,31 @@
       }
     },
     {
+      "from": "github_repository.repo_audioroute",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
       "from": "github_branch_default.repo_audioroute",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
+      "from": "github_repository.repo_better-recommend",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
+      "from": "github_branch_default.repo_better-recommend",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
+      "from": "github_repository.repo_cloudflare-ingress-controller",
       "lifecycle": {
         "destroy": false
       }
@@ -84,7 +108,19 @@
       }
     },
     {
+      "from": "github_repository.repo_debug-image",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
       "from": "github_branch_default.repo_debug-image",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
+      "from": "github_repository.repo_flow-sight",
       "lifecycle": {
         "destroy": false
       }
@@ -96,7 +132,19 @@
       }
     },
     {
+      "from": "github_repository.repo_helm-charts",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
       "from": "github_branch_default.repo_helm-charts",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
+      "from": "github_repository.repo_misskey-summarizer",
       "lifecycle": {
         "destroy": false
       }
@@ -108,19 +156,13 @@
       }
     },
     {
+      "from": "github_repository.repo_mk-anniv",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
       "from": "github_branch_default.repo_mk-anniv",
-      "lifecycle": {
-        "destroy": false
-      }
-    },
-    {
-      "from": "github_branch_default.repo_subscription-manager",
-      "lifecycle": {
-        "destroy": false
-      }
-    },
-    {
-      "from": "github_branch_default.repo_summaly-server",
       "lifecycle": {
         "destroy": false
       }
@@ -133,6 +175,30 @@
     },
     {
       "from": "github_branch_default.repo_private",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
+      "from": "github_repository.repo_subscription-manager",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
+      "from": "github_branch_default.repo_subscription-manager",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
+      "from": "github_repository.repo_summaly-server",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
+    {
+      "from": "github_branch_default.repo_summaly-server",
       "lifecycle": {
         "destroy": false
       }
@@ -156,12 +222,6 @@
         "branch": "main",
         "rename": false,
         "repository": "${github_repository.repo_amemado.name}",
-        "wait_for_rename": false
-      },
-      "repo_better-recommend": {
-        "branch": "main",
-        "rename": false,
-        "repository": "${github_repository.repo_better-recommend.name}",
         "wait_for_rename": false
       },
       "repo_daypassed-bot": {
@@ -322,80 +382,6 @@
       }
     },
     "github_repository": {
-      "repo_Charmy": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": false,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": false,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "Charmy",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "disabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "disabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
       "repo_Mac-NowPlaying": {
         "allow_auto_merge": false,
         "allow_forking": true,
@@ -524,268 +510,6 @@
         "visibility": "private",
         "web_commit_signoff_required": false
       },
-      "repo_antenna_del_spam": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": false,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": true,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "antenna_del_spam",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "disabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "disabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
-      "repo_audioroute": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": true,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": false,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "audioroute",
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [],
-        "visibility": "private",
-        "web_commit_signoff_required": false
-      },
-      "repo_better-recommend": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": false,
-        "auto_init": true,
-        "delete_branch_on_merge": true,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": true,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "auto_init",
-            "gitignore_template",
-            "has_downloads",
-            "ignore_vulnerability_alerts_during_read",
-            "license_template",
-            "vulnerability_alerts"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "better-recommend",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "enabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "enabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [
-          "renovate"
-        ],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
-      "repo_cloudflare-ingress-controller": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": false,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": true,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "cloudflare-ingress-controller",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "enabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "disabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
       "repo_daypassed-bot": {
         "allow_auto_merge": false,
         "allow_forking": true,
@@ -837,80 +561,6 @@
         "topics": [
           "renovate"
         ],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
-      "repo_debug-image": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": false,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": true,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "debug-image",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "enabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "disabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [],
         "visibility": "public",
         "web_commit_signoff_required": false
       },
@@ -1128,156 +778,6 @@
         "visibility": "public",
         "web_commit_signoff_required": false
       },
-      "repo_flow-sight": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": false,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": true,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "flow-sight",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "enabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "disabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
-      "repo_helm-charts": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": true,
-        "description": "Retired. Charts moved to the application repositories (oci://ghcr.io/soli0222/charts) and to pke/charts/.",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": true,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "helm-charts",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "enabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "disabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [
-          "renovate"
-        ],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
       "repo_homebrew-exiforge": {
         "allow_auto_merge": false,
         "allow_forking": true,
@@ -1471,154 +971,6 @@
         "topics": [
           "renovate"
         ],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
-      "repo_misskey-summarizer": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": true,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": true,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "misskey-summarizer",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "enabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "disabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
-      "repo_mk-anniv": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": false,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": true,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "mk-anniv",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "disabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "disabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [],
         "visibility": "public",
         "web_commit_signoff_required": false
       },
@@ -2300,80 +1652,6 @@
         "visibility": "public",
         "web_commit_signoff_required": false
       },
-      "repo_subscription-manager": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": false,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": true,
-        "homepage_url": "",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "subscription-manager",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "enabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "disabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
       "repo_sui": {
         "allow_auto_merge": false,
         "allow_forking": true,
@@ -2479,80 +1757,6 @@
         "topics": [
           "renovate"
         ],
-        "visibility": "public",
-        "web_commit_signoff_required": false
-      },
-      "repo_summaly-server": {
-        "allow_auto_merge": false,
-        "allow_forking": true,
-        "allow_merge_commit": false,
-        "allow_rebase_merge": false,
-        "allow_squash_merge": true,
-        "allow_update_branch": false,
-        "archive_on_destroy": false,
-        "archived": true,
-        "auto_init": true,
-        "delete_branch_on_merge": false,
-        "description": "",
-        "has_discussions": false,
-        "has_issues": true,
-        "has_projects": true,
-        "has_wiki": true,
-        "homepage_url": "https://summaly-server.vercel.app",
-        "is_template": false,
-        "lifecycle": {
-          "ignore_changes": [
-            "allow_auto_merge",
-            "allow_forking",
-            "allow_merge_commit",
-            "allow_rebase_merge",
-            "allow_squash_merge",
-            "allow_update_branch",
-            "auto_init",
-            "delete_branch_on_merge",
-            "description",
-            "gitignore_template",
-            "has_discussions",
-            "has_downloads",
-            "has_issues",
-            "has_projects",
-            "has_wiki",
-            "homepage_url",
-            "ignore_vulnerability_alerts_during_read",
-            "is_template",
-            "license_template",
-            "merge_commit_message",
-            "merge_commit_title",
-            "security_and_analysis",
-            "squash_merge_commit_message",
-            "squash_merge_commit_title",
-            "topics",
-            "visibility",
-            "vulnerability_alerts",
-            "web_commit_signoff_required"
-          ],
-          "prevent_destroy": true
-        },
-        "merge_commit_message": "PR_TITLE",
-        "merge_commit_title": "MERGE_MESSAGE",
-        "name": "summaly-server",
-        "security_and_analysis": [
-          {
-            "secret_scanning": [
-              {
-                "status": "disabled"
-              }
-            ],
-            "secret_scanning_push_protection": [
-              {
-                "status": "disabled"
-              }
-            ]
-          }
-        ],
-        "squash_merge_commit_message": "COMMIT_MESSAGES",
-        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
-        "topics": [],
         "visibility": "public",
         "web_commit_signoff_required": false
       },

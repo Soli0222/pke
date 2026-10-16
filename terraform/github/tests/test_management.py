@@ -67,7 +67,8 @@ class ManagementTests(unittest.TestCase):
             self.assertEqual(path.read_bytes(), b'fixture-plan')
 
     def test_import_preparation_only_writes_native_blocks_and_does_not_overwrite(self):
-        remote = {name: {'name': name} for name in ('pke', 'helm-charts')}
+        self.c['repositories']['archived-example'] = {'state': 'archived'}
+        remote = {name: {'name': name} for name in ('pke', 'archived-example')}
         with tempfile.TemporaryDirectory() as directory, \
              patch.object(manage, 'ROOT', Path(directory)), \
              patch.object(manage, 'generate', return_value=self.c), \
@@ -76,7 +77,7 @@ class ManagementTests(unittest.TestCase):
             manage.imports_command()
             path = Path(directory) / 'imports.generated.tf.json'
             self.assertEqual(json.loads(path.read_text()), {'import': [
-                {'to': 'github_repository.repo_helm-charts', 'id': 'helm-charts'},
+                {'to': 'github_repository.repo_archived-example', 'id': 'archived-example'},
                 {'to': 'github_repository.repo_pke', 'id': 'pke'},
                 {'to': 'github_branch_default.repo_pke', 'id': 'pke'},
             ]})
@@ -147,8 +148,10 @@ class ManagementTests(unittest.TestCase):
             manage.inspect_plan(plan, self.c)
 
     def test_archived_secret_sync_does_not_read_or_write(self):
-        args = argparse.Namespace(all=False, repo=['helm-charts'], apply=True)
-        with patch.object(manage, 'gh_api') as api, patch.object(manage, 'run') as run, contextlib.redirect_stdout(io.StringIO()):
+        self.c['repositories']['archived-example'] = {'state': 'archived'}
+        args = argparse.Namespace(all=False, repo=['archived-example'], apply=True)
+        with patch.object(manage, 'load', return_value=self.c), \
+             patch.object(manage, 'gh_api') as api, patch.object(manage, 'run') as run, contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(manage.secret_command(args), 0)
             api.assert_not_called()
             run.assert_not_called()
