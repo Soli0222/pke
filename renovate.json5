@@ -10,6 +10,7 @@
   assignees: [
     'Soli0222',
   ],
+  pinDigests: false,
   timezone: 'Asia/Tokyo',
   prConcurrentLimit: 15,
   prHourlyLimit: 8,
