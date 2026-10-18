@@ -13,7 +13,7 @@ falco_config_dir: /etc/falco/config.d
 falco_pke_config_path: "{{ falco_config_dir }}/pke.yaml"
 
 falco_modern_ebpf_cpus_for_each_buffer: 2
-falco_modern_ebpf_buf_size_preset: 4
+falco_modern_ebpf_buf_size_preset: 5
 falco_modern_ebpf_drop_failed_exit: false
 
 falco_metrics_enabled: true
