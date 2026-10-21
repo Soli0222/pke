@@ -49,6 +49,15 @@ jobs:
 
           failed=0
           for chart in "${charts[@]}"; do
+            if [[ ! -d "$chart" ]]; then
+              if git grep -n -F "./${chart}" -- flux; then
+                echo "::error::${chart} was removed but Flux still references it"
+                failed=1
+              else
+                echo "  ${chart}: removed; no local Flux chart references remain"
+              fi
+              continue
+            fi
             head_version=$(yq -r '.version' "${chart}/Chart.yaml")
 
             if ! base_version=$(git show "${base}:${chart}/Chart.yaml" 2>/dev/null | yq -r '.version'); then

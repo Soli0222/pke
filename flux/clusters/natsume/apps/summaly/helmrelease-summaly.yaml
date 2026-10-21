@@ -14,11 +14,12 @@ spec:
     crds: CreateReplace
   chart:
     spec:
-      chart: ./charts/summaly
+      chart: summaly
+      version: 0.2.0
       sourceRef:
-        kind: GitRepository
-        name: flux-system
-        namespace: flux-system
+        kind: HelmRepository
+        name: summaly-repo
+        namespace: summaly
       interval: 1h
   values:
     ingress:
