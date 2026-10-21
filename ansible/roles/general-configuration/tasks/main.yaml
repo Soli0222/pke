@@ -37,7 +37,8 @@
 - name: Disable swap entries in fstab
   ansible.builtin.replace:
     path: /etc/fstab
-    regexp: '^(\s*[^#\n]+\s+[^#\n]+\s+swap\s+[^#\n]+)$'
+    # 改行を含む \s は使わず、fstab の1行・各フィールド内に限定する。
+    regexp: '^([ \t]*[^#\s]+[ \t]+[^#\s]+[ \t]+swap[ \t]+[^\n]+)$'
     replace: '# \1'
   when:
     - general_configuration_disable_swap | bool
@@ -45,7 +46,7 @@
 - name: Disable configured swap files in fstab
   ansible.builtin.replace:
     path: /etc/fstab
-    regexp: '^(\s*{{ item | regex_escape }}\s+[^#\n]+\s+swap\s+[^#\n]+)$'
+    regexp: '^([ \t]*{{ item | regex_escape }}[ \t]+[^#\s]+[ \t]+swap[ \t]+[^\n]+)$'
     replace: '# \1'
   loop: "{{ general_configuration_swap_files }}"
   when:
