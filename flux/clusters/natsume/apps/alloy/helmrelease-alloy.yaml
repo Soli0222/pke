@@ -41,6 +41,8 @@ spec:
         protocol: TCP
     controller:
       type: deployment
+      nodeSelector:
+        kubernetes.io/hostname: natsume-08
     serviceMonitor:
       enabled: true
     ingress:
