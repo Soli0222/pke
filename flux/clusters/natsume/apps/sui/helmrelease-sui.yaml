@@ -21,6 +21,12 @@ spec:
         name: sui-repo
         namespace: sui
       interval: 1h
+  # Terraform の出力を同期して初めて切り替える。Secret 未作成時は旧 release が稼働を続ける。
+  valuesFrom:
+  - kind: Secret
+    name: sui-keycloak
+    valuesKey: values.yaml
+    optional: false
   values:
     ingress:
       enabled: true
@@ -38,15 +44,11 @@ spec:
         - sui.str08.net
     auth:
       oidc:
-        issuer: "https://auth0.pstr.space"
-        clientIdSecret:
-          existingSecret: "sui-oidc"
-          existingSecretKey: clientId
+        issuer: "https://keycloak.pstr.space/realms/sui"
+        clientId: "sui-web"
         redirectUri: "https://sui.str08.net/api/auth/callback"
-        allowedSubjects:
-          - "auth0|6a66027ea2bcdda34ea2a03f"
-        allowedEmails:
-          - "sui@str08.net"
+        # allowedSubjects と image.tag は sui-keycloak/values.yaml から取得。
+        allowedEmails: []
       cookieSecure: "true"
     mcp:
       maxSessionsPerToken: "50"

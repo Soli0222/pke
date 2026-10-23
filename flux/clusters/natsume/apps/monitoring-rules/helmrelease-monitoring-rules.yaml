@@ -39,6 +39,11 @@ spec:
       archive: true
       replication: false
       baseBackupMaxAgeSeconds: 648000
+    - namespace: keycloak
+      name: keycloak-cluster
+      archive: true
+      replication: false
+      baseBackupMaxAgeSeconds: 648000
     - namespace: misskey
       name: misskey-cluster-restored
       archive: true

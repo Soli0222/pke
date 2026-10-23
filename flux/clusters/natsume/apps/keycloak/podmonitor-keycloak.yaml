@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+  podMetricsEndpoints:
+  - port: management
+    path: /metrics
