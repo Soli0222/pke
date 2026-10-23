@@ -33,6 +33,7 @@ DNS は既存の ExternalDNS、サーバー証明書は cert-manager の HTTP-01
 既存の `cnpg-backup-s3-secret`、`cnpg-backup-flux-vars`、R2 state 用の `terraform kkg-pve` を再利用する。
 `sui-keycloak` を先に作らない。これが存在しない間、sui の HelmRelease は新設定を適用できず、既存 release は Auth0 設定のまま稼働する（Flux はこの間 NotReady）。
 空の values やダミー subject でブロックを回避しない。
+Flux 差分 CI は生成 Secret を取得せず `--allow-missing-secrets` で render するため、image.tag と allowedSubjects の実値は差分に含まれない。切替時に Terraform 出力と実際の Deployment の設定を照合する。
 
 ## 反映順序
 
