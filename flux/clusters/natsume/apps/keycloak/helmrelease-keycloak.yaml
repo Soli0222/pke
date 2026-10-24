@@ -1,0 +1,162 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  interval: 10m
+  timeout: 10m
+  releaseName: keycloak
+  targetNamespace: keycloak
+  install:
+    createNamespace: false
+  chart:
+    spec:
+      chart: keycloakx
+      version: 7.4.0
+      sourceRef:
+        kind: HelmRepository
+        name: keycloak-repo
+        namespace: keycloak
+      interval: 1h
+  values:
+    nameOverride: keycloak
+    fullnameOverride: keycloak
+    # StatefulSet の単一 Pod を順に置き換え、DB schema 更新時に旧版を並行稼働させない。
+    replicas: 1
+    updateStrategy: RollingUpdate
+    image:
+      repository: quay.io/keycloak/keycloak
+      tag: "26.8.1"
+    args: [start]
+    serviceAccount:
+      automountServiceAccountToken: false
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        memory: 2Gi
+    database:
+      vendor: postgres
+      hostname: keycloak-cluster-rw
+      port: 5432
+      database: keycloak
+      existingSecret: keycloak-cluster-app
+      existingSecretKey: password
+    proxy:
+      enabled: true
+      mode: xforwarded
+      http:
+        enabled: true
+    http:
+      relativePath: /
+      managementRelativePath: /
+      internalPort: management
+      internalScheme: HTTP
+    health:
+      enabled: true
+    metrics:
+      enabled: true
+    extraEnv: |
+      - name: KC_DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-cluster-app
+            key: username
+      - name: KC_BOOTSTRAP_ADMIN_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-bootstrap
+            key: username
+      - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-bootstrap
+            key: password
+      - name: KC_HOSTNAME
+        value: https://keycloak.pstr.space
+      - name: KC_HOSTNAME_ADMIN
+        value: https://admin.keycloak.pstr.space
+      - name: KC_FEATURES
+        value: cimd,resource-indicators
+      - name: KC_HTTP_MANAGEMENT_SCHEME
+        value: http
+      - name: KC_LOG_CONSOLE_OUTPUT
+        value: json
+    startupProbe: |
+      httpGet:
+        path: /health/started
+        port: management
+      periodSeconds: 5
+      failureThreshold: 120
+    readinessProbe: |
+      httpGet:
+        path: /health/ready
+        port: management
+      periodSeconds: 10
+    livenessProbe: |
+      httpGet:
+        path: /health/live
+        port: management
+      periodSeconds: 10
+    service:
+      httpPort: 8080
+      httpsPort: null
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-http01
+      rules:
+        - host: keycloak.pstr.space
+          # /admin と /realms/master は公開しない。匿名 DCR も公開しない。
+          paths:
+            - path: /realms/sui/.well-known/
+              pathType: Prefix
+            - path: /realms/sui/protocol/openid-connect/
+              pathType: Prefix
+            - path: /realms/sui/login-actions/
+              pathType: Prefix
+            - path: /realms/sui/account/
+              pathType: Prefix
+            - path: /resources/
+              pathType: Prefix
+      tls:
+        - secretName: keycloak.pstr.space-http01
+          hosts: [keycloak.pstr.space]
+      console:
+        enabled: true
+        ingressClassName: traefik
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-http01
+          traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
+        rules:
+          - host: admin.keycloak.pstr.space
+            # 管理 UI に加え、master realm のログインも mTLS 内で提供する。
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - secretName: admin.keycloak.pstr.space-http01
+            hosts: [admin.keycloak.pstr.space]
+    serviceMonitor:
+      enabled: true
+      port: management
+      path: /metrics
+    # ポート別に Traefik / Alloy の接続元を分離するため networkpolicy.yaml で管理。
+    networkPolicy:
+      enabled: false

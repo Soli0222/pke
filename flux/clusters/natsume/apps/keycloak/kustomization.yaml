@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- namespace.yaml
+- onepassworditem.yaml
+- onepassworditem-cnpg-backup.yaml
+- cluster.yaml
+- objectstore.yaml
+- scheduledbackup.yaml
+- podmonitor.yaml
+- helmrepository-keycloak-repo.yaml
+- helmrelease-keycloak.yaml
+- networkpolicy.yaml

@@ -11,3 +11,4 @@ resources:
 - objectstore-restore.yaml
 - scheduledbackup.yaml
 - podmonitor.yaml
+- onepassworditem-keycloak.yaml

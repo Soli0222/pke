@@ -19,6 +19,7 @@ Pooler は使わず、アプリは CNPG の Service に直接接続する。
 | spotify-reblend | `reblend-cluster-restored` | `reblend` | 5Gi | base backup + WAL archive | 日曜 03:30 |
 | spotify-nowplaying | `spn-cluster-restored` | `spn` | 5Gi | base backup + WAL archive | 日曜 03:45 |
 | ntfy | `ntfy-cluster` | `ntfy` | 5Gi | base backup + WAL archive | 日曜 04:00 |
+| keycloak | `keycloak-cluster` | `keycloak` | 5Gi | base backup + WAL archive | 日曜 04:15 |
 
 定義は [natsume の各アプリ](flux/clusters/natsume/apps/) の `cluster.yaml` にある。
 operator / Barman Cloud plugin のバージョンは [cnpg](flux/clusters/natsume/apps/cnpg/)、DB image と PostgreSQL 設定は各 Cluster を参照する。

@@ -58,6 +58,8 @@ jobs:
           # setup-flate は base 入力 (既定はデフォルトブランチ) を FLATE_BASE として
           # export する。これが残っていると changed-only モードに落ちるので外す。
           unset FLATE_BASE
+          # OnePasswordItem の生成 Secret はオフラインで解決できない。
+          # valuesFrom の実値は差分対象外。本番 HelmRelease の必須条件は維持する。
           for side in live pr; do
             (
               cd "$side"
@@ -65,6 +67,7 @@ jobs:
                 --path "flux/clusters/${CLUSTER}" \
                 --api-versions "${API_VERSIONS}" \
                 --skip-secrets=true \
+                --allow-missing-secrets=true \
                 --no-progress
             ) > "${side}.yaml"
           done
