@@ -9,15 +9,23 @@ resource "keycloak_realm" "master" {
   attributes = {
     frontendUrl = var.admin_url
   }
+  password_policy = "length(16)"
+  web_authn_passwordless_policy {
+    relying_party_entity_name     = "Keycloak administration"
+    relying_party_id              = split(":", split("//", var.admin_url)[1])[0]
+    discoverable_credential       = "required"
+    user_verification_requirement = "required"
+    passwordless_passkeys_enabled = true
+  }
   lifecycle {
     prevent_destroy = true
   }
 }
 
-resource "keycloak_realm" "sui" {
-  realm                       = "sui"
+resource "keycloak_realm" "pstr" {
+  realm                       = "pstr"
   enabled                     = true
-  display_name                = "sui"
+  display_name                = "pstr"
   ssl_required                = "external"
   registration_allowed        = false
   reset_password_allowed      = false
@@ -34,7 +42,7 @@ resource "keycloak_realm" "sui" {
     frontendUrl = var.public_url
   }
   web_authn_passwordless_policy {
-    relying_party_entity_name     = "sui"
+    relying_party_entity_name     = "pstr"
     relying_party_id              = split(":", split("//", var.public_url)[1])[0]
     discoverable_credential       = "required"
     user_verification_requirement = "required"
@@ -55,20 +63,24 @@ resource "keycloak_realm" "sui" {
   }
 }
 
-resource "keycloak_user" "sui" {
-  realm_id         = keycloak_realm.sui.id
-  username         = "sui"
+resource "keycloak_user" "soli" {
+  realm_id         = keycloak_realm.pstr.id
+  username         = "soli"
   enabled          = true
-  email            = "sui@str08.net"
+  email            = var.soli_email
   email_verified   = true
-  first_name       = "Sui"
+  first_name       = "Soli"
   last_name        = "User"
-  required_actions = ["webauthn-register-passwordless"]
+  required_actions = ["CONFIGURE_TOTP", "webauthn-register-passwordless"]
   initial_password {
-    value_wo         = var.sui_initial_password
+    value_wo         = var.soli_initial_password
     value_wo_version = "1"
     temporary        = true
   }
+  depends_on = [
+    keycloak_required_action.otp,
+    keycloak_required_action.passkey,
+  ]
   lifecycle {
     prevent_destroy = true
     # 利用者が初回ログインで完了した action を再要求しない。
@@ -76,8 +88,31 @@ resource "keycloak_user" "sui" {
   }
 }
 
+# 新しいアプリや CIMD クライアントへ管理ロールを既定で渡さない。
+# 既存の組み込み管理コンソールには元の client scopes が残る。
+resource "keycloak_realm_default_client_scopes" "pstr" {
+  realm_id       = keycloak_realm.pstr.id
+  default_scopes = ["basic", "profile", "email"]
+}
+
+data "keycloak_openid_client" "realm_management" {
+  realm_id  = keycloak_realm.pstr.id
+  client_id = "realm-management"
+}
+data "keycloak_role" "pstr_admin" {
+  realm_id  = keycloak_realm.pstr.id
+  client_id = data.keycloak_openid_client.realm_management.id
+  name      = "realm-admin"
+}
+resource "keycloak_user_roles" "soli" {
+  realm_id   = keycloak_realm.pstr.id
+  user_id    = keycloak_user.soli.id
+  role_ids   = [data.keycloak_role.pstr_admin.id]
+  exhaustive = false
+}
+
 resource "keycloak_openid_client" "sui_web" {
-  realm_id                     = keycloak_realm.sui.id
+  realm_id                     = keycloak_realm.pstr.id
   client_id                    = "sui-web"
   name                         = "sui Web"
   access_type                  = "PUBLIC"
@@ -89,12 +124,12 @@ resource "keycloak_openid_client" "sui_web" {
   full_scope_allowed           = false
 }
 resource "keycloak_openid_client_default_scopes" "sui_web" {
-  realm_id       = keycloak_realm.sui.id
+  realm_id       = keycloak_realm.pstr.id
   client_id      = keycloak_openid_client.sui_web.id
   default_scopes = ["basic", "profile", "email"]
 }
 resource "keycloak_openid_client_optional_scopes" "sui_web" {
-  realm_id        = keycloak_realm.sui.id
+  realm_id        = keycloak_realm.pstr.id
   client_id       = keycloak_openid_client.sui_web.id
   optional_scopes = []
 }

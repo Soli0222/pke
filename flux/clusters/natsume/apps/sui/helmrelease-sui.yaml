@@ -44,7 +44,7 @@ spec:
         - sui.str08.net
     auth:
       oidc:
-        issuer: "https://keycloak.pstr.space/realms/sui"
+        issuer: "https://keycloak.pstr.space/realms/pstr"
         clientId: "sui-web"
         redirectUri: "https://sui.str08.net/api/auth/callback"
         # allowedSubjects と image.tag は sui-keycloak/values.yaml から取得。

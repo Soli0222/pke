@@ -2,7 +2,7 @@ locals {
   mcp_resource = "https://sui.str08.net/mcp"
 }
 resource "keycloak_openid_client" "sui_mcp" {
-  realm_id           = keycloak_realm.sui.id
+  realm_id           = keycloak_realm.pstr.id
   client_id          = "sui-mcp"
   name               = "sui MCP resource"
   access_type        = "BEARER-ONLY"
@@ -16,7 +16,7 @@ resource "keycloak_openid_client_scope" "sui" {
     "read:sui"  = "sui の資産データを読み取る"
     "write:sui" = "sui の資産データを更新する"
   }
-  realm_id                            = keycloak_realm.sui.id
+  realm_id                            = keycloak_realm.pstr.id
   name                                = each.key
   description                         = each.value
   consent_screen_text                 = each.value
@@ -25,7 +25,7 @@ resource "keycloak_openid_client_scope" "sui" {
 }
 resource "keycloak_openid_audience_protocol_mapper" "sui" {
   for_each                 = keycloak_openid_client_scope.sui
-  realm_id                 = keycloak_realm.sui.id
+  realm_id                 = keycloak_realm.pstr.id
   client_scope_id          = each.value.id
   name                     = "sui MCP audience"
   included_client_audience = keycloak_openid_client.sui_mcp.client_id
@@ -33,12 +33,12 @@ resource "keycloak_openid_audience_protocol_mapper" "sui" {
   add_to_access_token      = true
 }
 # CIMD で新規作成されるクライアントが、要求した権限だけを取得できるようにする。
-resource "keycloak_realm_optional_client_scopes" "sui" {
-  realm_id        = keycloak_realm.sui.id
+resource "keycloak_realm_optional_client_scopes" "pstr" {
+  realm_id        = keycloak_realm.pstr.id
   optional_scopes = concat(["address", "phone", "offline_access", "microprofile-jwt"], [for scope in keycloak_openid_client_scope.sui : scope.name])
 }
 resource "keycloak_realm_client_policy_profile" "mcp" {
-  realm_id = keycloak_realm.sui.id
+  realm_id = keycloak_realm.pstr.id
   name     = "sui-mcp-cimd"
   executor {
     name = "client-id-metadata-document"
@@ -61,7 +61,7 @@ resource "keycloak_realm_client_policy_profile" "mcp" {
   }
 }
 resource "keycloak_realm_client_policy_profile_policy" "mcp" {
-  realm_id = keycloak_realm.sui.id
+  realm_id = keycloak_realm.pstr.id
   name     = "sui-mcp-cimd"
   profiles = [keycloak_realm_client_policy_profile.mcp.name]
   condition {
@@ -71,7 +71,10 @@ resource "keycloak_realm_client_policy_profile_policy" "mcp" {
       "client-id-uri-allow-permitted-domains" = jsonencode(["claude.ai", "grok.com"])
     }
   }
-  depends_on = [keycloak_realm_optional_client_scopes.sui]
+  depends_on = [
+    keycloak_realm_optional_client_scopes.pstr,
+    keycloak_realm_default_client_scopes.pstr,
+  ]
 }
 
 # ChatGPT の拡張 metadata は、この Keycloak 版の CIMD parser が拒否する。
@@ -86,7 +89,7 @@ variable "chatgpt_callback_id" {
   }
 }
 resource "keycloak_openid_client" "chatgpt" {
-  realm_id                     = keycloak_realm.sui.id
+  realm_id                     = keycloak_realm.pstr.id
   client_id                    = "https://chatgpt.com/oauth/${var.chatgpt_callback_id}/client.json"
   name                         = "ChatGPT (sui)"
   access_type                  = "CONFIDENTIAL"
@@ -109,12 +112,12 @@ resource "keycloak_openid_client" "chatgpt" {
   }
 }
 resource "keycloak_openid_client_default_scopes" "chatgpt" {
-  realm_id       = keycloak_realm.sui.id
+  realm_id       = keycloak_realm.pstr.id
   client_id      = keycloak_openid_client.chatgpt.id
   default_scopes = ["basic", "profile", "email"]
 }
 resource "keycloak_openid_client_optional_scopes" "chatgpt" {
-  realm_id        = keycloak_realm.sui.id
+  realm_id        = keycloak_realm.pstr.id
   client_id       = keycloak_openid_client.chatgpt.id
   optional_scopes = concat(["offline_access"], [for scope in keycloak_openid_client_scope.sui : scope.name])
 }
