@@ -4,7 +4,6 @@ Flux は natsume の Keycloak・CNPG・Ingress・監視を、Terraform は共通
 定義は [Flux アプリ](../../flux/clusters/natsume/apps/keycloak/) とこのディレクトリに置く。バージョンは HelmRelease と `versions.tf` が正本である。
 Keycloak 本体・Service・公開 / 管理 Ingress・ServiceMonitor は codecentric の [keycloakx chart](https://github.com/codecentric/helm-charts/tree/master/charts/keycloakx) を HelmRelease から管理する。
 CNPG・バックアップ・1PasswordItem は既存アプリと同じ Flux 構成とし、NetworkPolicy はポート別の接続元制限を表すため別マニフェストで管理する。
-Auth0 は切替後の接続確認が完了するまで残す。既存の `terraform/auth0` state は使わない。
 
 ## アカウントと権限
 
@@ -32,7 +31,7 @@ master と pke の両方に、次のブラウザ認証フローを設定する�
 - サービスアカウントは対話認証の対象外。既存 bootstrap ユーザーは Terraform に取り込まず、初回 apply の password grant を使える状態で残す。
 
 この設定は両方の初回登録とログイン経路を管理する。本人が後からパスキーを削除しても毎回再登録させる独自処理は追加しない。パスワード経路には引き続き OTP が必要。
-Auth0 のパスキーは RP ID が変わるため引き継げない。予備パスキーも登録し、OTP の復旧情報を保管する。pke のメールによるパスワードリセットは無効。
+予備パスキーも登録し、OTP の復旧情報を保管する。pke のメールによるパスワードリセットは無効。
 
 ## 公開範囲
 
@@ -129,9 +128,9 @@ terraform plan
 
 5. soli と専用サービスアカウントの接続確認後、bootstrap 管理者の削除と Helm の bootstrap Secret 参照の撤去を別変更で行う。この定義では bootstrap ユーザーや Secret を削除しない。全体管理はサービスアカウントに移り、soli は master の一時管理者を削除する権限を持たない。
 6. discovery に `read:sui` / `write:sui` があることを確認し、`terraform output -raw sui_helm_values` を `sui-keycloak` の `values.yaml` へ登録する。許可 subject が揃うと Flux が sui を切り替える。
-7. soli で Web ログインし、Grok・Claude・ChatGPT を再接続する。ツール一覧・参照・更新・読み取り専用時の更新拒否・refresh を確認してから Auth0 廃止を別変更で行う。
+7. soli で Web ログインし、Grok・Claude・ChatGPT を接続する。ツール一覧・参照・更新・読み取り専用時の更新拒否・refresh を確認する。
 
-`sui-keycloak` は切替まで作成しない。Secret 未作成時は sui の Flux が NotReady となり、既存 release は Auth0 設定で稼働を続ける。空の values やダミー subject で回避しない。
+`sui-keycloak` には実際の許可 subject を登録する。Secret 未作成時は sui の Flux が NotReady となる。空の values やダミー subject で回避しない。
 Flux 差分 CI は `--allow-missing-secrets` で render するため、allowedSubjects の実値は差分に含まれない。切替時に Terraform 出力と実際の Deployment 設定を照合する。
 
 ## sui のバージョン更新
@@ -173,17 +172,17 @@ Web クライアントは `sui-web`、Authorization Code + PKCE の public clien
 
 ### DCR
 
-Grok のカスタムコネクタには匿名の OIDC Dynamic Client Registration（DCR）を提供する。CIMD と ChatGPT の事前登録は併用する。
+MCP クライアントには匿名の OIDC Dynamic Client Registration（DCR）を提供する。CIMD と ChatGPT の事前登録は併用する。
 Terraform は `dcr.tf` で登録ルールを管理する。DCR で作られた個々のクライアントは Terraform に取り込まず、Client ID・Client Secret・Registration Access Token は Keycloak と接続元クライアントで管理する。1Password への転記は不要。
 
-- Keycloak が作った既定の匿名登録ポリシー6件を名前で import する。既定ポリシーを残したまま同種のポリシーを追加しない。
-- DCR のクライアント URL は `grok.com` / `console.x.ai` に限定し、redirect URI は HTTPS・ワイルドカードなしとする。登録リクエストの送信元 IP と公開 Web ホストの IP は照合しない。
+- Keycloak が作った既定の匿名登録ポリシーのうち5件を名前で import する。既定ポリシーを残したまま同種のポリシーを追加しない。
+- DCR のホスト許可リストは設けず、接続元サービスごとの Terraform 変更を不要にする。匿名登録の Trusted Hosts ポリシーは削除する。redirect URI は別の共通ポリシーで HTTPS・ワイルドカードなし・loopback 不可とする。
 - ユーザーの同意を必須にし、Full Scope Allowed を無効にする。登録者による protocol mapper の追加を許可せず、管理済みの client scopes で claims を付与する。
 - 許可する scope は `openid` / `basic` / `profile` / `email` / `offline_access` / `read:sui` / `write:sui`。realm の既定 optional scopes も `offline_access` と sui の2 scope に絞り、scope 省略時に別の権限が付かないようにする。他アプリの scope はそのクライアントへ個別に割り当てる。
-- 登録・Registration Access Token による更新時に PKCE S256 を設定し、implicit / password grant を無効化する。`ByAnonymous` 条件は CIMD の登録・更新にも一致するため、この共通ポリシーの redirect URI 検査には既存の `claude.ai` も含める。Terraform の管理 API 更新には適用しない。
+- 登録・Registration Access Token による更新時に PKCE S256 を設定し、implicit / password grant を無効化する。`ByAnonymous` 条件は CIMD の登録・更新にも一致するため、この共通ポリシーの redirect URI 検査は CIMD にも適用する。CIMD 自体の metadata 取得先・client ID のホスト制限は `mcp.tf` で別管理する。Terraform の管理 API 更新には適用しない。
 - Max Clients Limit は realm 全体で50件。DCR だけでなく組み込み・事前登録・CIMD のクライアントも含む。到達後は新しい匿名登録が拒否され、既存クライアントのログインは継続する。不要な動的クライアントは接続元との対応を確認して管理画面から削除する。
 
-URL ホストの許可は登録者が Grok 本人であることの証明ではない。登録できても sui の利用権限は得られず、ユーザーの認証・同意に加え、sui が issuer / subject / audience / scope を検証する。管理ロールの scope は渡さない。
+DCR は任意の接続元から登録できるが、登録できても sui の利用権限は得られず、ユーザーの認証・同意に加え、sui が issuer / subject / audience / scope を検証する。管理ロールの scope は渡さない。
 
 #### 公開する順序
 
@@ -197,13 +196,7 @@ terraform plan -out=keycloak-dcr.tfplan
 terraform apply keycloak-dcr.tfplan
 ```
 
-plan では既定登録ポリシーの import / 更新、MCP 登録 profile / policy の追加、realm の optional scopes の変更を確認する。realm・ユーザー・既存クライアントを作り直す変更は不要。
+plan では既定登録ポリシーの import / 更新、MCP 登録 profile / policy の追加、realm の optional scopes の変更を確認する。既存の Terraform state にある `dcr_trusted_hosts` は削除対象になる。realm・ユーザー・既存クライアントを作り直す変更は不要。
+新規 realm では Keycloak が Trusted Hosts ポリシーを自動生成する。全体 apply を終えた後、DCR Ingress を公開する前に、管理画面の Client registration → Client registration policies → Anonymous から Trusted Hosts だけを削除する。残り5件のポリシーは維持する。既存環境では Terraform apply が削除するため、この操作は不要。
 公開後、Grok のカスタムコネクタに `https://sui.str08.net/mcp` を指定する。`validate-url` の `oauthStrategy` が `OAUTH_STRATEGY_DCR` になり、Client ID / Secret の手入力なしで認証へ進むことを確認する。続けて soli の認証と同意を完了し、ツール一覧と参照が成功することを確認する。
 公開直後に BYO のままなら、DCR の HTTP status と Keycloak の登録拒否ログを確認する。登録時に返される secret / Registration Access Token をログや PR へ貼らない。
-
-## 切り戻し
-
-Auth0 の設定・ユーザーと既存 `sui-oidc` Secret は接続確認が完了するまで保持する。
-切り戻す場合は、sui HelmRelease の `valuesFrom` を外し、issuer・clientIdSecret・許可 subject と image を切替前の定義へ戻す PR を適用する。
-Keycloak の DB や Auth0 の Terraform state は削除しない。issuer 変更により Web と MCP の再認証が必要になる。
-財務データを認証移行のために削除・再投入する操作は行わない。

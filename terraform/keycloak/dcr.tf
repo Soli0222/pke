@@ -1,5 +1,4 @@
 locals {
-  dcr_trusted_hosts = ["grok.com", "console.x.ai"]
   dcr_allowed_scopes = concat(
     ["openid", "basic", "profile", "email", "offline_access"],
     [for scope in keycloak_openid_client_scope.sui : scope.name],
@@ -59,7 +58,7 @@ resource "keycloak_realm_client_registration_policy" "dcr" {
 }
 
 # ByAnonymous は CIMD の登録・更新にも一致するため、共通の登録要件だけを指定する。
-# DCR 固有の URL ホスト制限は下の Trusted Hosts で Grok に限定する。
+# redirect URI のホストは限定せず、HTTPS・ワイルドカード禁止などの共通要件を適用する。
 resource "keycloak_realm_client_policy_profile" "mcp_registration" {
   realm_id    = keycloak_realm.pke.id
   name        = "sui-mcp-registration"
@@ -81,7 +80,6 @@ resource "keycloak_realm_client_policy_profile" "mcp_registration" {
       "allow-wildcard-context-path"  = "false"
       "allow-open-redirect"          = "false"
       "oauth-2-1-compliant"          = "true"
-      "allow-permitted-domains"      = jsonencode(["grok\\.com", "console\\.x\\.ai", "claude\\.ai"])
     }
   }
   executor {
@@ -107,27 +105,4 @@ resource "keycloak_realm_client_policy_profile_policy" "mcp_registration" {
       "update-client-source" = jsonencode(["ByAnonymous", "ByRegistrationAccessToken"])
     }
   }
-}
-
-import {
-  to = keycloak_realm_client_registration_policy.dcr_trusted_hosts
-  id = "${keycloak_realm.pke.realm}/Trusted Hosts/trusted-hosts/anonymous"
-}
-
-resource "keycloak_realm_client_registration_policy" "dcr_trusted_hosts" {
-  realm_id    = keycloak_realm.pke.id
-  name        = "Trusted Hosts"
-  provider_id = "trusted-hosts"
-  sub_type    = "anonymous"
-  config = {
-    # Grok のバックエンド送信元 IP は公開 Web ホストの IP と一致するとは限らない。
-    "host-sending-registration-request-must-match" = "false"
-    "client-uris-must-match"                       = "true"
-    "trusted-hosts"                                = join(",", local.dcr_trusted_hosts)
-  }
-  # 制限を設定し終えるまで匿名登録を有効にしない。
-  depends_on = [
-    keycloak_realm_client_registration_policy.dcr,
-    keycloak_realm_client_policy_profile_policy.mcp_registration,
-  ]
 }
