@@ -87,38 +87,11 @@ resource "keycloak_realm_client_policy_profile_policy" "mcp" {
 }
 
 # ChatGPT の拡張 metadata は、この Keycloak 版の CIMD parser が拒否する。
-# 共通 ID と接続固有 ID を事前登録し、公開 JWKS による private_key_jwt を使う。
-variable "chatgpt_callback_id" {
-  description = "ChatGPT の接続固有形式で使う callback ID。共通 client ID の接続には使用しない。"
-  type        = string
-  default     = "ll1JdSuQS8kD"
-  validation {
-    condition     = can(regex("^[A-Za-z0-9_-]+$", var.chatgpt_callback_id))
-    error_message = "Use the callback ID from the ChatGPT client metadata URL."
-  }
-}
-locals {
-  chatgpt_clients = {
-    connector = {
-      client_id = "https://chatgpt.com/oauth/${var.chatgpt_callback_id}/client.json"
-      name      = "ChatGPT (sui)"
-      redirect_uris = [
-        "https://chatgpt.com/connector/oauth/${var.chatgpt_callback_id}",
-        "https://chatgpt.com/connector_platform_oauth_redirect",
-      ]
-    }
-    shared = {
-      client_id     = "https://chatgpt.com/oauth/client.json"
-      name          = "ChatGPT shared client (sui)"
-      redirect_uris = ["https://chatgpt.com/connector_platform_oauth_redirect"]
-    }
-  }
-}
+# 共通 client ID を事前登録し、公開 JWKS による private_key_jwt を使う。
 resource "keycloak_openid_client" "chatgpt" {
-  for_each                     = local.chatgpt_clients
   realm_id                     = keycloak_realm.pke.id
-  client_id                    = each.value.client_id
-  name                         = each.value.name
+  client_id                    = "https://chatgpt.com/oauth/client.json"
+  name                         = "ChatGPT (sui)"
   access_type                  = "CONFIDENTIAL"
   client_authenticator_type    = "client-jwt"
   standard_flow_enabled        = true
@@ -128,7 +101,7 @@ resource "keycloak_openid_client" "chatgpt" {
   pkce_code_challenge_method   = "S256"
   full_scope_allowed           = false
   consent_required             = true
-  valid_redirect_uris          = each.value.redirect_uris
+  valid_redirect_uris          = ["https://chatgpt.com/connector_platform_oauth_redirect"]
   extra_config = {
     "use.jwks.url"                    = "true"
     "jwks.url"                        = "https://chatgpt.com/oauth/jwks.json"
@@ -136,14 +109,12 @@ resource "keycloak_openid_client" "chatgpt" {
   }
 }
 resource "keycloak_openid_client_default_scopes" "chatgpt" {
-  for_each       = keycloak_openid_client.chatgpt
   realm_id       = keycloak_realm.pke.id
-  client_id      = each.value.id
+  client_id      = keycloak_openid_client.chatgpt.id
   default_scopes = ["basic", "profile", "email"]
 }
 resource "keycloak_openid_client_optional_scopes" "chatgpt" {
-  for_each        = keycloak_openid_client.chatgpt
   realm_id        = keycloak_realm.pke.id
-  client_id       = each.value.id
+  client_id       = keycloak_openid_client.chatgpt.id
   optional_scopes = concat(["offline_access"], [for scope in keycloak_openid_client_scope.sui : scope.name])
 }

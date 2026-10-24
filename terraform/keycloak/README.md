@@ -161,8 +161,8 @@ DB は単一 instance。Keycloak も StatefulSet の単一 Pod を置き換え�
 CIMD と Resource Indicators は Keycloak の experimental feature。更新前には実クライアントで互換性を確認する。
 CIMD client ID の受付ホストは `claude.ai` / `grok.com` に限定し、metadata 内の URL に必要なホストは executor の allowlist で別管理する。
 Claude の metadata に含まれる public client 向けでない grant は executor で除外する。
-ChatGPT は共通 client ID の `https://chatgpt.com/oauth/client.json` と、`chatgpt_callback_id` で指定する接続固有 client ID の両方を事前登録し、公開 JWKS による `private_key_jwt` を使う。この Keycloak 版の CIMD parser は ChatGPT の `token_endpoint_auth_methods_supported` 拡張を拒否するため、ChatGPT は CIMD policy の対象に含めない。
-共通 ID の redirect URI は [公開 metadata](https://chatgpt.com/oauth/client.json) に合わせて `https://chatgpt.com/connector_platform_oauth_redirect` のみを許可する。接続固有形式で callback ID が変わる場合は、新しい metadata URL の ID を Terraform へ渡して再適用する。公開 metadata の redirect URI / JWKS の変更も再確認する。
+ChatGPT は共通 client ID の `https://chatgpt.com/oauth/client.json` を事前登録し、公開 JWKS による `private_key_jwt` を使う。この Keycloak 版の CIMD parser は ChatGPT の `token_endpoint_auth_methods_supported` 拡張を拒否するため、ChatGPT は CIMD policy の対象に含めない。
+共通 ID の redirect URI は [公開 metadata](https://chatgpt.com/oauth/client.json) に合わせて `https://chatgpt.com/connector_platform_oauth_redirect` のみを許可する。接続ごとの callback ID の設定は不要。公開 metadata の redirect URI / JWKS の変更は再確認する。
 PKCE は S256。read/write scope は optional とし、discovery に掲載する。scope を公開しただけで自動付与はしない。
 resource は `https://sui.str08.net/mcp` に限定する。read/write scope の audience mapper は `included_custom_audience` で同じ URL を access token に直接付与し、内部 client ID の `sui-mcp` からの変換に依存しない。
 Resource Indicators 用の `sui-mcp` クライアントと `resource_url` 属性は維持する。要求された resource は token の URL audience と直接照合できる。

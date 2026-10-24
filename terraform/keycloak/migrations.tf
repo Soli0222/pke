@@ -12,17 +12,3 @@ moved {
   from = keycloak_realm_optional_client_scopes.pstr
   to   = keycloak_realm_optional_client_scopes.pke
 }
-
-# 接続固有の ChatGPT クライアントを維持したまま、共通 client ID の登録を追加する。
-moved {
-  from = keycloak_openid_client.chatgpt
-  to   = keycloak_openid_client.chatgpt["connector"]
-}
-moved {
-  from = keycloak_openid_client_default_scopes.chatgpt
-  to   = keycloak_openid_client_default_scopes.chatgpt["connector"]
-}
-moved {
-  from = keycloak_openid_client_optional_scopes.chatgpt
-  to   = keycloak_openid_client_optional_scopes.chatgpt["connector"]
-}
