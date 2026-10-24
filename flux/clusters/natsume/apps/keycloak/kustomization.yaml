@@ -8,8 +8,6 @@ resources:
 - objectstore.yaml
 - scheduledbackup.yaml
 - podmonitor.yaml
-- deployment.yaml
-- service.yaml
-- ingress.yaml
+- helmrepository-keycloak-repo.yaml
+- helmrelease-keycloak.yaml
 - networkpolicy.yaml
-- podmonitor-keycloak.yaml

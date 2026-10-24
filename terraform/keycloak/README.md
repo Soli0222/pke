@@ -1,7 +1,9 @@
 # Keycloak と sui の認証
 
 Flux は natsume の Keycloak・CNPG・Ingress・監視を、Terraform は realm・ユーザー・Web クライアント・MCP の scope と CIMD policy を管理する。
-定義は [Flux アプリ](../../flux/clusters/natsume/apps/keycloak/) とこのディレクトリに置く。バージョンは Deployment と `versions.tf` が正本である。
+定義は [Flux アプリ](../../flux/clusters/natsume/apps/keycloak/) とこのディレクトリに置く。バージョンは HelmRelease と `versions.tf` が正本である。
+Keycloak 本体・Service・公開 / 管理 Ingress・ServiceMonitor は codecentric の [keycloakx chart](https://github.com/codecentric/helm-charts/tree/master/charts/keycloakx) を HelmRelease から管理する。
+CNPG・バックアップ・1PasswordItem は既存アプリと同じ Flux 構成とし、NetworkPolicy はポート別の接続元制限を表すため別マニフェストで管理する。
 Auth0 は切替後の接続確認が完了するまで残す。既存の `terraform/auth0` state は使わない。
 
 ## 公開範囲
@@ -63,13 +65,13 @@ sui の初期パスワードは write-only / ephemeral 引数で渡し、state /
 
 ```sh
 kubectl --context natsume@soli -n flux-system get kustomization keycloak sui
-kubectl --context natsume@soli -n keycloak get deployment,ingress,clusters.postgresql.cnpg.io,backups
+kubectl --context natsume@soli -n keycloak get helmrelease,statefulset,ingress,clusters.postgresql.cnpg.io,backups
 kubectl --context natsume@soli -n sui get helmrelease sui
 curl --fail https://keycloak.pstr.space/realms/sui/.well-known/openid-configuration
 ```
 
 公開ホストの `/admin/` と `/realms/master/` が到達不能で、管理ホストが証明書なしの HTTPS 接続を拒否することも確認する。
-DB は単一 instance。Keycloak は Recreate 更新のため更新時に認証が一時停止する。CNPG の週次 backup + WAL archive と復元手順は [CNPG.md](../../CNPG.md) を参照する。
+DB は単一 instance。Keycloak も StatefulSet の単一 Pod を置き換えるため、更新時に認証が一時停止する。CNPG の週次 backup + WAL archive と復元手順は [CNPG.md](../../CNPG.md) を参照する。
 
 ## MCP の設定
 
