@@ -56,11 +56,13 @@ DNS は既存の ExternalDNS、証明書は cert-manager の HTTP-01 で管理�
 |---|---|---|
 | `keycloak-bootstrap` | `username` / `password` | 現在の一時管理者。初回 apply の認証に使用 |
 | `terraform keycloak` | `client-secret` | 初回 apply 前に生成する32文字以上のランダム値。専用クライアントの登録と、その後の認証に同じ値を使用 |
-| `terraform keycloak` | `client-certificate` / `client-private-key` | natsume の mTLS クライアント証明書と秘密鍵（PEM） |
+| `pke_natsume_mtls`（既存） | `tls.crt` / `tls.key` | natsume の mTLS クライアント証明書と秘密鍵（PEM） |
 | `terraform keycloak` | `soli-initial-password` | soli の初回ログイン用。16文字以上のランダム値 |
 | `sui-keycloak` | `values.yaml` | **切替時に** `terraform output -raw sui_helm_values` の出力を登録 |
 
 `terraform keycloak` の `username` / `password` / `sui-initial-password` フィールドは使用しない。
+mTLS は既存の `pke_natsume_mtls` を直接参照し、証明書・秘密鍵を `terraform keycloak` に複製しない。
+同項目の `ca.crt` はクライアント証明書の検証用 CA。管理ホストのサーバー証明書は Let's Encrypt が発行するため、Terraform provider はシステムの信頼ストアで検証し、`root_ca_certificate` にこの CA は指定しない。
 既存の `cnpg-backup-s3-secret`、`cnpg-backup-flux-vars`、R2 state 用の `terraform kkg-pve` を再利用する。バックアップ保存先は変更しない。
 専用クライアントの secret と soli の初期パスワードは write-only / ephemeral 引数で渡し、state / plan へ保存しない。再適用時も読み込むが、それぞれの write-only version を変更しない限り再設定しない。
 `master`、`pstr`、`soli`、Terraform 用クライアントには `prevent_destroy` を設定している。

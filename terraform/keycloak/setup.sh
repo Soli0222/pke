@@ -15,8 +15,8 @@ _pke_keycloak_setup() {
       ;;
   esac
   kc_secret=$(op read 'op://Kubernetes/terraform keycloak/client-secret') || return
-  kc_cert=$(op read 'op://Kubernetes/terraform keycloak/client-certificate') || return
-  kc_key=$(op read 'op://Kubernetes/terraform keycloak/client-private-key') || return
+  kc_cert=$(op read 'op://Kubernetes/pke_natsume_mtls/tls.crt') || return
+  kc_key=$(op read 'op://Kubernetes/pke_natsume_mtls/tls.key') || return
   soli_password=$(op read 'op://Kubernetes/terraform keycloak/soli-initial-password') || return
   r2_id=$(op item get 'terraform kkg-pve' --fields label=AWS_ACCESS_KEY_ID --format json | jq -er .value) || return
   r2_secret=$(op item get 'terraform kkg-pve' --fields label=AWS_SECRET_ACCESS_KEY --format json | jq -er .value) || return
