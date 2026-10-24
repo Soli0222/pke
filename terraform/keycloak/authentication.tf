@@ -6,7 +6,7 @@ locals {
 }
 
 # パスキーと OTP の両方を新規ユーザーの初回登録で必須にする。
-# soli は required_actions でも明示し、bootstrap の既存ユーザーは取り込まない。
+# soli は required_actions でも明示する。
 resource "keycloak_required_action" "otp" {
   for_each       = local.interactive_realms
   realm_id       = each.value
@@ -94,7 +94,7 @@ resource "keycloak_authentication_execution" "otp" {
 }
 
 # pke はブラウザ経由の認証に統一し、組み込み admin-cli を含め password grant を拒否。
-# master の direct grant は初回 bootstrap apply に必要なので、この段階では変更しない。
+# master の全体管理には人間のユーザーを常設せず、サービスアカウントを使う。
 resource "keycloak_authentication_flow" "deny_direct_grant" {
   realm_id    = keycloak_realm.pke.id
   alias       = "deny-direct-grants"
