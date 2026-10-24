@@ -42,7 +42,7 @@ resource "keycloak_realm_client_policy_profile" "mcp" {
   name     = "sui-mcp-cimd"
   # provider は realm_id だけの変更で再作成しないため、realm の置換に追従させる。
   lifecycle {
-    replace_triggered_by = [keycloak_realm.pke]
+    replace_triggered_by = [keycloak_realm.pke.realm]
   }
   executor {
     name = "client-id-metadata-document"
@@ -69,7 +69,7 @@ resource "keycloak_realm_client_policy_profile_policy" "mcp" {
   name     = "sui-mcp-cimd"
   profiles = [keycloak_realm_client_policy_profile.mcp.name]
   lifecycle {
-    replace_triggered_by = [keycloak_realm.pke]
+    replace_triggered_by = [keycloak_realm.pke.realm]
   }
   condition {
     name = "client-id-uri"
