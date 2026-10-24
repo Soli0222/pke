@@ -22,10 +22,10 @@ resource "keycloak_realm" "master" {
   }
 }
 
-resource "keycloak_realm" "pstr" {
-  realm                       = "pstr"
+resource "keycloak_realm" "pke" {
+  realm                       = "pke"
   enabled                     = true
-  display_name                = "pstr"
+  display_name                = "pke"
   ssl_required                = "external"
   registration_allowed        = false
   reset_password_allowed      = false
@@ -42,7 +42,7 @@ resource "keycloak_realm" "pstr" {
     frontendUrl = var.public_url
   }
   web_authn_passwordless_policy {
-    relying_party_entity_name     = "pstr"
+    relying_party_entity_name     = "pke"
     relying_party_id              = split(":", split("//", var.public_url)[1])[0]
     discoverable_credential       = "required"
     user_verification_requirement = "required"
@@ -58,13 +58,11 @@ resource "keycloak_realm" "pstr" {
       failure_reset_time_seconds       = 43200
     }
   }
-  lifecycle {
-    prevent_destroy = true
-  }
+  # pstr を削除して pke を新規作成する apply のため、移行中は破棄保護を外す。
 }
 
 resource "keycloak_user" "soli" {
-  realm_id         = keycloak_realm.pstr.id
+  realm_id         = keycloak_realm.pke.id
   username         = "soli"
   enabled          = true
   email            = var.soli_email
@@ -82,7 +80,7 @@ resource "keycloak_user" "soli" {
     keycloak_required_action.passkey,
   ]
   lifecycle {
-    prevent_destroy = true
+    # realm の作り直しに伴う soli の置換を許可。移行後に破棄保護を戻す。
     # 利用者が初回ログインで完了した action を再要求しない。
     ignore_changes = [required_actions]
   }
@@ -90,29 +88,29 @@ resource "keycloak_user" "soli" {
 
 # 新しいアプリや CIMD クライアントへ管理ロールを既定で渡さない。
 # 既存の組み込み管理コンソールには元の client scopes が残る。
-resource "keycloak_realm_default_client_scopes" "pstr" {
-  realm_id       = keycloak_realm.pstr.id
+resource "keycloak_realm_default_client_scopes" "pke" {
+  realm_id       = keycloak_realm.pke.id
   default_scopes = ["basic", "profile", "email"]
 }
 
 data "keycloak_openid_client" "realm_management" {
-  realm_id  = keycloak_realm.pstr.id
+  realm_id  = keycloak_realm.pke.id
   client_id = "realm-management"
 }
-data "keycloak_role" "pstr_admin" {
-  realm_id  = keycloak_realm.pstr.id
+data "keycloak_role" "pke_admin" {
+  realm_id  = keycloak_realm.pke.id
   client_id = data.keycloak_openid_client.realm_management.id
   name      = "realm-admin"
 }
 resource "keycloak_user_roles" "soli" {
-  realm_id   = keycloak_realm.pstr.id
+  realm_id   = keycloak_realm.pke.id
   user_id    = keycloak_user.soli.id
-  role_ids   = [data.keycloak_role.pstr_admin.id]
+  role_ids   = [data.keycloak_role.pke_admin.id]
   exhaustive = false
 }
 
 resource "keycloak_openid_client" "sui_web" {
-  realm_id                     = keycloak_realm.pstr.id
+  realm_id                     = keycloak_realm.pke.id
   client_id                    = "sui-web"
   name                         = "sui Web"
   access_type                  = "PUBLIC"
@@ -124,12 +122,12 @@ resource "keycloak_openid_client" "sui_web" {
   full_scope_allowed           = false
 }
 resource "keycloak_openid_client_default_scopes" "sui_web" {
-  realm_id       = keycloak_realm.pstr.id
+  realm_id       = keycloak_realm.pke.id
   client_id      = keycloak_openid_client.sui_web.id
   default_scopes = ["basic", "profile", "email"]
 }
 resource "keycloak_openid_client_optional_scopes" "sui_web" {
-  realm_id        = keycloak_realm.pstr.id
+  realm_id        = keycloak_realm.pke.id
   client_id       = keycloak_openid_client.sui_web.id
   optional_scopes = []
 }

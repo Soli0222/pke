@@ -1,17 +1,17 @@
 output "realm_name" {
-  value = keycloak_realm.pstr.realm
+  value = keycloak_realm.pke.realm
 }
 output "soli_admin_console_url" {
-  value = "${var.admin_url}/admin/${keycloak_realm.pstr.realm}/console/"
+  value = "${var.admin_url}/admin/${keycloak_realm.pke.realm}/console/"
 }
 output "soli_account_url" {
-  value = "${var.public_url}/realms/${keycloak_realm.pstr.realm}/account/"
+  value = "${var.public_url}/realms/${keycloak_realm.pke.realm}/account/"
 }
 output "terraform_client_id" {
   value = keycloak_openid_client.terraform.client_id
 }
 output "sui_issuer" {
-  value = "${var.public_url}/realms/${keycloak_realm.pstr.realm}"
+  value = "${var.public_url}/realms/${keycloak_realm.pke.realm}"
 }
 output "sui_client_id" {
   value = keycloak_openid_client.sui_web.client_id
