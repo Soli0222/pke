@@ -125,7 +125,7 @@ spec:
         cert-manager.io/cluster-issuer: letsencrypt-http01
       rules:
         - host: keycloak.pstr.space
-          # /admin と /realms/master は公開しない。匿名 DCR も公開しない。
+          # /admin と /realms/master は公開しない。DCR は専用 Ingress で制限する。
           paths:
             - path: /realms/pke/.well-known/
               pathType: Prefix
@@ -162,3 +162,50 @@ spec:
     # ポート別に Traefik / Alloy の接続元を分離するため networkpolicy.yaml で管理。
     networkPolicy:
       enabled: false
+    # Terraform の DCR ポリシー適用後に公開する。通常のログインとレート制限を分離する。
+    # chart が公開用 Ingress を1つだけ生成するため、DCR 用は extraManifests で Helm 管理する。
+    extraManifests:
+      - |
+        apiVersion: traefik.io/v1alpha1
+        kind: Middleware
+        metadata:
+          name: {{ include "keycloak.fullname" . }}-dcr-ratelimit
+          namespace: {{ .Release.Namespace }}
+        spec:
+          rateLimit:
+            average: 10
+            period: 1m
+            burst: 5
+            # 同じ公開ホストへの要求をまとめる。送信元 IP の分散で制限を回避させない。
+            # カウンターは Traefik インスタンスごと。realm 全体の登録数は Keycloak でも制限する。
+            sourceCriterion:
+              requestHost: true
+      - |
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          name: {{ include "keycloak.fullname" . }}-dcr
+          namespace: {{ .Release.Namespace }}
+          annotations:
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+            traefik.ingress.kubernetes.io/router.tls: "true"
+            traefik.ingress.kubernetes.io/router.middlewares: '{{ .Release.Namespace }}-{{ include "keycloak.fullname" . }}-dcr-ratelimit@kubernetescrd'
+        spec:
+          ingressClassName: traefik
+          tls:
+            # 通常の公開 Ingress が管理する既存証明書を共用する。
+            - secretName: keycloak.pstr.space-http01
+              hosts: [keycloak.pstr.space]
+          rules:
+            - host: keycloak.pstr.space
+              http:
+                paths:
+                  # 登録と Registration Access Token による個別クライアント管理だけを公開。
+                  # default / install / saml2-entity-descriptor は含めない。
+                  - path: /realms/pke/clients-registrations/openid-connect
+                    pathType: Prefix
+                    backend:
+                      service:
+                        name: {{ include "keycloak.fullname" . }}-http
+                        port:
+                          name: http
