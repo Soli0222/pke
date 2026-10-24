@@ -99,9 +99,6 @@ spec:
         value: http
       - name: KC_LOG_CONSOLE_OUTPUT
         value: json
-      # DCR の拒否 URI と検証理由を記録する一時診断。原因特定後はこの設定を削除する。
-      - name: KC_LOG_LEVEL
-        value: INFO,org.keycloak.services.clientpolicy.executor.SecureRedirectUrisEnforcerExecutor:DEBUG
     startupProbe: |
       httpGet:
         path: /health/started
