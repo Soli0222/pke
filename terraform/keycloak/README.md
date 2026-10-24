@@ -164,7 +164,9 @@ Claude の metadata に含まれる public client 向けでない grant は exec
 ChatGPT は `chatgpt_callback_id` で指定した既存のクライアント ID を事前登録し、公開 JWKS による `private_key_jwt` を使う。この Keycloak 版の CIMD parser は ChatGPT の `token_endpoint_auth_methods_supported` 拡張を拒否するため、ChatGPT は CIMD policy の対象に含めない。
 接続を作り直して callback ID が変わる場合は、新しい metadata URL の ID を Terraform へ渡して再適用する。公開 metadata の redirect URI / JWKS の変更も再確認する。
 PKCE は S256。read/write scope は optional とし、discovery に掲載する。scope を公開しただけで自動付与はしない。
-resource は `https://sui.str08.net/mcp` に限定し、audience を resource URL に束縛する。
+resource は `https://sui.str08.net/mcp` に限定する。read/write scope の audience mapper は `included_custom_audience` で同じ URL を access token に直接付与し、内部 client ID の `sui-mcp` からの変換に依存しない。
+Resource Indicators 用の `sui-mcp` クライアントと `resource_url` 属性は維持する。要求された resource は token の URL audience と直接照合できる。
+mapper の変更は次に発行・更新する access token に反映される。既発行の token は変わらないため、適用後は MCP 接続元で再認証または token の更新を行う。DCR クライアントの登録し直しは不要。
 JWT は RS256、短い有効期限、標準の `JWT` / 本文 `Bearer` / `azp` を使用し、sui は専用フラグなしで検証する。
 Web クライアントは `sui-web`、Authorization Code + PKCE の public client で、MCP 用 scope は割り当てない。
 

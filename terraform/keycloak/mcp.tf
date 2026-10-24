@@ -24,11 +24,12 @@ resource "keycloak_openid_client_scope" "sui" {
   include_in_openid_provider_metadata = true
 }
 resource "keycloak_openid_audience_protocol_mapper" "sui" {
-  for_each                 = keycloak_openid_client_scope.sui
-  realm_id                 = keycloak_realm.pke.id
-  client_scope_id          = each.value.id
-  name                     = "sui MCP audience"
-  included_client_audience = keycloak_openid_client.sui_mcp.client_id
+  for_each        = keycloak_openid_client_scope.sui
+  realm_id        = keycloak_realm.pke.id
+  client_scope_id = each.value.id
+  name            = "sui MCP audience"
+  # MCP の保護リソース URL を直接 aud に入れ、内部 client ID からの変換に依存しない。
+  included_custom_audience = local.mcp_resource
   add_to_id_token          = false
   add_to_access_token      = true
 }
