@@ -1,7 +1,7 @@
 locals {
   interactive_realms = {
     master = keycloak_realm.master.id
-    pstr   = keycloak_realm.pstr.id
+    pke    = keycloak_realm.pke.id
   }
 }
 
@@ -93,15 +93,15 @@ resource "keycloak_authentication_execution" "otp" {
   priority          = 20
 }
 
-# pstr はブラウザ経由の認証に統一し、組み込み admin-cli を含め password grant を拒否。
+# pke はブラウザ経由の認証に統一し、組み込み admin-cli を含め password grant を拒否。
 # master の direct grant は初回 bootstrap apply に必要なので、この段階では変更しない。
 resource "keycloak_authentication_flow" "deny_direct_grant" {
-  realm_id    = keycloak_realm.pstr.id
+  realm_id    = keycloak_realm.pke.id
   alias       = "deny-direct-grants"
   description = "Use authorization code and the browser MFA flow"
 }
 resource "keycloak_authentication_execution" "deny_direct_grant" {
-  realm_id          = keycloak_realm.pstr.id
+  realm_id          = keycloak_realm.pke.id
   parent_flow_alias = keycloak_authentication_flow.deny_direct_grant.alias
   authenticator     = "deny-access-authenticator"
   requirement       = "REQUIRED"
@@ -111,7 +111,7 @@ resource "keycloak_authentication_bindings" "browser" {
   for_each          = local.interactive_realms
   realm_id          = each.value
   browser_flow      = keycloak_authentication_flow.browser[each.key].alias
-  direct_grant_flow = each.key == "pstr" ? keycloak_authentication_flow.deny_direct_grant.alias : null
+  direct_grant_flow = each.key == "pke" ? keycloak_authentication_flow.deny_direct_grant.alias : null
   # フロー構築前に切り替えず、初回の管理用サービスアカウントも先に完成させる。
   depends_on = [
     keycloak_authentication_execution.cookie,
