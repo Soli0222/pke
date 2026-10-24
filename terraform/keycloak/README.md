@@ -152,7 +152,8 @@ MCP クライアントには匿名の OIDC Dynamic Client Registration（DCR）�
 Terraform は `dcr.tf` で登録ルールを管理する。DCR で作られた個々のクライアントは Terraform に取り込まず、Client ID・Client Secret・Registration Access Token は Keycloak と接続元クライアントで管理する。1Password への転記は不要。
 
 - Keycloak が作った既定の匿名登録ポリシーのうち5件を名前で import する。既定ポリシーを残したまま同種のポリシーを追加しない。
-- DCR のホスト許可リストは設けず、接続元サービスごとの Terraform 変更を不要にする。匿名登録の Trusted Hosts ポリシーは削除する。redirect URI は別の共通ポリシーで HTTPS・ワイルドカードなし・loopback 不可とする。
+- DCR のホスト許可リストは設けず、接続元サービスごとの Terraform 変更を不要にする。匿名登録の Trusted Hosts ポリシーは削除する。redirect URI は共通ポリシーで通常の HTTPS と loopback IP の HTTP を受け付け、外部 HTTP・独自 scheme・ワイルドカード・fragment は拒否する。
+- loopback callback は `http://127.0.0.1/callback` / `http://[::1]/callback` の形式で登録する。Keycloak の OAuth 2.1 検査は登録時のポート指定と `localhost` を拒否するため、loopback IP をポートなしで登録し、認可要求で実際のポートを指定する。
 - ユーザーの同意を必須にし、Full Scope Allowed を無効にする。登録者による protocol mapper の追加を許可せず、管理済みの client scopes で claims を付与する。
 - 許可する scope は `openid` / `basic` / `profile` / `email` / `offline_access` / `read:sui` / `write:sui`。realm の既定 optional scopes も `offline_access` と sui の2 scope に絞り、scope 省略時に別の権限が付かないようにする。他アプリの scope はそのクライアントへ個別に割り当てる。
 - 登録・Registration Access Token による更新時に PKCE S256 を設定し、implicit / password grant を無効化する。`ByAnonymous` 条件は CIMD の登録・更新にも一致するため、この共通ポリシーの redirect URI 検査は CIMD にも適用する。CIMD 自体の metadata 取得先・client ID のホスト制限は `mcp.tf` で別管理する。Terraform の管理 API 更新には適用しない。

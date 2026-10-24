@@ -58,11 +58,11 @@ resource "keycloak_realm_client_registration_policy" "dcr" {
 }
 
 # ByAnonymous は CIMD の登録・更新にも一致するため、共通の登録要件だけを指定する。
-# redirect URI のホストは限定せず、HTTPS・ワイルドカード禁止などの共通要件を適用する。
+# 通常の redirect は HTTPS、ローカル callback は loopback IP の HTTP も受け付ける。
 resource "keycloak_realm_client_policy_profile" "mcp_registration" {
   realm_id    = keycloak_realm.pke.id
   name        = "sui-mcp-registration"
-  description = "MCP client registration: PKCE S256 and HTTPS redirects"
+  description = "MCP client registration: PKCE S256, HTTPS and loopback redirects"
   lifecycle {
     replace_triggered_by = [keycloak_realm.pke.realm]
   }
@@ -73,9 +73,10 @@ resource "keycloak_realm_client_policy_profile" "mcp_registration" {
   executor {
     name = "secure-redirect-uris-enforcer"
     configuration = {
-      "allow-http-scheme"            = "false"
-      "allow-ipv4-loopback-address"  = "false"
-      "allow-ipv6-loopback-address"  = "false"
+      # OAuth 2.1 検査を併用することで HTTP は loopback IP のみに限定する。
+      "allow-http-scheme"            = "true"
+      "allow-ipv4-loopback-address"  = "true"
+      "allow-ipv6-loopback-address"  = "true"
       "allow-private-use-uri-scheme" = "false"
       "allow-wildcard-context-path"  = "false"
       "allow-open-redirect"          = "false"
