@@ -35,7 +35,7 @@ K3s クラスタ名は host_vars の `cluster`、Helmfile environment、Flux の
 | [charts/](charts/) | PKE 内で管理する Helm chart |
 | [terraform/tailscale/](terraform/tailscale/) | Tailscale ACL |
 | [terraform/github/](terraform/github/README.md) | GitHub リポジトリ設定と Actions secrets |
-| [terraform/keycloak/](terraform/keycloak/README.md) | Keycloak の realm、Web / MCP クライアント、scope、sui ユーザー |
+| [terraform/keycloak/](terraform/keycloak/README.md) | Keycloak の共通 realm、利用者・管理権限、Web / MCP クライアント、scope |
 | [terraform/auth0/](terraform/auth0/README.md) | sui の Auth0 アプリ、DB 接続、ユーザー |
 | [.github/workflows/](.github/workflows/) | CI と Renovate |
 

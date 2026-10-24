@@ -38,12 +38,12 @@ variable "tls_client_private_key" {
   sensitive = true
   ephemeral = true
 }
-variable "sui_initial_password" {
+variable "soli_initial_password" {
   type      = string
   sensitive = true
   ephemeral = true
   validation {
-    condition     = length(var.sui_initial_password) >= 16
+    condition     = length(var.soli_initial_password) >= 16
     error_message = "Use an initial password of at least 16 characters."
   }
 }
@@ -62,5 +62,21 @@ variable "sui_image_tag" {
   validation {
     condition     = length(trimspace(var.sui_image_tag)) > 0 && var.sui_image_tag != "latest"
     error_message = "Specify an immutable release tag that includes Bearer JWT support."
+  }
+}
+
+variable "soli_email" {
+  description = "共通ユーザー soli のメールアドレス。"
+  type        = string
+}
+
+variable "terraform_client_secret" {
+  description = "1Password に事前作成する Terraform 専用クライアントの secret。"
+  type        = string
+  sensitive   = true
+  ephemeral   = true
+  validation {
+    condition     = length(var.terraform_client_secret) >= 32
+    error_message = "Use a random client secret of at least 32 characters."
   }
 }

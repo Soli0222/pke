@@ -89,7 +89,7 @@ spec:
             key: password
       - name: KC_HOSTNAME
         # Terraform 未適用の master realm も管理ホスト内で認証を完結させる。
-        # 公開する sui realm の frontendUrl は Terraform で別途設定する。
+        # 公開する pstr realm の frontendUrl は Terraform で別途設定する。
         value: https://admin.keycloak.pstr.space
       - name: KC_HOSTNAME_ADMIN
         value: https://admin.keycloak.pstr.space
@@ -127,13 +127,13 @@ spec:
         - host: keycloak.pstr.space
           # /admin と /realms/master は公開しない。匿名 DCR も公開しない。
           paths:
-            - path: /realms/sui/.well-known/
+            - path: /realms/pstr/.well-known/
               pathType: Prefix
-            - path: /realms/sui/protocol/openid-connect/
+            - path: /realms/pstr/protocol/openid-connect/
               pathType: Prefix
-            - path: /realms/sui/login-actions/
+            - path: /realms/pstr/login-actions/
               pathType: Prefix
-            - path: /realms/sui/account/
+            - path: /realms/pstr/account/
               pathType: Prefix
             - path: /resources/
               pathType: Prefix

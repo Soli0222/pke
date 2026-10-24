@@ -1,25 +1,52 @@
-# Keycloak と sui の認証
+# Keycloak の共通認証基盤
 
-Flux は natsume の Keycloak・CNPG・Ingress・監視を、Terraform は realm・ユーザー・Web クライアント・MCP の scope と CIMD policy を管理する。
+Flux は natsume の Keycloak・CNPG・Ingress・監視を、Terraform は共通 realm・ユーザー・管理権限・OIDC クライアント・MCP の scope と CIMD policy を管理する。
 定義は [Flux アプリ](../../flux/clusters/natsume/apps/keycloak/) とこのディレクトリに置く。バージョンは HelmRelease と `versions.tf` が正本である。
 Keycloak 本体・Service・公開 / 管理 Ingress・ServiceMonitor は codecentric の [keycloakx chart](https://github.com/codecentric/helm-charts/tree/master/charts/keycloakx) を HelmRelease から管理する。
 CNPG・バックアップ・1PasswordItem は既存アプリと同じ Flux 構成とし、NetworkPolicy はポート別の接続元制限を表すため別マニフェストで管理する。
 Auth0 は切替後の接続確認が完了するまで残す。既存の `terraform/auth0` state は使わない。
 
+## アカウントと権限
+
+| 対象 | realm | 用途と権限 |
+|---|---|---|
+| bootstrap 管理者 | `master` | Helm の初回起動で作る一時管理者。最初の Terraform apply にだけ使用 |
+| `terraform` クライアントのサービスアカウント | `master` | client credentials で Terraform を実行。realm の追加・master の設定も扱うため `admin` ロールを付与 |
+| `soli` | `pstr` | sui と今後の OIDC アプリに共通でログイン。`realm-management` の `realm-admin` ロールで pstr 内のユーザー・クライアントを管理 |
+
+`soli` は master や他の realm の全体管理権限を持たない。pstr の管理画面は `https://admin.keycloak.pstr.space/admin/pstr/console/`。
+Terraform は人間の `soli` のパスワードや OTP を使わない。専用クライアントはブラウザログイン・password grant を無効にし、管理 API へ mTLS で接続する。
+新しいアプリも pstr に OIDC クライアントとして追加する。ユーザーをアプリごとに作成せず、redirect URI・audience・scope・利用権限をアプリ単位で指定する。
+新規クライアントの既定 scope は `basic` / `profile` / `email` とし、管理権限を含む `roles` は既定で渡さない。組み込みの管理コンソールは既存の client scopes を維持する。
+Terraform が管理するユーザー・ロール・クライアントの設定を管理画面で変更した場合は、次の apply と競合しないよう Git の定義にも反映する。
+
+## 認証ルール
+
+master と pstr の両方に、次のブラウザ認証フローを設定する。
+
+- 新規ユーザーはパスキーと OTP の両方を初回登録する。`soli` は仮パスワード変更も必須。
+- 通常の認証は、本人確認（PIN / 生体認証等）が必須のパスキー、またはパスワードと OTP。パスキーの直後に OTP を重ねて要求しない。
+- 有効な SSO セッションは再利用する。パスワード認証時は OTP 未登録を理由にスキップせず、登録を要求する。
+- pstr の password grant は realm の認証フローで拒否し、組み込み admin-cli からもブラウザ認証を迂回させない。master は初回 bootstrap apply 用の direct grant をこの段階では維持する。
+- master のパスキー RP ID は管理ホスト、pstr は公開ホスト。pstr の管理画面も、認証自体は公開ホストの同じ soli アカウントを使う。
+- サービスアカウントは対話認証の対象外。既存 bootstrap ユーザーは Terraform に取り込まず、初回 apply の password grant を使える状態で残す。
+
+この設定は両方の初回登録とログイン経路を管理する。本人が後からパスキーを削除しても毎回再登録させる独自処理は追加しない。パスワード経路には引き続き OTP が必要。
+Auth0 のパスキーは RP ID が変わるため引き継げない。予備パスキーも登録し、OTP の復旧情報を保管する。pstr のメールによるパスワードリセットは無効。
+
 ## 公開範囲
 
 | 用途 | ホスト / パス | 接続条件 |
 |---|---|---|
-| sui の認証 | `keycloak.pstr.space` の sui realm の OIDC・login-actions・account と `/resources/` | HTTPS。利用者のクライアント証明書は不要 |
-| 管理 UI / API と master realm のログイン | `admin.keycloak.pstr.space` | 既存の `pke-natsume-mtls` によるクライアント証明書必須 |
+| アプリの共通認証 | `keycloak.pstr.space` の pstr realm の OIDC・login-actions・account と `/resources/` | HTTPS。利用者のクライアント証明書は不要 |
+| 管理 UI / API と master realm の認証 | `admin.keycloak.pstr.space` | 既存の `pke-natsume-mtls` によるクライアント証明書必須 |
 | health / metrics | Pod の management port | Ingress に公開しない。Alloy から収集 |
 
 公開 Ingress は `/admin/`、`/realms/master/`、匿名 DCR をルーティングしない。
-管理 URL の指定だけでは管理 API を閉じられないため、Ingress のパス制限と併用する。
-Helm の `KC_HOSTNAME` と `KC_HOSTNAME_ADMIN` はどちらも管理ホストに固定する。これにより、Terraform 未適用の初回起動から master realm のログインと Cookie 確認 iframe が管理ホスト内で完結する。
-Terraform は master realm の `frontendUrl` に同じ管理 URL を明示し、sui realm の `frontendUrl` にだけ公開 URL を設定する。
-HTTP のバックエンドへ到達できる Pod は NetworkPolicy で Traefik に絞る。Keycloak は Traefik の転送ヘッダーを信頼する。
-DNS は既存の ExternalDNS、サーバー証明書は cert-manager の HTTP-01 で管理する。Cloudflare の証明書認証を迂回しないよう DNS-only で使う。
+Helm の `KC_HOSTNAME` と `KC_HOSTNAME_ADMIN` は管理ホストに固定する。Terraform 未適用の初回起動から master のログインと Cookie 確認 iframe が管理ホスト内で完結する。
+Terraform は master の `frontendUrl` に同じ管理 URL を、pstr の `frontendUrl` に公開 URL を設定する。
+NetworkPolicy で HTTP は Traefik、management port は Alloy に接続元を制限する。Keycloak は Traefik の転送ヘッダーを信頼する。
+DNS は既存の ExternalDNS、証明書は cert-manager の HTTP-01 で管理し、Cloudflare は DNS-only で使う。
 
 ## 先に用意するもの
 
@@ -27,60 +54,67 @@ DNS は既存の ExternalDNS、サーバー証明書は cert-manager の HTTP-01
 
 | Item | フィールド | 用途 |
 |---|---|---|
-| `keycloak-bootstrap` | `username` / `password` | 初回起動時の一時管理ユーザー。強いランダムパスワードを使用 |
-| `terraform keycloak` | `username` / `password` | 初回は上記の管理ユーザー。運用開始後は専用の管理資格情報に交換 |
+| `keycloak-bootstrap` | `username` / `password` | 現在の一時管理者。初回 apply の認証に使用 |
+| `terraform keycloak` | `client-secret` | 初回 apply 前に生成する32文字以上のランダム値。専用クライアントの登録と、その後の認証に同じ値を使用 |
 | `terraform keycloak` | `client-certificate` / `client-private-key` | natsume の mTLS クライアント証明書と秘密鍵（PEM） |
-| `terraform keycloak` | `sui-initial-password` | sui 利用者の初回ログイン用。16文字以上のランダム値 |
+| `terraform keycloak` | `soli-initial-password` | soli の初回ログイン用。16文字以上のランダム値 |
 | `sui-keycloak` | `values.yaml` | **切替時に** `terraform output -raw sui_helm_values` の出力を登録 |
 
-既存の `cnpg-backup-s3-secret`、`cnpg-backup-flux-vars`、R2 state 用の `terraform kkg-pve` を再利用する。
-`sui-keycloak` を先に作らない。これが存在しない間、sui の HelmRelease は新設定を適用できず、既存 release は Auth0 設定のまま稼働する（Flux はこの間 NotReady）。
-空の values やダミー subject でブロックを回避しない。
-Flux 差分 CI は生成 Secret を取得せず `--allow-missing-secrets` で render するため、image.tag と allowedSubjects の実値は差分に含まれない。切替時に Terraform 出力と実際の Deployment の設定を照合する。
+`terraform keycloak` の `username` / `password` / `sui-initial-password` フィールドは使用しない。
+既存の `cnpg-backup-s3-secret`、`cnpg-backup-flux-vars`、R2 state 用の `terraform kkg-pve` を再利用する。バックアップ保存先は変更しない。
+専用クライアントの secret と soli の初期パスワードは write-only / ephemeral 引数で渡し、state / plan へ保存しない。再適用時も読み込むが、それぞれの write-only version を変更しない限り再設定しない。
+`master`、`pstr`、`soli`、Terraform 用クライアントには `prevent_destroy` を設定している。
 
-## 反映順序
+## 初回適用と切替
 
-1. `keycloak-bootstrap` を作成し、この Flux 構成をマージする。natsume の Keycloak・CNPG・証明書・DNS が準備できたことを確認する。管理画面 `https://admin.keycloak.pstr.space/admin/master/console/` は、この段階で mTLS 証明書と bootstrap 管理者を使ってログインできる。Terraform の事前適用や手動での realm 設定変更は不要。
-2. sui の Bearer JWT 対応 PR をマージし、そのコードを含むコンテナイメージをリリースする。実在する固定タグを確認する。Keycloak だけの先行デプロイではこのリリースを待つ必要はない。
-3. このディレクトリで `setup.sh` を読み、確認済みの sui イメージタグを指定して Terraform を適用する。
+この定義は旧 sui realm の Terraform をまだ apply していない状態を前提とする。適用済みの場合は realm / user の名前変更としてそのまま apply せず、state と issuer の移行を別途計画する。
+Keycloak 本体の再構築は不要。既存の bootstrap 管理者をそのまま初回 apply に使う。
+
+1. Git の変更をマージし、Flux に公開 Ingress の `/realms/pstr/` を反映する。sui 対応版の公開済みイメージタグも用意する。
+2. このディレクトリで **bootstrap モード**を読み込み、必要な変数を指定して plan / apply する。
 
 ```sh
-source ./setup.sh
-export TF_VAR_sui_image_tag='<対応コードを含む公開済みタグ>'
+source ./setup.sh bootstrap
+export TF_VAR_soli_email='<soli のメールアドレス>'
+export TF_VAR_sui_image_tag='<Bearer JWT 対応コードを含む公開済みタグ>'
 terraform init
 terraform plan -out=keycloak.tfplan
 terraform apply keycloak.tfplan
 ```
 
-provider は管理ホストへ mTLS で接続する。`master` は起動時に作られるため import block で取り込む。
-初回の Terraform は管理ブラウザのログイン前後どちらでも実行できる（admin-cli の token 取得は管理ホストを直接指定する）。
-`master`、sui realm、sui ユーザーには `prevent_destroy` を設定している。
-sui の初期パスワードは write-only / ephemeral 引数で渡し、state / plan へ保存しない。`value_wo_version` を変更した場合だけ再設定される。
+`setup.sh bootstrap` は一時管理者で provider を認証し、同時に専用 client secret をリソース作成へ渡す。`master` は import block で取り込む。
 
-4. 管理ホストに mTLS 証明書付きブラウザで入り、恒久の管理ユーザーを作る。一時 bootstrap admin を削除し、`terraform keycloak` の資格情報を更新する。初期化済み DB では bootstrap 環境変数によって管理ユーザーは再作成されない。
-5. `https://keycloak.pstr.space/realms/sui/account/` に sui ユーザーでログインし、初期パスワード変更とパスキー登録を完了する。Auth0 のパスキーは新しい RP ID へ引き継げないため再登録する。
-6. discovery に `read:sui` / `write:sui` があることを確認し、`terraform output -raw sui_helm_values` を `sui-keycloak` の `values.yaml` フィールドへ登録する。1Password Operator の同期後、Flux が sui のイメージ・issuer・client ID・subject を一緒に切り替える。
-7. Web ログインと Grok・Claude・ChatGPT の接続を作り直し、ツール一覧・参照・更新・読み取り専用時の更新拒否・token refresh を確認する。確認後に Auth0 の廃止を別変更で行う。
+3. `https://keycloak.pstr.space/realms/pstr/account/` へ soli と仮パスワードでログインし、パスワード変更・OTP・パスキー登録を完了する。mTLS 証明書付きブラウザで pstr 管理画面にも入り、管理権限を確認する。
+4. 同じ端末で **サービスアカウントモード**へ切り替え、以後の Terraform 認証を確認する。
 
-適用確認は次を使う。Ready に加えて revision / generation、実際のログインとバックアップ成功を確認する。
+```sh
+source ./setup.sh
+terraform plan
+```
+
+`setup.sh` は既定で `master` の `terraform` クライアントを使う。以前の `KEYCLOAK_USER` / `KEYCLOAK_PASSWORD` を解除し、client credentials に切り替える。bootstrap モードへ戻す場合は逆に `KEYCLOAK_CLIENT_SECRET` を解除する。
+新しいシェルでは `TF_VAR_soli_email` と `TF_VAR_sui_image_tag` も再設定する。初回 plan ファイルは、適用時も bootstrap モードのまま使う。
+
+5. soli と専用サービスアカウントの接続確認後、bootstrap 管理者の削除と Helm の bootstrap Secret 参照の撤去を別変更で行う。この定義では bootstrap ユーザーや Secret を削除しない。全体管理はサービスアカウントに移り、soli は master の一時管理者を削除する権限を持たない。
+6. discovery に `read:sui` / `write:sui` があることを確認し、`terraform output -raw sui_helm_values` を `sui-keycloak` の `values.yaml` へ登録する。イメージと許可 subject が揃うと Flux が sui を切り替える。
+7. soli で Web ログインし、Grok・Claude・ChatGPT を再接続する。ツール一覧・参照・更新・読み取り専用時の更新拒否・refresh を確認してから Auth0 廃止を別変更で行う。
+
+`sui-keycloak` は切替まで作成しない。Secret 未作成時は sui の Flux が NotReady となり、既存 release は Auth0 設定で稼働を続ける。空の values やダミー subject で回避しない。
+Flux 差分 CI は `--allow-missing-secrets` で render するため、image.tag と allowedSubjects の実値は差分に含まれない。切替時に Terraform 出力と実際の Deployment 設定を照合する。
+
+## 運用確認
+
+Ready に加えて revision / generation、ログインとバックアップ成功を確認する。
 
 ```sh
 kubectl --context natsume@soli -n flux-system get kustomization keycloak sui
 kubectl --context natsume@soli -n keycloak get helmrelease,statefulset,ingress,clusters.postgresql.cnpg.io,backups
 kubectl --context natsume@soli -n sui get helmrelease sui
-curl --fail https://keycloak.pstr.space/realms/sui/.well-known/openid-configuration
+curl --fail https://keycloak.pstr.space/realms/pstr/.well-known/openid-configuration
 ```
 
-公開ホストの `/admin/` と `/realms/master/` が到達不能で、管理ホストが証明書なしの HTTPS 接続を拒否することも確認する。
-DB は単一 instance。Keycloak も StatefulSet の単一 Pod を置き換えるため、更新時に認証が一時停止する。CNPG の週次 backup + WAL archive と復元手順は [CNPG.md](../../CNPG.md) を参照する。
-
-再構築のため Flux の Keycloak 同期を停止している場合は、修正をマージして GitRepository が新しい revision を取得した後に再開する。namespace と DB は Flux が再作成する。
-
-```sh
-flux reconcile source git flux-system --context natsume@soli -n flux-system
-flux resume kustomization keycloak --context natsume@soli -n flux-system
-flux reconcile kustomization keycloak --context natsume@soli -n flux-system
-```
+公開ホストの `/admin/` と `/realms/master/` が到達不能で、管理ホストが証明書なしの接続を拒否することも確認する。
+DB は単一 instance。Keycloak も StatefulSet の単一 Pod を置き換えるため、更新時に認証が一時停止する。週次 backup + WAL archive と復元は [CNPG.md](../../CNPG.md) を参照する。
 
 ## MCP の設定
 
