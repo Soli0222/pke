@@ -23,7 +23,6 @@ output "sui_subject" {
 # 認証情報ではないが、環境ごとの subject を Git に固定しない。
 output "sui_helm_values" {
   value = yamlencode({
-    image = { tag = var.sui_image_tag }
     auth = {
       oidc = {
         allowedSubjects = [keycloak_user.soli.id]

@@ -47,7 +47,7 @@ spec:
         issuer: "https://keycloak.pstr.space/realms/pke"
         clientId: "sui-web"
         redirectUri: "https://sui.str08.net/api/auth/callback"
-        # allowedSubjects と image.tag は sui-keycloak/values.yaml から取得。
+        # allowedSubjects は sui-keycloak/values.yaml から取得。イメージは chart の appVersion に従う。
         allowedEmails: []
       cookieSecure: "true"
     mcp:

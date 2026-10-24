@@ -80,7 +80,6 @@ Keycloak 本体・DB・バックアップ保存先・ホスト名・master の T
 ```sh
 source ./setup.sh
 export TF_VAR_soli_email='<soli のメールアドレス>'
-export TF_VAR_sui_image_tag='<Bearer JWT 対応コードを含む公開済みタグ>'
 terraform init
 terraform plan -out=keycloak-pke.tfplan
 terraform apply keycloak-pke.tfplan
@@ -96,13 +95,12 @@ plan では共通 realm とその配下のユーザー・クライアント・�
 
 新規構築時の手順。pstr を適用済みの場合は、先に「pstr からの作り直し」の手順を使う。Keycloak 本体の再構築は不要。
 
-1. Git の変更をマージし、Flux に公開 Ingress の `/realms/pke/` を反映する。sui 対応版の公開済みイメージタグも用意する。
+1. Git の変更をマージし、Flux に公開 Ingress の `/realms/pke/` を反映する。sui HelmRelease は Bearer JWT 対応コードを含む appVersion の chart を指定する。
 2. このディレクトリで **bootstrap モード**を読み込み、必要な変数を指定して plan / apply する。
 
 ```sh
 source ./setup.sh bootstrap
 export TF_VAR_soli_email='<soli のメールアドレス>'
-export TF_VAR_sui_image_tag='<Bearer JWT 対応コードを含む公開済みタグ>'
 terraform init
 terraform plan -out=keycloak.tfplan
 terraform apply keycloak.tfplan
@@ -119,14 +117,21 @@ terraform plan
 ```
 
 `setup.sh` は既定で `master` の `terraform` クライアントを使う。以前の `KEYCLOAK_USER` / `KEYCLOAK_PASSWORD` を解除し、client credentials に切り替える。bootstrap モードへ戻す場合は逆に `KEYCLOAK_CLIENT_SECRET` を解除する。
-新しいシェルでは `TF_VAR_soli_email` と `TF_VAR_sui_image_tag` も再設定する。初回 plan ファイルは、適用時も bootstrap モードのまま使う。
+新しいシェルでは `TF_VAR_soli_email` も再設定する。初回 plan ファイルは、適用時も bootstrap モードのまま使う。
 
 5. soli と専用サービスアカウントの接続確認後、bootstrap 管理者の削除と Helm の bootstrap Secret 参照の撤去を別変更で行う。この定義では bootstrap ユーザーや Secret を削除しない。全体管理はサービスアカウントに移り、soli は master の一時管理者を削除する権限を持たない。
-6. discovery に `read:sui` / `write:sui` があることを確認し、`terraform output -raw sui_helm_values` を `sui-keycloak` の `values.yaml` へ登録する。イメージと許可 subject が揃うと Flux が sui を切り替える。
+6. discovery に `read:sui` / `write:sui` があることを確認し、`terraform output -raw sui_helm_values` を `sui-keycloak` の `values.yaml` へ登録する。許可 subject が揃うと Flux が sui を切り替える。
 7. soli で Web ログインし、Grok・Claude・ChatGPT を再接続する。ツール一覧・参照・更新・読み取り専用時の更新拒否・refresh を確認してから Auth0 廃止を別変更で行う。
 
 `sui-keycloak` は切替まで作成しない。Secret 未作成時は sui の Flux が NotReady となり、既存 release は Auth0 設定で稼働を続ける。空の values やダミー subject で回避しない。
-Flux 差分 CI は `--allow-missing-secrets` で render するため、image.tag と allowedSubjects の実値は差分に含まれない。切替時に Terraform 出力と実際の Deployment 設定を照合する。
+Flux 差分 CI は `--allow-missing-secrets` で render するため、allowedSubjects の実値は差分に含まれない。切替時に Terraform 出力と実際の Deployment 設定を照合する。
+
+## sui のバージョン更新
+
+sui のイメージは HelmRelease の chart version と、その chart の appVersion で管理する。通常の更新は Renovate の chart 更新 PR をマージすればよく、Keycloak の Terraform apply や 1Password の更新は不要。
+`sui_helm_values` は許可 subject だけを出力し、`image.tag` は含めない。1Password の `sui-keycloak/values.yaml` にもイメージタグを設定しない。
+既存の値に `image` が残っている場合は、そのブロックを削除して `auth` を残す。Git の修正だけでは登録済みの 1Password の値は変わらず、タグが残ると chart 更新後も古いイメージに固定される。
+Terraform 出力から更新する場合は、この定義を apply して state 内の出力を更新した後、`terraform output -raw sui_helm_values` の出力で `values.yaml` 全体を置き換える。既存 YAML へ追記しない。
 
 ## 運用確認
 

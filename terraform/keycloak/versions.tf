@@ -56,15 +56,6 @@ variable "admin_url" {
   default = "https://admin.keycloak.pstr.space"
 }
 
-variable "sui_image_tag" {
-  description = "Bearer JWT 対応の sui PR を含む、公開済みコンテナの固定タグ。切替前にリリースを確認する。"
-  type        = string
-  validation {
-    condition     = length(trimspace(var.sui_image_tag)) > 0 && var.sui_image_tag != "latest"
-    error_message = "Specify an immutable release tag that includes Bearer JWT support."
-  }
-}
-
 variable "soli_email" {
   description = "共通ユーザー soli のメールアドレス。"
   type        = string
