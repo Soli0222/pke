@@ -43,6 +43,7 @@ Auth0 のパスキーは RP ID が変わるため引き継げない。予備パ�
 | health / metrics | Pod の management port | Ingress に公開しない。Alloy から収集 |
 
 公開 Ingress は `/admin/`、`/realms/master/` をルーティングしない。
+認可サーバー discovery は従来の `/realms/pke/.well-known/` に加え、RFC 8414 の `/.well-known/oauth-authorization-server/realms/pke` を完全一致で公開する。パスを含む issuer を扱う MCP クライアントはこの標準 URL を先に探索する。Keycloak が返す metadata をそのまま配信し、書き換えやリダイレクトは行わない。`/.well-known/` 全体や master の metadata は公開しない。
 匿名 DCR は専用 Ingress で `/realms/pke/clients-registrations/openid-connect` とその配下だけを公開する。作成は匿名、個別クライアントの取得・更新・削除には Keycloak が Registration Access Token 等を要求する。`default` / `install` / `saml2-entity-descriptor` の登録 API は公開しない。
 専用 Ingress と RateLimit Middleware は keycloakx chart の `extraManifests` で管理し、通常の公開 Ingress の TLS 証明書を共用する。DCR 経路だけに平均10要求/分・burst 5の制限を設ける。公開ホスト単位で集計し、カウンターは Traefik インスタンスごとに独立する。ログイン・token・discovery はこの制限の対象外。
 この Ingress を公開する前に、DCR 登録ポリシーの Terraform apply を完了する。ポリシー未適用のまま公開する PR を先行マージしない。停止する場合は DCR 用 Ingress と Middleware を Git から除去する。既存クライアントの認証と token 更新は継続できる。
@@ -149,6 +150,7 @@ kubectl --context natsume@soli -n flux-system get kustomization keycloak sui
 kubectl --context natsume@soli -n keycloak get helmrelease,statefulset,ingress,clusters.postgresql.cnpg.io,backups
 kubectl --context natsume@soli -n sui get helmrelease sui
 curl --fail https://keycloak.pstr.space/realms/pke/.well-known/openid-configuration
+curl --fail https://keycloak.pstr.space/.well-known/oauth-authorization-server/realms/pke
 ```
 
 公開ホストの `/admin/` と `/realms/master/` が到達不能で、管理ホストが証明書なしの接続を拒否することも確認する。
