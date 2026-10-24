@@ -1,4 +1,4 @@
-# 初回だけ bootstrap の password grant で作成し、以後の provider 認証に使う。
+# provider 認証には恒久サービスアカウントの client credentials を使う。
 # master の全体管理権限はこのサービスアカウントに付与し、pke の soli と分離する。
 resource "keycloak_openid_client" "terraform" {
   realm_id                     = keycloak_realm.master.id

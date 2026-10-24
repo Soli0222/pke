@@ -77,16 +77,6 @@ spec:
           secretKeyRef:
             name: keycloak-cluster-app
             key: username
-      - name: KC_BOOTSTRAP_ADMIN_USERNAME
-        valueFrom:
-          secretKeyRef:
-            name: keycloak-bootstrap
-            key: username
-      - name: KC_BOOTSTRAP_ADMIN_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: keycloak-bootstrap
-            key: password
       - name: KC_HOSTNAME
         # Terraform 未適用の master realm も管理ホスト内で認証を完結させる。
         # 公開する pke realm の frontendUrl は Terraform で別途設定する。
