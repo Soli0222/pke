@@ -58,7 +58,9 @@ resource "keycloak_realm" "pke" {
       failure_reset_time_seconds       = 43200
     }
   }
-  # pstr を削除して pke を新規作成する apply のため、移行中は破棄保護を外す。
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "keycloak_user" "soli" {
@@ -80,7 +82,7 @@ resource "keycloak_user" "soli" {
     keycloak_required_action.passkey,
   ]
   lifecycle {
-    # realm の作り直しに伴う soli の置換を許可。移行後に破棄保護を戻す。
+    prevent_destroy = true
     # 利用者が初回ログインで完了した action を再要求しない。
     ignore_changes = [required_actions]
   }

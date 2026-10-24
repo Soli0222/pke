@@ -361,6 +361,20 @@
           "CCAT-1の実メトリクスに合わせた機器・インターフェース・収集状態・syslogの汎用監視。全インターフェースを初期選択。"
         ]
       }
+    },
+    "pke-keycloak": {
+      "path": "dashboards/platform/keycloak.json",
+      "title": "PKE / Keycloak",
+      "origin": {
+        "kind": "custom",
+        "url": "https://github.com/Soli0222/pke/tree/main/grafana",
+        "revision": "PKE source",
+        "license": "PKE repository",
+        "changes": [
+          "収集済みのKeycloak HTTP・JVM・AgroalメトリクスとLoki認証イベントを表示",
+          "HTTPヒストグラム・認証成功counterが未収集のため平均遅延と拒否ログで状況を確認"
+        ]
+      }
     }
   },
   "folders": {
