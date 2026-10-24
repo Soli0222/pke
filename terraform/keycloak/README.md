@@ -152,14 +152,21 @@ MCP クライアントには匿名の OIDC Dynamic Client Registration（DCR）�
 Terraform は `dcr.tf` で登録ルールを管理する。DCR で作られた個々のクライアントは Terraform に取り込まず、Client ID・Client Secret・Registration Access Token は Keycloak と接続元クライアントで管理する。1Password への転記は不要。
 
 - Keycloak が作った既定の匿名登録ポリシーのうち5件を名前で import する。既定ポリシーを残したまま同種のポリシーを追加しない。
-- DCR のホスト許可リストは設けず、接続元サービスごとの Terraform 変更を不要にする。匿名登録の Trusted Hosts ポリシーは削除する。redirect URI は共通ポリシーで通常の HTTPS と loopback IP の HTTP を受け付け、外部 HTTP・独自 scheme・ワイルドカード・fragment は拒否する。
-- loopback callback は `http://127.0.0.1/callback` / `http://[::1]/callback` の形式で登録する。Keycloak の OAuth 2.1 検査は登録時のポート指定と `localhost` を拒否するため、loopback IP をポートなしで登録し、認可要求で実際のポートを指定する。
+- DCR のホスト許可リストは設けず、接続元サービスごとの Terraform 変更を不要にする。匿名登録の Trusted Hosts ポリシーは削除する。登録時は OAuth 2.0 の URI 検査を使い、`http://localhost:8787/callback` のような localhost・ポート付き loopback callback と HTTPS callback の併記を受け付ける。独自 scheme・ワイルドカード・fragment は拒否する。
+- 外部 HTTP の URI は登録候補には含められるが、それを使う認可要求は拒否する。`pke-authorization-redirect` ポリシーは pke realm の全クライアントに適用し、実際の `redirect_uri` を HTTPS または HTTP の `localhost` / `127.0.0.1` / `[::1]` に限定する。scope の指定有無や DCR / CIMD / 事前登録によってこの検査を迂回できない。
+- 認可用の `secure-client-uris` executor は CIMD の登録処理に対応していないため、否定条件の `client-updater-context` で登録・更新を除外し、`any-client` と組み合わせて認可時に適用する。Terraform は認可ポリシーを先に有効化してから登録ポリシーを更新する。登録時の OAuth 2.1 検査だけを単独で無効化しない。
 - ユーザーの同意を必須にし、Full Scope Allowed を無効にする。登録者による protocol mapper の追加を許可せず、管理済みの client scopes で claims を付与する。
 - 許可する scope は `openid` / `basic` / `profile` / `email` / `offline_access` / `read:sui` / `write:sui`。realm の既定 optional scopes も `offline_access` と sui の2 scope に絞り、scope 省略時に別の権限が付かないようにする。他アプリの scope はそのクライアントへ個別に割り当てる。
 - 登録・Registration Access Token による更新時に PKCE S256 を設定し、implicit / password grant を無効化する。`ByAnonymous` 条件は CIMD の登録・更新にも一致するため、この共通ポリシーの redirect URI 検査は CIMD にも適用する。CIMD 自体の metadata 取得先・client ID のホスト制限は `mcp.tf` で別管理する。Terraform の管理 API 更新には適用しない。
 - Max Clients Limit は realm 全体で50件。DCR だけでなく組み込み・事前登録・CIMD のクライアントも含む。到達後は新しい匿名登録が拒否され、既存クライアントのログインは継続する。不要な動的クライアントは接続元との対応を確認して管理画面から削除する。
 
 DCR は任意の接続元から登録できるが、登録できても sui の利用権限は得られず、ユーザーの認証・同意に加え、sui が issuer / subject / audience / scope を検証する。管理ロールの scope は渡さない。
+
+#### ポリシーの検証
+
+Docker、Terraform、Python 3 が使える環境で `make -C terraform/keycloak/tests test` を実行する（リポジトリルートから）。テストは Helm values の Keycloak イメージを一時コンテナで起動し、`dcr.tf` と `mcp.tf` をローカル backend の一時ディレクトリへコピーして plan / apply する。本番の backend、state、認証情報は使わない。終了時にコンテナと一時ファイルを削除する。
+
+localhost / IPv4 / IPv6 / HTTPS を併記した DCR、PKCE によるコード交換、外部 HTTP の認可拒否（scope 省略・登録後の更新・管理 API での作成を含む）、ChatGPT の事前登録と Claude の CIMD 登録を確認する。CIMD の検証では Claude の公開 metadata を取得するが、外部 callback には遷移せず、ユーザーの認証情報や認可コードは送信しない。
 
 #### 公開する順序
 

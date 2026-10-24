@@ -58,11 +58,13 @@ resource "keycloak_realm_client_registration_policy" "dcr" {
 }
 
 # ByAnonymous は CIMD の登録・更新にも一致するため、共通の登録要件だけを指定する。
-# 通常の redirect は HTTPS、ローカル callback は loopback IP の HTTP も受け付ける。
+# localhost / 固定ポートを含む候補を登録できるようにし、実際の URI の scheme は認可時に検査する。
 resource "keycloak_realm_client_policy_profile" "mcp_registration" {
   realm_id    = keycloak_realm.pke.id
   name        = "sui-mcp-registration"
-  description = "MCP client registration: PKCE S256, HTTPS and loopback redirects"
+  description = "MCP client registration: PKCE S256 and loopback-compatible redirect metadata"
+  # 認可時の検査を先に有効にしてから、登録時の OAuth 2.1 固有の制約を外す。
+  depends_on = [keycloak_realm_client_policy_profile_policy.authorization_redirect]
   lifecycle {
     replace_triggered_by = [keycloak_realm.pke.realm]
   }
@@ -73,14 +75,16 @@ resource "keycloak_realm_client_policy_profile" "mcp_registration" {
   executor {
     name = "secure-redirect-uris-enforcer"
     configuration = {
-      # OAuth 2.1 検査を併用することで HTTP は loopback IP のみに限定する。
+      # OAuth 2.0 の fragment 禁止を維持し、localhost と登録時のポート指定を受け付ける。
+      # 外部 HTTP は登録候補には入るが、authorization_redirect で認可要求を拒否する。
       "allow-http-scheme"            = "true"
       "allow-ipv4-loopback-address"  = "true"
       "allow-ipv6-loopback-address"  = "true"
       "allow-private-use-uri-scheme" = "false"
       "allow-wildcard-context-path"  = "false"
       "allow-open-redirect"          = "false"
-      "oauth-2-1-compliant"          = "true"
+      "oauth-2-0-compliant"          = "true"
+      "oauth-2-1-compliant"          = "false"
     }
   }
   executor {
@@ -90,6 +94,46 @@ resource "keycloak_realm_client_policy_profile" "mcp_registration" {
   executor {
     name          = "reject-ropc-grant"
     configuration = { "auto-configure" = "true" }
+  }
+}
+
+# 全クライアントの実際の認可要求を HTTPS / HTTP loopback のみに制限する。
+# secure-client-uris の登録処理は CIMD 非対応なので、CRUD イベントには適用しない。
+resource "keycloak_realm_client_policy_profile" "authorization_redirect" {
+  realm_id    = keycloak_realm.pke.id
+  name        = "pke-authorization-redirect"
+  description = "Authorization requests: HTTPS or HTTP loopback redirects only"
+  lifecycle {
+    replace_triggered_by = [keycloak_realm.pke.realm]
+  }
+  executor {
+    name = "secure-client-uris"
+    configuration = {
+      "allow-http-on-localhost" = "true"
+    }
+  }
+}
+
+resource "keycloak_realm_client_policy_profile_policy" "authorization_redirect" {
+  realm_id = keycloak_realm.pke.id
+  name     = "pke-authorization-redirect"
+  profiles = [keycloak_realm_client_policy_profile.authorization_redirect.name]
+  lifecycle {
+    replace_triggered_by = [keycloak_realm.pke.realm]
+  }
+  condition {
+    name          = "any-client"
+    configuration = {}
+  }
+  condition {
+    name = "client-updater-context"
+    configuration = {
+      # CRUD は NO、それ以外は ABSTAIN。認可時は any-client の YES で適用される。
+      "is-negative-logic" = "true"
+      "update-client-source" = jsonencode([
+        "ByAnonymous", "ByInitialAccessToken", "ByRegistrationAccessToken", "ByAuthenticatedUser",
+      ])
+    }
   }
 }
 
