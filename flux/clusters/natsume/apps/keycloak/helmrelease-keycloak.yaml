@@ -127,6 +127,10 @@ spec:
         - host: keycloak.pstr.space
           # /admin と /realms/master は公開しない。DCR は専用 Ingress で制限する。
           paths:
+            # RFC 8414: issuer のパスより前に well-known を挿入する探索順序にも対応。
+            # /.well-known 全体を公開せず、pke の認可サーバー metadata だけに限定する。
+            - path: /.well-known/oauth-authorization-server/realms/pke
+              pathType: Exact
             - path: /realms/pke/.well-known/
               pathType: Prefix
             - path: /realms/pke/protocol/openid-connect/
