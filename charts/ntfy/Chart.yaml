@@ -2,7 +2,7 @@ apiVersion: v2
 name: ntfy
 description: A Helm chart for the ntfy publish-subscribe notification service
 type: application
-version: 0.1.8
+version: 0.1.9
 
 # renovate: image=docker.io/binwiederhier/ntfy
-appVersion: "v2.33.1"
+appVersion: "v2.34.0"
