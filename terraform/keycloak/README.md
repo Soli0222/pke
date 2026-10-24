@@ -68,35 +68,9 @@ mTLS は既存の `pke_natsume_mtls` を直接参照し、証明書・秘密鍵�
 同項目の `ca.crt` はクライアント証明書の検証用 CA。管理ホストのサーバー証明書は Let's Encrypt が発行するため、Terraform provider はシステムの信頼ストアで検証し、`root_ca_certificate` にこの CA は指定しない。
 既存の `cnpg-backup-s3-secret`、`cnpg-backup-flux-vars`、R2 state 用の `terraform kkg-pve` を再利用する。バックアップ保存先は変更しない。
 専用クライアントの secret と soli の初期パスワードは write-only / ephemeral 引数で渡し、state / plan へ保存しない。再適用時も読み込むが、それぞれの write-only version を変更しない限り再設定しない。
-`master` と Terraform 用クライアントの `prevent_destroy` は維持する。共通 realm と `soli` は pstr から pke への作り直しを許可するため一時的に破棄保護を外しており、適用後に別 PR で戻す。
+`master` / `pke` realm、Terraform 用クライアント、共通ユーザー `soli` は `prevent_destroy` で保護する。
 
-## pstr からの作り直し
-
-適用済みの pstr は保持せず、ユーザー・クライアント・認証設定ごと削除して pke を新規作成する。
-同名の `soli` も新しいユーザーになるため、パスワード変更・パスキー・OTP 登録をやり直す。パスキープロバイダーに残る旧 pstr 用の登録ではログインできない。
-Terraform の `moved` block は管理アドレスの変更だけを表す。provider の realm 名変更は置換であり、既存ユーザーや認証情報を移す処理ではない。
-Keycloak 本体・DB・バックアップ保存先・ホスト名・master の Terraform 用クライアントは維持する。
-
-1. マージ後、Flux の公開 Ingress が `/realms/pke/` に変わる。旧 `/realms/pstr/` は公開しなくなるため、pke の作成と設定更新が完了するまでアプリの認証が停止する。
-2. master の Terraform 専用資格情報を使い、通常の全体 plan / apply で置換する。共通 realm と soli の破棄保護はこの移行のために外している。
-
-```sh
-source ./setup.sh
-export TF_VAR_soli_email='<soli のメールアドレス>'
-terraform init
-terraform plan -out=keycloak-pke.tfplan
-terraform apply keycloak-pke.tfplan
-```
-
-plan では共通 realm とその配下のユーザー・クライアント・認証フローが置換または削除 / 作成となる。master と Terraform 用クライアントに削除・置換がないことを確認する。`terraform destroy` や手動の realm 削除、state の削除は行わない。
-
-3. `https://keycloak.pstr.space/realms/pke/account/` に `soli` と `soli-initial-password` で入り、初回登録を完了する。管理画面は `https://admin.keycloak.pstr.space/admin/pke/console/`。
-4. `terraform output -raw sui_helm_values` を 1Password の `sui-keycloak/values.yaml` へ登録し直す。新しい subject が必要なため、旧出力を再利用しない。sui と MCP クライアントも新 issuer で再ログイン・再接続する。
-5. 適用完了後、共通 realm と soli の `prevent_destroy` を戻す別 PR を適用する。
-
-## 初回適用と切替
-
-新規構築時の手順。pstr を適用済みの場合は、先に「pstr からの作り直し」の手順を使う。Keycloak 本体の再構築は不要。
+## 初回構築
 
 1. Git の変更をマージし、Flux に公開 Ingress の `/realms/pke/` を反映する。sui HelmRelease は Bearer JWT 対応コードを含む appVersion の chart を指定する。
 2. このディレクトリで **bootstrap モード**を読み込み、必要な変数を指定して plan / apply する。
@@ -154,6 +128,8 @@ curl --fail https://keycloak.pstr.space/.well-known/oauth-authorization-server/r
 
 公開ホストの `/admin/` と `/realms/master/` が到達不能で、管理ホストが証明書なしの接続を拒否することも確認する。
 DB は単一 instance。Keycloak も StatefulSet の単一 Pod を置き換えるため、更新時に認証が一時停止する。週次 backup + WAL archive と復元は [CNPG.md](../../CNPG.md) を参照する。
+
+運用状況は [PKE / Keycloak](https://grafana.str08.net/d/pke-keycloak) で確認する。HTTP・DCR/token・JVM・DB接続プールと認証拒否ログを表示し、DB本体の詳細は CloudNativePG へ移動する。保存定義と表示上の制約は [Grafanaの運用](../../grafana/README.md#keycloak) を参照する。
 
 ## MCP の設定
 
