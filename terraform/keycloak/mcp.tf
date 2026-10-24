@@ -32,10 +32,11 @@ resource "keycloak_openid_audience_protocol_mapper" "sui" {
   add_to_id_token          = false
   add_to_access_token      = true
 }
-# CIMD で新規作成されるクライアントが、要求した権限だけを取得できるようにする。
+# CIMD / DCR で新規作成されるクライアントが、要求した権限だけを取得できるようにする。
+# DCR の scope 省略時にも、この optional scopes が付く。他アプリの scope は個別に割り当てる。
 resource "keycloak_realm_optional_client_scopes" "pke" {
   realm_id        = keycloak_realm.pke.id
-  optional_scopes = concat(["address", "phone", "offline_access", "microprofile-jwt"], [for scope in keycloak_openid_client_scope.sui : scope.name])
+  optional_scopes = concat(["offline_access"], [for scope in keycloak_openid_client_scope.sui : scope.name])
 }
 resource "keycloak_realm_client_policy_profile" "mcp" {
   realm_id = keycloak_realm.pke.id

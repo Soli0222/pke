@@ -102,11 +102,15 @@ plan では共通 realm とその配下のユーザー・クライアント・�
 source ./setup.sh bootstrap
 export TF_VAR_soli_email='<soli のメールアドレス>'
 terraform init
+# pke realm がまだ存在しない新規構築時だけ、標準登録ポリシーの import 前に realm を作る。
+terraform plan -target=keycloak_realm.pke -out=keycloak-realm.tfplan
+terraform apply keycloak-realm.tfplan
 terraform plan -out=keycloak.tfplan
 terraform apply keycloak.tfplan
 ```
 
 `setup.sh bootstrap` は一時管理者で provider を認証し、同時に専用 client secret をリソース作成へ渡す。`master` は import block で取り込む。
+realm だけの適用は新規構築時の import 対象作成に限る。続けて全体 plan / apply を完了する。既存の pke への通常適用では `-target` を使わない。
 
 3. `https://keycloak.pstr.space/realms/pke/account/` へ soli と仮パスワードでログインし、パスワード変更・OTP・パスキー登録を完了する。mTLS 証明書付きブラウザで pke 管理画面にも入り、管理権限を確認する。
 4. 同じ端末で **サービスアカウントモード**へ切り替え、以後の Terraform 認証を確認する。
@@ -158,6 +162,36 @@ PKCE は S256。read/write scope は optional とし、discovery に掲載する
 resource は `https://sui.str08.net/mcp` に限定し、audience を resource URL に束縛する。
 JWT は RS256、短い有効期限、標準の `JWT` / 本文 `Bearer` / `azp` を使用し、sui は専用フラグなしで検証する。
 Web クライアントは `sui-web`、Authorization Code + PKCE の public client で、MCP 用 scope は割り当てない。
+
+### DCR
+
+Grok のカスタムコネクタには匿名の OIDC Dynamic Client Registration（DCR）を提供する。CIMD と ChatGPT の事前登録は併用する。
+Terraform は `dcr.tf` で登録ルールを管理する。DCR で作られた個々のクライアントは Terraform に取り込まず、Client ID・Client Secret・Registration Access Token は Keycloak と接続元クライアントで管理する。1Password への転記は不要。
+
+- Keycloak が作った既定の匿名登録ポリシー6件を名前で import する。既定ポリシーを残したまま同種のポリシーを追加しない。
+- DCR のクライアント URL は `grok.com` / `console.x.ai` に限定し、redirect URI は HTTPS・ワイルドカードなしとする。登録リクエストの送信元 IP と公開 Web ホストの IP は照合しない。
+- ユーザーの同意を必須にし、Full Scope Allowed を無効にする。登録者による protocol mapper の追加を許可せず、管理済みの client scopes で claims を付与する。
+- 許可する scope は `openid` / `basic` / `profile` / `email` / `offline_access` / `read:sui` / `write:sui`。realm の既定 optional scopes も `offline_access` と sui の2 scope に絞り、scope 省略時に別の権限が付かないようにする。他アプリの scope はそのクライアントへ個別に割り当てる。
+- 登録・Registration Access Token による更新時に PKCE S256 を設定し、implicit / password grant を無効化する。`ByAnonymous` 条件は CIMD の登録・更新にも一致するため、この共通ポリシーの redirect URI 検査には既存の `claude.ai` も含める。Terraform の管理 API 更新には適用しない。
+- Max Clients Limit は realm 全体で50件。DCR だけでなく組み込み・事前登録・CIMD のクライアントも含む。到達後は新しい匿名登録が拒否され、既存クライアントのログインは継続する。不要な動的クライアントは接続元との対応を確認して管理画面から削除する。
+
+URL ホストの許可は登録者が Grok 本人であることの証明ではない。登録できても sui の利用権限は得られず、ユーザーの認証・同意に加え、sui が issuer / subject / audience / scope を検証する。管理ロールの scope は渡さない。
+
+#### 公開する順序
+
+登録ポリシーと公開 Ingress は別 PR で適用する。Ingress を公開する PR は、次の Terraform apply 完了後にマージする。
+
+```sh
+# 登録ポリシーの PR をマージして最新の main を取得した後、terraform/keycloak で実行
+source ./setup.sh
+export TF_VAR_soli_email='<soli のメールアドレス>'
+terraform plan -out=keycloak-dcr.tfplan
+terraform apply keycloak-dcr.tfplan
+```
+
+plan では既定登録ポリシーの import / 更新、MCP 登録 profile / policy の追加、realm の optional scopes の変更を確認する。realm・ユーザー・既存クライアントを作り直す変更は不要。
+公開後、Grok のカスタムコネクタに `https://sui.str08.net/mcp` を指定する。`validate-url` の `oauthStrategy` が `OAUTH_STRATEGY_DCR` になり、Client ID / Secret の手入力なしで認証へ進むことを確認する。続けて soli の認証と同意を完了し、ツール一覧と参照が成功することを確認する。
+公開直後に BYO のままなら、DCR の HTTP status と Keycloak の登録拒否ログを確認する。登録時に返される secret / Registration Access Token をログや PR へ貼らない。
 
 ## 切り戻し
 
