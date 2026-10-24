@@ -73,7 +73,6 @@ curl --fail https://keycloak.pstr.space/realms/sui/.well-known/openid-configurat
 
 公開ホストの `/admin/` と `/realms/master/` が到達不能で、管理ホストが証明書なしの HTTPS 接続を拒否することも確認する。
 DB は単一 instance。Keycloak も StatefulSet の単一 Pod を置き換えるため、更新時に認証が一時停止する。CNPG の週次 backup + WAL archive と復元手順は [CNPG.md](../../CNPG.md) を参照する。
-バックアップは `s3://cnpg-backup/keycloak/` を保存先とする。空の DB から作り直す際は、別 DB の WAL と混在させないよう未使用の保存先を使う。バケット直下にある旧 `keycloak-cluster` のバックアップは自動復元しない。
 
 再構築のため Flux の Keycloak 同期を停止している場合は、修正をマージして GitRepository が新しい revision を取得した後に再開する。namespace と DB は Flux が再作成する。
 

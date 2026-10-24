@@ -6,8 +6,7 @@ metadata:
 spec:
   retentionPolicy: 7d
   configuration:
-    # 初期 DB のアーカイブと分離し、空の DB から再構築できる保存先にする。
-    destinationPath: s3://cnpg-backup/keycloak/
+    destinationPath: s3://cnpg-backup/
     endpointURL: ${CNPG_BACKUP_ENDPOINT_URL}
     s3Credentials:
       accessKeyId:
