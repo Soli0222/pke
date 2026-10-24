@@ -16,7 +16,8 @@ Auth0 は切替後の接続確認が完了するまで残す。既存の `terraf
 
 公開 Ingress は `/admin/`、`/realms/master/`、匿名 DCR をルーティングしない。
 管理 URL の指定だけでは管理 API を閉じられないため、Ingress のパス制限と併用する。
-master realm の `frontendUrl` も管理ホストに固定し、管理ログインを公開ホストへリダイレクトさせない。
+Helm の `KC_HOSTNAME` と `KC_HOSTNAME_ADMIN` はどちらも管理ホストに固定する。これにより、Terraform 未適用の初回起動から master realm のログインと Cookie 確認 iframe が管理ホスト内で完結する。
+Terraform は master realm の `frontendUrl` に同じ管理 URL を明示し、sui realm の `frontendUrl` にだけ公開 URL を設定する。
 HTTP のバックエンドへ到達できる Pod は NetworkPolicy で Traefik に絞る。Keycloak は Traefik の転送ヘッダーを信頼する。
 DNS は既存の ExternalDNS、サーバー証明書は cert-manager の HTTP-01 で管理する。Cloudflare の証明書認証を迂回しないよう DNS-only で使う。
 
@@ -39,8 +40,8 @@ Flux 差分 CI は生成 Secret を取得せず `--allow-missing-secrets` で re
 
 ## 反映順序
 
-1. sui の Bearer JWT 対応 PR をマージし、そのコードを含むコンテナイメージをリリースする。実在する固定タグを確認する。
-2. `keycloak-bootstrap` を作成し、この Flux 構成をマージする。natsume の Keycloak・CNPG・証明書・DNS が準備できたことを確認する。
+1. `keycloak-bootstrap` を作成し、この Flux 構成をマージする。natsume の Keycloak・CNPG・証明書・DNS が準備できたことを確認する。管理画面 `https://admin.keycloak.pstr.space/admin/master/console/` は、この段階で mTLS 証明書と bootstrap 管理者を使ってログインできる。Terraform の事前適用や手動での realm 設定変更は不要。
+2. sui の Bearer JWT 対応 PR をマージし、そのコードを含むコンテナイメージをリリースする。実在する固定タグを確認する。Keycloak だけの先行デプロイではこのリリースを待つ必要はない。
 3. このディレクトリで `setup.sh` を読み、確認済みの sui イメージタグを指定して Terraform を適用する。
 
 ```sh
@@ -52,7 +53,7 @@ terraform apply keycloak.tfplan
 ```
 
 provider は管理ホストへ mTLS で接続する。`master` は起動時に作られるため import block で取り込む。
-初回の Terraform は管理ブラウザのログインより先に実行できる（admin-cli の token 取得は管理ホストを直接指定する）。
+初回の Terraform は管理ブラウザのログイン前後どちらでも実行できる（admin-cli の token 取得は管理ホストを直接指定する）。
 `master`、sui realm、sui ユーザーには `prevent_destroy` を設定している。
 sui の初期パスワードは write-only / ephemeral 引数で渡し、state / plan へ保存しない。`value_wo_version` を変更した場合だけ再設定される。
 
@@ -72,6 +73,14 @@ curl --fail https://keycloak.pstr.space/realms/sui/.well-known/openid-configurat
 
 公開ホストの `/admin/` と `/realms/master/` が到達不能で、管理ホストが証明書なしの HTTPS 接続を拒否することも確認する。
 DB は単一 instance。Keycloak も StatefulSet の単一 Pod を置き換えるため、更新時に認証が一時停止する。CNPG の週次 backup + WAL archive と復元手順は [CNPG.md](../../CNPG.md) を参照する。
+
+再構築のため Flux の Keycloak 同期を停止している場合は、修正をマージして GitRepository が新しい revision を取得した後に再開する。namespace と DB は Flux が再作成する。
+
+```sh
+flux reconcile source git flux-system --context natsume@soli -n flux-system
+flux resume kustomization keycloak --context natsume@soli -n flux-system
+flux reconcile kustomization keycloak --context natsume@soli -n flux-system
+```
 
 ## MCP の設定
 

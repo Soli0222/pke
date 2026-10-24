@@ -88,7 +88,9 @@ spec:
             name: keycloak-bootstrap
             key: password
       - name: KC_HOSTNAME
-        value: https://keycloak.pstr.space
+        # Terraform 未適用の master realm も管理ホスト内で認証を完結させる。
+        # 公開する sui realm の frontendUrl は Terraform で別途設定する。
+        value: https://admin.keycloak.pstr.space
       - name: KC_HOSTNAME_ADMIN
         value: https://admin.keycloak.pstr.space
       - name: KC_FEATURES
