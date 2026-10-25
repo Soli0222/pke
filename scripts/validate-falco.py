@@ -14,6 +14,68 @@ ROLE = ROOT / "ansible/roles/install-falco"
 IMAGE = "falcosecurity/falco:0.45.0"
 
 
+def validate_upgrade_independence(rules):
+    """全 custom rules にリリース・実体 ID の固定が戻ることを防ぐ。"""
+    forbidden_fields = (
+        "container.image.tag", "container.image.digest", "container.image.id",
+        "container.image", "container.name_hash", "k8s.pod.name", "k8s.pod.id",
+    )
+
+    def check(value):
+        if isinstance(value, dict):
+            for item in value.values():
+                check(item)
+        elif isinstance(value, list):
+            for item in value:
+                check(item)
+        elif isinstance(value, str):
+            for field in forbidden_fields:
+                assert not re.search(r"(?<![\w.])" + re.escape(field) + r"(?![\w.])", value), value
+            # repository 内の semver や実行パス内の PG major も対象。
+            assert not re.search(r'''/[0-9]+(?:[.][0-9]+)*(?:-[A-Za-z]+)?(?=[/:\s"')\],]|$)''', value), value
+            if "container.id" in value and value != "container.id":
+                raise AssertionError("container.id は host を照合する例外表でのみ使用する")
+
+    check(rules)
+    for rule in rules:
+        for exception in rule.get("exceptions", []):
+            if "container.id" in exception["fields"]:
+                index = exception["fields"].index("container.id")
+                assert exception["comps"][index] == "="
+                assert all(row[index] == "host" for row in exception["values"])
+    print("All custom rules: no release pins / image tags / digests / Pod or container IDs OK")
+
+
+def validate_cnpg_version_boundaries(condition):
+    """数値部分だけを可変にし、配布元・パス構造の境界を維持する。"""
+    patterns = dict(re.findall(r'([\w.]+) regex "([^"]+)"', condition))
+    image_pattern = patterns["container.image.repository"]
+    parent_pattern = patterns["proc.pexepath"]
+    repository = "ghcr.io/soli0222/pgroonga-cnpg/"
+    for version in ("4.0.6", "4.1.0", "5.0.0", "99.12.345"):
+        assert re.fullmatch(image_pattern, repository + version + "-alpine")
+    for image in (
+        "evil.example/" + repository + "4.1.0-alpine",
+        repository.replace("soli0222", "other") + "4.1.0-alpine",
+        repository.replace("ghcr.io", "ghcrXio") + "4.1.0-alpine",
+        repository + "4x1x0-alpine", repository + "4.1.0-alpine/other",
+        repository + "4.1.0-alpine-evil", repository + "4.1.0-debian",
+        repository + "4.1.0-rc1-alpine", repository + "../4.1.0-alpine",
+    ):
+        assert not re.fullmatch(image_pattern, image), image
+    for major in ("16", "18", "19", "99"):
+        assert re.fullmatch(parent_pattern, f"/usr/lib/postgresql/{major}/bin/postgres")
+    for path in (
+        "/tmp/usr/lib/postgresql/18/bin/postgres",
+        "/usr/lib/postgresql/18/bin/postgres-evil",
+        "/usr/lib/postgresql/18/../bin/postgres",
+        "/usr/lib/postgresql/latest/bin/postgres",
+        "/usr/lib/postgresql/18/bin/sh",
+    ):
+        assert not re.fullmatch(parent_pattern, path), path
+    print("CNPG image / PostgreSQL major: upgrades allowed, foreign images / paths denied OK")
+
+
 def exception_matches(exception, event):
     """今回の例外表で使う = / in を評価する。型・構文は Falco 本体でも検証する。"""
     def matches(field, comparison, value):
@@ -104,10 +166,13 @@ def main():
         and not settings["syslog_output"]["enabled"]
     )
     rules = yaml.safe_load((ROLE / "files/pke-rules.yaml").read_text())
+    validate_upgrade_independence(rules)
     validate_exception_boundaries(rules)
+    cnpg = next(rule["condition"] for rule in rules if rule.get("macro") == "postgres_running_cnpg")
+    validate_cnpg_version_boundaries(cnpg)
     # コマンド末尾・WAL パスの境界。Falco の regex は full match / POSIX ERE。
     # Python はこの共通構文の回帰試験にのみ使い、ルールのコンパイルは Falco 本体に任せる。
-    pattern = re.search(r'proc.cmdline regex "([^"]+)"', rules[0]["condition"])[1]
+    pattern = re.search(r'proc.cmdline regex "([^"]+)"', cnpg)[1]
     prefix = "sh -c -- /controller/manager wal-archive --log-destination /controller/log/postgres.json pg_wal/"
     for wal in (
         "000000040000000000000086",

@@ -271,14 +271,16 @@ Falco の JSON イベントをホスト Alloy が journal から読み、Loki �
 
 [custom rules](ansible/roles/install-falco/files/pke-rules.yaml) は次の通常動作に限定する。
 
-- CNPG: `app.kubernetes.io/managed-by=cloudnative-pg` と `cnpg.io/podRole=instance`、postgres コンテナ、イメージ、postgres 親プロセス、非対話実行、WAL アーカイブの完全なコマンド形式を照合する。DB 名・Pod 名を変更しても同じ処理を識別できる。任意のシェル実行やコマンド末尾の追加実行は除外しない。
+- CNPG: `app.kubernetes.io/managed-by=cloudnative-pg` と `cnpg.io/podRole=instance`、postgres コンテナ、イメージの配布元・系列、postgres 親プロセス、非対話実行、WAL アーカイブの完全なコマンド形式を照合する。PGroonga のイメージパス内のリリース番号と PostgreSQL の実行パス内の major version は数値パターンで照合する。通常のバージョン更新や DB 名・Pod 名の変更では例外の更新を必要としない。任意のシェル実行やコマンド末尾の追加実行は除外しない。
 - dracut: ホストの root が実行する `/usr/bin/grep` の `grep ^root: /etc/shadow` に限定する。親の dracut と、dpkg の postinst または kernel hook のプロセス系列を照合する。別コマンド・別ファイル・任意の親からの読み取りは対象外。
 - Longhorn manager: longhorn-system 内の manager が実行する `longhorn backup cleanup-all-mounts` に限定する。
 - Longhorn instance-manager: 既知のイメージ、daemon の完全なコマンドと親プロセス、root・非対話実行を照合する。`dup3` による TCP の受信側 socket、制御用の8500 / 8501 / 8503だけを除外する。外向き接続・別ポート・任意のシェルは検知対象に残す。
 
 systemd の正規の資格情報読み取りには upstream の例外を使う。
 `cat /etc/shadow` を含む任意の機密ファイル読み取りは通知対象に残す。
-DB イメージや PostgreSQL major version の変更時は例外の親実行ファイルパスも確認する。
+例外はリリース番号・イメージタグ・digest・Pod 名・コンテナ ID に固定せず、管理主体と処理内容で限定する（ホスト処理の `container.id = host` は除く）。
+配布元・イメージ系列・実行パスの構造・処理内容が変わった場合は再評価する。未知の処理まで自動で許可しない。
+`scripts/validate-falco.py` は全 custom rules の固定値を検査し、バージョン更新をまたぐ許可と、別配布元・不正パス・追加コマンドなどの拒否を検証する。
 Falco の container plugin は配布設定を使い、標準の CRI socket 一覧に K3s の socket を含む。
 CNPG の管理ラベルは `k8s.pod.label[...]` で container runtime から取得する。ラベルが取得できない場合は例外にせず、検知対象に残す。
 
