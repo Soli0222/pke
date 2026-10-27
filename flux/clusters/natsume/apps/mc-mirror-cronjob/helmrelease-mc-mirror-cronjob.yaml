@@ -21,6 +21,8 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-03
     externalSecret:
       name: mc-mirror-cronjob-secrets
     cronjob:

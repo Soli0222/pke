@@ -21,3 +21,6 @@ spec:
         name: cloudnative-pg-repo
         namespace: cnpg-system
       interval: 1h
+  values:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-03

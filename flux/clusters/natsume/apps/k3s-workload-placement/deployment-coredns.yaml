@@ -1,0 +1,21 @@
+# K3s が管理する Deployment の配置だけを SSA で補完する。
+# image・Corefile・Service・RBAC は K3s の管理を維持する。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coredns
+  namespace: kube-system
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: Merge
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  replicas: 2
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                k8s-app: kube-dns
+            topologyKey: kubernetes.io/hostname

@@ -28,6 +28,8 @@ spec:
       resizerReplicaCount: 1
       snapshotterReplicaCount: 1
     longhornUI:
+      nodeSelector:
+        kubernetes.io/hostname: natsume-08
       replicas: 1 
     persistence:
       defaultClass: true
@@ -35,6 +37,9 @@ spec:
       defaultDataLocality: best-effort
       unmapMarkSnapChainRemoved: enabled
       dataEngine: v1
+    longhornDriver:
+      nodeSelector:
+        kubernetes.io/hostname: natsume-08
     defaultSettings:
       createDefaultDiskLabeledNodes: true
       defaultDataPath: /var/lib/longhorn

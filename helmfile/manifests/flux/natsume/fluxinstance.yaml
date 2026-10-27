@@ -30,3 +30,19 @@ spec:
     ref: refs/heads/main
     path: flux/clusters/natsume
     interval: 1m
+  kustomize:
+    patches:
+      - target:
+          kind: Deployment
+          name: (source-controller|kustomize-controller|helm-controller)
+        patch: |
+          - op: add
+            path: /spec/template/spec/nodeSelector/kubernetes.io~1hostname
+            value: natsume-03
+      - target:
+          kind: Deployment
+          name: notification-controller
+        patch: |
+          - op: add
+            path: /spec/template/spec/nodeSelector/kubernetes.io~1hostname
+            value: natsume-08

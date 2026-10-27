@@ -19,6 +19,8 @@ spec:
         namespace: grafana
       interval: 1h
   values:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-08
     replicas: 1
 
     admin:
@@ -46,6 +48,8 @@ spec:
       enabled: true
 
     imageRenderer:
+      nodeSelector:
+        kubernetes.io/hostname: natsume-08
       enabled: true
       image:
         tag: v5.8.11

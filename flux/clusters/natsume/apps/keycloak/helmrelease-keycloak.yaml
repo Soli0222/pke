@@ -20,6 +20,8 @@ spec:
         namespace: keycloak
       interval: 1h
   values:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-08
     nameOverride: keycloak
     fullnameOverride: keycloak
     # StatefulSet の単一 Pod を順に置き換え、DB schema 更新時に旧版を並行稼働させない。

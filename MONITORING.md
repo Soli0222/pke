@@ -291,6 +291,7 @@ NetworkPolicy では、Longhorn manager の9500/TCP、Grafana renderer の8081/T
 Flux controller / Operator は `apps/flux-monitoring/` の PodMonitor で収集する。
 Operator の `flux_resource_info` は値1と ready / suspended ラベルで状態を表し、対象 namespace は `exported_namespace`。状態更新は scrape より遅れるため、実リソースとも照合する。
 CoreDNSは両クラスタの`apps/coredns-monitoring/`にあるServiceMonitorから、K3s管理の`kube-dns` Serviceのmetricsポートを収集する。
+natsume の replicas と配置は監視設定から分離し、`apps/k3s-workload-placement/` で管理する。
 jobは`coredns`、clusterはAlloyの共通relabelで付ける。K3sのCorefile / Deployment / Serviceは監視用に上書きしない。
 [CoreDNS画面](https://grafana.str08.net/d/wY4blRMGz)は現行の`coredns_proxy_*{proxy_name="forward"}`を使う。DNSSEC DO-bit別の指標は公開されていないため対象外とし、古いDNSSEC専用cache系列も使用しない。
 

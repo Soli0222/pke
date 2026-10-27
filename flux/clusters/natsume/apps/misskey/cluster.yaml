@@ -8,6 +8,9 @@ spec:
   imageName: ghcr.io/soli0222/pgroonga-cnpg/4.1.0-alpine:18
   primaryUpdateMethod: switchover
   smartShutdownTimeout: 60
+  affinity:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-08
   resources:
     requests:
       cpu: 500m

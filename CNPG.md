@@ -9,6 +9,7 @@ PKE の CloudNativePG（CNPG）は、natsume のアプリ用 PostgreSQL を管�
 
 CNPG operator は両クラスタに導入するが、恒久運用の DB の `Cluster` は natsume のみ。
 すべて `instances: 1`、StorageClass は `topolvm` で、ノード障害時の自動フェイルオーバー用 replica はない。
+すべての Cluster は `natsume-08` に固定する。Pod の配置先と既存 PV の node affinity を一致させ、nodeSelector の変更だけで DB を移動しない。
 Pooler は使わず、アプリは CNPG の Service に直接接続する。
 
 | Namespace | Cluster | DB / Owner | 容量 | バックアップ | 実行時刻（JST） |

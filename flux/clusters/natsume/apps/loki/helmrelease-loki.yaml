@@ -88,6 +88,8 @@ spec:
       enabled: false
 
     singleBinary:
+      nodeSelector:
+        kubernetes.io/hostname: natsume-03
       replicas: 1
       extraArgs:
         - -config.expand-env=true

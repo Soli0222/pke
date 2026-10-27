@@ -18,6 +18,8 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-03
     envFrom:
       - secretRef:
           name: r2-o11y-secret

@@ -21,6 +21,8 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-03
     resources:
       limits:
         cpu: 500m

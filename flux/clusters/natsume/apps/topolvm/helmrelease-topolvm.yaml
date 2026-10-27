@@ -25,6 +25,8 @@ spec:
     scheduler:
       enabled: false
     controller:
+      nodeSelector:
+        kubernetes.io/hostname: natsume-03
       replicaCount: 1
       podDisruptionBudget:
         enabled: false

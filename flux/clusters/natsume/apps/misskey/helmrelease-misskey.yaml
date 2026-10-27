@@ -56,6 +56,8 @@ spec:
         captureRedisRootSpans: true
 
     web:
+      nodeSelector:
+        kubernetes.io/hostname: natsume-08
       replicaCount: 1
 
       extraEnv:

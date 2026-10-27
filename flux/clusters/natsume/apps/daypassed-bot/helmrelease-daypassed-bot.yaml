@@ -22,6 +22,8 @@ spec:
         namespace: daypassed-bot
       interval: 1h
   values:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-03
     schedule: 0 0 * * *
     env:
       specificDate: '2023-04-07'

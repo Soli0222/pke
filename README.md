@@ -42,6 +42,22 @@ K3s クラスタ名は host_vars の `cluster`、Helmfile environment、Flux の
 バージョンと導入アプリの一覧は設定ファイルを正とします。
 ノード用ソフトウェアは Ansible の group_vars / role defaults、基盤 chart は `helmfile/helmfile.yaml.gotmpl`、アプリは各 HelmRelease と `charts/*/Chart.yaml`、Terraform provider は各ディレクトリの定義を参照してください。
 
+### natsume の Pod 配置と再起動
+
+アプリの固定先は各 HelmRelease の `nodeSelector`、DB は CNPG Cluster の `affinity.nodeSelector` で管理します。
+Misskey の Web・migration Job・DB・Valkey と Summaly は同じノードに配置します。
+bootstrap の固定先は Helmfile environment の `bootstrapNode`、Flux controller は [FluxInstance](helmfile/manifests/flux/natsume/fluxinstance.yaml) の patch で指定します。
+DaemonSet は両ノードで稼働させ、Longhorn が生成する CSI controller・instance-manager の配置は Longhorn に任せます。
+
+[k3s-workload-placement](flux/clusters/natsume/apps/k3s-workload-placement/) は K3s 管理の既存 Deployment に、CoreDNS の2 replicas・ノード間分散と metrics-server の固定先だけを SSA で追加します。
+image・Corefile・Service・RBAC は K3s の管理を維持します。これらの Deployment は Flux の prune 対象にしません。
+K3s 更新後にも CoreDNS が両ノードで Ready になっていることを確認します。
+
+固定はノード停止時の別ノードへの移動を防ぎますが、可用性を保証するものではありません。
+唯一の server / etcd の停止中は新規スケジューリングができず、DB の配置ノードが停止すると1 instance の DB も停止します。
+Longhorn の Pod 配置とデータ replica の配置は別です。`best-effort` の data locality は同居を保証しないため、移動後は Pod の Ready に加え、volume の `healthy`、attach 先、稼働中 replica の `spec.nodeID` が意図したノードであることを確認してから元ノードを再起動します。
+Misskey Valkey は RWO volume の付け替えに `Recreate` を使うため、反映時に短時間の停止が発生します。データ replica が移動しない場合は、元ノードを停止せず Longhorn の空き容量・scheduling 条件を確認します。
+
 ## 構築する
 
 作業端末に Ansible、SSH agent、kubectl、Helm / Helmfile、1Password CLI と必要な Ansible collection を用意します。

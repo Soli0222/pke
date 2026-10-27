@@ -22,6 +22,8 @@ spec:
         namespace: emoji-service
       interval: 1h
   values:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-03
     monitoring:
       serviceMonitor:
         enabled: true

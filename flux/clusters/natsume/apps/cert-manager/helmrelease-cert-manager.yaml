@@ -22,6 +22,9 @@ spec:
         namespace: cert-manager
       interval: 1h
   values:
+    global:
+      nodeSelector:
+        kubernetes.io/hostname: natsume-03
     crds:
       enabled: true
     prometheus:

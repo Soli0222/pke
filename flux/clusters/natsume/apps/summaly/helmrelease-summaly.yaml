@@ -22,6 +22,8 @@ spec:
         namespace: summaly
       interval: 1h
   values:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-08
     ingress:
       enabled: true
       className: traefik

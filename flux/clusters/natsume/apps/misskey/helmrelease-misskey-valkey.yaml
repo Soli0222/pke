@@ -22,6 +22,10 @@ spec:
         namespace: misskey
       interval: 1h
   values:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-08
+    # RWO ボリュームをノード間で付け替えるため、旧 Pod の停止を待つ。
+    deploymentStrategy: Recreate
     env:
       TZ: Asia/Tokyo
     resources:
