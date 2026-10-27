@@ -1,0 +1,9 @@
+# 他の API server 引数を保持して監査引数だけを追加する。
+kube-apiserver-arg+:
+  - audit-policy-file=/etc/rancher/k3s/audit-policy.yaml
+  - audit-log-path=/var/log/kubernetes-audit/audit.log
+  - audit-log-format=json
+  - audit-log-mode=batch
+  - audit-log-maxage=7
+  - audit-log-maxbackup=4
+  - audit-log-maxsize=50

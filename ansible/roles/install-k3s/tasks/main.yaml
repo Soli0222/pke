@@ -230,6 +230,10 @@
     mode: "0600"
   notify: Restart k3s
 
+- name: Configure server API audit
+  ansible.builtin.import_tasks: configure-audit.yaml
+  when: k3s_node_role == 'server'
+
 - name: Download k3s install script
   ansible.builtin.get_url:
     url: https://get.k3s.io

@@ -9,6 +9,9 @@ on:
       - 'flux/clusters/**'
       - 'ansible/inventories/**'
       - 'ansible/roles/install-falco/**'
+      - 'ansible/roles/install-alloy/**'
+      - 'ansible/roles/install-k3s/**'
+      - 'scripts/validate-kubernetes-audit.py'
       - 'scripts/validate-falco.py'
       - 'scripts/*monitoring*'
       - 'scripts/validate-blackbox-rules.py'
@@ -33,6 +36,8 @@ jobs:
         run: python3 -m pip install 'PyYAML==6.0.3' 'Jinja2==3.1.6'
       - name: Validate Falco config and rules without generating events
         run: python3 scripts/validate-falco.py
+      - name: Validate audit sanitization with isolated Alloy
+        run: python3 scripts/validate-kubernetes-audit.py
       - name: Validate rules and inventory with real Alloy and promtool
         run: python3 scripts/validate-monitoring-rules.py
       - name: Validate generated inventory

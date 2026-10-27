@@ -1,0 +1,9 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+omitStages:
+  - RequestReceived
+omitManagedFields: true
+rules:
+  # 成功・拒否、Secret / TokenRequest を含め本文は一切記録しない。
+  # URI 等は Metadata にも残るため、生ログの権限制限と転送前の除去が必要。
+  - level: Metadata

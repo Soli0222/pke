@@ -37,3 +37,6 @@ k3s_datastore_keyfile: /etc/etcd/pki/k3s-etcd-client.key
 # Agent settings. Store k3s_token in 1Password/group_vars or pass it explicitly.
 k3s_server_url: ""
 k3s_token: ""
+
+# API 監査は server のみ。既存 binary/config を維持する専用 playbook でも使用する。
+k3s_audit_enabled: false

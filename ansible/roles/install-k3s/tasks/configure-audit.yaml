@@ -1,0 +1,46 @@
+---
+- name: Validate audit target
+  ansible.builtin.assert:
+    that:
+      - k3s_node_role == 'server'
+
+- name: Create protected audit and drop-in directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  loop:
+    - /var/log/kubernetes-audit
+    - /etc/rancher/k3s/config.yaml.d
+  when: k3s_audit_enabled | bool
+
+- name: Install metadata-only audit policy
+  ansible.builtin.copy:
+    src: audit-policy.yaml
+    dest: /etc/rancher/k3s/audit-policy.yaml
+    owner: root
+    group: root
+    mode: '0600'
+    backup: true
+  when: k3s_audit_enabled | bool
+  notify: Restart k3s
+
+- name: Configure API audit without replacing the main configuration
+  ansible.builtin.template:
+    src: audit-config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml.d/90-audit.yaml
+    owner: root
+    group: root
+    mode: '0600'
+    backup: true
+  when: k3s_audit_enabled | bool
+  notify: Restart k3s
+
+- name: Disable audit without deleting retained logs
+  ansible.builtin.file:
+    path: /etc/rancher/k3s/config.yaml.d/90-audit.yaml
+    state: absent
+  when: not (k3s_audit_enabled | bool)
+  notify: Restart k3s

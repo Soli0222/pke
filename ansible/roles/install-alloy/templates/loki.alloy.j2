@@ -92,6 +92,82 @@ loki.process "filter_logs" {
 }
 
 // ============================================================
+// Kubernetes API audit
+// ============================================================
+
+{% if k3s_audit_enabled | default(false) %}
+// 生ログは汎用 file pipeline に流さず、許可した項目だけで出力を作り直す。
+local.file_match "kubernetes_audit" {
+  path_targets = [{
+    "__path__" = "/var/log/kubernetes-audit/audit.log",
+    "job"      = "kubernetes-audit",
+    "origin"   = "audit",
+  }]
+  sync_period = "5s"
+}
+
+loki.source.file "kubernetes_audit" {
+  targets       = local.file_match.kubernetes_audit.targets
+  forward_to    = [loki.process.kubernetes_audit.receiver]
+  tail_from_end = false
+}
+
+loki.process "kubernetes_audit" {
+  stage.json {
+    drop_malformed = true
+    expressions = {
+      audit_id       = "auditID",
+      stage          = "stage",
+      verb           = "verb",
+      username       = "user.username",
+      groups         = "user.groups",
+      impersonated_username = "impersonatedUser.username",
+      impersonated_groups   = "impersonatedUser.groups",
+      api_group      = "objectRef.apiGroup",
+      api_version    = "objectRef.apiVersion",
+      resource       = "objectRef.resource",
+      subresource    = "objectRef.subresource",
+      namespace      = "objectRef.namespace",
+      name           = "objectRef.name",
+      status_code    = "responseStatus.code",
+      request_time   = "requestReceivedTimestamp",
+      stage_time     = "stageTimestamp",
+    }
+  }
+  stage.labels {
+    values = { audit_id = "audit_id" }
+  }
+  stage.match {
+    selector = "{audit_id=\"\"}"
+    action = "drop"
+    drop_counter_reason = "audit_missing_id"
+  }
+  // pack は元の行を _entry に残すため、先に固定文字列へ置き換える。
+  stage.template {
+    source   = "safe_entry"
+    template = "kubernetes audit"
+  }
+  stage.output { source = "safe_entry" }
+  stage.timestamp {
+    source = "stage_time"
+    format = "RFC3339Nano"
+    action_on_failure = "skip"
+  }
+  stage.pack {
+    labels = [
+      "audit_id", "stage", "verb", "username", "groups",
+      "impersonated_username", "impersonated_groups",
+      "api_group", "api_version", "resource", "subresource", "namespace", "name",
+      "status_code", "request_time", "stage_time",
+    ]
+    ingest_timestamp = false
+  }
+  stage.label_drop { values = ["filename"] }
+  forward_to = [loki.process.add_common_labels.receiver]
+}
+{% endif %}
+
+// ============================================================
 // Common labels for all logs
 // ============================================================
 

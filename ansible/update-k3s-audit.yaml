@@ -1,0 +1,48 @@
+---
+# binary、datastore、join token、主設定を変更しない。
+- name: Update API audit on existing K3s servers one node at a time
+  hosts: k3s_server
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  pre_tasks:
+    - name: Check existing installation
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /usr/local/bin/k3s
+        - /etc/rancher/k3s/config.yaml
+      register: k3s_audit_installation
+
+    - name: Require an existing installation
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+      loop: "{{ k3s_audit_installation.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+  tasks:
+    - name: Update audit configuration only
+      ansible.builtin.include_role:
+        name: install-k3s
+        tasks_from: configure-audit
+
+    - name: Apply pending restart before verifying API readiness
+      ansible.builtin.meta: flush_handlers
+
+    - name: Wait for the existing cluster API to become ready
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - --kubeconfig=/etc/rancher/k3s/k3s.yaml
+          - --request-timeout=10s
+          - get
+          - --raw=/readyz
+      register: k3s_audit_ready
+      changed_when: false
+      retries: 30
+      delay: 5
+      until: k3s_audit_ready.rc == 0
+      when: not ansible_check_mode

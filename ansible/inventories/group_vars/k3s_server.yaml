@@ -1,5 +1,6 @@
 ---
 k3s_node_role: server
+k3s_audit_enabled: true
 k3s_datastore_cafile: /etc/etcd/pki/ca.crt
 k3s_datastore_certfile: /etc/etcd/pki/k3s-etcd-client.crt
 k3s_datastore_keyfile: /etc/etcd/pki/k3s-etcd-client.key

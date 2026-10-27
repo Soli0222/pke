@@ -193,12 +193,81 @@ ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --limit 
 ```
 
 1台ずつ反映し、収集を確認して次へ進む。
-専用 playbook は `/etc/alloy/prometheus.alloy` を導入済み binary で validate し、backup を保存して、変更時だけ Alloy を再起動する。
+専用 playbook は `/etc/alloy/prometheus.alloy` と `/etc/alloy/loki.alloy` を導入済み binary で validate し、backup を保存して、変更時だけ Alloy を再起動する。
 出力された backup path を控える。check mode だけでは適用時の validate 完了を確認できない。
 
 Mimir で5分以上の更新を確認する。
 `node_scrape_collector_success{collector="systemd"}=1`、期待する unit の `node_systemd_unit_state{state="active"}=1`、`up{job="alloy-host"}=1` と cluster / hostname を照合する。
 node・Falco・対象ホストの etcd の収集も維持されていることを確認する。
+
+## 管理操作の監査
+
+### Kubernetes API
+
+server グループの `k3s_audit_enabled` で API 監査とホスト Alloy の専用収集を有効にする。
+対象は natsume-03 と meruto-01。agent の natsume-08 には API 監査ファイルを作らない。
+[audit policy](ansible/roles/install-k3s/files/audit-policy.yaml) は全リクエストを Metadata で記録し、RequestReceived の重複段階と request/response 本文を省く。
+長時間接続の ResponseStarted と完了段階は同じ audit ID で対応付ける。
+
+生ログは `/var/log/kubernetes-audit/audit.log` に保存する。
+ディレクトリは root 所有の0700、API server が作成するファイルは0600。
+ローテーションは50 MiB、世代数4、世代の保持上限7日で、アクティブファイルを含め通常約250 MiB以内を目安にする。
+容量制限で7日より早く削除される場合がある。日数は世代整理時に評価され、アクティブファイルや監査停止後のファイルの自動削除を保証しない。
+batch 出力は API 応答への影響を抑えるが、異常停止・バッファ飽和時に欠測し得る。完全な配送保証や改ざん防止の保管先ではない。
+
+Metadata でも URI、user-agent、annotations、エラー文に機密値が残る可能性がある。
+Alloy は専用 pipeline で主体・グループ・代理実行主体・verb・objectRef の対象・HTTP status・audit ID・時刻だけを抽出し、元の行を固定文字列に置き換えて JSON に詰め直す。
+URI を捨てるため、non-resource request のパスや exec のコマンド引数は転送先では復元できない。
+不正 JSON と audit ID のない行は破棄する。破棄は Alloy の `loki_process_dropped_lines_total` で確認する。
+ラベルは `cluster`、`hostname`、`job="kubernetes-audit"`、`origin="audit"` とし、ユーザー名や audit ID は索引ラベルにしない。
+時刻は `stageTimestamp` を使い、元の受信時刻と段階時刻も本文の項目に保持する。
+
+```logql
+{job="kubernetes-audit", cluster="natsume"} | json | status_code="403"
+{job="kubernetes-audit", cluster="meruto"} | json | username="<subject>"
+{job="kubernetes-audit"} | json | audit_id="<audit-id>"
+```
+
+ホスト Alloy は root で生ログを読み、既存の mTLS 経路で Loki に送る。
+Loki の保持期間は [HelmRelease](flux/clusters/natsume/apps/loki/helmrelease-loki.yaml) の14日。監査専用のアクセス分離や長期保管をこの pipeline だけで提供するものではない。
+収集位置は Alloy の storage path に保存される。停止中にローテーションされた過去ファイルは自動収集対象外なので、欠測時は保持中の生ログを権限のある管理者が調べる。
+生ログをそのまま Loki に再投入しない。
+
+設定だけを更新する際は [update-k3s-audit.yaml](ansible/update-k3s-audit.yaml) を使う。
+これは K3s binary、主設定、etcd、join token を更新せず、`config.yaml.d/90-audit.yaml` で監査引数を追加する。
+CLI や他の drop-in で `kube-apiserver-arg` を上書きしていないことを確認する。
+既存の API server 引数への追加方式は [K3s の設定マージ仕様](https://docs.k3s.io/installation/configuration#value-merge-behavior) に従う。
+
+```sh
+python3 scripts/validate-kubernetes-audit.py
+cd ansible
+ansible-playbook -i inventories/hosts.yaml update-k3s-audit.yaml --syntax-check
+ansible-playbook -i inventories/hosts.yaml update-k3s-audit.yaml --limit natsume-03 --check --diff
+ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --limit natsume-03 --check --diff
+```
+
+先に `update-alloy-monitoring.yaml` で収集設定を反映し、次に `update-k3s-audit.yaml` を1台に限定して実行する。
+API server の再起動を伴うため、対象クラスタの復旧経路とバックアップを確認してから適用する。
+`natsume@soli` / `meruto@soli` を明示した通常の読取操作で、API Ready、ノード状態、Loki 上の主体・対象・結果、他の収集の継続を確認して次のホストへ進む。
+本番で故意に障害や通知を発生させない。ログ量・空き容量・監査の出力エラー・転送失敗も確認する。
+
+戻す場合は対象1台に `-e '{"k3s_audit_enabled": false}'` を指定して監査用 playbook を実行する。
+drop-in の削除と K3s 再起動で監査引数を外し、生ログは保持する。
+API が起動しない場合はホストの root 復旧経路から同じ drop-in を外して K3s を再起動する。
+Alloy は保存した Loki / Prometheus 設定の backup を validate して復元する。
+
+### SSH / sudo、Keycloak、Grafana
+
+| 対象 | 記録・参照先 | 保持と制約 |
+|---|---|---|
+| SSH / sudo | ホストの journal と `/var/log/*.log` を既存 Alloy で Loki に収集 | Loki は14日。ユーザー・接続元・sudo の対象コマンドを調べる。共有 OS ユーザーの利用者識別や全対話操作の録画は提供しない |
+| Keycloak | master / pke のユーザーイベントと管理イベントを DB に保存し、Admin Console / Admin REST API で参照 | Terraform の [events.tf](terraform/keycloak/events.tf) と realm attributes で両方30日。管理イベントの representation は保存しない。Loki への独立した監査転送は行わない |
+| Grafana | Kubernetes Alloy が収集する通常のアプリログ | Loki は14日。ログに現れる認証失敗やエラーの調査に使う。全操作の監査記録とは扱わない |
+
+Keycloak の管理イベントには操作主体、対象 resource path、操作種別、結果を記録する。
+`events_expiration` はユーザーイベント用、realm の `adminEventsExpiration` は管理イベント用なので両方を設定する。
+ユーザーイベントの details や SSH / sudo のコマンド引数にも機密値が混じり得るため、ログの閲覧者を管理者に限定し、ログへ残る引数に秘密値を渡さない。
+Grafana の専用 audit 機能は [Enterprise / Cloud の機能](https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/audit-grafana/) であり、通常ログの収集だけでは同等の証跡を保証しない。
 
 ## 障害を切り分ける
 

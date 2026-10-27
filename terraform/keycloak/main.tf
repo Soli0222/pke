@@ -7,7 +7,8 @@ resource "keycloak_realm" "master" {
   realm   = "master"
   enabled = true
   attributes = {
-    frontendUrl = var.admin_url
+    frontendUrl           = var.admin_url
+    adminEventsExpiration = "2592000"
   }
   password_policy = "length(16)"
   web_authn_passwordless_policy {
@@ -39,7 +40,8 @@ resource "keycloak_realm" "pke" {
   default_signature_algorithm = "RS256"
   password_policy             = "length(16)"
   attributes = {
-    frontendUrl = var.public_url
+    frontendUrl           = var.public_url
+    adminEventsExpiration = "2592000"
   }
   web_authn_passwordless_policy {
     relying_party_entity_name     = "pke"
