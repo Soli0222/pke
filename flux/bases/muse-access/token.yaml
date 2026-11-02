@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: muse-observer-token
+  namespace: muse-system
+  annotations:
+    kubernetes.io/service-account.name: muse-observer
+# token と CA は Kubernetes が生成する。値を Git に保存しない。
+# ServiceAccount.secrets には登録せず、手動発行トークンとして管理する。
+type: kubernetes.io/service-account-token

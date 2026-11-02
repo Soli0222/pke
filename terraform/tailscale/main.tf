@@ -49,6 +49,25 @@ resource "tailscale_acl" "main" {
         "dst" = ["tag:muse-server"],
         "ip"  = ["*"],
       },
+      {
+        "src" = ["tag:muse-server"],
+        "dst" = ["tag:service"],
+        "ip"  = ["tcp:6443"],
+      },
+    ]
+
+    "tests" = [
+      {
+        "src"    = "tag:muse-server",
+        "proto"  = "tcp",
+        "accept" = ["tag:service:6443"],
+        "deny"   = ["tag:service:22", "tag:service:2379", "tag:service:2380", "tag:service:10250"],
+      },
+      {
+        "src"   = "tag:muse-server",
+        "proto" = "udp",
+        "deny"  = ["tag:service:6443"],
+      },
     ]
 
     "acls" = [
@@ -68,10 +87,10 @@ resource "tailscale_acl" "main" {
         "action" = "accept",
       },
       {
-        "action": "accept",
-        "src": ["tag:muse-client"],
-        "dst": ["tag:muse-server"],
-        "users": ["muse"]
+        "action" : "accept",
+        "src" : ["tag:muse-client"],
+        "dst" : ["tag:muse-server"],
+        "users" : ["muse"]
       },
     ]
   })
