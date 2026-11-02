@@ -11,6 +11,7 @@ Ansible でノードを構成し、Helmfile で基盤を導入した後、Flux C
 | [CNPG.md](CNPG.md) | PostgreSQL の構成、バックアップ、復元 |
 | [MONITORING.md](MONITORING.md) | メトリクス・ログの収集、通知、障害調査 |
 | [RECOVERY.md](RECOVERY.md) | 短期証明書による緊急操作、復旧データの暗号化保管 |
+| [MUSE.md](MUSE.md) | muse の読み取り専用 kubeconfig、Tailscale 接続、更新確認 |
 | [監視ルールの README](charts/monitoring-rules/README.md) | アラートの閾値、設定項目、ルール別の調査方法 |
 
 ## 管理対象
