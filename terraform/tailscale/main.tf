@@ -30,32 +30,33 @@ provider "tailscale" {
 resource "tailscale_acl" "main" {
   acl = jsonencode({
     "tagOwners" = {
-      "tag:kkg-external" = ["group:kkg"],
       "tag:service"      = ["group:service"],
       "tag:operation"    = ["group:operation"],
-      "tag:k8s-operator": [],
-      "tag:k8s": ["tag:k8s-operator"],
+      "tag:k8s-operator" = [],
+      "tag:k8s"          = ["tag:k8s-operator"],
+      "tag:muse-client"  = ["group:operation"],
+      "tag:muse-server"  = ["group:operation"],
     }
 
     "groups" = {
-      "group:kkg"         = ["Soli0222@github"],
-      "group:service"     = ["Soli0222@github"],
-      "group:operation"   = ["Soli0222@github"],
+      "group:service"   = ["Soli0222@github"],
+      "group:operation" = ["Soli0222@github"],
     }
 
     "grants" = [
       {
-        "src" = ["tag:kkg-external"],
-        "dst" = ["192.168.21.101/32"],
-        "ip"  = ["*:*"],
+        "src" = ["tag:muse-client"],
+        "dst" = ["tag:muse-server"],
+        "ip"  = ["*"],
       },
     ]
 
     "acls" = [
       {
         "action" = "accept",
-        "src"    = ["*"],
-        "dst"    = ["*:*"],
+        "src"    = ["tag:operation"],
+        "dst"    = ["tag:service:22", "tag:service:6443"],
+        "proto"  = "tcp",
       },
     ]
 
@@ -63,7 +64,7 @@ resource "tailscale_acl" "main" {
       {
         "src"    = ["tag:operation"],
         "dst"    = ["tag:service"],
-        "users"  = ["ubuntu","soli"],
+        "users"  = ["soli"],
         "action" = "accept",
       },
     ]
