@@ -67,6 +67,12 @@ resource "tailscale_acl" "main" {
         "users"  = ["soli"],
         "action" = "accept",
       },
+      {
+        "action": "accept",
+        "src": ["tag:muse-client"],
+        "dst": ["tag:muse-server"],
+        "users": ["muse"]
+      },
     ]
   })
 }
