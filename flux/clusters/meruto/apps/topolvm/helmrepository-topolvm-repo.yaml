@@ -4,5 +4,5 @@ metadata:
   name: topolvm-repo
   namespace: topolvm-system
 spec:
-  interval: 24h
+  interval: 1h
   url: https://topolvm.github.io/topolvm
