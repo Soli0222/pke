@@ -29,7 +29,7 @@ spec:
     updateStrategy: RollingUpdate
     image:
       repository: quay.io/keycloak/keycloak
-      tag: "26.8.1"
+      tag: "26.8.2"
     args: [start]
     serviceAccount:
       automountServiceAccountToken: false
@@ -91,6 +91,10 @@ spec:
         value: http
       - name: KC_LOG_CONSOLE_OUTPUT
         value: json
+      # 26.8.2 の Admin API audience チェックを一時的に無効化する。
+      # terraform クライアントへ kc-admin-api scope を apply し、認証を確認したら外す。
+      - name: KC_SPI_ADMIN__AUDIENCE_CHECK_ENABLED
+        value: "false"
     startupProbe: |
       httpGet:
         path: /health/started

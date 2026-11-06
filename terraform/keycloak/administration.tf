@@ -17,10 +17,11 @@ resource "keycloak_openid_client" "terraform" {
     prevent_destroy = true
   }
 }
+# Admin API は kc-admin-api scope の audience を持つトークンだけを受け付ける。
 resource "keycloak_openid_client_default_scopes" "terraform" {
   realm_id       = keycloak_realm.master.id
   client_id      = keycloak_openid_client.terraform.id
-  default_scopes = ["basic", "roles"]
+  default_scopes = ["basic", "roles", "kc-admin-api"]
 }
 resource "keycloak_openid_client_service_account_realm_role" "terraform_admin" {
   realm_id                = keycloak_realm.master.id
