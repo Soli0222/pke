@@ -25,7 +25,7 @@ network_netplan:
     routes: []
 
   private:
-    device: ens7
+    device: ens4
     ipv4:
       - 192.168.9.8/24
     ipv6:

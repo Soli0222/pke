@@ -33,6 +33,11 @@
       value: "8192"
     - name: fs.inotify.max_user_watches
       value: "524288"
+    # 1 だとコンテナのラベルが cri-containerd.apparmor.d//&unconfined にスタックされ、
+    # containerd プロファイルが同一コンテナ内のシグナル (SIGURG) を拒否する。
+    # PostgreSQL の latch が届かず CNPG が起動・接続できなくなるため 0 にする。
+    - name: kernel.apparmor_restrict_unprivileged_unconfined
+      value: "0"
 
 - name: Reload sysctl settings
   ansible.builtin.command: sysctl --system
