@@ -24,7 +24,7 @@ spec:
       - falco-modern-bpf.service
       networkDevices:
       - ens3
-      - ens7
+      - ens4
     - name: natsume-08
       units:
       - alloy.service
