@@ -1,6 +1,6 @@
 # monitoring-rules
 
-![Version: 0.4.1](https://img.shields.io/badge/Version-0.4.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.4.2](https://img.shields.io/badge/Version-0.4.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 PKE platform alert rules evaluated by Mimir
 
@@ -21,6 +21,7 @@ WAL archive の失敗・停滞は全DBで監視する。
 検知 counter の増分・初回系列・起動直後の検知を Mimir で評価する。
 priority 0–3 は critical、4–5 は warning として既存の ntfy 経路へ通知する。
 Falco の欠測、カーネルイベントと出力イベントの破棄も監視する。
+`FalcoContainerMetadataMissing` は container plugin が認識するコンテナが0件、または系列がない状態を検知する。
 例外条件・ログの確認・監視の制約は [Falco 運用手順](../../MONITORING.md#falco) を参照する。
 
 ## 期待対象と収集の欠測
@@ -171,6 +172,10 @@ recording group 自体の欠落や評価失敗は Pipeline のルール同期・
 | groups.etcd.rules.EtcdNoLeader.for | string | `"1m"` |  |
 | groups.etcd.rules.EtcdNoLeader.severity | string | `"critical"` |  |
 | groups.falco.enabled | bool | `true` |  |
+| groups.falco.rules.FalcoContainerMetadataMissing.annotations | object | `{}` |  |
+| groups.falco.rules.FalcoContainerMetadataMissing.enabled | bool | `true` |  |
+| groups.falco.rules.FalcoContainerMetadataMissing.for | string | `"15m"` |  |
+| groups.falco.rules.FalcoContainerMetadataMissing.severity | string | `"warning"` |  |
 | groups.falco.rules.FalcoKernelEventsDropped.annotations | object | `{}` |  |
 | groups.falco.rules.FalcoKernelEventsDropped.enabled | bool | `true` |  |
 | groups.falco.rules.FalcoKernelEventsDropped.for | string | `"0m"` |  |

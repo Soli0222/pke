@@ -320,12 +320,17 @@ Mimir の `pke.falco` が評価し、既存の Alertmanager → ntfy 経路で�
 Loki は JSON イベントの調査に使う。Loki のルール評価には依存しない。
 `install-falco` は systemd の `10-journal.conf` drop-in で標準出力・標準エラーを journal に送る。
 Falco の JSON イベントをホスト Alloy が journal から読み、Loki に転送する。
+container plugin は、Falco の起動時に K3s の containerd socket がないと、コンテナ・Pod のメタデータを取得しない。
+メタデータがないと例外が成立せず、CNPG や Longhorn の通常動作も検知される。
+`install-falco` は `falco-cri-socket-restart.path` で socket の出現を待ち、起動ごとに1回 Falco を再起動する。
+再起動の前に起きたイベントと、K3s の起動を待つ間に起きたイベントは、メタデータなしで評価される。
 
 | 通知 | 条件 |
 |---|---|
 | FalcoSecurityCritical | Falco の Emergency / Alert / Critical / Error（priority 0–3）を検知 |
 | FalcoSecurityWarning | Falco の Warning / Notice（priority 4–5）を検知 |
 | FalcoMetricsAbsent | 対象ホストの version 指標が5分間欠測した状態が、さらに5分継続 |
+| FalcoContainerMetadataMissing | Falco は稼働しているが、container plugin が認識するコンテナが0件または系列なしの状態が15分継続 |
 | FalcoKernelEventsDropped | 過去5分でカーネルイベントの取りこぼしが増加 |
 | FalcoOutputEventsDropped | 過去5分で検知イベントの出力破棄が増加 |
 
