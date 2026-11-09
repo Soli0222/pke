@@ -1206,6 +1206,41 @@ def scenarios():
         "informational does not page",
     )
     absent("FalcoMetricsAbsent", "falcosecurity_falco_version_info", fh)
+    # container plugin がコンテナを認識しない状態。0件・系列なしを検知し、Falco 自体の欠測は別ルールに任せる。
+    fv = {**fh, "version": "0.45.1"}
+    containers = "falcosecurity_plugins_container_n_containers_total"
+    add(
+        "FalcoContainerMetadataMissing",
+        [
+            s("falcosecurity_falco_version_info", "1x50", fv),
+            s(containers, "0x30 80x20", fh),
+            s("falcosecurity_falco_version_info", "1x50", {**fv, "cluster": "meruto"}),
+            s(containers, "80x50", {**fh, "cluster": "meruto"}),
+        ],
+        fh,
+        "zero containers until restart",
+        [("14m", []), ("16m", [fh]), ("29m", [fh]), ("33m", [])],
+    )
+    add(
+        "FalcoContainerMetadataMissing",
+        [s("falcosecurity_falco_version_info", "1x40", fv)],
+        fh,
+        "container plugin metrics are absent",
+        [("14m", []), ("16m", [fh])],
+    )
+    quiet(
+        "FalcoContainerMetadataMissing",
+        [
+            s("falcosecurity_falco_version_info", "1x40", fv),
+            s(containers, "80x40", fh),
+        ],
+        "containers are known",
+    )
+    quiet(
+        "FalcoContainerMetadataMissing",
+        [s(containers, "0x40", fh)],
+        "Falco absence is left to FalcoMetricsAbsent",
+    )
     for alert, metric in [
         ("FalcoKernelEventsDropped", "falcosecurity_scap_n_drops_total"),
         (

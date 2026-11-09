@@ -21,3 +21,6 @@ falco_metrics_interval: 30s
 falco_metrics_output_rule: false
 falco_metrics_listen_address: 127.0.0.1
 falco_metrics_listen_port: 8765
+
+falco_cri_socket_path: /run/k3s/containerd/containerd.sock
+falco_cri_socket_restart_unit: falco-cri-socket-restart

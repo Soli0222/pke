@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Restart Falco after the K3s containerd socket appears
+After={{ falco_service_name }}.service
+
+[Service]
+Type=oneshot
+# PathExists は対象 unit が停止すると再起動するため、active のまま残して再起動を1回に限る。
+RemainAfterExit=yes
+ExecStart=/usr/bin/systemctl try-restart {{ falco_service_name }}.service

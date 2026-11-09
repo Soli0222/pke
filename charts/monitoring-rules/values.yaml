@@ -431,6 +431,11 @@ groups:
         for: 5m
         severity: critical
         annotations: {}
+      FalcoContainerMetadataMissing:
+        enabled: true
+        for: 15m
+        severity: warning
+        annotations: {}
       FalcoKernelEventsDropped:
         enabled: true
         for: 0m

@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+# Falco が containerd より先に起動すると container plugin がメタデータを取得しないため、
+# socket の出現後に Falco を1回再起動する。/run は起動ごとに消えるため、起動ごとに1回動く。
+[Unit]
+Description=Restart Falco once the K3s containerd socket appears
+
+[Path]
+PathExists={{ falco_cri_socket_path }}
+Unit={{ falco_cri_socket_restart_unit }}.service
+
+[Install]
+WantedBy=paths.target
