@@ -37,7 +37,7 @@ jobs:
           path: live
 
       - name: Set up flate
-        uses: home-operations/flate/action@v0.6.5
+        uses: home-operations/flate/action@v0.7.1
         with:
           base: ""
           cache: true
@@ -59,6 +59,7 @@ jobs:
           # export する。これが残っていると changed-only モードに落ちるので外す。
           unset FLATE_BASE
           # OnePasswordItem の生成 Secret はオフラインで解決できない。
+          # postBuild.substituteFrom の必須参照は .github/flate/supply.yaml のダミー値で満たす。
           # valuesFrom の実値は差分対象外。本番 HelmRelease の必須条件は維持する。
           for side in live pr; do
             (
@@ -66,8 +67,9 @@ jobs:
               flate build "${RESOURCE}" \
                 --path "flux/clusters/${CLUSTER}" \
                 --api-versions "${API_VERSIONS}" \
-                --skip-secrets=true \
-                --allow-missing-secrets=true \
+                --skip-kinds Secret \
+                --allow-missing-kinds Secret,ConfigMap \
+                --supply "${GITHUB_WORKSPACE}/pr/.github/flate/supply.yaml" \
                 --no-progress
             ) > "${side}.yaml"
           done
