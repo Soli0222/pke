@@ -1,0 +1,11 @@
+# flux-diff 用のオフライン入力。
+# OnePasswordItem が生成する Secret は CI から読めないため、postBuild.substituteFrom の
+# 必須参照を満たすダミー値を flate --supply で渡す。両リビジョンに同じ値が入るので diff には出ない。
+# 新しい substituteFrom の Secret やキーを追加したら、ここにも追加する。
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cnpg-backup-flux-vars
+  namespace: flux-system
+data:
+  CNPG_BACKUP_ENDPOINT_URL: aHR0cHM6Ly9jbnBnLWJhY2t1cC5pbnZhbGlk # https://cnpg-backup.invalid
