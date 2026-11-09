@@ -66,8 +66,8 @@ jobs:
               flate build "${RESOURCE}" \
                 --path "flux/clusters/${CLUSTER}" \
                 --api-versions "${API_VERSIONS}" \
-                --skip-secrets=true \
-                --allow-missing-secrets=true \
+                --skip-kinds Secret \
+                --allow-missing-kinds Secret,ConfigMap \
                 --no-progress
             ) > "${side}.yaml"
           done
