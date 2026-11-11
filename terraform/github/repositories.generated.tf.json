@@ -6,11 +6,11 @@
     "inventory_sha256": {
       "precondition": [
         {
-          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"33d446fe00291cf9c321b8c1763f9849a6934e8d171c3ee9c6477abcd5005fad\"}",
+          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"6ea1fc866d7cdf67a024afc5bc9e95adebc809819eeb45b4e539479ea8dc5cc3\"}",
           "error_message": "Inventory changed: run python3 manage.py generate before planning."
         }
       ],
-      "value": "33d446fe00291cf9c321b8c1763f9849a6934e8d171c3ee9c6477abcd5005fad"
+      "value": "6ea1fc866d7cdf67a024afc5bc9e95adebc809819eeb45b4e539479ea8dc5cc3"
     },
     "managed_repositories": {
       "value": [
@@ -48,12 +48,6 @@
     }
   },
   "removed": [
-    {
-      "from": "github_branch_default.repo_spotify-playlist-cli",
-      "lifecycle": {
-        "destroy": false
-      }
-    },
     {
       "from": "github_repository.repo_Charmy",
       "lifecycle": {
@@ -355,6 +349,12 @@
         "branch": "main",
         "rename": false,
         "repository": "${github_repository.repo_spotify-nowplaying.name}",
+        "wait_for_rename": false
+      },
+      "repo_spotify-playlist-cli": {
+        "branch": "main",
+        "rename": false,
+        "repository": "${github_repository.repo_spotify-playlist-cli.name}",
         "wait_for_rename": false
       },
       "repo_spotify-reblend": {
