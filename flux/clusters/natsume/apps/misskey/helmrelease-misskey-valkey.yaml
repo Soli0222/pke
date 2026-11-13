@@ -26,8 +26,9 @@ spec:
       kubernetes.io/hostname: natsume-08
     # RWO ボリュームをノード間で付け替えるため、旧 Pod の停止を待つ。
     deploymentStrategy: Recreate
-    env:
-      TZ: Asia/Tokyo
+    extraEnv:
+      - name: TZ
+        value: Asia/Tokyo
     resources:
       limits:
         cpu: 500m
@@ -44,10 +45,10 @@ spec:
         memory: 128Mi
     replica:
       enabled: false
-    dataStorage:
+    persistence:
       enabled: true
-      requestedSize: 10Gi
-      className: ''
+      size: 10Gi
+      storageClass: ''
     metrics:
       enabled: true
       serviceMonitor:

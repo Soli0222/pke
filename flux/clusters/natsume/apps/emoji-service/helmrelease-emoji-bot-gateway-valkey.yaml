@@ -22,6 +22,8 @@ spec:
         namespace: emoji-service
       interval: 1h
   values:
+    # chart 1.0 の既定は Recreate。SSA 管理の既存 Deployment で切り替えると rollingUpdate が残って適用に失敗するため、現行の戦略を明示する。
+    deploymentStrategy: RollingUpdate
     nodeSelector:
       kubernetes.io/hostname: natsume-03
     resources:
@@ -40,10 +42,10 @@ spec:
         memory: 128Mi
     replica:
       enabled: false
-    dataStorage:
+    persistence:
       enabled: true
-      requestedSize: 1Gi
-      className: ''
+      size: 1Gi
+      storageClass: ''
     metrics:
       enabled: true
       serviceMonitor:
