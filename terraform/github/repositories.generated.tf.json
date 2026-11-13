@@ -6,11 +6,11 @@
     "inventory_sha256": {
       "precondition": [
         {
-          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"6ea1fc866d7cdf67a024afc5bc9e95adebc809819eeb45b4e539479ea8dc5cc3\"}",
+          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"5ce7ddc6a2a8ab738ed439d6f6f6e172a98b1f959f4a1adc73225668b3582faa\"}",
           "error_message": "Inventory changed: run python3 manage.py generate before planning."
         }
       ],
-      "value": "6ea1fc866d7cdf67a024afc5bc9e95adebc809819eeb45b4e539479ea8dc5cc3"
+      "value": "5ce7ddc6a2a8ab738ed439d6f6f6e172a98b1f959f4a1adc73225668b3582faa"
     },
     "managed_repositories": {
       "value": [
@@ -1614,7 +1614,7 @@
         "allow_update_branch": false,
         "archive_on_destroy": false,
         "archived": false,
-        "auto_init": false,
+        "auto_init": true,
         "delete_branch_on_merge": true,
         "description": "Thin CLI for adding tracks to Spotify playlists via the Web API",
         "has_discussions": false,

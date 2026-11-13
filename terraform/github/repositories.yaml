@@ -186,7 +186,6 @@ repositories:
   spotify-playlist-cli:
     state: active
     description: Thin CLI for adding tracks to Spotify playlists via the Web API
-    auto_init: false
     secret_sets:
     - renovate
   spotify-reblend:

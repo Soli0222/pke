@@ -78,7 +78,8 @@ Python の補助コマンド同士は checkout 内のローカルロックでも
 マージ方式の共通設定は Squash and merge のみを許可し、Merge commit と Rebase merge を無効にする。
 既存の active リポジトリと新規リポジトリに適用し、archived リポジトリには復帰時に適用する。
 `auto_init` の既定値で初期 commit を作り、default branch を管理する。
-初期 commit を作らない場合は `auto_init: false` と `default_branch: null` を指定し、push 後に branch 管理を有効にする。
+初期 commit を作らない場合は `auto_init: false` と `default_branch: null` を指定する。
+push 後は両方を外して branch 管理を有効にする。`auto_init` は作成時だけ使う値なので、外しても既存リポジトリへの差分は出ない。
 
 ```yaml
 repositories:
