@@ -23,7 +23,9 @@ K3s ノードの host_vars に `cluster: <name>` を必ず指定し、etcd は `
 natsume は `natsume-03` が server / etcd、`natsume-08` が agent。
 meruto は `meruto-02` が server / etcd。
 agent の join 先は `ansible/inventories/group_vars/k3s_agent.yaml` に定義する。
-Ubuntu 26.04 のホストは既定の sudo が sudo-rs で Ansible の become が待ち続けるため、host_vars に `ansible_become_exe: sudo.ws` を指定する。
+Ubuntu 26.04 の既定の sudo は sudo-rs で、パスワードを入力する become（`-K`）では Ansible がプロンプトを検出できず待ち続ける。
+`ssh-agent-sudo` を入れる前の初回だけ `-K -e ansible_become_exe=sudo.ws` を付け、host_vars には書かない。
+`sudo.ws` は Falco の信頼済みプログラムに含まれず、実行のたびに `Read sensitive file untrusted` を検知させる。
 `lune-02` は `edge_gateway` グループの VPS で K3s ノードではない。`cluster` を持たせず、`k3s_cluster` 向けの playbook の対象にしない。
 
 ストレージの対象を実ディスクの存在だけで拡張しない。
