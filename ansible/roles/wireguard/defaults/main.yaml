@@ -1,7 +1,7 @@
 ---
 wireguard_interface: wg0
-# トンネル内のアドレス。例: 10.99.0.1/24
-wireguard_address: ""
+# トンネル内のアドレス。文字列または一覧。例: [10.99.0.1/24, fd00:10:99::1/64]
+wireguard_address: []
 # 0 のときは ListenPort を書かない（接続を始める側）。
 wireguard_listen_port: 0
 # 空のときは wg-quick の既定値を使う。

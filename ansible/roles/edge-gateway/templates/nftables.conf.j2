@@ -29,8 +29,10 @@ table inet edge_gateway {
   chain forward_mss {
     type filter hook forward priority mangle; policy accept;
 
-    iifname "{{ edge_gateway_wireguard_interface }}" tcp flags syn / syn,rst tcp option maxseg size > {{ edge_gateway_tcp_mss | int }} tcp option maxseg size set {{ edge_gateway_tcp_mss | int }}
-    oifname "{{ edge_gateway_wireguard_interface }}" tcp flags syn / syn,rst tcp option maxseg size > {{ edge_gateway_tcp_mss | int }} tcp option maxseg size set {{ edge_gateway_tcp_mss | int }}
+    meta nfproto ipv4 iifname "{{ edge_gateway_wireguard_interface }}" tcp flags syn / syn,rst tcp option maxseg size > {{ edge_gateway_tcp_mss | int }} tcp option maxseg size set {{ edge_gateway_tcp_mss | int }}
+    meta nfproto ipv4 oifname "{{ edge_gateway_wireguard_interface }}" tcp flags syn / syn,rst tcp option maxseg size > {{ edge_gateway_tcp_mss | int }} tcp option maxseg size set {{ edge_gateway_tcp_mss | int }}
+    meta nfproto ipv6 iifname "{{ edge_gateway_wireguard_interface }}" tcp flags syn / syn,rst tcp option maxseg size > {{ edge_gateway_tcp_mss_ipv6 | int }} tcp option maxseg size set {{ edge_gateway_tcp_mss_ipv6 | int }}
+    meta nfproto ipv6 oifname "{{ edge_gateway_wireguard_interface }}" tcp flags syn / syn,rst tcp option maxseg size > {{ edge_gateway_tcp_mss_ipv6 | int }} tcp option maxseg size set {{ edge_gateway_tcp_mss_ipv6 | int }}
   }
 
   chain forward {
@@ -39,11 +41,17 @@ table inet edge_gateway {
     ct state established,related accept
     ct state invalid drop
     iifname "{{ edge_gateway_wireguard_interface }}" oifname "{{ edge_gateway_public_interface }}" ip saddr { {{ edge_gateway_egress_sources | join(', ') }} } accept
+{% if edge_gateway_egress_sources_ipv6 | length > 0 %}
+    iifname "{{ edge_gateway_wireguard_interface }}" oifname "{{ edge_gateway_public_interface }}" ip6 saddr { {{ edge_gateway_egress_sources_ipv6 | join(', ') }} } accept
+{% endif %}
   }
 
   chain postrouting {
     type nat hook postrouting priority srcnat; policy accept;
 
     oifname "{{ edge_gateway_public_interface }}" ip saddr { {{ edge_gateway_egress_sources | join(', ') }} } masquerade
+{% if edge_gateway_egress_sources_ipv6 | length > 0 %}
+    oifname "{{ edge_gateway_public_interface }}" ip6 saddr { {{ edge_gateway_egress_sources_ipv6 | join(', ') }} } masquerade
+{% endif %}
   }
 }

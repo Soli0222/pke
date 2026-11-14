@@ -10,6 +10,8 @@ k3s_bind_address: "{{ ansible_default_ipv4.address | default(ansible_host) }}"
 k3s_advertise_address: "{{ k3s_bind_address }}"
 k3s_node_ip: "{{ k3s_bind_address }}"
 k3s_node_external_ip: ""
+# netplan 以外の interface（WireGuard など）にあるノード IP。private の netplan アドレスの後ろに足す。
+k3s_additional_node_ips: []
 k3s_flannel_backend: none
 k3s_disable_network_policy: true
 k3s_tls_sans: []

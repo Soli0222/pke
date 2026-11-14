@@ -34,9 +34,14 @@ spec:
       prometheus:
         serviceMonitor:
           enabled: true
+    # servicelb は status にノードの ExternalIP（lune-02 の v4 / v6）を書く。
     service:
       spec:
         externalTrafficPolicy: Local
+        ipFamilyPolicy: RequireDualStack
+        ipFamilies:
+        - IPv4
+        - IPv6
     # lune-02 の HAProxy が wg0 経由で PROXY protocol v2 を付けて転送する。
     # 送信元が lune-02 の WireGuard アドレスのときだけヘッダを信頼する。
     ports:
@@ -57,9 +62,3 @@ spec:
         ingressClass: traefik
       kubernetesIngress:
         ingressClass: traefik
-        # Service の status はノードの LAN アドレスになるため使わない。
-        # Ingress の status を meruto.pstr.space にし、external-dns に CNAME を作らせる。
-        publishedService:
-          enabled: false
-        ingressEndpoint:
-          hostname: meruto.pstr.space

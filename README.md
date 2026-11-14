@@ -115,12 +115,13 @@ Longhorn の既定 replica 数は1です。CNPG も全 DB が1 instance のた�
 - `natsume-03`: Longhorn 600GB と TopoLVM 200GB が存在しますが、Ansible の storage role 対象には含めません。
 - `meruto-02`: Ansible が T500（`/dev/disk/by-id/nvme-CT1000T500SSD8_2409474C8886`）の1パーティションに TopoLVM の VG を構成します。`ubuntu-vg` には `/var/lib/rancher`（150G）と `/var/lib/kubelet`（100G）の LV を K3s の導入前に作ります。TopoLVM を既定の StorageClass にするため、K3s の `local-storage` は無効にします。
 
-natsume は dual-stack、meruto は IPv4 のみです。
-Pod CIDR は `10.1.0.0/16` / `fd00:10:1::/64`、Service CIDR は `10.2.0.0/16` / `fd00:10:2::/64` を使い、meruto は IPv4 の CIDR だけを host_vars で指定します。
-meruto の Cilium は Helmfile environment の `cilium.ipv6Enabled: false` で IPv6 を無効にします。
+両クラスタとも dual-stack です。
+Pod CIDR は `10.1.0.0/16` / `fd00:10:1::/64`、Service CIDR は `10.2.0.0/16` / `fd00:10:2::/64` を使います。
+meruto-02 の IPv6 のノード IP は LAN ではなく WireGuard の ULA（`fd00:10:99::2`）で、`k3s_additional_node_ips` で node-ip に足します。
+meruto-02 の ExternalIP は lune-02 のグローバルアドレス（v4 / v6）です。servicelb はこの値を LoadBalancer の status に書きます。
 
-meruto-02 は public interface を持たず、LAN（`192.168.50.0/24`）にデフォルトルートを置きません。
-外への通信は WireGuard（`wg0`）から lune-02 を通ります。wg0 が落ちると外への経路がなくなり、LAN から直接は出ません。
+meruto-02 は public interface を持たず、LAN（`192.168.50.0/24`）に IPv4 / IPv6 のデフォルトルートを置きません。
+外への通信は IPv4 / IPv6 とも WireGuard（`wg0`）から lune-02 を通ります。wg0 が落ちると外への経路がなくなり、LAN から直接は出ません。
 LAN の経路は、接続済みのサブネット（DNS の `192.168.50.1` を含む）、lune-02 の endpoint への host route、作業端末のセグメント（`192.168.20.0/24`）だけです。
 `prepare-k3s-nodes.yaml` は他の role より先に、wireguard-tools の導入、netplan の適用、WireGuard の起動の順で経路を切り替えます。作業端末への経路を入れてから wg0 を上げるので、Ansible の SSH は切れません。systemd-networkd が wg-quick の ip rule を消さないよう、`wireguard_networkd_keep_foreign_routes` で foreign の経路と rule を管理対象から外します。
 ノードの IP・経路・DNS は host_vars、Cilium の設定は Helmfile environment を参照してください。
@@ -130,20 +131,20 @@ meruto は K3s 同梱の `gateway-api-crd` も無効にし、Gateway API の CRD
 ### 外部ゲートウェイ（lune-02）
 
 `lune-02` は inventory の `edge_gateway` グループに属する VPS で、K3s ノードではありません。
-WireGuard（`wg0`、`10.99.0.1/24`、51820/udp）で meruto のノードとつなぎ、次の2つを担います。
+WireGuard（`wg0`、`10.99.0.1/24` / `fd00:10:99::1/64`、51820/udp）で meruto のノードとつなぎ、次の2つを担います。
 
 - ingress: HAProxy が IPv4 と IPv6 の 80/443 を TCP のまま受け、PROXY protocol v2 を付けて WireGuard の先へ IPv4 で転送します。TLS は転送先の Traefik で終端します。
-- egress: WireGuard から来た通信のうち、`edge_gateway_egress_sources` に定義した送信元だけを公開側の interface へ masquerade します。
+- egress: WireGuard から来た通信のうち、`edge_gateway_egress_sources`（IPv4）と `edge_gateway_egress_sources_ipv6`（IPv6）に定義した送信元だけを公開側の interface へ masquerade します。
 
 ファイアウォールは nftables の `inet edge_gateway` table だけで管理します。
 Tailscale が作る table を残すため、`flush ruleset` と nftables.service の stop は使いません。
 受け付けるのは Tailscale の interface、WireGuard、Tailscale の直接接続用ポート、80/443 です。公開側の SSH は `edge_gateway_public_ssh_enabled` で切り替えます。
-WireGuard を通る TCP の MSS は lune-02 の forward で両方向とも `edge_gateway_tcp_mss` 以下に下げます。
+WireGuard を通る TCP の MSS は lune-02 の forward で両方向とも、IPv4 は `edge_gateway_tcp_mss`、IPv6 は `edge_gateway_tcp_mss_ipv6` 以下に下げます。
 
 meruto の Traefik は web / websecure の両方で `10.99.0.1` からの PROXY protocol だけを信頼します。
-Ingress の status には Service のアドレスではなく `meruto.pstr.space` を書きます。
-[DNSEndpoint](flux/clusters/meruto/apps/external-dns-config/ingress-dnsendpoints.yaml) が `meruto.pstr.space` に lune-02 の A / AAAA を登録し、external-dns は各 Ingress のホスト名をその CNAME にします。
-lune-02 のアドレスを変えるときは、host_vars とこの DNSEndpoint をそろえます。
+Traefik の Service は dual-stack で、status は lune-02 の v4 / v6 になります。external-dns は各 Ingress のホスト名に lune-02 の A / AAAA を登録します。
+[DNSEndpoint](flux/clusters/meruto/apps/external-dns-config/ingress-dnsendpoints.yaml) は natsume と同じく、入口の名前 `meruto.pstr.space` を登録します。
+lune-02 のアドレスを変えるときは、lune-02 と meruto-02 の host_vars（`k3s_node_external_ip`）と、この DNSEndpoint をそろえます。
 
 Tailscale は lune-02 への SSH にだけ使い、Ansible では管理しません。
 WireGuard の鍵は 1Password の item（`wireguard_onepassword_item`）に `private_key` と `public_key` の field で置きます。

@@ -26,6 +26,15 @@
     state: present
     reload: true
 
+- name: Enable IPv6 forwarding
+  ansible.posix.sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: "1"
+    sysctl_file: "{{ edge_gateway_sysctl_file }}"
+    state: present
+    reload: true
+  when: edge_gateway_egress_sources_ipv6 | length > 0
+
 # Tailscale は iptables-nft で自分の table を持つ。flush ruleset で消さないよう、
 # この role は inet edge_gateway table だけを置き換える。
 - name: Render nftables configuration
