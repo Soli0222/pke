@@ -1,0 +1,61 @@
+---
+- name: Validate edge gateway settings
+  ansible.builtin.assert:
+    that:
+      - edge_gateway_public_interface | length > 0
+      - edge_gateway_public_ipv4 | length > 0
+      - edge_gateway_wireguard_interface | length > 0
+      - (edge_gateway_wireguard_port | int) > 0
+      - edge_gateway_egress_sources | length > 0
+      - edge_gateway_haproxy_backends | length > 0
+    fail_msg: "Edge gateway settings are incomplete for {{ inventory_hostname }}."
+
+- name: Install edge gateway packages
+  ansible.builtin.apt:
+    name:
+      - haproxy
+      - nftables
+    state: present
+    update_cache: true
+
+- name: Enable IPv4 forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_file: "{{ edge_gateway_sysctl_file }}"
+    state: present
+    reload: true
+
+# Tailscale は iptables-nft で自分の table を持つ。flush ruleset で消さないよう、
+# この role は inet edge_gateway table だけを置き換える。
+- name: Render nftables configuration
+  ansible.builtin.template:
+    src: nftables.conf.j2
+    dest: "{{ edge_gateway_nftables_config }}"
+    owner: root
+    group: root
+    mode: "0755"
+    validate: nft -c -f %s
+  notify: Reload nftables
+
+- name: Enable nftables
+  ansible.builtin.systemd:
+    name: nftables
+    enabled: true
+    state: started
+
+- name: Render HAProxy configuration
+  ansible.builtin.template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    owner: root
+    group: root
+    mode: "0644"
+    validate: haproxy -c -f %s
+  notify: Reload HAProxy
+
+- name: Enable and start HAProxy
+  ansible.builtin.systemd:
+    name: haproxy
+    enabled: true
+    state: started

@@ -1,0 +1,70 @@
+---
+- name: Validate WireGuard settings
+  ansible.builtin.assert:
+    that:
+      - wireguard_interface | length > 0
+      - wireguard_address | length > 0
+      - wireguard_onepassword_vault | length > 0
+      - wireguard_onepassword_item | length > 0
+      - wireguard_peers | length > 0
+      - wireguard_peers | rejectattr('onepassword_item', 'defined') | list | length == 0
+      - wireguard_peers | rejectattr('allowed_ips', 'defined') | list | length == 0
+    fail_msg: "WireGuard settings are incomplete for {{ inventory_hostname }}."
+
+- name: Install WireGuard tools
+  ansible.builtin.apt:
+    name: wireguard-tools
+    state: present
+    update_cache: true
+
+- name: Retrieve WireGuard private key from 1Password
+  ansible.builtin.command:
+    argv:
+      - op
+      - read
+      - "op://{{ wireguard_onepassword_vault }}/{{ wireguard_onepassword_item }}/{{ wireguard_onepassword_private_key_field }}"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  register: wireguard_private_key
+  no_log: true
+
+- name: Retrieve WireGuard peer public keys from 1Password
+  ansible.builtin.command:
+    argv:
+      - op
+      - read
+      - "op://{{ wireguard_onepassword_vault }}/{{ item.onepassword_item }}/{{ wireguard_onepassword_public_key_field }}"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  register: wireguard_peer_public_keys
+  loop: "{{ wireguard_peers }}"
+  loop_control:
+    label: "{{ item.name | default(item.onepassword_item) }}"
+
+- name: Ensure WireGuard configuration directory exists
+  ansible.builtin.file:
+    path: "{{ wireguard_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+# 秘密鍵を含むため、--diff でも内容を出さない。
+- name: Render WireGuard configuration
+  ansible.builtin.template:
+    src: wg.conf.j2
+    dest: "{{ wireguard_config_dir }}/{{ wireguard_interface }}.conf"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  diff: false
+  notify: Restart WireGuard
+
+- name: Enable and start WireGuard
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ wireguard_interface }}"
+    enabled: true
+    state: started

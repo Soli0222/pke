@@ -1,0 +1,29 @@
+# This file is managed by Ansible. Do not edit manually.
+global
+    log /dev/log local0
+    chroot /var/lib/haproxy
+    stats socket /run/haproxy/admin.sock mode 660 level admin
+    user haproxy
+    group haproxy
+    daemon
+
+defaults
+    log global
+    mode tcp
+    option tcplog
+    timeout connect {{ edge_gateway_haproxy_timeout_connect }}
+    timeout client {{ edge_gateway_haproxy_timeout_tunnel }}
+    timeout server {{ edge_gateway_haproxy_timeout_tunnel }}
+{% for backend in edge_gateway_haproxy_backends %}
+
+# TLS は終端せず、PROXY protocol v2 で送信元を付けて転送する。
+frontend fe_{{ backend.name }}
+    bind {{ edge_gateway_public_ipv4 }}:{{ backend.port | int }}
+{% if edge_gateway_public_ipv6 | length > 0 %}
+    bind [{{ edge_gateway_public_ipv6 }}]:{{ backend.port | int }}
+{% endif %}
+    default_backend be_{{ backend.name }}
+
+backend be_{{ backend.name }}
+    server {{ backend.server_name }} {{ backend.target }} send-proxy-v2 check inter 10s
+{% endfor %}

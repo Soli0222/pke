@@ -1,0 +1,27 @@
+---
+wireguard_interface: wg0
+# トンネル内のアドレス。例: 10.99.0.1/24
+wireguard_address: ""
+# 0 のときは ListenPort を書かない（接続を始める側）。
+wireguard_listen_port: 0
+# 空のときは wg-quick の既定値を使う。
+wireguard_mtu: ""
+# 空のときは wg-quick の既定（auto）。AllowedIPs に 0.0.0.0/0 を含む peer があると、
+# wg-quick は fwmark と ip rule でデフォルトルートを wg に向ける。
+wireguard_table: ""
+
+# 秘密鍵と公開鍵は 1Password の同じ item に置く。
+# private_key は自ホストだけが読み、public_key は peer 側の設定に使う。
+wireguard_onepassword_vault: Kubernetes
+wireguard_onepassword_item: ""
+wireguard_onepassword_private_key_field: private_key
+wireguard_onepassword_public_key_field: public_key
+
+# - name: peer の名前（設定ファイルのコメント用）
+#   onepassword_item: peer の鍵を置いた item（public_key を読む）
+#   allowed_ips: [10.99.0.2/32]
+#   endpoint: "203.0.113.1:51820"   # 省略可
+#   persistent_keepalive: 25         # 省略可
+wireguard_peers: []
+
+wireguard_config_dir: /etc/wireguard

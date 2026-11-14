@@ -1,0 +1,26 @@
+# This file is managed by Ansible. Do not edit manually.
+[Interface]
+Address = {{ wireguard_address }}
+PrivateKey = {{ wireguard_private_key.stdout | trim }}
+{% if (wireguard_listen_port | int) > 0 %}
+ListenPort = {{ wireguard_listen_port | int }}
+{% endif %}
+{% if wireguard_mtu | string | length > 0 %}
+MTU = {{ wireguard_mtu }}
+{% endif %}
+{% if wireguard_table | string | length > 0 %}
+Table = {{ wireguard_table }}
+{% endif %}
+{% for peer in wireguard_peers %}
+
+[Peer]
+# {{ peer.name | default(peer.onepassword_item) }}
+PublicKey = {{ wireguard_peer_public_keys.results[loop.index0].stdout | trim }}
+AllowedIPs = {{ peer.allowed_ips | join(', ') }}
+{% if peer.endpoint | default('') | length > 0 %}
+Endpoint = {{ peer.endpoint }}
+{% endif %}
+{% if (peer.persistent_keepalive | default(0) | int) > 0 %}
+PersistentKeepalive = {{ peer.persistent_keepalive | int }}
+{% endif %}
+{% endfor %}

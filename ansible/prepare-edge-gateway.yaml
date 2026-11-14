@@ -1,0 +1,10 @@
+---
+- name: Prepare edge gateways
+  hosts: edge_gateway
+  become: true
+  roles:
+    - general-configuration
+    - ssh-agent-sudo
+    - network
+    - wireguard
+    - edge-gateway

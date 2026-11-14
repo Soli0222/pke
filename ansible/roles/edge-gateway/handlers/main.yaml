@@ -1,0 +1,12 @@
+---
+# nftables.service の stop は flush ruleset を実行し、Tailscale の rule も消す。
+# 設定の反映は reload（nft -f）だけで行う。
+- name: Reload nftables
+  ansible.builtin.systemd:
+    name: nftables
+    state: reloaded
+
+- name: Reload HAProxy
+  ansible.builtin.systemd:
+    name: haproxy
+    state: reloaded
