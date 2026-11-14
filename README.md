@@ -19,9 +19,9 @@ Ansible でノードを構成し、Helmfile で基盤を導入した後、Flux C
 | クラスタ | ノード | 役割 | kubectl context |
 |---|---|---|---|
 | natsume | `natsume-03`、`natsume-08` | 本番アプリ、DB、監視基盤 | `natsume@soli` |
-| meruto | `meruto-01` | 単一ノードのアプリ・拠点監視 | `meruto@soli` |
+| meruto | `meruto-02` | 単一ノードのアプリ・拠点監視 | `meruto@soli` |
 
-`natsume-03` と `meruto-01` が各クラスタの K3s server と external etcd を持ち、`natsume-08` は K3s agent です。
+`natsume-03` と `meruto-02` が各クラスタの K3s server と external etcd を持ち、`natsume-08` は K3s agent です。
 各クラスタの etcd は単一 member です。
 ノードの所属と接続先は [inventory](ansible/inventories/hosts.yaml) と [host_vars](ansible/inventories/host_vars/) に定義します。
 K3s クラスタ名は host_vars の `cluster`、Helmfile environment、Flux のディレクトリ名でそろえます。
@@ -66,7 +66,7 @@ Misskey Valkey は RWO volume の付け替えに `Recreate` を使うため、�
 Helmfile は environment に指定した 1Password item から Connect の認証情報を読みます。
 
 対象ノードの inventory と host_vars を整えてから、次の順で実行します。
-以下は natsume の例です。meruto は `--limit meruto-01`、context と environment は `meruto` に替えます。
+以下は natsume の例です。meruto は `--limit meruto-02`、context と environment は `meruto` に替えます。
 
 ```sh
 cd ansible
@@ -98,7 +98,7 @@ state は Cloudflare R2 の S3 互換 backend に保存します。
 Falco の更新は `k3s_cluster` が対象です。
 `update-falco` ロールは `install-falco` を再利用し、パッケージまたは設定が変わった場合に Falco を再起動します。
 `--limit` で対象ホストを指定し、先に check mode で差分を確認します。
-次は natsume（`natsume@soli`）の例です。meruto（`meruto@soli`）は `--limit meruto-01` に替えます。
+次は natsume（`natsume@soli`）の例です。meruto（`meruto@soli`）は `--limit meruto-02` に替えます。
 この操作は SSH 経由で実行し、kubectl context は使いません。
 
 ```sh
@@ -108,15 +108,20 @@ ansible-playbook -i inventories/hosts.yaml update-falco.yaml --limit 'natsume-03
 
 ## ストレージとネットワーク
 
-natsume は Longhorn と TopoLVM、meruto は Longhorn を使います。
+natsume は Longhorn と TopoLVM、meruto は TopoLVM を使います。
 Longhorn の既定 replica 数は1です。CNPG も全 DB が1 instance のため、バックアップと復元手順を含めて運用します。
 
 - `natsume-08`: Ansible が `/dev/vda4` に TopoLVM、`/dev/vda5` に Longhorn の領域を構成します。
 - `natsume-03`: Longhorn 600GB と TopoLVM 200GB が存在しますが、Ansible の storage role 対象には含めません。
-- `meruto-01`: Longhorn は既存 VG `ubuntu-vg` の空き領域を使います。public interface はありません。
+- `meruto-02`: Ansible が T500（`/dev/disk/by-id/nvme-CT1000T500SSD8_2409474C8886`）の1パーティションに TopoLVM の VG を構成します。`ubuntu-vg` には `/var/lib/rancher`（150G）と `/var/lib/kubelet`（100G）の LV を K3s の導入前に作ります。
 
-両クラスタとも dual-stack です。
-Pod CIDR は `10.1.0.0/16` / `fd00:10:1::/64`、Service CIDR は `10.2.0.0/16` / `fd00:10:2::/64` を使います。
+natsume は dual-stack、meruto は IPv4 のみです。
+Pod CIDR は `10.1.0.0/16` / `fd00:10:1::/64`、Service CIDR は `10.2.0.0/16` / `fd00:10:2::/64` を使い、meruto は IPv4 の CIDR だけを host_vars で指定します。
+
+meruto-02 は public interface を持たず、LAN（`192.168.50.0/24`）にデフォルトルートを置きません。
+外への通信は WireGuard（`wg0`）から lune-02 を通ります。wg0 が落ちると外への経路がなくなり、LAN から直接は出ません。
+LAN の経路は、接続済みのサブネット（DNS の `192.168.50.1` を含む）、lune-02 の endpoint への host route、作業端末のセグメント（`192.168.20.0/24`）だけです。
+`prepare-k3s-nodes.yaml` は他の role より先に、wireguard-tools の導入、netplan の適用、WireGuard の起動の順で経路を切り替えます。作業端末への経路を入れてから wg0 を上げるので、Ansible の SSH は切れません。systemd-networkd が wg-quick の ip rule を消さないよう、`wireguard_networkd_keep_foreign_routes` で foreign の経路と rule を管理対象から外します。
 ノードの IP・経路・DNS は host_vars、Cilium の設定は Helmfile environment を参照してください。
 K3s built-in の Traefik と Helm controller は無効化し、Ingress とアプリの Helm release は Flux で管理します。
 

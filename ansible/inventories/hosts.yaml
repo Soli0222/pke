@@ -6,7 +6,7 @@ all:
         natsume-03:
     meruto_etcd:
       hosts:
-        meruto-01:
+        meruto-02:
     etcd:
       children:
         natsume_etcd:
@@ -14,19 +14,23 @@ all:
     longhorn_storage:
       hosts:
         natsume-08:
-        meruto-01:
     topolvm_storage:
       hosts:
         natsume-08:
+        meruto-02:
     k3s_cluster:
       children:
         k3s_server:
           hosts:
             natsume-03:
-            meruto-01:
+            meruto-02:
         k3s_agent:
           hosts:
             natsume-08:
+    # 外への通信を WireGuard 経由にするホスト。
+    wireguard_egress:
+      hosts:
+        meruto-02:
     edge_gateway:
       hosts:
         lune-02:

@@ -44,7 +44,7 @@ def verify(stream, cluster):
         pass
     if not manifest or manifest.get('format') != 1 or manifest.get('datastore') != 'external-etcd':
         raise RuntimeError('unsupported or missing recovery manifest')
-    host = {'natsume': 'natsume-03', 'meruto': 'meruto-01'}[cluster]
+    host = {'natsume': 'natsume-03', 'meruto': 'meruto-02'}[cluster]
     if manifest.get('cluster') != cluster or manifest.get('host') != host:
         raise RuntimeError('archive does not match the selected cluster')
     if manifest.get('files') != files:

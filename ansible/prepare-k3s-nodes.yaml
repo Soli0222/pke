@@ -1,4 +1,36 @@
 ---
+# 外への通信を wg0 だけにするホストは、他の role より先に経路を切り替える。
+# 1. LAN のデフォルトルートがあるうちに wireguard-tools を入れる
+# 2. netplan を適用し、作業端末と lune-02 への経路を LAN に残してデフォルトルートを外す
+# 3. wg0 を上げる（作業端末への戻りが wg0 に流れないよう、2 の後に行う）
+- name: Route egress through WireGuard first
+  hosts: k3s_cluster:&wireguard_egress
+  become: true
+  tasks:
+    - name: Check whether WireGuard tools are installed
+      ansible.builtin.stat:
+        path: /usr/bin/wg
+      register: wireguard_egress_tools_binary
+
+    # 2回目以降は LAN のデフォルトルートがないため、導入済みなら実行しない。
+    - name: Install WireGuard tools while the LAN default route still exists
+      ansible.builtin.apt:
+        name: wireguard-tools
+        state: present
+        update_cache: true
+      when: not wireguard_egress_tools_binary.stat.exists
+
+    - name: Apply netplan without the LAN default route
+      ansible.builtin.include_role:
+        name: network
+
+    - name: Apply netplan before bringing up WireGuard
+      ansible.builtin.meta: flush_handlers
+
+    - name: Bring up WireGuard as the default route
+      ansible.builtin.include_role:
+        name: wireguard
+
 - name: Prepare k3s nodes
   hosts: k3s_cluster
   become: true
@@ -8,6 +40,12 @@
     - network
     - sysctl
     - ufw
+
+- name: Prepare K3s data volumes before installing K3s
+  hosts: k3s_cluster
+  become: true
+  roles:
+    - k3s-data-volumes
 
 - name: Prepare TopoLVM storage volume groups first
   hosts: topolvm_storage

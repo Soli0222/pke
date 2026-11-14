@@ -25,3 +25,8 @@ wireguard_onepassword_public_key_field: public_key
 wireguard_peers: []
 
 wireguard_config_dir: /etc/wireguard
+
+# systemd-networkd は再設定時に自分が作っていない ip rule と経路を消す。
+# wg-quick でデフォルトルートを wg に向けるホストでは true にし、netplan apply で消させない。
+wireguard_networkd_keep_foreign_routes: false
+wireguard_networkd_conf_file: /etc/systemd/networkd.conf.d/90-pke-wireguard.conf

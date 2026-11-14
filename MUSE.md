@@ -69,7 +69,7 @@ python3 scripts/export-muse-kubeconfig.py \
 
 meruto は LAN IP が管理 kubeconfig と証明書の SAN に設定されている。
 Tailscale から接続する場合は、実機で確認した Tailscale endpoint を `--server` に指定する。
-`--tls-server-name` には [meruto の host_vars](ansible/inventories/host_vars/meruto-01.yaml) の `k3s_tls_sans` にある IP を指定し、CA と SAN の検証を維持する。
+`--tls-server-name` には [meruto の host_vars](ansible/inventories/host_vars/meruto-02.yaml) の `k3s_tls_sans` にある IP を指定し、CA と SAN の検証を維持する。
 
 ```sh
 python3 scripts/export-muse-kubeconfig.py \

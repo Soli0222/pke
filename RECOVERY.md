@@ -43,7 +43,7 @@ cluster-admin の操作で別の資格情報・権限を作成した場合、そ
 ## external etcd の復旧一式を暗号化保管する
 
 `scripts/backup-k3s-recovery.py` は server 上で snapshot を取り、対応する server token と設定を tar stream にまとめ、SSH から端末の age へ直接渡す。
-対象は natsume が natsume-03、meruto が meruto-01。
+対象は natsume が natsume-03、meruto が meruto-02。
 サービス停止・再起動・restore・compact は行わない。
 設定変更や token rotation と同時に実行しない。
 

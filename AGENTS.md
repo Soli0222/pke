@@ -21,7 +21,7 @@ K3s ノードの host_vars に `cluster: <name>` を必ず指定し、etcd は `
 クラスタ固有値は host_vars、group_vars、クラスタ別グループで管理する。
 
 natsume は `natsume-03` が server / etcd、`natsume-08` が agent。
-meruto は `meruto-01` が server / etcd。
+meruto は `meruto-02` が server / etcd。
 agent の join 先は `ansible/inventories/group_vars/k3s_agent.yaml` に定義する。
 Ubuntu 26.04 のホストは既定の sudo が sudo-rs で Ansible の become が待ち続けるため、host_vars に `ansible_become_exe: sudo.ws` を指定する。
 `lune-02` は `edge_gateway` グループの VPS で K3s ノードではない。`cluster` を持たせず、`k3s_cluster` 向けの playbook の対象にしない。
@@ -29,10 +29,10 @@ Ubuntu 26.04 のホストは既定の sudo が sudo-rs で Ansible の become �
 ストレージの対象を実ディスクの存在だけで拡張しない。
 `natsume-03` は Longhorn 600GB / TopoLVM 200GB を持つが、inventory の `longhorn_storage` / `topolvm_storage` に加えない。
 `natsume-08` は TopoLVM が `/dev/vda4`、Longhorn が `/dev/vda5`。
-`meruto-01` の Longhorn は `longhorn_storage_use_existing_vg: true` と `ubuntu-vg` を使う。
+`meruto-02` は Longhorn を使わない。TopoLVM は T500 を by-id で指定し、`/var/lib/rancher` と `/var/lib/kubelet` は `ubuntu-vg` の LV（`k3s_data_volumes`）にする。
 
 ネットワークは host_vars の `network_netplan` に定義する。
-public interface がない meruto に global interface や public UFW rule を要求しない。
+meruto は public interface を持たない。外への通信は `wg0` から lune-02 を通り、LAN にはデフォルトルートを置かない。80/443 は `ufw_global_interface: wg0` で受ける。
 K3s の external IP と TLS SAN は host_vars の設定を尊重する。
 
 ## Flux と Helm chart

@@ -40,7 +40,7 @@ def main():
         common = yaml.safe_load((ROOT / 'ansible/inventories/group_vars/all.yaml').read_text())
         env = Environment(undefined=StrictUndefined)
         env.filters['regex_escape'] = re.escape
-        for host in ('natsume-03', 'natsume-08', 'meruto-01'):
+        for host in ('natsume-03', 'natsume-08', 'meruto-02'):
             values = defaults | common | yaml.safe_load((ROOT / f'ansible/inventories/host_vars/{host}.yaml').read_text())
             values['ansible_hostname'] = host
             for enabled in (True, False):

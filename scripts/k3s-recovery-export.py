@@ -27,7 +27,7 @@ def run(args):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--expected-host', required=True, choices=['natsume-03', 'meruto-01'])
+    p.add_argument('--expected-host', required=True, choices=['natsume-03', 'meruto-02'])
     a = p.parse_args()
     if os.geteuid() != 0 or socket.gethostname().split('.')[0] != a.expected_host:
         raise RuntimeError('host identity or root privilege does not match')

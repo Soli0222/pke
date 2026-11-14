@@ -1,0 +1,83 @@
+---
+ansible_host: meruto-02
+# Ubuntu 26.04 の既定の sudo は sudo-rs で、Ansible のプロンプト検出と合わない。
+ansible_become_exe: sudo.ws
+cluster: meruto
+
+alloy_systemd_units:
+  - alloy.service
+  - k3s.service
+  - etcd.service
+  - falco-modern-bpf.service
+  - wg-quick@wg0.service
+
+ssh_agent_sudo_users:
+  - name: soli
+    github_user: soli0222
+    login_authorized_keys: true
+    sudo_authorized_keys: true
+    lock_password: true
+
+# meruto は IPv4 のみ。group_vars の dual-stack 設定を上書きする。
+k3s_cluster_cidr: "10.1.0.0/16"
+k3s_service_cidr: "10.2.0.0/16"
+k3s_cluster_dns: "10.2.0.10"
+
+k3s_include_tailscale_tls_sans: false
+k3s_tls_sans:
+  - 192.168.50.2
+k3s_external_ip_netplan_source: private
+k3s_external_ip_include_ipv6: false
+
+# K3s の導入前にマウントする。P5（OS ディスク）の ubuntu-vg に作る。
+k3s_data_volumes:
+  - vg: ubuntu-vg
+    lv: rancher-lv
+    size: 150g
+    mount_path: /var/lib/rancher
+  - vg: ubuntu-vg
+    lv: kubelet-lv
+    size: 100g
+    mount_path: /var/lib/kubelet
+
+# T500 全体を GPT の1パーティションにして VG topolvm を作る。
+# nvme の番号は再起動で入れ替わるため by-id で指定する。
+topolvm_storage_parent_disk: /dev/disk/by-id/nvme-CT1000T500SSD8_2409474C8886
+topolvm_storage_partition_number: 1
+topolvm_storage_partition_size_mib: 0
+topolvm_storage_partition_end: "100%"
+topolvm_storage_devices:
+  - /dev/disk/by-id/nvme-CT1000T500SSD8_2409474C8886-part1
+
+# LAN にはデフォルトルートを置かない。外への通信は wg0 だけを通り、
+# wg0 が落ちたときは経路がなくなる（自宅の回線から直接出ない）。
+network_netplan:
+  global: {}
+  private:
+    device: enp3s0
+    ipv4:
+      - 192.168.50.2/24
+    nameservers:
+      - 192.168.50.1
+    routes:
+      # lune-02 の WireGuard endpoint。暗号化した通信だけが LAN から出る。
+      - to: 133.18.187.207/32
+        via: 192.168.50.1
+      # 作業端末のセグメント。SSH と kubectl の戻りを wg0 に流さない。
+      - to: 192.168.20.0/24
+        via: 192.168.50.1
+
+# 80/443 は lune-02 の HAProxy から wg0 で受ける。
+ufw_global_interface: wg0
+
+wireguard_address: 10.99.0.2/24
+wireguard_onepassword_item: pke-wireguard-meruto-02
+# netplan apply で networkd が wg-quick の ip rule と経路を消さないようにする。
+wireguard_networkd_keep_foreign_routes: true
+wireguard_peers:
+  - name: lune-02
+    onepassword_item: pke-wireguard-lune-02
+    allowed_ips:
+      - 0.0.0.0/0
+    endpoint: 133.18.187.207:51820
+    persistent_keepalive: 25
