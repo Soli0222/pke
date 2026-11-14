@@ -23,6 +23,8 @@ K3s ノードの host_vars に `cluster: <name>` を必ず指定し、etcd は `
 natsume は `natsume-03` が server / etcd、`natsume-08` が agent。
 meruto は `meruto-01` が server / etcd。
 agent の join 先は `ansible/inventories/group_vars/k3s_agent.yaml` に定義する。
+Ubuntu 26.04 のホストは既定の sudo が sudo-rs で Ansible の become が待ち続けるため、host_vars に `ansible_become_exe: sudo.ws` を指定する。
+`lune-02` は `edge_gateway` グループの VPS で K3s ノードではない。`cluster` を持たせず、`k3s_cluster` 向けの playbook の対象にしない。
 
 ストレージの対象を実ディスクの存在だけで拡張しない。
 `natsume-03` は Longhorn 600GB / TopoLVM 200GB を持つが、inventory の `longhorn_storage` / `topolvm_storage` に加えない。

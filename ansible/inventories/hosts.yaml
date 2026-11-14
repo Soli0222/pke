@@ -27,3 +27,6 @@ all:
         k3s_agent:
           hosts:
             natsume-08:
+    edge_gateway:
+      hosts:
+        lune-02:

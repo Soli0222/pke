@@ -1,0 +1,6 @@
+---
+# Address や MTU の変更は syncconf では反映されないため restart する。
+- name: Restart WireGuard
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ wireguard_interface }}"
+    state: restarted

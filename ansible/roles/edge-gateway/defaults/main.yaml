@@ -1,0 +1,57 @@
+---
+edge_gateway_public_interface: "{{ ((network_netplan | default({})).global | default({})).device | default('') }}"
+# HAProxy の待ち受けアドレス。global interface の最初の IPv4 を使う。
+edge_gateway_public_ipv4: >-
+  {{
+    (
+      [((network_netplan | default({})).global | default({})).ipv4 | default([])]
+      if ((network_netplan | default({})).global | default({})).ipv4 | default([]) is string
+      else ((network_netplan | default({})).global | default({})).ipv4 | default([])
+    )
+    | first
+    | default('')
+    | regex_replace('/.*$', '')
+  }}
+# global interface の最初の IPv6。空のときは IPv6 で待ち受けない。
+edge_gateway_public_ipv6: >-
+  {{
+    (
+      [((network_netplan | default({})).global | default({})).ipv6 | default([])]
+      if ((network_netplan | default({})).global | default({})).ipv6 | default([]) is string
+      else ((network_netplan | default({})).global | default({})).ipv6 | default([])
+    )
+    | first
+    | default('')
+    | regex_replace('/.*$', '')
+  }}
+
+edge_gateway_wireguard_interface: "{{ wireguard_interface | default('wg0') }}"
+edge_gateway_wireguard_port: "{{ wireguard_listen_port | default(51820) }}"
+
+# WireGuard の内側からインターネットへ出すことを許可する送信元。lune-02 で SNAT する。
+edge_gateway_egress_sources: []
+
+# WireGuard を通る TCP の MSS 上限。wg の MTU 1420 から IPv4/TCP ヘッダ 40 byte を引いた値。
+edge_gateway_tcp_mss: 1380
+
+edge_gateway_public_tcp_ports:
+  - 80
+  - 443
+# Tailscale SSH で入れることを確認した後に false にする。
+edge_gateway_public_ssh_enabled: true
+
+edge_gateway_tailscale_interface: tailscale0
+# Tailscale の直接接続用。閉じても DERP 経由で通信できる。
+edge_gateway_tailscale_port: 41641
+
+# - name: http
+#   port: 80
+#   server_name: meruto-02
+#   target: 10.99.0.2:80
+edge_gateway_haproxy_backends: []
+edge_gateway_haproxy_timeout_connect: 5s
+# WebSocket などの長時間接続を切らない値にする。
+edge_gateway_haproxy_timeout_tunnel: 1h
+
+edge_gateway_nftables_config: /etc/nftables.conf
+edge_gateway_sysctl_file: /etc/sysctl.d/90-edge-gateway.conf

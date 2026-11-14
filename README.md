@@ -120,6 +120,31 @@ Pod CIDR は `10.1.0.0/16` / `fd00:10:1::/64`、Service CIDR は `10.2.0.0/16` /
 ノードの IP・経路・DNS は host_vars、Cilium の設定は Helmfile environment を参照してください。
 K3s built-in の Traefik と Helm controller は無効化し、Ingress とアプリの Helm release は Flux で管理します。
 
+### 外部ゲートウェイ（lune-02）
+
+`lune-02` は inventory の `edge_gateway` グループに属する VPS で、K3s ノードではありません。
+WireGuard（`wg0`、`10.99.0.1/24`、51820/udp）で meruto のノードとつなぎ、次の2つを担います。
+
+- ingress: HAProxy が IPv4 と IPv6 の 80/443 を TCP のまま受け、PROXY protocol v2 を付けて WireGuard の先へ IPv4 で転送します。TLS は転送先の Traefik で終端します。
+- egress: WireGuard から来た通信のうち、`edge_gateway_egress_sources` に定義した送信元だけを公開側の interface へ masquerade します。
+
+ファイアウォールは nftables の `inet edge_gateway` table だけで管理します。
+Tailscale が作る table を残すため、`flush ruleset` と nftables.service の stop は使いません。
+受け付けるのは Tailscale の interface、WireGuard、Tailscale の直接接続用ポート、80/443 です。公開側の SSH は `edge_gateway_public_ssh_enabled` で切り替えます。
+WireGuard を通る TCP の MSS は lune-02 の forward で両方向とも `edge_gateway_tcp_mss` 以下に下げます。
+
+Tailscale は lune-02 への SSH にだけ使い、Ansible では管理しません。
+WireGuard の鍵は 1Password の item（`wireguard_onepassword_item`）に `private_key` と `public_key` の field で置きます。
+peer 側の公開鍵も同じ形式の item から読みます。
+
+```sh
+cd ansible
+ansible-playbook -i inventories/hosts.yaml prepare-edge-gateway.yaml --limit lune-02 --check --diff
+ansible-playbook -i inventories/hosts.yaml prepare-edge-gateway.yaml --limit lune-02
+```
+
+`network` role は既存の netplan を削除して置き換えます。設定を誤ると SSH できなくなるため、事業者のコンソールに入れることを確認してから適用します。
+
 ## 変更を反映する
 
 変更は PR でレビューし、マージ後に Flux の同期とアプリの状態を確認します。

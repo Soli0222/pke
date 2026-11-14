@@ -1,0 +1,49 @@
+#!/usr/sbin/nft -f
+# This file is managed by Ansible. Do not edit manually.
+# flush ruleset は使わない。Tailscale が iptables-nft で作る table を残すため。
+
+table inet edge_gateway
+delete table inet edge_gateway
+
+table inet edge_gateway {
+  chain input {
+    type filter hook input priority filter; policy drop;
+
+    ct state established,related accept
+    ct state invalid drop
+    iif "lo" accept
+    meta l4proto { icmp, ipv6-icmp } accept
+
+    iifname "{{ edge_gateway_tailscale_interface }}" accept
+    iifname "{{ edge_gateway_public_interface }}" udp dport {{ edge_gateway_wireguard_port | int }} accept
+{% if (edge_gateway_tailscale_port | int) > 0 %}
+    iifname "{{ edge_gateway_public_interface }}" udp dport {{ edge_gateway_tailscale_port | int }} accept
+{% endif %}
+    iifname "{{ edge_gateway_public_interface }}" tcp dport { {{ edge_gateway_public_tcp_ports | join(', ') }} } accept
+{% if edge_gateway_public_ssh_enabled | bool %}
+    iifname "{{ edge_gateway_public_interface }}" tcp dport 22 accept
+{% endif %}
+  }
+
+  # WireGuard を通る TCP の MSS を下げる。両方向の SYN を見るため、こちら側だけで足りる。
+  chain forward_mss {
+    type filter hook forward priority mangle; policy accept;
+
+    iifname "{{ edge_gateway_wireguard_interface }}" tcp flags syn / syn,rst tcp option maxseg size > {{ edge_gateway_tcp_mss | int }} tcp option maxseg size set {{ edge_gateway_tcp_mss | int }}
+    oifname "{{ edge_gateway_wireguard_interface }}" tcp flags syn / syn,rst tcp option maxseg size > {{ edge_gateway_tcp_mss | int }} tcp option maxseg size set {{ edge_gateway_tcp_mss | int }}
+  }
+
+  chain forward {
+    type filter hook forward priority filter; policy drop;
+
+    ct state established,related accept
+    ct state invalid drop
+    iifname "{{ edge_gateway_wireguard_interface }}" oifname "{{ edge_gateway_public_interface }}" ip saddr { {{ edge_gateway_egress_sources | join(', ') }} } accept
+  }
+
+  chain postrouting {
+    type nat hook postrouting priority srcnat; policy accept;
+
+    oifname "{{ edge_gateway_public_interface }}" ip saddr { {{ edge_gateway_egress_sources | join(', ') }} } masquerade
+  }
+}

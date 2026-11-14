@@ -1,0 +1,52 @@
+---
+ansible_host: lune-02
+# Ubuntu 26.04 の既定の sudo は sudo-rs で、Ansible のプロンプト検出と合わない。
+# 従来の sudo（sudo.ws）を使う。
+ansible_become_exe: sudo.ws
+
+ssh_agent_sudo_users:
+  - name: soli
+    github_user: soli0222
+    login_authorized_keys: true
+    sudo_authorized_keys: true
+    lock_password: true
+
+network_netplan:
+  global:
+    device: ens3
+    ipv4:
+      - 133.18.187.207/23
+    # 事業者が割り当てた静的アドレス。RA による SLAAC のアドレスは使わない。
+    ipv6:
+      - 2406:8c00:0:3476:133:18:187:207/64
+    default_route:
+      - 133.18.186.1
+      - 2406:8c00:0:3476::1
+    nameservers:
+      - 1.1.1.1
+      - 1.0.0.1
+    routes: []
+  private: {}
+
+wireguard_address: 10.99.0.1/24
+wireguard_listen_port: 51820
+wireguard_onepassword_item: pke-wireguard-lune-02
+wireguard_peers:
+  - name: meruto-02
+    onepassword_item: pke-wireguard-meruto-02
+    allowed_ips:
+      - 10.99.0.2/32
+
+# SSH は Tailscale 経由だけにする。
+edge_gateway_public_ssh_enabled: false
+edge_gateway_egress_sources:
+  - 10.99.0.2/32
+edge_gateway_haproxy_backends:
+  - name: http
+    port: 80
+    server_name: meruto-02
+    target: 10.99.0.2:80
+  - name: https
+    port: 443
+    server_name: meruto-02
+    target: 10.99.0.2:443
