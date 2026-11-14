@@ -1,7 +1,5 @@
 ---
 ansible_host: meruto-02
-# Ubuntu 26.04 の既定の sudo は sudo-rs で、Ansible のプロンプト検出と合わない。
-ansible_become_exe: sudo.ws
 cluster: meruto
 
 alloy_systemd_units:

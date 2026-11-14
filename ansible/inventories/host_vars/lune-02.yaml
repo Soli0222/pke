@@ -1,8 +1,5 @@
 ---
 ansible_host: lune-02
-# Ubuntu 26.04 の既定の sudo は sudo-rs で、Ansible のプロンプト検出と合わない。
-# 従来の sudo（sudo.ws）を使う。
-ansible_become_exe: sudo.ws
 
 ssh_agent_sudo_users:
   - name: soli
