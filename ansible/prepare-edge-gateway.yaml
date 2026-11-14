@@ -5,6 +5,7 @@
   roles:
     - general-configuration
     - ssh-agent-sudo
+    - sshd-listen
     - network
     - wireguard
     - edge-gateway
