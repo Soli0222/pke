@@ -7,11 +7,15 @@ spec:
   interval: 10m
   releaseName: mf-account-reloader
   targetNamespace: mf-account-reloader
+  # TopoLVM は WaitForFirstConsumer のため、state の PVC は CronJob の Pod ができるまで
+  # バインドされない。Helm の wait は PVC の Pending で失敗するので無効にする。
   install:
     createNamespace: false
     crds: Create
+    disableWait: true
   upgrade:
     crds: CreateReplace
+    disableWait: true
   chart:
     spec:
       chart: mf-account-reloader
