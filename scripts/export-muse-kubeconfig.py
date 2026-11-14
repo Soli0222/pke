@@ -104,7 +104,7 @@ def main():
     parser.add_argument('--output', required=True, help='リポジトリ外の新規ファイル')
     args = parser.parse_args()
     path = output_path(args.output)
-    base = ['kubectl', '--context', args.cluster + '@soli', '--request-timeout=30s']
+    base = ['kubectl', '--context', 'soli.' + args.cluster, '--request-timeout=30s']
     if args.kubeconfig:
         base += ['--kubeconfig', args.kubeconfig]
     source = kubectl_json(base, ['config', 'view', '--minify', '--flatten', '--raw', '-o', 'json'])

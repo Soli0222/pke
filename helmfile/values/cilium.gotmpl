@@ -1,3 +1,4 @@
+{{- $ipv6 := .Values.cilium | get "ipv6Enabled" true }}
 image:
   pullPolicy: IfNotPresent
 
@@ -9,16 +10,18 @@ ipam:
       - {{ . | quote }}
       {{- end }}
     clusterPoolIPv4MaskSize: {{ .Values.cilium.clusterPoolIPv4MaskSize }}
+    {{- if $ipv6 }}
     clusterPoolIPv6PodCIDRList:
       {{- range .Values.cilium.clusterPoolIPv6PodCIDRList }}
       - {{ . | quote }}
       {{- end }}
     clusterPoolIPv6MaskSize: {{ .Values.cilium.clusterPoolIPv6MaskSize }}
+    {{- end }}
 
 ipv4:
   enabled: true
 ipv6:
-  enabled: true
+  enabled: {{ $ipv6 }}
 
 k8sServiceHost: {{ .Values.cilium.k8sServiceHost | quote }}
 k8sServicePort: {{ .Values.cilium.k8sServicePort }}
@@ -27,10 +30,12 @@ routingMode: "native"
 tunnelProtocol: ""
 autoDirectNodeRoutes: true
 ipv4NativeRoutingCIDR: {{ .Values.cilium.ipv4NativeRoutingCIDR | quote }}
+{{- if $ipv6 }}
 ipv6NativeRoutingCIDR: {{ .Values.cilium.ipv6NativeRoutingCIDR | quote }}
+{{- end }}
 
 enableIPv4Masquerade: true
-enableIPv6Masquerade: true
+enableIPv6Masquerade: {{ $ipv6 }}
 
 # kube-proxy is intentionally kept enabled on k3s.
 kubeProxyReplacement: "false"

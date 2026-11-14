@@ -49,7 +49,7 @@ cd ../..
 ```
 
 RBAC と token 用 Secret の定義は `flux/clusters/<cluster>/apps/muse-access/` から同期する。
-PR マージ後、管理 context `natsume@soli` / `meruto@soli` で Flux の `muse-access` Kustomization を確認する。
+PR マージ後、管理 context `soli.natsume` / `soli.meruto` で Flux の `muse-access` Kustomization を確認する。
 Ready に加え、適用 revision がマージした commit を含むことと、`status.observedGeneration` が `metadata.generation` に一致することを確認する。
 Secret の token 値は Kubernetes が生成する。Git に値は保存しない。
 

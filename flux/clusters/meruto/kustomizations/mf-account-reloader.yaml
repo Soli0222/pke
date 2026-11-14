@@ -14,4 +14,4 @@ spec:
     name: flux-system
   dependsOn:
   - name: mf-account-reloader-auth
-  - name: longhorn
+  - name: topolvm

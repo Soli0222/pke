@@ -35,8 +35,6 @@ flowchart LR
 | ntfy の表示・認証・ACL | [ntfy HelmRelease](flux/clusters/natsume/apps/ntfy/helmrelease-ntfy.yaml) |
 
 ホストと meruto は mTLS で `https://mimir.pstr.space/api/v1/push` と `https://loki.pstr.space/loki/api/v1/push` に送信する。
-meruto の Vector も syslog を Loki に送る。
-CCAT-1 のSNMP収集・syslog送信・community登録は [CCAT-1 の監視](flux/clusters/meruto/apps/ccat-snmp-exporter/README.md) を参照する。
 Mimir は単一 tenant `anonymous` を使い、Ruler の通知先は `http://mimir.mimir:8080/alertmanager`。
 通知先は ntfy のみで、外部 heartbeat 監視はない。natsume / Mimir 全断時の通知はこの構成ではできない。
 
@@ -147,17 +145,17 @@ python3 scripts/validate-cluster-labels.py
 マージ後は Flux の通常同期を使い、変更した Kustomization / HelmRelease の Ready、適用 revision、generation を確認する。
 
 ```sh
-kubectl --context natsume@soli -n flux-system get kustomizations
-kubectl --context meruto@soli -n flux-system get kustomizations
-kubectl --context natsume@soli -n monitoring-rules get helmrelease,prometheusrule
-kubectl --context meruto@soli -n monitoring-rules get helmrelease,prometheusrule
-kubectl --context natsume@soli -n ntfy rollout status deployment/ntfy --timeout=5m
+kubectl --context soli.natsume -n flux-system get kustomizations
+kubectl --context soli.meruto -n flux-system get kustomizations
+kubectl --context soli.natsume -n monitoring-rules get helmrelease,prometheusrule
+kubectl --context soli.meruto -n monitoring-rules get helmrelease,prometheusrule
+kubectl --context soli.natsume -n ntfy rollout status deployment/ntfy --timeout=5m
 ```
 
 Mimir に port-forward し、保存ルールと評価状態を確認する。
 
 ```sh
-kubectl --context natsume@soli -n mimir port-forward svc/mimir 18080:8080
+kubectl --context soli.natsume -n mimir port-forward svc/mimir 18080:8080
 ```
 
 別ターミナルで評価状態を取得する。
@@ -248,7 +246,7 @@ ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --limit 
 
 先に `update-alloy-monitoring.yaml` で収集設定を反映し、次に `update-k3s-audit.yaml` を1台に限定して実行する。
 API server の再起動を伴うため、対象クラスタの復旧経路とバックアップを確認してから適用する。
-`natsume@soli` / `meruto@soli` を明示した通常の読取操作で、API Ready、ノード状態、Loki 上の主体・対象・結果、他の収集の継続を確認して次のホストへ進む。
+`soli.natsume` / `soli.meruto` を明示した通常の読取操作で、API Ready、ノード状態、Loki 上の主体・対象・結果、他の収集の継続を確認して次のホストへ進む。
 本番で故意に障害や通知を発生させない。ログ量・空き容量・監査の出力エラー・転送失敗も確認する。
 
 戻す場合は対象1台に `-e '{"k3s_audit_enabled": false}'` を指定して監査用 playbook を実行する。
@@ -282,7 +280,7 @@ Grafana の専用 audit 機能は [Enterprise / Cloud の機能](https://grafana
 Alloy の target を詳しく見る場合は、そのクラスタに port-forward する。
 
 ```sh
-kubectl --context natsume@soli -n alloy port-forward deployment/alloy 18345:12345
+kubectl --context soli.natsume -n alloy port-forward deployment/alloy 18345:12345
 ```
 
 `http://127.0.0.1:18345` の UI で対象 component の URL・health・last_error を確認する。
@@ -360,7 +358,7 @@ Falco の container plugin は配布設定を使い、標準の CRI socket 一�
 CNPG の管理ラベルは `k8s.pod.label[...]` で container runtime から取得する。ラベルが取得できない場合は例外にせず、検知対象に残す。
 
 設定だけの変更はパッケージを更新せず、次を対象ホスト1台ずつ実施する。
-Kubernetes の対応先は natsume が `natsume@soli`、meruto が `meruto@soli`。
+Kubernetes の対応先は natsume が `soli.natsume`、meruto が `soli.meruto`。
 
 ```sh
 uv run --no-project --with pyyaml --with jinja2 python scripts/validate-falco.py

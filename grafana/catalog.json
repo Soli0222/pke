@@ -290,21 +290,6 @@
         ]
       }
     },
-    "ix2215": {
-      "path": "dashboards/platform/ix2215.json",
-      "title": "IX2215",
-      "origin": {
-        "kind": "existing",
-        "url": "https://grafana.str08.net/d/ix2215",
-        "revision": "generation:6",
-        "license": "unknown",
-        "changes": [
-          "既存exportを再利用。上流revision/licenseは未確認",
-          "元の配置・パネル種別・色・凡例・表示期間・クエリの演算を維持。Git Sync向けにidentityを整理",
-          "meruto専用の収集に合わせ、全selectorとInterface候補へcluster=merutoを明示"
-        ]
-      }
-    },
     "Codex": {
       "path": "dashboards/developer-tools/codex.json",
       "title": "Codex",
@@ -346,19 +331,6 @@
         "changes": [
           "設定とinventoryに基づく12分野の要確認・未確認を集計し、既存の詳細画面へ接続",
           "merutoのDB/未設定probe、base backup未確認を正常0へ丸めない"
-        ]
-      }
-    },
-    "ccat-1": {
-      "path": "dashboards/platform/ccat-1.json",
-      "title": "CCAT-1",
-      "origin": {
-        "kind": "custom",
-        "url": "https://github.com/soli0222/pke",
-        "revision": "Git",
-        "license": "Repository license",
-        "changes": [
-          "CCAT-1の実メトリクスに合わせた機器・インターフェース・収集状態・syslogの汎用監視。全インターフェースを初期選択。"
         ]
       }
     },

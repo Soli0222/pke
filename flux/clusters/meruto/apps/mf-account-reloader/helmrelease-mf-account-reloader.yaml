@@ -34,5 +34,5 @@ spec:
         - "モバイルSuica（JRE ID）"
     persistence:
       enabled: true
-      storageClass: longhorn
+      storageClass: topolvm
       size: 1Gi

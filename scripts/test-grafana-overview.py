@@ -66,6 +66,15 @@ values = yaml.safe_load(
     ).read_text()
 )["spec"]["values"]
 database_names = {db["namespace"]: db["name"] for db in values["databases"]}
+meruto_probe_count = sum(
+    len(app["targets"])
+    for app in yaml.safe_load(
+        (
+            ROOT
+            / "flux/clusters/meruto/apps/blackbox-exporter-probes/helmrelease-blackbox-exporter-probes.yaml"
+        ).read_text()
+    )["spec"]["values"]["applications"]
+)
 
 case(
     "absent nodes, DBs and probes survive in expectation",
@@ -73,7 +82,7 @@ case(
     sum([check(1, 0, len(nodes), c) for c, nodes in hosts.items()], [])
     + check(7, 0, sum(1 + bool(db["archive"]) for db in values["databases"]))
     + check(12, 0, sum(bool(db.get("baseBackupMaxAgeSeconds")) for db in values["databases"]))
-    + check(8, 0, 4, "meruto")
+    + check(8, 0, meruto_probe_count, "meruto")
     + check(7, -2, -2, "meruto")
     + check(12, -2, -2, "meruto")
     + check(8, -2, -2, "natsume"),

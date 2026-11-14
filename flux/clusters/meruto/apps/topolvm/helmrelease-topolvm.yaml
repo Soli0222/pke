@@ -42,7 +42,7 @@ spec:
       storageClass:
         fsType: ext4
         reclaimPolicy: Delete
-        isDefaultClass: false
+        isDefaultClass: true
         volumeBindingMode: WaitForFirstConsumer
         allowVolumeExpansion: true
         additionalParameters:

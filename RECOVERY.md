@@ -21,7 +21,7 @@ python3 scripts/emergency-access.py \
 
 meruto は `--cluster meruto` と `--context emergency-meruto-legacy-admin` を指定する。
 SSH トンネル使用時は `--server` と `--tls-server-name` をラッパー側に指定し、CA と SAN の検証を維持する。
-管理 context として `natsume@soli` / `meruto@soli` も指定できる。
+管理 context として `soli.natsume` / `soli.meruto` も指定できる。
 
 既定の `observe` は Node の get/list と `/readyz`・`/version` の GET だけを許可する。
 修復に管理権限が必要な場合は、予定操作を記録して `--role cluster-admin` を明示する。

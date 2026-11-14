@@ -107,9 +107,9 @@ Terraform 出力から更新する場合は、この定義を apply して state
 Ready に加えて revision / generation、ログインとバックアップ成功を確認する。
 
 ```sh
-kubectl --context natsume@soli -n flux-system get kustomization keycloak sui
-kubectl --context natsume@soli -n keycloak get helmrelease,statefulset,ingress,clusters.postgresql.cnpg.io,backups
-kubectl --context natsume@soli -n sui get helmrelease sui
+kubectl --context soli.natsume -n flux-system get kustomization keycloak sui
+kubectl --context soli.natsume -n keycloak get helmrelease,statefulset,ingress,clusters.postgresql.cnpg.io,backups
+kubectl --context soli.natsume -n sui get helmrelease sui
 curl --fail https://keycloak.pstr.space/realms/pke/.well-known/openid-configuration
 curl --fail https://keycloak.pstr.space/.well-known/oauth-authorization-server/realms/pke
 ```
