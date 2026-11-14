@@ -14,3 +14,4 @@ spec:
     name: flux-system
   dependsOn:
   - name: prometheus-operator-crd
+  - name: metallb-config

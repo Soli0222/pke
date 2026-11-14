@@ -23,11 +23,13 @@ ssh_agent_sudo_users:
 # group_vars の既定に加えて次を無効にする。
 # - local-storage: 既定の StorageClass は Flux の TopoLVM にする
 # - gateway-api-crd: Gateway API の CRD は Flux の Traefik が管理する
+# - servicelb: LoadBalancer は Flux の MetalLB が担う
 k3s_disable_components:
   - helm-controller
   - traefik
   - local-storage
   - gateway-api-crd
+  - servicelb
 
 # 6443 は LAN のアドレスだけで待ち受ける。wg0（lune-02 側）には出さない。
 k3s_bind_all_interfaces: false
@@ -37,10 +39,12 @@ k3s_tls_sans:
 # dual-stack のノード IP。IPv6 は LAN に置かず、WireGuard の ULA を使う。
 k3s_additional_node_ips:
   - fd00:10:99::2
-# 外から受ける経路は lune-02 だけなので、ExternalIP を lune-02 のグローバルアドレスにする。
-# servicelb はこの値を LoadBalancer の status に書く。
-k3s_external_ip_netplan_source: ""
-k3s_node_external_ip: "133.18.187.207,2406:8c00:0:3476:133:18:187:207"
+k3s_external_ip_netplan_source: private
+k3s_external_ip_include_ipv6: false
+# NodePort は lune-02 の HAProxy から wg0 経由で受けるものだけに使う。LAN には出さない。
+# LAN 向けの LoadBalancer は MetalLB の L2 で広告した IP に直接届くので NodePort は使わない。
+k3s_kube_proxy_args:
+  - nodeport-addresses=10.99.0.2/32,fd00:10:99::2/128
 
 # K3s の導入前にマウントする。P5（OS ディスク）の ubuntu-vg に作る。
 k3s_data_volumes:
@@ -79,9 +83,6 @@ network_netplan:
       # 作業端末のセグメント。SSH と kubectl の戻りを wg0 に流さない。
       - to: 192.168.20.0/24
         via: 192.168.50.1
-
-# 80/443 は lune-02 の HAProxy から wg0 で受ける。
-ufw_global_interface: wg0
 
 wireguard_address:
   - 10.99.0.2/24

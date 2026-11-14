@@ -118,7 +118,6 @@ Longhorn の既定 replica 数は1です。CNPG も全 DB が1 instance のた�
 両クラスタとも dual-stack です。
 Pod CIDR は `10.1.0.0/16` / `fd00:10:1::/64`、Service CIDR は `10.2.0.0/16` / `fd00:10:2::/64` を使います。
 meruto-02 の IPv6 のノード IP は LAN ではなく WireGuard の ULA（`fd00:10:99::2`）で、`k3s_additional_node_ips` で node-ip に足します。
-meruto-02 の ExternalIP は lune-02 のグローバルアドレス（v4 / v6）です。servicelb はこの値を LoadBalancer の status に書きます。
 
 meruto-02 は public interface を持たず、LAN（`192.168.50.0/24`）に IPv4 / IPv6 のデフォルトルートを置きません。
 外への通信は IPv4 / IPv6 とも WireGuard（`wg0`）から lune-02 を通ります。wg0 が落ちると外への経路がなくなり、LAN から直接は出ません。
@@ -133,7 +132,7 @@ meruto は K3s 同梱の `gateway-api-crd` も無効にし、Gateway API の CRD
 `lune-02` は inventory の `edge_gateway` グループに属する VPS で、K3s ノードではありません。
 WireGuard（`wg0`、`10.99.0.1/24` / `fd00:10:99::1/64`、51820/udp）で meruto のノードとつなぎ、次の2つを担います。
 
-- ingress: HAProxy が IPv4 と IPv6 の 80/443 を TCP のまま受け、PROXY protocol v2 を付けて WireGuard の先へ IPv4 で転送します。TLS は転送先の Traefik で終端します。
+- ingress: HAProxy が IPv4 と IPv6 の 80/443 を TCP のまま受け、PROXY protocol v2 を付けて WireGuard の先の Traefik の NodePort（`10.99.0.2:30080` / `30443`）へ IPv4 で転送します。TLS は Traefik で終端します。
 - egress: WireGuard から来た通信のうち、`edge_gateway_egress_sources`（IPv4）と `edge_gateway_egress_sources_ipv6`（IPv6）に定義した送信元だけを公開側の interface へ masquerade します。
 
 ファイアウォールは nftables の `inet edge_gateway` table だけで管理します。
@@ -142,9 +141,23 @@ Tailscale が作る table を残すため、`flush ruleset` と nftables.service
 WireGuard を通る TCP の MSS は lune-02 の forward で両方向とも、IPv4 は `edge_gateway_tcp_mss`、IPv6 は `edge_gateway_tcp_mss_ipv6` 以下に下げます。
 
 meruto の Traefik は web / websecure の両方で `10.99.0.1` からの PROXY protocol だけを信頼します。
-Traefik の Service は dual-stack で、status は lune-02 の v4 / v6 になります。external-dns は各 Ingress のホスト名に lune-02 の A / AAAA を登録します。
+### meruto の LoadBalancer
+
+meruto は K3s の servicelb を無効にし、[MetalLB](flux/clusters/meruto/apps/metallb-config/) で LoadBalancer の IP を割り当てます。
+
+| pool | アドレス | 広告 | 用途 |
+|---|---|---|---|
+| `lune` | lune-02 の `133.18.187.207` / `2406:8c00:0:3476:133:18:187:207` | しない | lune-02 経由で公開する Service。`metallb.io/address-pool: lune` を付けたものだけに割り当て、共有するときは `metallb.io/allow-shared-ip: lune` を付ける |
+| `lan` | `192.168.50.200-192.168.50.249` | enp3s0 で L2 | LAN 内だけで使う Service。LAN に IPv6 はないため IPv4 の SingleStack にする |
+
+`lune` pool の Service には lune-02 の HAProxy から wg0 経由で NodePort に届きます。
+kube-proxy の `nodeport-addresses` を wg0 のアドレス（`10.99.0.2/32`、`fd00:10:99::2/128`）に限定し、NodePort を LAN に出しません。
+`lan` pool の Service には L2 で広告した IP に直接届くため、NodePort は使いません。
+新しい Service を lune-02 経由で公開するときは、NodePort を固定し、lune-02 の `edge_gateway_haproxy_backends` に転送先を足します。
+
+Traefik は `lune` pool の dual-stack の LoadBalancer で、status は lune-02 の v4 / v6 です。external-dns は各 Ingress のホスト名に lune-02 の A / AAAA を登録します。
 [DNSEndpoint](flux/clusters/meruto/apps/external-dns-config/ingress-dnsendpoints.yaml) は natsume と同じく、入口の名前 `meruto.pstr.space` を登録します。
-lune-02 のアドレスを変えるときは、lune-02 と meruto-02 の host_vars（`k3s_node_external_ip`）と、この DNSEndpoint をそろえます。
+lune-02 のアドレスを変えるときは、lune-02 の host_vars、`lune` pool、この DNSEndpoint をそろえます。
 
 Tailscale は lune-02 への SSH にだけ使い、Ansible では管理しません。
 WireGuard の鍵は 1Password の item（`wireguard_onepassword_item`）に `private_key` と `public_key` の field で置きます。

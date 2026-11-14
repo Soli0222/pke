@@ -12,6 +12,8 @@ resources:
 - kustomizations/external-dns-config.yaml
 - kustomizations/kube-state-metrics.yaml
 - kustomizations/topolvm.yaml
+- kustomizations/metallb.yaml
+- kustomizations/metallb-config.yaml
 - kustomizations/mf-account-reloader-auth.yaml
 - kustomizations/mf-account-reloader.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml
