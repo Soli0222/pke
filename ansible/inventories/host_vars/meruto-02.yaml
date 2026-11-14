@@ -84,8 +84,10 @@ network_netplan:
       - to: 192.168.20.0/24
         via: 192.168.50.1
       # K3s の Service の CIDR（IPv4）。ノード自身（hostNetwork の Pod を含む）から ClusterIP に
-      # 繋ぐとき wg0 側の経路を引くと、転送先がノード自身の Service（kubernetes など）に届かない。
-      # 送信元を LAN のアドレスにして main テーブルで引かせる。宛先は kube-proxy が DNAT する。
+      # 繋ぐとき wg0 側の経路を引くと送信元が 10.99.0.2 になる。転送先がノード自身の Service
+      # （kubernetes → 192.168.50.2:6443）だと、NAT を戻した応答（送信元 ClusterIP → 10.99.0.2）が
+      # lo から入り直し、wg-quick のなりすまし防止（iifname != wg0 ip daddr 10.99.0.2
+      # fib saddr type != local drop）で捨てられる。送信元を LAN のアドレスにして避ける。
       - to: 10.2.0.0/16
         scope: link
         from: 192.168.50.2
