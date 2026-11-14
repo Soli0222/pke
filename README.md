@@ -19,7 +19,7 @@ Ansible でノードを構成し、Helmfile で基盤を導入した後、Flux C
 | クラスタ | ノード | 役割 | kubectl context |
 |---|---|---|---|
 | natsume | `natsume-03`、`natsume-08` | 本番アプリ、DB、監視基盤 | `natsume@soli` |
-| meruto | `meruto-02` | 単一ノードのアプリ・拠点監視 | `meruto@soli` |
+| meruto | `meruto-02` | 単一ノードのアプリ・外形監視 | `meruto@soli` |
 
 `natsume-03` と `meruto-02` が各クラスタの K3s server と external etcd を持ち、`natsume-08` は K3s agent です。
 各クラスタの etcd は単一 member です。
@@ -33,7 +33,7 @@ K3s クラスタ名は host_vars の `cluster`、Helmfile environment、Flux の
 | [ansible/](ansible/) | OS、ネットワーク、etcd、K3s、ストレージ、ホストの Alloy・Falco |
 | [helmfile/](helmfile/) | Cilium、1Password Connect / Operator、Flux Operator の導入 |
 | [flux/clusters/natsume/](flux/clusters/natsume/) | natsume のアプリと監視基盤 |
-| [flux/clusters/meruto/](flux/clusters/meruto/) | meruto のアプリと拠点監視 |
+| [flux/clusters/meruto/](flux/clusters/meruto/) | meruto のアプリと外形監視 |
 | [charts/](charts/) | PKE 内で管理する Helm chart |
 | [terraform/tailscale/](terraform/tailscale/) | Tailscale ACL |
 | [terraform/github/](terraform/github/README.md) | GitHub リポジトリ設定と Actions secrets |
@@ -113,10 +113,11 @@ Longhorn の既定 replica 数は1です。CNPG も全 DB が1 instance のた�
 
 - `natsume-08`: Ansible が `/dev/vda4` に TopoLVM、`/dev/vda5` に Longhorn の領域を構成します。
 - `natsume-03`: Longhorn 600GB と TopoLVM 200GB が存在しますが、Ansible の storage role 対象には含めません。
-- `meruto-02`: Ansible が T500（`/dev/disk/by-id/nvme-CT1000T500SSD8_2409474C8886`）の1パーティションに TopoLVM の VG を構成します。`ubuntu-vg` には `/var/lib/rancher`（150G）と `/var/lib/kubelet`（100G）の LV を K3s の導入前に作ります。
+- `meruto-02`: Ansible が T500（`/dev/disk/by-id/nvme-CT1000T500SSD8_2409474C8886`）の1パーティションに TopoLVM の VG を構成します。`ubuntu-vg` には `/var/lib/rancher`（150G）と `/var/lib/kubelet`（100G）の LV を K3s の導入前に作ります。TopoLVM を既定の StorageClass にするため、K3s の `local-storage` は無効にします。
 
 natsume は dual-stack、meruto は IPv4 のみです。
 Pod CIDR は `10.1.0.0/16` / `fd00:10:1::/64`、Service CIDR は `10.2.0.0/16` / `fd00:10:2::/64` を使い、meruto は IPv4 の CIDR だけを host_vars で指定します。
+meruto の Cilium は Helmfile environment の `cilium.ipv6Enabled: false` で IPv6 を無効にします。
 
 meruto-02 は public interface を持たず、LAN（`192.168.50.0/24`）にデフォルトルートを置きません。
 外への通信は WireGuard（`wg0`）から lune-02 を通ります。wg0 が落ちると外への経路がなくなり、LAN から直接は出ません。
@@ -124,6 +125,7 @@ LAN の経路は、接続済みのサブネット（DNS の `192.168.50.1` を�
 `prepare-k3s-nodes.yaml` は他の role より先に、wireguard-tools の導入、netplan の適用、WireGuard の起動の順で経路を切り替えます。作業端末への経路を入れてから wg0 を上げるので、Ansible の SSH は切れません。systemd-networkd が wg-quick の ip rule を消さないよう、`wireguard_networkd_keep_foreign_routes` で foreign の経路と rule を管理対象から外します。
 ノードの IP・経路・DNS は host_vars、Cilium の設定は Helmfile environment を参照してください。
 K3s built-in の Traefik と Helm controller は無効化し、Ingress とアプリの Helm release は Flux で管理します。
+meruto は K3s 同梱の `gateway-api-crd` も無効にし、Gateway API の CRD は Flux の Traefik に任せます。
 
 ### 外部ゲートウェイ（lune-02）
 
@@ -137,6 +139,11 @@ WireGuard（`wg0`、`10.99.0.1/24`、51820/udp）で meruto のノードとつ�
 Tailscale が作る table を残すため、`flush ruleset` と nftables.service の stop は使いません。
 受け付けるのは Tailscale の interface、WireGuard、Tailscale の直接接続用ポート、80/443 です。公開側の SSH は `edge_gateway_public_ssh_enabled` で切り替えます。
 WireGuard を通る TCP の MSS は lune-02 の forward で両方向とも `edge_gateway_tcp_mss` 以下に下げます。
+
+meruto の Traefik は web / websecure の両方で `10.99.0.1` からの PROXY protocol だけを信頼します。
+Ingress の status には Service のアドレスではなく `meruto.pstr.space` を書きます。
+[DNSEndpoint](flux/clusters/meruto/apps/external-dns-config/ingress-dnsendpoints.yaml) が `meruto.pstr.space` に lune-02 の A / AAAA を登録し、external-dns は各 Ingress のホスト名をその CNAME にします。
+lune-02 のアドレスを変えるときは、host_vars とこの DNSEndpoint をそろえます。
 
 Tailscale は lune-02 への SSH にだけ使い、Ansible では管理しません。
 WireGuard の鍵は 1Password の item（`wireguard_onepassword_item`）に `private_key` と `public_key` の field で置きます。

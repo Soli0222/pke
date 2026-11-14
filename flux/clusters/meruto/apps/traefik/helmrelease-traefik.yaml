@@ -37,6 +37,17 @@ spec:
     service:
       spec:
         externalTrafficPolicy: Local
+    # lune-02 の HAProxy が wg0 経由で PROXY protocol v2 を付けて転送する。
+    # 送信元が lune-02 の WireGuard アドレスのときだけヘッダを信頼する。
+    ports:
+      web:
+        proxyProtocol:
+          trustedIPs:
+          - 10.99.0.1/32
+      websecure:
+        proxyProtocol:
+          trustedIPs:
+          - 10.99.0.1/32
     ingressClass:
       enabled: true
       isDefaultClass: true
@@ -46,3 +57,9 @@ spec:
         ingressClass: traefik
       kubernetesIngress:
         ingressClass: traefik
+        # Service の status はノードの LAN アドレスになるため使わない。
+        # Ingress の status を meruto.pstr.space にし、external-dns に CNAME を作らせる。
+        publishedService:
+          enabled: false
+        ingressEndpoint:
+          hostname: meruto.pstr.space

@@ -30,3 +30,5 @@ spec:
     groups:
       cnpg:
         enabled: false
+      longhorn:
+        enabled: false
