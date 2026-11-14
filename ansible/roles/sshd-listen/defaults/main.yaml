@@ -1,0 +1,9 @@
+---
+# sshd が待ち受けるアドレス。空のときは既定（全 interface）のままにし、この role の設定を消す。
+sshd_listen_addresses: []
+sshd_listen_port: 22
+
+sshd_listen_config_file: /etc/ssh/sshd_config.d/10-pke-listen.conf
+# Ubuntu の ssh.socket は sshd_config の ListenAddress から generator で ListenStream を作る。
+# 起動時にアドレスが付く前でも bind できるよう FreeBind を足す。
+sshd_listen_socket_dropin: /etc/systemd/system/ssh.socket.d/10-pke-freebind.conf

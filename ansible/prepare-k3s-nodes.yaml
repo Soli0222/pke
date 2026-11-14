@@ -37,6 +37,7 @@
   roles:
     - general-configuration
     - ssh-agent-sudo
+    - sshd-listen
     - network
     - sysctl
     - ufw

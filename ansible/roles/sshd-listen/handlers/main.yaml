@@ -1,0 +1,8 @@
+---
+# generator が sshd_config から ListenStream を作り直すため daemon-reload してから再起動する。
+# 確立済みのセッションは ssh.service の KillMode=process により切れない。
+- name: Restart ssh socket
+  ansible.builtin.systemd:
+    name: ssh.socket
+    state: restarted
+    daemon_reload: true

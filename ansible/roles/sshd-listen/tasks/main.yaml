@@ -1,0 +1,54 @@
+---
+- name: Validate sshd listen addresses
+  ansible.builtin.assert:
+    that:
+      - sshd_listen_addresses | reject('match', '^[0-9A-Fa-f.:]+$') | list | length == 0
+    fail_msg: "sshd_listen_addresses must contain IP addresses (hostnames are not allowed)."
+  when: sshd_listen_addresses | length > 0
+
+- name: Configure sshd listen addresses
+  ansible.builtin.copy:
+    dest: "{{ sshd_listen_config_file }}"
+    content: |
+      # This file is managed by Ansible. Do not edit manually.
+      {% for address in sshd_listen_addresses %}
+      ListenAddress {{ ('[' ~ address ~ ']') if ':' in address else address }}:{{ sshd_listen_port }}
+      {% endfor %}
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/sshd -t -f /etc/ssh/sshd_config
+  when: sshd_listen_addresses | length > 0
+  notify: Restart ssh socket
+
+- name: Ensure ssh.socket drop-in directory exists
+  ansible.builtin.file:
+    path: "{{ sshd_listen_socket_dropin | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: sshd_listen_addresses | length > 0
+
+- name: Allow ssh.socket to bind before the address is configured
+  ansible.builtin.copy:
+    dest: "{{ sshd_listen_socket_dropin }}"
+    content: |
+      # This file is managed by Ansible. Do not edit manually.
+      [Socket]
+      FreeBind=yes
+    owner: root
+    group: root
+    mode: "0644"
+  when: sshd_listen_addresses | length > 0
+  notify: Restart ssh socket
+
+- name: Remove sshd listen settings when not configured
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ sshd_listen_config_file }}"
+    - "{{ sshd_listen_socket_dropin }}"
+  when: sshd_listen_addresses | length == 0
+  notify: Restart ssh socket

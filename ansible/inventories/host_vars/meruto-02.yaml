@@ -9,6 +9,10 @@ alloy_systemd_units:
   - falco-modern-bpf.service
   - wg-quick@wg0.service
 
+# SSH は LAN のアドレスだけで待ち受ける。wg0（lune-02 側）には出さない。
+sshd_listen_addresses:
+  - 192.168.50.2
+
 ssh_agent_sudo_users:
   - name: soli
     github_user: soli0222
@@ -25,6 +29,8 @@ k3s_disable_components:
   - local-storage
   - gateway-api-crd
 
+# 6443 は LAN のアドレスだけで待ち受ける。wg0（lune-02 側）には出さない。
+k3s_bind_all_interfaces: false
 k3s_include_tailscale_tls_sans: false
 k3s_tls_sans:
   - 192.168.50.2
