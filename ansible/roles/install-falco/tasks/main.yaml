@@ -139,6 +139,7 @@
     - service
     - path
   register: falco_cri_socket_restart_units
+  when: falco_cri_socket_restart_enabled | bool
 
 - name: Enable Falco restart on K3s containerd socket creation
   ansible.builtin.systemd:
@@ -147,4 +148,15 @@
     state: started
     daemon_reload: true
   # check mode では unit ファイルが書かれないため、新規配置時は enable を確認できない。
-  when: not (ansible_check_mode and falco_cri_socket_restart_units.changed)
+  when:
+    - falco_cri_socket_restart_enabled | bool
+    - not (ansible_check_mode and falco_cri_socket_restart_units.changed)
+
+- name: Remove Falco restart units on hosts without K3s
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ falco_cri_socket_restart_unit }}.{{ item }}"
+    state: absent
+  loop:
+    - path
+    - service
+  when: not (falco_cri_socket_restart_enabled | bool)

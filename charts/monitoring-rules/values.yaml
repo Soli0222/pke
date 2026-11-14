@@ -7,6 +7,9 @@ additionalAnnotations: {}
 absenceWindow: 5m
 hosts: []
 databases: []
+# コンテナを動かさないホスト（K3s ノードではない外部ゲートウェイ）。Falco の container plugin の監視から外す。
+# scripts/sync-monitoring-inventory.py が Ansible の edge_gateway から生成する。
+containerlessHosts: []
 exclusions:
   namespaces: ^$
   hosts: ^$
@@ -412,6 +415,26 @@ groups:
         enabled: true
         for: 15m
         severity: warning
+        annotations: {}
+  edge:
+    enabled: true
+    rules:
+      EdgeHAProxyBackendDown:
+        enabled: true
+        for: 2m
+        severity: critical
+        annotations: {}
+      EdgeWireGuardHandshakeStale:
+        enabled: true
+        for: 2m
+        severity: critical
+        thresholdSeconds: 300
+        annotations: {}
+      EdgeWireGuardMetricsStale:
+        enabled: true
+        for: 5m
+        severity: warning
+        thresholdSeconds: 300
         annotations: {}
   falco:
     enabled: true

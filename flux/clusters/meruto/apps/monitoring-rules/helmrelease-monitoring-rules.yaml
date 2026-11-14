@@ -16,6 +16,17 @@ spec:
   values:
     # BEGIN generated monitoring inventory (scripts/sync-monitoring-inventory.py)
     hosts:
+    - name: lune-02
+      units:
+      - alloy.service
+      - falco-modern-bpf.service
+      - haproxy.service
+      - nftables.service
+      - wg-quick@wg0.service
+      - pke-wireguard-metrics.timer
+      - tailscaled.service
+      networkDevices:
+      - ens3
     - name: meruto-02
       units:
       - alloy.service
@@ -23,9 +34,12 @@ spec:
       - etcd.service
       - falco-modern-bpf.service
       - wg-quick@wg0.service
+      - pke-wireguard-metrics.timer
       networkDevices:
       - enp3s0
     databases: []
+    containerlessHosts:
+    - lune-02
     # END generated monitoring inventory
     groups:
       cnpg:

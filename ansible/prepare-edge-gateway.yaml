@@ -9,3 +9,5 @@
     - network
     - wireguard
     - edge-gateway
+    - install-alloy
+    - install-falco

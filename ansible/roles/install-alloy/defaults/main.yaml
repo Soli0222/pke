@@ -21,6 +21,16 @@ tls_key_path: "{{ tls_cert_dir }}/tls.key"
 alloy_systemd_units:
   - alloy.service
 
+# node exporter の textfile collector が読むディレクトリ。空のときは使わない。
+# 他の role（wireguard など）が *.prom を書き出す。
+alloy_textfile_directory: ""
+
+# ホスト上の追加の scrape 先。job 名は name を使う（英数字と _ のみ）。
+# - name: haproxy
+#   address: 127.0.0.1:8405
+#   metrics_path: /metrics
+alloy_extra_scrape_targets: []
+
 # Optional Docker log collection. Enable this per host/group where Docker is
 # present and container logs should be sent to Loki.
 docker:

@@ -30,3 +30,10 @@ wireguard_config_dir: /etc/wireguard
 # wg-quick でデフォルトルートを wg に向けるホストでは true にし、netplan apply で消させない。
 wireguard_networkd_keep_foreign_routes: false
 wireguard_networkd_conf_file: /etc/systemd/networkd.conf.d/90-pke-wireguard.conf
+
+# handshake の時刻と転送量を node exporter の textfile collector 向けに書き出す。
+# 空のときは書き出さない。既定では install-alloy の textfile ディレクトリを使う。
+wireguard_metrics_textfile_directory: "{{ alloy_textfile_directory | default('') }}"
+wireguard_metrics_interval: 30s
+wireguard_metrics_script: /usr/local/libexec/pke-wireguard-metrics
+wireguard_metrics_unit: pke-wireguard-metrics

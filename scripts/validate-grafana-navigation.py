@@ -112,6 +112,7 @@ labels = {
     "cnpg_cluster": "db-a",
 }
 expected = {
+    "edge": {"cluster": "meruto", "hostname": "host a"},
     "falco": {"cluster": "meruto", "hostname": "host a"},
     "collection": {"cluster": "meruto"},
     "host": {"cluster": "meruto", "hostname": "host a"},
@@ -160,7 +161,7 @@ for name, link in links["groups"].items():
         if fallback:
             for key in ["hostname", "pod", "node", "volume"]:
                 used.pop(key, None)
-            if name == "falco":
+            if name in ("falco", "edge"):
                 params["hostname"] = ""
             if name == "host":
                 params["hostname"] = "host:123"

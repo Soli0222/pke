@@ -1,5 +1,28 @@
 ---
 ansible_host: lune-02
+# K3s ノードではないが、meruto の出入口なので監視のラベルは meruto に寄せる。
+cluster: meruto
+
+alloy_systemd_units:
+  - alloy.service
+  - falco-modern-bpf.service
+  - haproxy.service
+  - nftables.service
+  - wg-quick@wg0.service
+  - pke-wireguard-metrics.timer
+  - tailscaled.service
+alloy_textfile_directory: /var/lib/alloy-textfile
+alloy_extra_scrape_targets:
+  - name: haproxy
+    address: 127.0.0.1:8405
+    metrics_path: /metrics
+
+# コンテナを動かさないので、K3s の containerd socket を待つ unit は入れない。
+falco_cri_socket_restart_enabled: false
+
+# SSH は Tailscale SSH（tailscaled が直接処理）で入る。sshd はループバックだけで待ち受ける。
+sshd_listen_addresses:
+  - 127.0.0.1
 
 ssh_agent_sudo_users:
   - name: soli

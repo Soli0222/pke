@@ -56,6 +56,8 @@ edge_gateway_haproxy_backends: []
 edge_gateway_haproxy_timeout_connect: 5s
 # WebSocket などの長時間接続を切らない値にする。
 edge_gateway_haproxy_timeout_tunnel: 1h
+# HAProxy 組み込みの Prometheus exporter。ループバックだけで待ち受け、ホストの Alloy が scrape する。
+edge_gateway_haproxy_metrics_address: 127.0.0.1:8405
 
 edge_gateway_nftables_config: /etc/nftables.conf
 edge_gateway_sysctl_file: /etc/sysctl.d/90-edge-gateway.conf

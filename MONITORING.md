@@ -180,8 +180,11 @@ Alloy UI・ログ・Mimir の設定には認証情報が含まれ得るため、
 
 ### ホスト Alloy の設定
 
-対象 unit は `host_vars/<host>.yaml` の `alloy_systemd_units` に宣言する。
+対象 unit は `host_vars/<host>.yaml` の `alloy_systemd_units` に宣言する（service と timer）。
 存在しない unit や欠測を「正常な inactive」と扱わない。
+K3s ノードに加え、外部ゲートウェイ（inventory の `edge_gateway`、lune-02）も対象にする。lune-02 は `cluster: meruto` として meruto の期待対象に入る。
+`alloy_textfile_directory` を指定したホストは node exporter の textfile collector を有効にし、他の role が書き出した `*.prom` を読む（WireGuard の handshake と転送量）。
+`alloy_extra_scrape_targets` はホスト上の追加の scrape 先（lune-02 の HAProxy の exporter）で、job 名は `name` を使う。
 
 ```sh
 cd ansible

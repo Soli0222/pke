@@ -1266,4 +1266,64 @@ def scenarios():
                     {"cluster": "meruto", "namespace": "app", "cnpg_cluster": "db"},
                 )
             )
+    # 外部ゲートウェイ（edge）。WireGuard の時刻系の値は「評価時刻（秒）」と比べる。
+    E = {**N, "hostname": "edge-a"}
+    HP = {**E, "job": "haproxy", "proxy": "be_https"}
+    add(
+        "EdgeHAProxyBackendDown",
+        [s("haproxy_backend_active_servers", ZERO, HP)],
+        {**E, "proxy": "be_https"},
+    )
+    quiet(
+        "EdgeHAProxyBackendDown",
+        [s("haproxy_backend_active_servers", "1x40", HP)],
+        "backend has an active server",
+    )
+    WG = {**E, "interface": "wg0", "peer": "peer-a"}
+    add(
+        "EdgeWireGuardHandshakeStale",
+        [
+            s(
+                "pke_wireguard_peer_latest_handshake_seconds",
+                "0+60x4 240x20 1500+60x15",
+                WG,
+            )
+        ],
+        WG,
+        "handshakes stop and resume",
+    )
+    add(
+        "EdgeWireGuardHandshakeStale",
+        [s("pke_wireguard_peer_latest_handshake_seconds", "0x40", WG)],
+        WG,
+        "never handshaked",
+        [("4m", []), ("10m", [WG])],
+    )
+    quiet(
+        "EdgeWireGuardHandshakeStale",
+        [s("pke_wireguard_peer_latest_handshake_seconds", "0+60x40", WG)],
+        "handshakes every minute",
+    )
+    add(
+        "EdgeWireGuardMetricsStale",
+        [
+            s(
+                "pke_wireguard_metrics_updated_timestamp_seconds",
+                "0+60x4 240x20 1500+60x15",
+                E,
+            )
+        ],
+        E,
+        "textfile stops and resumes",
+    )
+    quiet(
+        "EdgeWireGuardMetricsStale",
+        [s("pke_wireguard_metrics_updated_timestamp_seconds", "0+60x40", E)],
+        "textfile updated every minute",
+    )
+    quiet(
+        "FalcoContainerMetadataMissing",
+        [s("falcosecurity_falco_version_info", "1x40", {**E, "version": "0.45.1"})],
+        "containerless host is not expected to see containers",
+    )
     return cases

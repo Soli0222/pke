@@ -27,7 +27,7 @@ rules:
   description: 'Falco の監視入力が5分間欠測し、その状態がさらに5分継続しています。Falco service、Alloy scrape、remote_write を確認してください。'
 - alert: FalcoContainerMetadataMissing
   expr: |-
-    max by (cluster, hostname) (falcosecurity_falco_version_info) unless on (cluster, hostname) (max by (cluster, hostname) (falcosecurity_plugins_container_n_containers_total) > 0)
+    max by (cluster, hostname) (falcosecurity_falco_version_info{hostname!~"{{ include "monitoring-rules.containerlessHosts" . }}"}) unless on (cluster, hostname) (max by (cluster, hostname) (falcosecurity_plugins_container_n_containers_total) > 0)
   summary: 'Falco がコンテナを認識していない（{{ $labels.hostname }}）'
   description: 'Falco は稼働していますが、container plugin が認識するコンテナが0件です。Pod・イメージのメタデータがないため、例外が成立せず通常動作も検知されます。K3s の containerd socket を確認し、Falco を再起動してください。'
 - alert: FalcoKernelEventsDropped

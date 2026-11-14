@@ -35,3 +35,12 @@ spec:
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/* containerlessHosts を PromQL の正規表現にする。空のときは空文字列だけに一致させる。 */}}
+{{- define "monitoring-rules.containerlessHosts" -}}
+{{- $names := list -}}
+{{- range .Values.containerlessHosts -}}
+{{- $names = append $names (regexQuoteMeta .) -}}
+{{- end -}}
+{{- if $names -}}{{ join "|" $names }}{{- else -}}^${{- end -}}
+{{- end -}}

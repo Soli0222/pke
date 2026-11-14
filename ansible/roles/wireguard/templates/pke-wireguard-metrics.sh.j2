@@ -1,0 +1,40 @@
+#!/bin/sh
+# This file is managed by Ansible. Do not edit manually.
+# wg show all dump を node exporter の textfile 形式に変換する。
+# peer のラベルは {{ wireguard_config_dir }}/*.peers（公開鍵<TAB>名前）から引く。
+set -eu
+
+dir={{ wireguard_metrics_textfile_directory | quote }}
+out="$dir/wireguard.prom"
+tmp="$(mktemp "$dir/.wireguard.prom.XXXXXX")"
+trap 'rm -f "$tmp"' EXIT
+
+{% raw %}
+wg show all dump | awk -F '\t' -v now="$(date +%s)" '
+  FILENAME != "-" { name[$1] = $2; next }
+  NF == 9 {
+    peer = ($2 in name) ? name[$2] : $2
+    labels = sprintf("interface=\"%s\",peer=\"%s\"", $1, peer)
+    handshake[labels] = $6
+    rx[labels] = $7
+    tx[labels] = $8
+  }
+  END {
+    print "# HELP pke_wireguard_peer_latest_handshake_seconds Unix time of the latest handshake with the peer (0 = never)."
+    print "# TYPE pke_wireguard_peer_latest_handshake_seconds gauge"
+    for (l in handshake) printf "pke_wireguard_peer_latest_handshake_seconds{%s} %s\n", l, handshake[l]
+    print "# HELP pke_wireguard_peer_receive_bytes_total Bytes received from the peer."
+    print "# TYPE pke_wireguard_peer_receive_bytes_total counter"
+    for (l in rx) printf "pke_wireguard_peer_receive_bytes_total{%s} %s\n", l, rx[l]
+    print "# HELP pke_wireguard_peer_transmit_bytes_total Bytes sent to the peer."
+    print "# TYPE pke_wireguard_peer_transmit_bytes_total counter"
+    for (l in tx) printf "pke_wireguard_peer_transmit_bytes_total{%s} %s\n", l, tx[l]
+    print "# HELP pke_wireguard_metrics_updated_timestamp_seconds Unix time when this file was written."
+    print "# TYPE pke_wireguard_metrics_updated_timestamp_seconds gauge"
+    printf "pke_wireguard_metrics_updated_timestamp_seconds %s\n", now
+  }
+' {% endraw %}{{ wireguard_config_dir }}/*.peers - > "$tmp"
+
+chmod 0644 "$tmp"
+mv -f "$tmp" "$out"
+trap - EXIT

@@ -1,0 +1,3 @@
+{% for peer in wireguard_peers %}
+{{ wireguard_peer_public_keys.results[loop.index0].stdout | trim }}	{{ peer.name | default(peer.onepassword_item) }}
+{% endfor %}

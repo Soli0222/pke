@@ -1,0 +1,11 @@
+# This file is managed by Ansible. Do not edit manually.
+[Unit]
+Description=Write WireGuard metrics periodically
+
+[Timer]
+OnBootSec={{ wireguard_metrics_interval }}
+OnUnitActiveSec={{ wireguard_metrics_interval }}
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target
