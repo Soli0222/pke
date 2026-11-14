@@ -122,6 +122,7 @@ meruto-02 の IPv6 のノード IP は LAN ではなく WireGuard の ULA（`fd0
 meruto-02 は public interface を持たず、LAN（`192.168.50.0/24`）に IPv4 / IPv6 のデフォルトルートを置きません。
 外への通信は IPv4 / IPv6 とも WireGuard（`wg0`）から lune-02 を通ります。wg0 が落ちると外への経路がなくなり、LAN から直接は出ません。
 LAN の経路は、接続済みのサブネット（DNS の `192.168.50.1` を含む）、lune-02 の endpoint への host route、作業端末のセグメント（`192.168.20.0/24`）だけです。
+Service の CIDR（`10.2.0.0/16`）は、送信元を `192.168.50.2` にして LAN 側で引かせます。ノード自身（hostNetwork の Pod を含む）から ClusterIP に繋ぐとき wg0 側の経路を引くと、転送先がノード自身の Service（`kubernetes` など）に届かないためです。
 `prepare-k3s-nodes.yaml` は他の role より先に、wireguard-tools の導入、netplan の適用、WireGuard の起動の順で経路を切り替えます。作業端末への経路を入れてから wg0 を上げるので、Ansible の SSH は切れません。systemd-networkd が wg-quick の ip rule を消さないよう、`wireguard_networkd_keep_foreign_routes` で foreign の経路と rule を管理対象から外します。
 ノードの IP・経路・DNS は host_vars、Cilium の設定は Helmfile environment を参照してください。
 K3s built-in の Traefik と Helm controller は無効化し、Ingress とアプリの Helm release は Flux で管理します。
