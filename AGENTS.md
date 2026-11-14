@@ -34,7 +34,8 @@ Ubuntu 26.04 の既定の sudo は sudo-rs で、パスワードを入力する 
 `meruto-02` は Longhorn を使わない。TopoLVM は T500 を by-id で指定し、`/var/lib/rancher` と `/var/lib/kubelet` は `ubuntu-vg` の LV（`k3s_data_volumes`）にする。
 
 ネットワークは host_vars の `network_netplan` に定義する。
-meruto は public interface を持たない。外への通信は IPv4 / IPv6 とも `wg0` から lune-02 を通り、LAN にはデフォルトルートを置かない。meruto-02 の ExternalIP は lune-02 のグローバルアドレスにする。K3s の 6443 は `k3s_bind_all_interfaces: false`、SSH は `sshd_listen_addresses` で LAN のアドレスだけで待ち受ける。UFW は適用のたびに reset して一時的に無効になるため、UFW だけに頼らず待ち受けも絞る。80/443 は `ufw_global_interface: wg0` で受ける。
+meruto は public interface を持たない。外への通信は IPv4 / IPv6 とも `wg0` から lune-02 を通り、LAN にはデフォルトルートを置かない。K3s の 6443 は `k3s_bind_all_interfaces: false`、SSH は `sshd_listen_addresses` で LAN のアドレスだけで待ち受ける。UFW は適用のたびに reset して一時的に無効になるため、UFW だけに頼らず待ち受けも絞る。
+meruto の LoadBalancer は K3s の servicelb ではなく MetalLB が担う。lune-02 経由で公開する Service は `lune` pool（annotation 指定、広告なし）を使い、lune-02 の HAProxy から wg0 の NodePort（`nodeport-addresses` で wg0 のアドレスに限定）で受ける。LAN だけの Service は `lan` pool（`192.168.50.200-249`、enp3s0 で L2 広告、IPv4 の SingleStack）を使う。
 K3s の external IP と TLS SAN は host_vars の設定を尊重する。
 
 ## Flux と Helm chart

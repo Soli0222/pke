@@ -34,8 +34,12 @@ spec:
       prometheus:
         serviceMonitor:
           enabled: true
-    # servicelb は status にノードの ExternalIP（lune-02 の v4 / v6）を書く。
+    # MetalLB の lune pool から lune-02 の v4 / v6 を割り当てる（広告はしない）。
+    # 通信は lune-02 の HAProxy から wg0 経由で下の NodePort に届く。
     service:
+      annotations:
+        metallb.io/address-pool: lune
+        metallb.io/allow-shared-ip: lune
       spec:
         externalTrafficPolicy: Local
         ipFamilyPolicy: RequireDualStack
@@ -44,12 +48,15 @@ spec:
         - IPv6
     # lune-02 の HAProxy が wg0 経由で PROXY protocol v2 を付けて転送する。
     # 送信元が lune-02 の WireGuard アドレスのときだけヘッダを信頼する。
+    # NodePort は lune-02 の HAProxy の転送先（host_vars/lune-02.yaml）とそろえる。
     ports:
       web:
+        nodePort: 30080
         proxyProtocol:
           trustedIPs:
           - 10.99.0.1/32
       websecure:
+        nodePort: 30443
         proxyProtocol:
           trustedIPs:
           - 10.99.0.1/32

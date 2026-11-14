@@ -43,12 +43,13 @@ edge_gateway_egress_sources:
   - 10.99.0.2/32
 edge_gateway_egress_sources_ipv6:
   - fd00:10:99::2/128
+# 転送先は meruto の Traefik の NodePort（flux/clusters/meruto/apps/traefik で固定）。
 edge_gateway_haproxy_backends:
   - name: http
     port: 80
     server_name: meruto-02
-    target: 10.99.0.2:80
+    target: 10.99.0.2:30080
   - name: https
     port: 443
     server_name: meruto-02
-    target: 10.99.0.2:443
+    target: 10.99.0.2:30443

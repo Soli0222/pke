@@ -1,0 +1,25 @@
+# lune-02 のグローバルアドレス。lune-02 の HAProxy が受け、WireGuard 経由で NodePort に転送する。
+# meruto からは広告しない（L2Advertisement を付けない）。annotation で指定した Service にだけ割り当てる。
+# 複数の Service で共有するときは metallb.io/allow-shared-ip に同じ値を付ける。
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: lune
+  namespace: metallb-system
+spec:
+  addresses:
+  - 133.18.187.207/32
+  - 2406:8c00:0:3476:133:18:187:207/128
+  autoAssign: false
+---
+# LAN（192.168.50.0/24）内だけで使う LoadBalancer。ルーターの DHCP の範囲から除外している。
+# LAN に IPv6 はないため、この pool を使う Service は IPv4 の SingleStack にする。
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: lan
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.50.200-192.168.50.249
+  autoAssign: true

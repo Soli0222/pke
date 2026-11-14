@@ -12,6 +12,8 @@ k3s_node_ip: "{{ k3s_bind_address }}"
 k3s_node_external_ip: ""
 # netplan 以外の interface（WireGuard など）にあるノード IP。private の netplan アドレスの後ろに足す。
 k3s_additional_node_ips: []
+# kube-proxy に渡す引数（例: nodeport-addresses=10.99.0.2/32）。
+k3s_kube_proxy_args: []
 k3s_flannel_backend: none
 k3s_disable_network_policy: true
 k3s_tls_sans: []

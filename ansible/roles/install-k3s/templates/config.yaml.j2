@@ -3,6 +3,12 @@ node-ip: "{{ k3s_node_ip }}"
 {% if k3s_node_external_ip | length > 0 %}
 node-external-ip: "{{ k3s_node_external_ip }}"
 {% endif %}
+{% if k3s_kube_proxy_args | length > 0 %}
+kube-proxy-arg:
+{% for arg in k3s_kube_proxy_args %}
+  - "{{ arg }}"
+{% endfor %}
+{% endif %}
 {% if k3s_node_role == "server" %}
 flannel-backend: "{{ k3s_flannel_backend }}"
 disable-network-policy: {{ k3s_disable_network_policy | bool | lower }}
