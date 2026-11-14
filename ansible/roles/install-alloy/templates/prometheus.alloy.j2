@@ -3,10 +3,19 @@
 // ============================================================
 
 prometheus.exporter.unix "node" {
+{% if alloy_textfile_directory | default('') | length > 0 %}
+  enable_collectors = ["systemd", "textfile"]
+{% else %}
   enable_collectors = ["systemd"]
+{% endif %}
   systemd {
     unit_include = {{ ('^(' ~ (alloy_systemd_units | map('regex_escape') | join('|')) ~ ')$') | tojson }}
   }
+{% if alloy_textfile_directory | default('') | length > 0 %}
+  textfile {
+    directory = {{ alloy_textfile_directory | tojson }}
+  }
+{% endif %}
 }
 
 prometheus.scrape "node" {
@@ -72,6 +81,21 @@ prometheus.scrape "falco" {
 }
 {% endif %}
 
+{% for target in alloy_extra_scrape_targets | default([]) %}
+// ============================================================
+// {{ target.name }}
+// ============================================================
+
+prometheus.scrape {{ ('extra_' ~ target.name) | tojson }} {
+  targets = [{
+    __address__ = {{ target.address | tojson }},
+  }]
+  job_name     = {{ target.name | tojson }}
+  metrics_path = {{ target.metrics_path | default('/metrics') | tojson }}
+  forward_to   = [prometheus.relabel.add_common_labels.receiver]
+}
+
+{% endfor %}
 // ============================================================
 // Common labels for all metrics
 // ============================================================

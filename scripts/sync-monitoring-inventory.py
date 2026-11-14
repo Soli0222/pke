@@ -61,7 +61,9 @@ def inventories(root=ROOT):
         yaml.safe_load((root / "ansible/inventories/hosts.yaml").read_text())["all"],
     )
     result = {}
-    for host in sorted(members("k3s_cluster")):
+    # K3s ノードに加え、K3s を動かさない外部ゲートウェイ（edge_gateway）も監視する。
+    edge = members("edge_gateway") if "edge_gateway" in groups else set()
+    for host in sorted(members("k3s_cluster") | edge):
         values = yaml.safe_load(
             (root / f"ansible/inventories/host_vars/{host}.yaml").read_text()
         )
@@ -78,6 +80,11 @@ def inventories(root=ROOT):
             }
         )
     for cluster, values in result.items():
+        # コンテナを動かさないホスト。Falco の container plugin の監視から外す。
+        # 該当がないクラスタの生成ブロックは変えない。
+        containerless = sorted(
+            h["name"] for h in values["hosts"] if h["name"] in edge
+        )
         databases, schedules = {}, {}
         for path in sorted((root / f"flux/clusters/{cluster}/apps").rglob("*.yaml")):
             for doc in yaml.safe_load_all(path.read_text()):
@@ -101,6 +108,8 @@ def inventories(root=ROOT):
             if (namespace, name) in schedules:
                 db["baseBackupMaxAgeSeconds"] = min(schedules[(namespace, name)])
             values["databases"].append(db)
+        if containerless:
+            values["containerlessHosts"] = containerless
     return result
 
 

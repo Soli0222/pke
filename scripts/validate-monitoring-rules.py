@@ -29,10 +29,12 @@ def inventory_contract():
             result.update(inventory_hosts(child or {}))
         return result
 
-    active = inventory_hosts(
-        yaml.safe_load((ROOT / "ansible/inventories/hosts.yaml").read_text())["all"][
-            "children"
-        ]["k3s_cluster"]
+    children = yaml.safe_load((ROOT / "ansible/inventories/hosts.yaml").read_text())[
+        "all"
+    ]["children"]
+    # K3s ノードと外部ゲートウェイ（edge_gateway）が期待対象。
+    active = inventory_hosts(children["k3s_cluster"]) | inventory_hosts(
+        children.get("edge_gateway") or {}
     )
     for path in (ROOT / "ansible/inventories/host_vars").glob("*.yaml"):
         if path.stem not in active:
@@ -151,6 +153,7 @@ def main():
                 "replication": False,
             },
         ],
+        "containerlessHosts": ["edge-a"],
     }
     # Mimir rejects groups above 20 rules. Growing inventory must create more groups.
     expanded = copy.deepcopy(test_values)

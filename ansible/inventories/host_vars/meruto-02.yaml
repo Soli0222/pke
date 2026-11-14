@@ -8,6 +8,8 @@ alloy_systemd_units:
   - etcd.service
   - falco-modern-bpf.service
   - wg-quick@wg0.service
+  - pke-wireguard-metrics.timer
+alloy_textfile_directory: /var/lib/alloy-textfile
 
 # SSH は LAN のアドレスだけで待ち受ける。wg0（lune-02 側）には出さない。
 sshd_listen_addresses:

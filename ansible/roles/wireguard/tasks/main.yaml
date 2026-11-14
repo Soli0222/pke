@@ -107,3 +107,51 @@
     name: "wg-quick@{{ wireguard_interface }}"
     enabled: true
     state: started
+
+- name: Write WireGuard peer names for metrics
+  ansible.builtin.template:
+    src: peers.j2
+    dest: "{{ wireguard_config_dir }}/{{ wireguard_interface }}.peers"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Configure WireGuard metrics
+  when: wireguard_metrics_textfile_directory | length > 0
+  block:
+    - name: Ensure the textfile directory exists
+      ansible.builtin.file:
+        path: "{{ wireguard_metrics_textfile_directory }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install the WireGuard metrics script
+      ansible.builtin.template:
+        src: pke-wireguard-metrics.sh.j2
+        dest: "{{ wireguard_metrics_script }}"
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install the WireGuard metrics units
+      ansible.builtin.template:
+        src: "pke-wireguard-metrics.{{ item }}.j2"
+        dest: "/etc/systemd/system/{{ wireguard_metrics_unit }}.{{ item }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - service
+        - timer
+      register: wireguard_metrics_units
+
+    - name: Enable the WireGuard metrics timer
+      ansible.builtin.systemd:
+        name: "{{ wireguard_metrics_unit }}.timer"
+        enabled: true
+        state: started
+        daemon_reload: true
+      # check mode では unit ファイルが書かれないため、新規配置時は enable を確認できない。
+      when: not (ansible_check_mode and wireguard_metrics_units.changed)

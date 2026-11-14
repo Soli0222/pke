@@ -1,0 +1,16 @@
+rules:
+- alert: EdgeHAProxyBackendDown
+  expr: |-
+    max by (cluster, hostname, proxy) (haproxy_backend_active_servers{job="haproxy"}) == 0
+  summary: 外部ゲートウェイの転送先なし {{ $labels.hostname }} {{ $labels.proxy }}
+  description: HAProxy の backend に UP の server がありません。外部からの接続は転送されません。WireGuard の handshake、転送先の NodePort と Traefik を確認してください。
+- alert: EdgeWireGuardHandshakeStale
+  expr: |-
+    time() - max by (cluster, hostname, interface, peer) (pke_wireguard_peer_latest_handshake_seconds) > {{ .Values.groups.edge.rules.EdgeWireGuardHandshakeStale.thresholdSeconds }}
+  summary: WireGuard の handshake 途絶 {{ $labels.hostname }} → {{ $labels.peer }}
+  description: 最後の handshake から閾値を超えました（0 は一度も handshake していないことを示します）。トンネルを通る ingress と egress が止まっている可能性があります。両端の wg-quick、endpoint への経路、lune-02 の UDP 51820 を確認してください。
+- alert: EdgeWireGuardMetricsStale
+  expr: |-
+    time() - max by (cluster, hostname) (pke_wireguard_metrics_updated_timestamp_seconds) > {{ .Values.groups.edge.rules.EdgeWireGuardMetricsStale.thresholdSeconds }}
+  summary: WireGuard のメトリクスが更新されない {{ $labels.hostname }}
+  description: pke-wireguard-metrics.timer の失敗、textfile ディレクトリ、Alloy の textfile collector を確認してください。この間は handshake の途絶を検知できません。

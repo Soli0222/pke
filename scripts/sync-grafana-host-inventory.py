@@ -31,11 +31,12 @@ def inventory(root=ROOT):
         return result
 
     expected = {}
-    for host in sorted(members('k3s_cluster')):
+    edge = members('edge_gateway') if 'edge_gateway' in groups else set()
+    for host in sorted(members('k3s_cluster') | edge):
         values = yaml.safe_load((root / f'ansible/inventories/host_vars/{host}.yaml').read_text())
         cluster, units = values['cluster'], values['alloy_systemd_units']
-        if not units or len(units) != len(set(units)) or not all(isinstance(x, str) and x.endswith('.service') for x in units):
-            raise ValueError(f'{host}: alloy_systemd_units must contain unique service names')
+        if not units or len(units) != len(set(units)) or not all(isinstance(x, str) and x.endswith(('.service', '.timer')) for x in units):
+            raise ValueError(f'{host}: alloy_systemd_units must contain unique service or timer names')
         expected.setdefault(cluster, {})[host] = sorted(units)
     monitored = {}
     for path in sorted((root / 'flux/clusters').glob('*/apps/monitoring-rules/helmrelease-monitoring-rules.yaml')):

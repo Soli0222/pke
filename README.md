@@ -164,7 +164,11 @@ Traefik は `lune` pool の dual-stack の LoadBalancer で、status は lune-02
 [DNSEndpoint](flux/clusters/meruto/apps/external-dns-config/ingress-dnsendpoints.yaml) は natsume と同じく、入口の名前 `meruto.pstr.space` を登録します。
 lune-02 のアドレスを変えるときは、lune-02 の host_vars、`lune` pool、この DNSEndpoint をそろえます。
 
-Tailscale は lune-02 への SSH にだけ使い、Ansible では管理しません。
+lune-02 にもホストの Alloy と Falco を入れ、`cluster: meruto` として監視します。
+HAProxy の指標（組み込みの exporter、`127.0.0.1:8405`）と、WireGuard の handshake と転送量（`pke-wireguard-metrics.timer` が textfile に書き出す。meruto-02 も同じ）を収集し、`pke.edge` のルールで評価します。
+lune-02 はコンテナを動かさないため、Falco の K3s 用の再起動 unit（`falco_cri_socket_restart_enabled: false`）と、container plugin の監視（`containerlessHosts`）から外します。
+
+Tailscale は lune-02 への SSH にだけ使い、Ansible では管理しません。sshd はループバック（`127.0.0.1`）だけで待ち受けます。
 WireGuard の鍵は 1Password の item（`wireguard_onepassword_item`）に `private_key` と `public_key` の field で置きます。
 peer 側の公開鍵も同じ形式の item から読みます。
 

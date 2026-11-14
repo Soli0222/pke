@@ -24,3 +24,5 @@ falco_metrics_listen_port: 8765
 
 falco_cri_socket_path: /run/k3s/containerd/containerd.sock
 falco_cri_socket_restart_unit: falco-cri-socket-restart
+# K3s の containerd socket を待って Falco を再起動する unit を入れる。コンテナのないホスト（lune-02）では false。
+falco_cri_socket_restart_enabled: true

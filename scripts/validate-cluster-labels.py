@@ -40,20 +40,20 @@ def main():
         common = yaml.safe_load((ROOT / 'ansible/inventories/group_vars/all.yaml').read_text())
         env = Environment(undefined=StrictUndefined)
         env.filters['regex_escape'] = re.escape
-        for host in ('natsume-03', 'natsume-08', 'meruto-02'):
+        for host in ('natsume-03', 'natsume-08', 'meruto-02', 'lune-02'):
             values = defaults | common | yaml.safe_load((ROOT / f'ansible/inventories/host_vars/{host}.yaml').read_text())
             values['ansible_hostname'] = host
             for enabled in (True, False):
                 values['falco'] = dict(values['falco'], enabled=enabled)
                 rendered = env.from_string((ROOT / 'ansible/roles/install-alloy/templates/prometheus.alloy.j2').read_text()).render(**values)
-                if host != 'natsume-08':
+                if host not in ('natsume-08', 'lune-02'):  # etcd を持つホストだけ
                     rendered += '\n' + env.from_string((ROOT / 'ansible/roles/install-alloy/templates/etcd.alloy.j2').read_text()).render(**values)
                 (out / f'{host}-{enabled}.alloy').write_text(rendered)
                 host_configs[host] = (values['cluster'], rendered)
         for config in out.glob('*.alloy'):
             run('docker', 'run', '--rm', '--network', 'none', '-v', f'{out}:/work:ro', ALLOY,
                 'validate', '--stability.level=experimental', '/work/' + config.name)
-        print('Both Kubernetes configs / all three host templates (Falco on/off, etcd): OK', flush=True)
+        print('Both Kubernetes configs / all host templates (Falco on/off, etcd, textfile, extra scrapes): OK', flush=True)
 
         # 独立したローカル受信先へ実際に remote_write し、保存後のラベルを確認する。
         (out / 'prometheus.yaml').write_text('global:\n  scrape_interval: 1s\nscrape_configs: []\n')

@@ -26,7 +26,8 @@ agent の join 先は `ansible/inventories/group_vars/k3s_agent.yaml` に定義�
 Ubuntu 26.04 の既定の sudo は sudo-rs で、パスワードを入力する become（`-K`）では Ansible がプロンプトを検出できず待ち続ける。
 `ssh-agent-sudo` を入れる前の初回だけ `-K -e ansible_become_exe=sudo.ws` を付け、host_vars には書かない。
 `sudo.ws` は Falco の信頼済みプログラムに含まれず、実行のたびに `Read sensitive file untrusted` を検知させる。
-`lune-02` は `edge_gateway` グループの VPS で K3s ノードではない。`cluster` を持たせず、`k3s_cluster` 向けの playbook の対象にしない。
+`lune-02` は `edge_gateway` グループの VPS で K3s ノードではない。監視のラベルとして `cluster: meruto` を持つが、`k3s_cluster` / `etcd` 向けの playbook の対象にしない。
+ホストの Alloy と Falco の playbook（`install-alloy` / `update-alloy-monitoring` / `configure-falco` / `update-falco`）は `k3s_cluster:edge_gateway` を対象にする。
 
 ストレージの対象を実ディスクの存在だけで拡張しない。
 `natsume-03` は Longhorn 600GB / TopoLVM 200GB を持つが、inventory の `longhorn_storage` / `topolvm_storage` に加えない。

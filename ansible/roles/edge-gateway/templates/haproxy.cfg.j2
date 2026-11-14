@@ -14,6 +14,14 @@ defaults
     timeout connect {{ edge_gateway_haproxy_timeout_connect }}
     timeout client {{ edge_gateway_haproxy_timeout_tunnel }}
     timeout server {{ edge_gateway_haproxy_timeout_tunnel }}
+
+frontend fe_metrics
+    mode http
+    bind {{ edge_gateway_haproxy_metrics_address }}
+    # scrape のたびにログを出さない。
+    http-request set-log-level silent
+    http-request use-service prometheus-exporter if { path /metrics }
+    http-request deny
 {% for backend in edge_gateway_haproxy_backends %}
 
 # TLS は終端せず、PROXY protocol v2 で送信元を付けて転送する。

@@ -16,18 +16,29 @@ WAL archive の失敗・停滞は全DBで監視する。
 未送信 WAL のないアイドル状態では通知しない。成功時刻だけでは復元可能性を保証しない。
 操作は [DB運用手順](../../CNPG.md) を参照する。
 
+## Edge
+
+外部ゲートウェイ（lune-02）と、WireGuard でつながる meruto-02 を監視する。
+
+- `EdgeHAProxyBackendDown`: HAProxy の backend に UP の server がない。外部からの接続は転送されない。WireGuard の handshake、転送先の NodePort と Traefik を確認する。
+- `EdgeWireGuardHandshakeStale`: peer との最後の handshake から `thresholdSeconds` を超えた。値が 0 のときは一度も handshake していない。両端の `wg-quick@wg0`、endpoint への経路、lune-02 の UDP 51820 を確認する。
+- `EdgeWireGuardMetricsStale`: `pke-wireguard-metrics.timer` が書き出す textfile が更新されない。この間は handshake の途絶を検知できない。
+
+HAProxy の指標は組み込みの Prometheus exporter（`127.0.0.1:8405`）、WireGuard の指標は `wg show all dump` を textfile collector で読む。
+いずれもホストの Alloy が `cluster` / `hostname` を付けて送る。
+
 ## Falco
 
 検知 counter の増分・初回系列・起動直後の検知を Mimir で評価する。
 priority 0–3 は critical、4–5 は warning として既存の ntfy 経路へ通知する。
 Falco の欠測、カーネルイベントと出力イベントの破棄も監視する。
-`FalcoContainerMetadataMissing` は container plugin が認識するコンテナが0件、または系列がない状態を検知する。
+`FalcoContainerMetadataMissing` は container plugin が認識するコンテナが0件、または系列がない状態を検知する。`containerlessHosts` のホスト（コンテナを動かさない外部ゲートウェイ）は対象外。
 例外条件・ログの確認・監視の制約は [Falco 運用手順](../../MONITORING.md#falco) を参照する。
 
 ## 期待対象と収集の欠測
 
-PKE の `hosts` / `databases` は `python3 scripts/sync-monitoring-inventory.py` で生成する。
-Ansible の K3s inventory、`alloy_systemd_units`、`network_netplan` と CNPG manifest が正であり、HelmRelease の生成ブロックを直接編集しない。
+PKE の `hosts` / `databases` / `containerlessHosts` は `python3 scripts/sync-monitoring-inventory.py` で生成する。
+Ansible の K3s inventory と `edge_gateway`、`alloy_systemd_units`、`network_netplan` と CNPG manifest が正であり、HelmRelease の生成ブロックを直接編集しない。
 CI は `--check` で生成漏れを検出する。
 毎日の base backup は30時間、毎週は7日12時間を期限とする。
 それ以外の schedule や期限を使う場合は `ScheduledBackup.metadata.annotations` の `monitoring.pke.soli0222.com/backup-max-age-seconds` に正の秒数を指定する。
@@ -51,6 +62,7 @@ recording group 自体の欠落や評価失敗は Pipeline のルール同期・
 |-----|------|---------|-------------|
 | absenceWindow | string | `"5m"` |  |
 | additionalAnnotations | object | `{}` |  |
+| containerlessHosts | list | `[]` | 生成された、コンテナを動かさないホスト名。Falco の container plugin の監視から外す |
 | dashboardBaseURL | string | `"https://grafana.str08.net"` |  |
 | databases | list | `[]` |  |
 | exclusions.filesystems | string | `"tmpfs|devtmpfs|overlay|squashfs|nsfs|tracefs|proc|sysfs"` |  |
@@ -171,6 +183,21 @@ recording group 自体の欠落や評価失敗は Pipeline のルール同期・
 | groups.etcd.rules.EtcdNoLeader.enabled | bool | `true` |  |
 | groups.etcd.rules.EtcdNoLeader.for | string | `"1m"` |  |
 | groups.etcd.rules.EtcdNoLeader.severity | string | `"critical"` |  |
+| groups.edge.enabled | bool | `true` |  |
+| groups.edge.rules.EdgeHAProxyBackendDown.annotations | object | `{}` |  |
+| groups.edge.rules.EdgeHAProxyBackendDown.enabled | bool | `true` |  |
+| groups.edge.rules.EdgeHAProxyBackendDown.for | string | `"2m"` |  |
+| groups.edge.rules.EdgeHAProxyBackendDown.severity | string | `"critical"` |  |
+| groups.edge.rules.EdgeWireGuardHandshakeStale.annotations | object | `{}` |  |
+| groups.edge.rules.EdgeWireGuardHandshakeStale.enabled | bool | `true` |  |
+| groups.edge.rules.EdgeWireGuardHandshakeStale.for | string | `"2m"` |  |
+| groups.edge.rules.EdgeWireGuardHandshakeStale.severity | string | `"critical"` |  |
+| groups.edge.rules.EdgeWireGuardHandshakeStale.thresholdSeconds | int | `300` |  |
+| groups.edge.rules.EdgeWireGuardMetricsStale.annotations | object | `{}` |  |
+| groups.edge.rules.EdgeWireGuardMetricsStale.enabled | bool | `true` |  |
+| groups.edge.rules.EdgeWireGuardMetricsStale.for | string | `"5m"` |  |
+| groups.edge.rules.EdgeWireGuardMetricsStale.severity | string | `"warning"` |  |
+| groups.edge.rules.EdgeWireGuardMetricsStale.thresholdSeconds | int | `300` |  |
 | groups.falco.enabled | bool | `true` |  |
 | groups.falco.rules.FalcoContainerMetadataMissing.annotations | object | `{}` |  |
 | groups.falco.rules.FalcoContainerMetadataMissing.enabled | bool | `true` |  |
