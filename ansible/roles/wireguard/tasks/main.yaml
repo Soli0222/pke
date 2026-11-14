@@ -11,11 +11,43 @@
       - wireguard_peers | rejectattr('allowed_ips', 'defined') | list | length == 0
     fail_msg: "WireGuard settings are incomplete for {{ inventory_hostname }}."
 
+# 外への経路がない状態でも、直前に更新したキャッシュがあれば失敗しないようにする。
 - name: Install WireGuard tools
   ansible.builtin.apt:
     name: wireguard-tools
     state: present
     update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure systemd-networkd configuration directory exists
+  ansible.builtin.file:
+    path: "{{ wireguard_networkd_conf_file | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: wireguard_networkd_keep_foreign_routes | bool
+
+# wg-quick を起動する前に反映し、以後の netplan apply で ip rule が消えないようにする。
+- name: Keep foreign routes and routing policy rules in systemd-networkd
+  ansible.builtin.copy:
+    dest: "{{ wireguard_networkd_conf_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # This file is managed by Ansible. Do not edit manually.
+      [Network]
+      ManageForeignRoutingPolicyRules=no
+      ManageForeignRoutes=no
+  register: wireguard_networkd_conf
+  when: wireguard_networkd_keep_foreign_routes | bool
+
+- name: Restart systemd-networkd to load the configuration
+  ansible.builtin.systemd:
+    name: systemd-networkd
+    state: restarted
+  when: wireguard_networkd_conf is changed
 
 - name: Retrieve WireGuard private key from 1Password
   ansible.builtin.command:

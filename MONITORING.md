@@ -205,7 +205,7 @@ node・Falco・対象ホストの etcd の収集も維持されていること�
 ### Kubernetes API
 
 server グループの `k3s_audit_enabled` で API 監査とホスト Alloy の専用収集を有効にする。
-対象は natsume-03 と meruto-01。agent の natsume-08 には API 監査ファイルを作らない。
+対象は natsume-03 と meruto-02。agent の natsume-08 には API 監査ファイルを作らない。
 [audit policy](ansible/roles/install-k3s/files/audit-policy.yaml) は全リクエストを Metadata で記録し、RequestReceived の重複段階と request/response 本文を省く。
 長時間接続の ResponseStarted と完了段階は同じ audit ID で対応付ける。
 

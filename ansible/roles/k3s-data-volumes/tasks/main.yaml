@@ -1,0 +1,82 @@
+---
+- name: Validate K3s data volume settings
+  ansible.builtin.assert:
+    that:
+      - item.vg | default('') | length > 0
+      - item.lv | default('') | length > 0
+      - item.size | default('') | string | length > 0
+      - item.mount_path | default('') is match('^/')
+    fail_msg: "k3s_data_volumes entries need vg, lv, size and an absolute mount_path."
+  loop: "{{ k3s_data_volumes }}"
+  loop_control:
+    label: "{{ item.mount_path | default(item.lv | default('')) }}"
+
+- name: Install LVM tools
+  ansible.builtin.apt:
+    name: lvm2
+    state: present
+  when: k3s_data_volumes | length > 0
+
+- name: Check existing files under unmounted data paths
+  ansible.builtin.find:
+    paths: "{{ item.mount_path }}"
+    file_type: any
+    hidden: true
+  register: k3s_data_volumes_existing
+  loop: "{{ k3s_data_volumes }}"
+  loop_control:
+    label: "{{ item.mount_path }}"
+  when: item.mount_path not in (ansible_facts.mounts | map(attribute='mount') | list)
+
+# 既存のデータを LV のマウントで隠さない。K3s の導入後に追加する場合は手で移す。
+- name: Refuse to mount over existing data
+  ansible.builtin.assert:
+    that:
+      - item.matched | default(0) == 0
+    fail_msg: >-
+      {{ item.item.mount_path }} already has files. Move them to the new volume manually
+      before mounting it.
+  loop: "{{ k3s_data_volumes_existing.results }}"
+  loop_control:
+    label: "{{ item.item.mount_path }}"
+  when: item is not skipped
+
+- name: Create K3s data logical volumes
+  community.general.lvol:
+    vg: "{{ item.vg }}"
+    lv: "{{ item.lv }}"
+    size: "{{ item.size }}"
+    shrink: false
+  loop: "{{ k3s_data_volumes }}"
+  loop_control:
+    label: "{{ item.vg }}/{{ item.lv }}"
+
+- name: Create K3s data filesystems
+  community.general.filesystem:
+    fstype: "{{ item.fstype | default(k3s_data_volumes_fstype) }}"
+    dev: "/dev/{{ item.vg }}/{{ item.lv }}"
+  loop: "{{ k3s_data_volumes }}"
+  loop_control:
+    label: "{{ item.vg }}/{{ item.lv }}"
+
+- name: Ensure K3s data mount paths exist
+  ansible.builtin.file:
+    path: "{{ item.mount_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ k3s_data_volumes }}"
+  loop_control:
+    label: "{{ item.mount_path }}"
+
+- name: Mount K3s data volumes
+  ansible.posix.mount:
+    path: "{{ item.mount_path }}"
+    src: "/dev/{{ item.vg }}/{{ item.lv }}"
+    fstype: "{{ item.fstype | default(k3s_data_volumes_fstype) }}"
+    opts: "{{ item.mount_opts | default(k3s_data_volumes_mount_opts) }}"
+    state: mounted
+  loop: "{{ k3s_data_volumes }}"
+  loop_control:
+    label: "{{ item.mount_path }}"

@@ -31,7 +31,7 @@ def main():
     probe = subprocess.run(['age', '--encrypt', '-r', a.recipient], input=b'', stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     if probe.returncode:
         p.error('age rejected the recipient')
-    host = {'natsume': 'natsume-03', 'meruto': 'meruto-01'}[a.cluster]
+    host = {'natsume': 'natsume-03', 'meruto': 'meruto-02'}[a.cluster]
     source = Path(__file__).with_name('k3s-recovery-export.py').read_bytes()
     ssh = None
     encrypt = None

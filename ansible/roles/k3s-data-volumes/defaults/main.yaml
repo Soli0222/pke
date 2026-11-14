@@ -1,0 +1,10 @@
+---
+# K3s の導入前に、データ用の LV を作ってマウントする。
+# - vg: 既存の VG
+#   lv: 作成する LV
+#   size: lvol の size（例: 150g）。縮小はしない
+#   mount_path: マウント先
+#   fstype: 省略時は k3s_data_volumes_fstype
+k3s_data_volumes: []
+k3s_data_volumes_fstype: ext4
+k3s_data_volumes_mount_opts: defaults
