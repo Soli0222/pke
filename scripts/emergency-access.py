@@ -49,7 +49,7 @@ def parse_args():
         p.error('ttl must be between 600 and 3600')
     if not a.reason.strip() or len(a.reason) > 500:
         p.error('reason must be 1..500 characters')
-    if a.cluster != 'lab' and a.context not in (a.cluster + '@soli', 'emergency-' + a.cluster + '-legacy-admin'):
+    if a.cluster != 'lab' and a.context not in ('soli.' + a.cluster, 'emergency-' + a.cluster + '-legacy-admin'):
         p.error('context does not match the selected production cluster')
     if a.cluster == 'lab' and not a.context.startswith('kind-pke-'):
         p.error('lab requires an explicit kind-pke-* context')

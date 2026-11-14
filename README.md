@@ -18,8 +18,8 @@ Ansible でノードを構成し、Helmfile で基盤を導入した後、Flux C
 
 | クラスタ | ノード | 役割 | kubectl context |
 |---|---|---|---|
-| natsume | `natsume-03`、`natsume-08` | 本番アプリ、DB、監視基盤 | `natsume@soli` |
-| meruto | `meruto-02` | 単一ノードのアプリ・外形監視 | `meruto@soli` |
+| natsume | `natsume-03`、`natsume-08` | 本番アプリ、DB、監視基盤 | `soli.natsume` |
+| meruto | `meruto-02` | 単一ノードのアプリ・外形監視 | `soli.meruto` |
 
 `natsume-03` と `meruto-02` が各クラスタの K3s server と external etcd を持ち、`natsume-08` は K3s agent です。
 各クラスタの etcd は単一 member です。
@@ -98,7 +98,7 @@ state は Cloudflare R2 の S3 互換 backend に保存します。
 Falco の更新は `k3s_cluster` が対象です。
 `update-falco` ロールは `install-falco` を再利用し、パッケージまたは設定が変わった場合に Falco を再起動します。
 `--limit` で対象ホストを指定し、先に check mode で差分を確認します。
-次は natsume（`natsume@soli`）の例です。meruto（`meruto@soli`）は `--limit meruto-02` に替えます。
+次は natsume（`soli.natsume`）の例です。meruto（`soli.meruto`）は `--limit meruto-02` に替えます。
 この操作は SSH 経由で実行し、kubectl context は使いません。
 
 ```sh
@@ -163,10 +163,10 @@ ansible-playbook -i inventories/hosts.yaml prepare-edge-gateway.yaml --limit lun
 Ansible と Terraform の変更は、それぞれの適用作業が必要です。
 
 ```sh
-kubectl --context natsume@soli -n flux-system get kustomizations
-kubectl --context natsume@soli get helmreleases -A
-kubectl --context meruto@soli -n flux-system get kustomizations
-kubectl --context meruto@soli get helmreleases -A
+kubectl --context soli.natsume -n flux-system get kustomizations
+kubectl --context soli.natsume get helmreleases -A
+kubectl --context soli.meruto -n flux-system get kustomizations
+kubectl --context soli.meruto get helmreleases -A
 ```
 
 CI は `flate` による両クラスタの HelmRelease / Kustomization 差分、ローカル chart の version 更新、監視ルールと通知設定を検証します。

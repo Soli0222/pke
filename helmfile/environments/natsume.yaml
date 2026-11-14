@@ -1,5 +1,5 @@
 cluster: natsume
-kubeContext: natsume@soli
+kubeContext: soli.natsume
 bootstrapNode: natsume-03
 
 cilium:

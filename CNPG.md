@@ -2,7 +2,7 @@
 
 PKE の CloudNativePG（CNPG）は、natsume のアプリ用 PostgreSQL を管理する。
 この文書は構成とバックアップ方式を確認した後、必要な操作の節を参照するための運用手順である。
-通常運用の kubectl の接続先は `natsume@soli` を使う。
+通常運用の kubectl の接続先は `soli.natsume` を使う。
 別クラスタで復元するときは、復元先の context を明示する。
 
 ## DB の構成
@@ -44,7 +44,7 @@ Misskey は1 instance のため、image 更新時に接続が切れる。
 互換性のある更新は次の順で反映する。
 
 1. 完了したバックアップと復元手順を確認し、Misskey の接続・書き込みを止める。
-2. 更新 PR をマージし、`natsume@soli` の Flux 適用 revision、Cluster の generation と Ready、Pod の image を確認する。
+2. 更新 PR をマージし、`soli.natsume` の Flux 適用 revision、Cluster の generation と Ready、Pod の image を確認する。
 3. PGroonga を使用する各 DB で `ALTER EXTENSION pgroonga UPDATE;` を実行する。
    `pgroonga_database` 拡張を使用している DB では、その拡張も更新する。
 4. `pg_extension.extversion` と `pg_available_extensions.default_version` を照合し、日本語検索、
@@ -88,9 +88,9 @@ AWS CLI を使う操作では、1Password から `AWS_ACCESS_KEY_ID`、`AWS_SECR
 ## バックアップの成否を確認する
 
 ```sh
-kubectl --context natsume@soli get clusters.postgresql.cnpg.io -A
-kubectl --context natsume@soli get scheduledbackups,backups -A
-kubectl --context natsume@soli get objectstores.barmancloud.cnpg.io -A
+kubectl --context soli.natsume get clusters.postgresql.cnpg.io -A
+kubectl --context soli.natsume get scheduledbackups,backups -A
+kubectl --context soli.natsume get objectstores.barmancloud.cnpg.io -A
 aws s3 ls --endpoint-url "$AWS_ENDPOINT_URL" s3://cnpg-backup/ --recursive
 ```
 
@@ -109,9 +109,9 @@ WAL archive の成功だけで base backup の成功を判断しない。
 対象に合わせて namespace と Cluster 名を置き換える。
 
 ```sh
-kubectl cnpg backup grafana-cluster-restored --context natsume@soli -n grafana \
+kubectl cnpg backup grafana-cluster-restored --context soli.natsume -n grafana \
   --method=plugin --plugin-name=barman-cloud.cloudnative-pg.io
-kubectl --context natsume@soli -n grafana get backups -w
+kubectl --context soli.natsume -n grafana get backups -w
 ```
 
 Backup の `status.phase=completed` と R2 への保存を確認する。
@@ -180,7 +180,7 @@ PostgreSQL WAL の custom resource manager を認識するため、復元先に�
 preload だけで PGroonga の検索更新まで復元できたとは判断しない。
 
 ```sh
-PKE_RESTORE_CONTEXT=natsume@soli  # meruto で検証する場合は meruto@soli
+PKE_RESTORE_CONTEXT=soli.natsume  # meruto で検証する場合は soli.meruto
 PKE_RESTORE_NAMESPACE=misskey
 PKE_RESTORE_CLUSTER=misskey-recovery
 PKE_RESTORE_DATABASE=misskey
@@ -335,7 +335,7 @@ pg_dump は dump 作成時点への復元で、PITR はできない。
 3. 復元先への port-forward を別ターミナルで維持する。
 
    ```sh
-   kubectl --context natsume@soli -n grafana port-forward \
+   kubectl --context soli.natsume -n grafana port-forward \
      svc/grafana-recovery-rw 15432:5432
    ```
 
@@ -343,9 +343,9 @@ pg_dump は dump 作成時点への復元で、PITR はできない。
    以下は復元先 Secret を環境変数へ読み込み、値を出力せずに使う。
 
    ```sh
-   PGUSER="$(kubectl --context natsume@soli -n grafana get secret grafana-recovery-app -o jsonpath='{.data.username}' | base64 -d)"
-   PGPASSWORD="$(kubectl --context natsume@soli -n grafana get secret grafana-recovery-app -o jsonpath='{.data.password}' | base64 -d)"
-   PGDATABASE="$(kubectl --context natsume@soli -n grafana get secret grafana-recovery-app -o jsonpath='{.data.dbname}' | base64 -d)"
+   PGUSER="$(kubectl --context soli.natsume -n grafana get secret grafana-recovery-app -o jsonpath='{.data.username}' | base64 -d)"
+   PGPASSWORD="$(kubectl --context soli.natsume -n grafana get secret grafana-recovery-app -o jsonpath='{.data.password}' | base64 -d)"
+   PGDATABASE="$(kubectl --context soli.natsume -n grafana get secret grafana-recovery-app -o jsonpath='{.data.dbname}' | base64 -d)"
    export PGUSER PGPASSWORD PGDATABASE
    pg_restore -h 127.0.0.1 -p 15432 --no-owner --no-privileges \
      --exit-on-error -j 4 ./restore.dump

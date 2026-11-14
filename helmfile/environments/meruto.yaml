@@ -1,5 +1,5 @@
 cluster: meruto
-kubeContext: meruto@soli
+kubeContext: soli.meruto
 
 cilium:
   # meruto は IPv4 のみ（K3s の CIDR も host_vars で IPv4 だけにしている）。

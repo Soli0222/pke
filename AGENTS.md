@@ -93,6 +93,6 @@ Alloy の共通 relabel 経路と、ルールの入力 matcher・出力 label・
 | Terraform | 対象ディレクトリで fmt / validate / plan |
 | 文書 | 設定との整合、リンクとコマンドの確認、`git diff --check` |
 
-適用先は `natsume@soli` / `meruto@soli` を明示する。
+適用先は `soli.natsume` / `soli.meruto` を明示する。
 Flux の反映は Ready に加えて適用 revision と対象リソースの generation を確認し、実際の収集・評価・アプリ状態まで照合する。
 ホストの Alloy 更新は `ansible/update-alloy-monitoring.yaml` で1台ずつ行う。
