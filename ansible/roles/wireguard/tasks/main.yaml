@@ -11,13 +11,20 @@
       - wireguard_peers | rejectattr('allowed_ips', 'defined') | list | length == 0
     fail_msg: "WireGuard settings are incomplete for {{ inventory_hostname }}."
 
-# 外への経路がない状態でも、直前に更新したキャッシュがあれば失敗しないようにする。
+# wg0 を上げる前は外への経路がない場合がある。導入済みなら apt を実行しない。
+# （cache_valid_time は update-success-stamp がないと lists ディレクトリの mtime で判定し、
+#   apt-get update 後も古いと見なされることがある）
+- name: Check whether WireGuard tools are installed
+  ansible.builtin.stat:
+    path: /usr/bin/wg
+  register: wireguard_tools_binary
+
 - name: Install WireGuard tools
   ansible.builtin.apt:
     name: wireguard-tools
     state: present
     update_cache: true
-    cache_valid_time: 3600
+  when: not wireguard_tools_binary.stat.exists
 
 - name: Ensure systemd-networkd configuration directory exists
   ansible.builtin.file:

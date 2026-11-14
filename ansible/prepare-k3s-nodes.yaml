@@ -7,11 +7,18 @@
   hosts: k3s_cluster:&wireguard_egress
   become: true
   tasks:
+    - name: Check whether WireGuard tools are installed
+      ansible.builtin.stat:
+        path: /usr/bin/wg
+      register: wireguard_egress_tools_binary
+
+    # 2回目以降は LAN のデフォルトルートがないため、導入済みなら実行しない。
     - name: Install WireGuard tools while the LAN default route still exists
       ansible.builtin.apt:
         name: wireguard-tools
         state: present
         update_cache: true
+      when: not wireguard_egress_tools_binary.stat.exists
 
     - name: Apply netplan without the LAN default route
       ansible.builtin.include_role:
