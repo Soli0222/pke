@@ -34,7 +34,7 @@ Ubuntu 26.04 の既定の sudo は sudo-rs で、パスワードを入力する 
 `meruto-02` は Longhorn を使わない。TopoLVM は T500 を by-id で指定し、`/var/lib/rancher` と `/var/lib/kubelet` は `ubuntu-vg` の LV（`k3s_data_volumes`）にする。
 
 ネットワークは host_vars の `network_netplan` に定義する。
-meruto は public interface を持たない。外への通信は `wg0` から lune-02 を通り、LAN にはデフォルトルートを置かない。80/443 は `ufw_global_interface: wg0` で受ける。
+meruto は public interface を持たない。外への通信は IPv4 / IPv6 とも `wg0` から lune-02 を通り、LAN にはデフォルトルートを置かない。meruto-02 の ExternalIP は lune-02 のグローバルアドレスにする。80/443 は `ufw_global_interface: wg0` で受ける。
 K3s の external IP と TLS SAN は host_vars の設定を尊重する。
 
 ## Flux と Helm chart

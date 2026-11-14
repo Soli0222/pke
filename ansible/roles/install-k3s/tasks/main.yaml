@@ -90,7 +90,7 @@
   ansible.builtin.set_fact:
     k3s_bind_address: "{{ '0.0.0.0' if k3s_bind_all_interfaces | bool else k3s_private_ipv4_addresses | first }}"
     k3s_advertise_address: "{{ k3s_private_ipv4_addresses | first }}"
-    k3s_node_ip: "{{ (k3s_private_ipv4_addresses + k3s_private_ipv6_addresses) | join(',') }}"
+    k3s_node_ip: "{{ (k3s_private_ipv4_addresses + k3s_private_ipv6_addresses + k3s_additional_node_ips) | join(',') }}"
   when: k3s_use_private_netplan_address | bool
 
 - name: Set k3s external node IPs from netplan

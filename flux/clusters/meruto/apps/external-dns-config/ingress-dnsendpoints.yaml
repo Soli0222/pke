@@ -1,5 +1,6 @@
 # meruto の Ingress は lune-02 の HAProxy から WireGuard で受ける。
-# Traefik は Ingress の status に meruto.pstr.space を書き、各ホスト名はここへの CNAME になる。
+# 各 Ingress のレコードは Traefik の Service の status（lune-02 の v4 / v6）から作られる。
+# ここでは natsume.pstr.space と同じく、クラスタの入口を表す名前を登録する。
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:

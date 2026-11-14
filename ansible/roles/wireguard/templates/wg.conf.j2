@@ -1,6 +1,6 @@
 # This file is managed by Ansible. Do not edit manually.
 [Interface]
-Address = {{ wireguard_address }}
+Address = {{ ([wireguard_address] if wireguard_address is string else wireguard_address) | join(', ') }}
 PrivateKey = {{ wireguard_private_key.stdout | trim }}
 {% if (wireguard_listen_port | int) > 0 %}
 ListenPort = {{ wireguard_listen_port | int }}

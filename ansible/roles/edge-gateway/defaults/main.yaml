@@ -30,9 +30,13 @@ edge_gateway_wireguard_port: "{{ wireguard_listen_port | default(51820) }}"
 
 # WireGuard の内側からインターネットへ出すことを許可する送信元。lune-02 で SNAT する。
 edge_gateway_egress_sources: []
+# IPv6 の送信元。空のときは IPv6 の forwarding と masquerade を設定しない。
+edge_gateway_egress_sources_ipv6: []
 
-# WireGuard を通る TCP の MSS 上限。wg の MTU 1420 から IPv4/TCP ヘッダ 40 byte を引いた値。
+# WireGuard を通る TCP の MSS 上限。wg の MTU 1420 からヘッダを引いた値
+# （IPv4 は IPv4 + TCP の 40 byte、IPv6 は IPv6 + TCP の 60 byte）。
 edge_gateway_tcp_mss: 1380
+edge_gateway_tcp_mss_ipv6: 1360
 
 edge_gateway_public_tcp_ports:
   - 80

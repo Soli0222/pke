@@ -16,11 +16,6 @@ ssh_agent_sudo_users:
     sudo_authorized_keys: true
     lock_password: true
 
-# meruto は IPv4 のみ。group_vars の dual-stack 設定を上書きする。
-k3s_cluster_cidr: "10.1.0.0/16"
-k3s_service_cidr: "10.2.0.0/16"
-k3s_cluster_dns: "10.2.0.10"
-
 # group_vars の既定に加えて次を無効にする。
 # - local-storage: 既定の StorageClass は Flux の TopoLVM にする
 # - gateway-api-crd: Gateway API の CRD は Flux の Traefik が管理する
@@ -33,8 +28,13 @@ k3s_disable_components:
 k3s_include_tailscale_tls_sans: false
 k3s_tls_sans:
   - 192.168.50.2
-k3s_external_ip_netplan_source: private
-k3s_external_ip_include_ipv6: false
+# dual-stack のノード IP。IPv6 は LAN に置かず、WireGuard の ULA を使う。
+k3s_additional_node_ips:
+  - fd00:10:99::2
+# 外から受ける経路は lune-02 だけなので、ExternalIP を lune-02 のグローバルアドレスにする。
+# servicelb はこの値を LoadBalancer の status に書く。
+k3s_external_ip_netplan_source: ""
+k3s_node_external_ip: "133.18.187.207,2406:8c00:0:3476:133:18:187:207"
 
 # K3s の導入前にマウントする。P5（OS ディスク）の ubuntu-vg に作る。
 k3s_data_volumes:
@@ -56,7 +56,7 @@ topolvm_storage_partition_end: "100%"
 topolvm_storage_devices:
   - /dev/disk/by-id/nvme-CT1000T500SSD8_2409474C8886-part1
 
-# LAN にはデフォルトルートを置かない。外への通信は wg0 だけを通り、
+# LAN にはデフォルトルートを置かない（IPv4 / IPv6 とも）。外への通信は wg0 だけを通り、
 # wg0 が落ちたときは経路がなくなる（自宅の回線から直接出ない）。
 network_netplan:
   global: {}
@@ -77,7 +77,9 @@ network_netplan:
 # 80/443 は lune-02 の HAProxy から wg0 で受ける。
 ufw_global_interface: wg0
 
-wireguard_address: 10.99.0.2/24
+wireguard_address:
+  - 10.99.0.2/24
+  - fd00:10:99::2/64
 wireguard_onepassword_item: pke-wireguard-meruto-02
 # netplan apply で networkd が wg-quick の ip rule と経路を消さないようにする。
 wireguard_networkd_keep_foreign_routes: true
@@ -86,5 +88,6 @@ wireguard_peers:
     onepassword_item: pke-wireguard-lune-02
     allowed_ips:
       - 0.0.0.0/0
+      - ::/0
     endpoint: 133.18.187.207:51820
     persistent_keepalive: 25
