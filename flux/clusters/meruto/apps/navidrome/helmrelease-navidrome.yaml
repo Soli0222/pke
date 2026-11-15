@@ -1,6 +1,7 @@
 # NAS から navidrome-curator が選んでコピーしたアルバムだけを配信する。
-# navidrome-music の配下は share / Taichi / Hajime / soli の各ライブラリと、curator の .curator。
-# ライブラリ 2 以降のパスは DB（navidrome-data）が持ち、ライブラリ 1 のパスは起動のたびに musicFolder で上書きされる。
+# navidrome-music の配下は share / Taichi / Hajime の各ライブラリと、curator の .curator。
+# ライブラリ 1 は musicFolder（/music）で、ライブラリ 2 以降（/music/<name>）を含む。旧構成と同じ。
+# ライブラリ 2 以降のパスは DB（navidrome-data）が持つ。
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -70,7 +71,7 @@ spec:
     serviceMonitor:
       enabled: true
     config:
-      musicFolder: /music/soli
+      musicFolder: /music
       enableInsightsCollector: false
       scanner:
         # curator のコピーは watcher で取り込む。取りこぼしは 1 時間ごとのスキャンで拾う。
