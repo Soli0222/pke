@@ -14,12 +14,14 @@ resources:
 - kustomizations/topolvm.yaml
 - kustomizations/csi-driver-smb.yaml
 - kustomizations/navidrome-storage.yaml
+- kustomizations/navidrome-curator.yaml
 - kustomizations/metallb.yaml
 - kustomizations/metallb-config.yaml
 - kustomizations/mf-account-reloader-auth.yaml
 - kustomizations/mf-account-reloader.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml
 - kustomizations/traefik.yaml
+- kustomizations/traefik-local.yaml
 - kustomizations/flux-monitoring.yaml
 - kustomizations/coredns-monitoring.yaml
 - kustomizations/monitoring-rules.yaml

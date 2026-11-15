@@ -1,0 +1,69 @@
+# LAN（192.168.50.0/24）内だけに公開する Ingress の入口。IngressClass は traefik-local。
+# lune-02 経由で公開する Ingress は traefik（apps/traefik）が受ける。
+# CRD は traefik の release が入れるため、ここでは入れない。
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik-local
+  namespace: traefik-local
+spec:
+  interval: 10m
+  releaseName: traefik-local
+  targetNamespace: traefik-local
+  install:
+    createNamespace: false
+    crds: Skip
+  upgrade:
+    crds: Skip
+  chart:
+    spec:
+      chart: traefik
+      version: 42.4.0
+      sourceRef:
+        kind: HelmRepository
+        name: traefik-repo
+        namespace: traefik-local
+      interval: 1h
+  values:
+    deployment:
+      kind: Deployment
+      replicas: 1
+    log:
+      format: json
+    accessLog:
+      enabled: true
+      format: json
+    metrics:
+      addInternals: true
+      prometheus:
+        serviceMonitor:
+          enabled: true
+    # MetalLB の lan pool から固定のアドレスを割り当てる。*.home.str08.net はこのアドレスを指す。
+    # NodePort は wg0 のアドレスで待ち受けるため、作らない。
+    service:
+      annotations:
+        metallb.io/address-pool: lan
+        metallb.io/loadBalancerIPs: 192.168.50.201
+      spec:
+        externalTrafficPolicy: Local
+        ipFamilyPolicy: SingleStack
+        ipFamilies:
+        - IPv4
+        allocateLoadBalancerNodePorts: false
+    ports:
+      web:
+        http:
+          redirections:
+            entryPoint:
+              to: websecure
+              scheme: https
+              permanent: true
+    ingressClass:
+      enabled: true
+      isDefaultClass: false
+      name: traefik-local
+    providers:
+      kubernetesCRD:
+        ingressClass: traefik-local
+      kubernetesIngress:
+        ingressClass: traefik-local
