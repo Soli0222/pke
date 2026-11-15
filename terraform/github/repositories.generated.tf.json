@@ -6,11 +6,11 @@
     "inventory_sha256": {
       "precondition": [
         {
-          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"5ce7ddc6a2a8ab738ed439d6f6f6e172a98b1f959f4a1adc73225668b3582faa\"}",
+          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"0e18cc487b4b3ad39a1e26d6d6b9dc9cf4a14737af2b4494951512156e13b324\"}",
           "error_message": "Inventory changed: run python3 manage.py generate before planning."
         }
       ],
-      "value": "5ce7ddc6a2a8ab738ed439d6f6f6e172a98b1f959f4a1adc73225668b3582faa"
+      "value": "0e18cc487b4b3ad39a1e26d6d6b9dc9cf4a14737af2b4494951512156e13b324"
     },
     "managed_repositories": {
       "value": [
@@ -27,6 +27,7 @@
         "kubecon-schedule",
         "mf-account-reloader",
         "mk-stream",
+        "navidrome-curator",
         "note-tweet-connector",
         "pgroonga-cnpg",
         "picpress",
@@ -48,6 +49,12 @@
     }
   },
   "removed": [
+    {
+      "from": "github_branch_default.repo_navidrome-curator",
+      "lifecycle": {
+        "destroy": false
+      }
+    },
     {
       "from": "github_repository.repo_Charmy",
       "lifecycle": {
@@ -1023,6 +1030,60 @@
             "secret_scanning_push_protection": [
               {
                 "status": "disabled"
+              }
+            ]
+          }
+        ],
+        "squash_merge_commit_message": "COMMIT_MESSAGES",
+        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
+        "topics": [
+          "renovate"
+        ],
+        "visibility": "public",
+        "web_commit_signoff_required": false
+      },
+      "repo_navidrome-curator": {
+        "allow_auto_merge": false,
+        "allow_forking": true,
+        "allow_merge_commit": false,
+        "allow_rebase_merge": false,
+        "allow_squash_merge": true,
+        "allow_update_branch": false,
+        "archive_on_destroy": false,
+        "archived": false,
+        "auto_init": false,
+        "delete_branch_on_merge": true,
+        "description": "Copy selected albums from a music archive into a music server library",
+        "has_discussions": false,
+        "has_issues": true,
+        "has_projects": true,
+        "has_wiki": true,
+        "homepage_url": "",
+        "is_template": false,
+        "lifecycle": {
+          "ignore_changes": [
+            "auto_init",
+            "gitignore_template",
+            "has_downloads",
+            "ignore_vulnerability_alerts_during_read",
+            "license_template",
+            "vulnerability_alerts"
+          ],
+          "prevent_destroy": true
+        },
+        "merge_commit_message": "PR_TITLE",
+        "merge_commit_title": "MERGE_MESSAGE",
+        "name": "navidrome-curator",
+        "security_and_analysis": [
+          {
+            "secret_scanning": [
+              {
+                "status": "enabled"
+              }
+            ],
+            "secret_scanning_push_protection": [
+              {
+                "status": "enabled"
               }
             ]
           }
