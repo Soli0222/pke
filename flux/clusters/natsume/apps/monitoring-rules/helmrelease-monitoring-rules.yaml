@@ -34,11 +34,6 @@ spec:
       - ens3
       - ens4
     databases:
-    - namespace: grafana
-      name: grafana-cluster-restored
-      archive: true
-      replication: false
-      baseBackupMaxAgeSeconds: 648000
     - namespace: keycloak
       name: keycloak-cluster
       archive: true

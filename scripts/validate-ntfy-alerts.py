@@ -79,7 +79,7 @@ def main():
         )
         assert not {"cache-file", "auth-file", "web-push-file", "database-url"} & config.keys()
         source = yaml.safe_load(
-            (ROOT / "flux/clusters/natsume/apps/alloy/alloy-config.yaml").read_text()
+            (ROOT / "flux/clusters/meruto/apps/alloy/alloy-config.yaml").read_text()
         )["data"]["config.alloy"]
         (out / "config.alloy").write_text(source)
         alertmanager = source.split("global_config = `", 1)[1].split(
@@ -341,8 +341,8 @@ def main():
                                     },
                                     "annotations": {
                                         "summary": "Local notification validation",
-                                        "dashboard_url": "https://grafana.str08.net/d/pke-overview?var-cluster=meruto",
-                                        "panel_url": "https://grafana.str08.net/d/pke-overview?var-cluster=meruto&viewPanel=9",
+                                        "dashboard_url": "https://grafana.pstr.space/d/pke-overview?var-cluster=meruto",
+                                        "panel_url": "https://grafana.pstr.space/d/pke-overview?var-cluster=meruto&viewPanel=9",
                                         "runbook_url": "https://github.com/Soli0222/pke/blob/main/MONITORING.md",
                                     },
                                 }
@@ -364,7 +364,7 @@ def main():
                             message
                         )
                         assert (
-                            "Grafana: https://grafana.str08.net/d/pke-overview?var-cluster=meruto&viewPanel=9"
+                            "Grafana: https://grafana.pstr.space/d/pke-overview?var-cluster=meruto&viewPanel=9"
                             in message["message"]
                         ), message
                         assert (

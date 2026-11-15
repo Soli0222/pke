@@ -66,6 +66,12 @@ values = yaml.safe_load(
     ).read_text()
 )["spec"]["values"]
 database_names = {db["namespace"]: db["name"] for db in values["databases"]}
+meruto_databases = yaml.safe_load(
+    (
+        ROOT
+        / "flux/clusters/meruto/apps/monitoring-rules/helmrelease-monitoring-rules.yaml"
+    ).read_text()
+)["spec"]["values"]["databases"]
 meruto_probe_count = sum(
     len(app["targets"])
     for app in yaml.safe_load(
@@ -83,8 +89,8 @@ case(
     + check(7, 0, sum(1 + bool(db["archive"]) for db in values["databases"]))
     + check(12, 0, sum(bool(db.get("baseBackupMaxAgeSeconds")) for db in values["databases"]))
     + check(8, 0, meruto_probe_count, "meruto")
-    + check(7, -2, -2, "meruto")
-    + check(12, -2, -2, "meruto")
+    + check(7, 0, sum(1 + bool(db["archive"]) for db in meruto_databases), "meruto")
+    + check(12, 0, sum(bool(db.get("baseBackupMaxAgeSeconds")) for db in meruto_databases), "meruto")
     + check(8, -2, -2, "natsume"),
 )
 # A stale archive timestamp is only actionable with queued WAL on the same Pod.

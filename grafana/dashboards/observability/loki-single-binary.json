@@ -86,7 +86,7 @@
         },
         "targets": [
           {
-            "expr": "min(up{cluster=\"natsume\",namespace=\"loki\", job=\"loki/loki\"})",
+            "expr": "min(up{cluster=\"meruto\",namespace=\"loki\", job=\"loki/loki\"})",
             "instant": true,
             "legendFormat": "up",
             "range": false,
@@ -139,7 +139,7 @@
         },
         "targets": [
           {
-            "expr": "sum(rate(loki_distributor_lines_received_total{cluster=\"natsume\",namespace=\"loki\"}[5m]))",
+            "expr": "sum(rate(loki_distributor_lines_received_total{cluster=\"meruto\",namespace=\"loki\"}[5m]))",
             "instant": true,
             "legendFormat": "lines/sec",
             "range": false,
@@ -192,7 +192,7 @@
         },
         "targets": [
           {
-            "expr": "sum(loki_ingester_memory_streams{cluster=\"natsume\",namespace=\"loki\"})",
+            "expr": "sum(loki_ingester_memory_streams{cluster=\"meruto\",namespace=\"loki\"})",
             "instant": true,
             "legendFormat": "streams",
             "range": false,
@@ -249,7 +249,7 @@
         },
         "targets": [
           {
-            "expr": "sum(rate(loki_panic_total{cluster=\"natsume\",namespace=\"loki\"}[5m]))",
+            "expr": "sum(rate(loki_panic_total{cluster=\"meruto\",namespace=\"loki\"}[5m]))",
             "instant": true,
             "legendFormat": "panics/sec",
             "range": false,
@@ -334,12 +334,12 @@
         },
         "targets": [
           {
-            "expr": "sum(rate(loki_distributor_lines_received_total{cluster=\"natsume\",namespace=\"loki\"}[5m]))",
+            "expr": "sum(rate(loki_distributor_lines_received_total{cluster=\"meruto\",namespace=\"loki\"}[5m]))",
             "legendFormat": "lines/sec",
             "refId": "A"
           },
           {
-            "expr": "sum(rate(loki_write_dropped_entries_total{cluster=\"natsume\",namespace=\"loki\"}[5m])) or vector(0)",
+            "expr": "sum(rate(loki_write_dropped_entries_total{cluster=\"meruto\",namespace=\"loki\"}[5m])) or vector(0)",
             "legendFormat": "dropped entries/sec",
             "refId": "B"
           }
@@ -430,17 +430,17 @@
         },
         "targets": [
           {
-            "expr": "histogram_quantile(0.50, sum by (le) (rate(loki_request_duration_seconds_bucket{cluster=\"natsume\",namespace=\"loki\", route=~\"loki_api_v1_push|/logproto.Pusher/Push\"}[5m])))",
+            "expr": "histogram_quantile(0.50, sum by (le) (rate(loki_request_duration_seconds_bucket{cluster=\"meruto\",namespace=\"loki\", route=~\"loki_api_v1_push|/logproto.Pusher/Push\"}[5m])))",
             "legendFormat": "p50 push",
             "refId": "A"
           },
           {
-            "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{cluster=\"natsume\",namespace=\"loki\", route=~\"loki_api_v1_push|/logproto.Pusher/Push\"}[5m])))",
+            "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{cluster=\"meruto\",namespace=\"loki\", route=~\"loki_api_v1_push|/logproto.Pusher/Push\"}[5m])))",
             "legendFormat": "p95 push",
             "refId": "B"
           },
           {
-            "expr": "histogram_quantile(0.99, sum by (le) (rate(loki_request_duration_seconds_bucket{cluster=\"natsume\",namespace=\"loki\", route=~\"loki_api_v1_push|/logproto.Pusher/Push\"}[5m])))",
+            "expr": "histogram_quantile(0.99, sum by (le) (rate(loki_request_duration_seconds_bucket{cluster=\"meruto\",namespace=\"loki\", route=~\"loki_api_v1_push|/logproto.Pusher/Push\"}[5m])))",
             "legendFormat": "p99 push",
             "refId": "C"
           }
@@ -523,7 +523,7 @@
         },
         "targets": [
           {
-            "expr": "topk(10, sum by (route) (rate(loki_request_duration_seconds_count{cluster=\"natsume\",namespace=\"loki\"}[5m])))",
+            "expr": "topk(10, sum by (route) (rate(loki_request_duration_seconds_count{cluster=\"meruto\",namespace=\"loki\"}[5m])))",
             "legendFormat": "{{route}}",
             "refId": "A"
           }
@@ -614,7 +614,7 @@
         },
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, sum by (le, route) (rate(loki_request_duration_seconds_bucket{cluster=\"natsume\",namespace=\"loki\"}[5m])))",
+            "expr": "histogram_quantile(0.95, sum by (le, route) (rate(loki_request_duration_seconds_bucket{cluster=\"meruto\",namespace=\"loki\"}[5m])))",
             "legendFormat": "p95 {{route}}",
             "refId": "A"
           }
@@ -705,17 +705,17 @@
         },
         "targets": [
           {
-            "expr": "sum(loki_query_frontend_queries_in_progress{cluster=\"natsume\",namespace=\"loki\"})",
+            "expr": "sum(loki_query_frontend_queries_in_progress{cluster=\"meruto\",namespace=\"loki\"})",
             "legendFormat": "frontend queries in progress",
             "refId": "A"
           },
           {
-            "expr": "sum(loki_querier_worker_inflight_queries{cluster=\"natsume\",namespace=\"loki\"})",
+            "expr": "sum(loki_querier_worker_inflight_queries{cluster=\"meruto\",namespace=\"loki\"})",
             "legendFormat": "querier worker inflight",
             "refId": "B"
           },
           {
-            "expr": "sum(loki_query_scheduler_queue_length{cluster=\"natsume\",namespace=\"loki\"})",
+            "expr": "sum(loki_query_scheduler_queue_length{cluster=\"meruto\",namespace=\"loki\"})",
             "legendFormat": "scheduler queue length",
             "refId": "C"
           }
@@ -798,22 +798,22 @@
         },
         "targets": [
           {
-            "expr": "sum(loki_ingester_memory_chunks{cluster=\"natsume\",namespace=\"loki\"})",
+            "expr": "sum(loki_ingester_memory_chunks{cluster=\"meruto\",namespace=\"loki\"})",
             "legendFormat": "memory chunks",
             "refId": "A"
           },
           {
-            "expr": "sum(loki_ingester_flush_queue_length{cluster=\"natsume\",namespace=\"loki\"})",
+            "expr": "sum(loki_ingester_flush_queue_length{cluster=\"meruto\",namespace=\"loki\"})",
             "legendFormat": "flush queue length",
             "refId": "B"
           },
           {
-            "expr": "sum(loki_ingester_wal_bytes_in_use{cluster=\"natsume\",namespace=\"loki\"})",
+            "expr": "sum(loki_ingester_wal_bytes_in_use{cluster=\"meruto\",namespace=\"loki\"})",
             "legendFormat": "WAL bytes in use",
             "refId": "C"
           },
           {
-            "expr": "sum(rate(loki_ingester_chunks_flush_failures_total{cluster=\"natsume\",namespace=\"loki\"}[5m]))",
+            "expr": "sum(rate(loki_ingester_chunks_flush_failures_total{cluster=\"meruto\",namespace=\"loki\"}[5m]))",
             "legendFormat": "chunk flush failures/sec",
             "refId": "D"
           }
@@ -904,7 +904,7 @@
         },
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(loki_s3_request_duration_seconds_bucket{cluster=\"natsume\",namespace=\"loki\"}[5m])))",
+            "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(loki_s3_request_duration_seconds_bucket{cluster=\"meruto\",namespace=\"loki\"}[5m])))",
             "legendFormat": "p95 {{operation}}",
             "refId": "A"
           }
@@ -987,7 +987,7 @@
         },
         "targets": [
           {
-            "expr": "sum by (pod, container) (rate(container_cpu_usage_seconds_total{cluster=\"natsume\",namespace=\"loki\", container!=\"\", container!=\"POD\"}[5m]))",
+            "expr": "sum by (pod, container) (rate(container_cpu_usage_seconds_total{cluster=\"meruto\",namespace=\"loki\", container!=\"\", container!=\"POD\"}[5m]))",
             "legendFormat": "{{pod}}/{{container}}",
             "refId": "A"
           }
@@ -1078,7 +1078,7 @@
         },
         "targets": [
           {
-            "expr": "sum by (pod, container) (container_memory_working_set_bytes{cluster=\"natsume\",namespace=\"loki\", container!=\"\", container!=\"POD\"})",
+            "expr": "sum by (pod, container) (container_memory_working_set_bytes{cluster=\"meruto\",namespace=\"loki\", container!=\"\", container!=\"POD\"})",
             "legendFormat": "{{pod}}/{{container}}",
             "refId": "A"
           }

@@ -117,7 +117,7 @@ curl --fail https://keycloak.pstr.space/.well-known/oauth-authorization-server/r
 公開ホストの `/admin/` と `/realms/master/` が到達不能で、管理ホストが証明書なしの接続を拒否することも確認する。
 DB は単一 instance。Keycloak も StatefulSet の単一 Pod を置き換えるため、更新時に認証が一時停止する。週次 backup + WAL archive と復元は [CNPG.md](../../CNPG.md) を参照する。
 
-運用状況は [PKE / Keycloak](https://grafana.str08.net/d/pke-keycloak) で確認する。HTTP・DCR/token・JVM・DB接続プールと認証拒否ログを表示し、DB本体の詳細は CloudNativePG へ移動する。保存定義と表示上の制約は [Grafanaの運用](../../grafana/README.md#keycloak) を参照する。
+運用状況は [PKE / Keycloak](https://grafana.pstr.space/d/pke-keycloak) で確認する。HTTP・DCR/token・JVM・DB接続プールと認証拒否ログを表示し、DB本体の詳細は CloudNativePG へ移動する。保存定義と表示上の制約は [Grafanaの運用](../../grafana/README.md#keycloak) を参照する。
 
 ## MCP の設定
 

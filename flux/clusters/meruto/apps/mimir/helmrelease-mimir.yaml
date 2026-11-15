@@ -18,8 +18,6 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-03
     envFrom:
       - secretRef:
           name: r2-o11y-secret
@@ -116,7 +114,7 @@ spec:
       - name: mimir
         className: traefik
         annotations:
-          cert-manager.io/cluster-issuer: letsencrypt-http01
+          cert-manager.io/cluster-issuer: letsencrypt-dns01
           traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
         hosts:
           - host: mimir.pstr.space
@@ -126,7 +124,7 @@ spec:
         tls:
           - hosts:
               - mimir.pstr.space
-            secretName: mimir.pstr.space-http01
+            secretName: mimir.pstr.space-dns01
 
     resources:
       requests:

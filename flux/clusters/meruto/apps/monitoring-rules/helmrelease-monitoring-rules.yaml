@@ -37,12 +37,15 @@ spec:
       - pke-wireguard-metrics.timer
       networkDevices:
       - enp3s0
-    databases: []
+    databases:
+    - namespace: grafana
+      name: grafana-db
+      archive: true
+      replication: false
+      baseBackupMaxAgeSeconds: 648000
     containerlessHosts:
     - lune-02
     # END generated monitoring inventory
     groups:
-      cnpg:
-        enabled: false
       longhorn:
         enabled: false

@@ -100,7 +100,7 @@ def expressions(targets, paths, groups):
         ages.append(label(age, {'cluster': cluster, 'target': title}))
     for cluster, namespace, resource, group in groups:
         pattern = f'.*/{cluster}%2F{namespace}%2F{resource}%2F[^;]+;{re.escape(group)}'
-        metric = 'cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster="natsume",job="mimir",rule_group=~' + json.dumps(pattern) + '}'
+        metric = 'cortex_prometheus_rule_group_last_evaluation_timestamp_seconds{cluster="meruto",job="mimir",rule_group=~' + json.dumps(pattern) + '}'
         age = f'(time() - max({metric} and (timestamp({metric}) > time() - 120))) or vector(-1)'
         evaluations.append(label(age, {'cluster': cluster, 'group': f'{namespace} / {resource} / {group}'}))
     states, ages, evaluations = select(states), select(ages), select(evaluations)

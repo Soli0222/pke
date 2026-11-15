@@ -11,8 +11,8 @@ upstreamGroups:
     cluster: natsume
     resource: spotify-nowplaying
     group: spotify-nowplaying
-  - source: flux/clusters/natsume/apps/loki/helmrelease-loki.yaml
+  - source: flux/clusters/meruto/apps/loki/helmrelease-loki.yaml
     enabledPath: monitoring.rules.enabled
-    cluster: natsume
+    cluster: meruto
     resource: loki-loki-rules
     group: loki_rules

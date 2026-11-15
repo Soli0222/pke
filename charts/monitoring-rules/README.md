@@ -63,7 +63,7 @@ recording group 自体の欠落や評価失敗は Pipeline のルール同期・
 | absenceWindow | string | `"5m"` |  |
 | additionalAnnotations | object | `{}` |  |
 | containerlessHosts | list | `[]` | 生成された、コンテナを動かさないホスト名。Falco の container plugin の監視から外す |
-| dashboardBaseURL | string | `"https://grafana.str08.net"` |  |
+| dashboardBaseURL | string | `"https://grafana.pstr.space"` |  |
 | databases | list | `[]` |  |
 | exclusions.filesystems | string | `"tmpfs|devtmpfs|overlay|squashfs|nsfs|tracefs|proc|sysfs"` |  |
 | exclusions.fluxResources | string | `"^$"` |  |
