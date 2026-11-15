@@ -45,16 +45,3 @@ spec:
         kubernetes.io/hostname: natsume-08
     serviceMonitor:
       enabled: true
-    ingress:
-      enabled: true
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
-        traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
-      faroPort: 12345
-      ingressClassName: traefik
-      hosts:
-      - alloy.str08.net
-      tls:
-      - hosts:
-        - alloy.str08.net
-        secretName: alloy.str08.net-dns01
