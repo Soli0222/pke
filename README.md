@@ -166,8 +166,7 @@ lune-02 のアドレスを変えるときは、lune-02 の host_vars、`lune` po
 
 LAN だけに公開する Ingress は、IngressClass `traefik-local` の [Traefik](flux/clusters/meruto/apps/traefik-local/) が受けます。
 `lan` pool の `192.168.50.201` に固定し、NodePort は作りません（`allocateLoadBalancerNodePorts: false`）。
-ホスト名は `*.home.str08.net` の下に置きます。同じファイルの DNSEndpoint で `*.home.str08.net` の A を `192.168.50.201` にしているため、LAN の端末は公開 DNS で名前を引けます。
-external-dns は `ingress-class: traefik` の Ingress だけからレコードを作るため、`traefik-local` の Ingress はレコードを増やしません。
+ホスト名は `*.home.str08.net` の下に置きます。external-dns は `traefik-local` の Ingress にも、status のアドレス（`192.168.50.201`）で A を登録します。LAN の端末は公開 DNS で名前を引けます。
 証明書は cert-manager の `letsencrypt-dns01` で発行します。
 
 lune-02 にもホストの Alloy と Falco を入れ、`cluster: meruto` として監視します。

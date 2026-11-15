@@ -28,8 +28,11 @@ spec:
         secretKeyRef:
           name: cloudflare-api-token
           key: apiToken
+    # traefik は lune-02 の v4 / v6、traefik-local は LAN の 192.168.50.201 を Ingress の status に書く。
     extraArgs:
-      ingress-class: traefik
+      ingress-class:
+      - traefik
+      - traefik-local
     managedRecordTypes:
     - A
     - AAAA
