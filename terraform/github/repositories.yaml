@@ -113,6 +113,11 @@ repositories:
           field: DOCKER_HUB_USERNAME
     secret_sets:
     - renovate
+  navidrome-curator:
+    state: active
+    description: Copy selected albums from a music archive into a music server library
+    secret_sets:
+    - renovate
   note-tweet-connector:
     state: active
     actions_secrets:
