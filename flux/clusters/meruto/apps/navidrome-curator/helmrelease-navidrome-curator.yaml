@@ -46,14 +46,10 @@ spec:
         path: /library/soli
       # Navidrome のどのライブラリの外にも置く。Navidrome はドットのディレクトリも読まない。
       workDir: /library/.curator
+      # LAN 内だけに公開するため認証しない。chart の既定の basic は消す。
       auth:
-        mode: basic
-        basic:
-          username: soli
-          passwordFile: /etc/navidrome-curator/auth/password
-    auth:
-      existingSecret: navidrome-curator-auth
-      passwordKey: password
+        mode: none
+        basic: null
     persistence:
       sources:
       - name: music
