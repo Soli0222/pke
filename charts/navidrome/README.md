@@ -193,6 +193,7 @@ A Helm chart for Navidrome - A modern Music Server and Streamer
 | serviceAccount.annotations | object | `{}` |  |
 | serviceAccount.create | bool | `false` |  |
 | serviceAccount.name | string | `""` |  |
+| strategy | object | `{}` | Deployment strategy. Use Recreate so that two pods never open the SQLite database at once. |
 | serviceMonitor.annotations | object | `{}` |  |
 | serviceMonitor.enabled | bool | `false` |  |
 | serviceMonitor.interval | string | `"30s"` |  |
