@@ -15,6 +15,7 @@ resources:
 - kustomizations/csi-driver-smb.yaml
 - kustomizations/navidrome-storage.yaml
 - kustomizations/navidrome-curator.yaml
+- kustomizations/navidrome.yaml
 - kustomizations/metallb.yaml
 - kustomizations/metallb-config.yaml
 - kustomizations/mf-account-reloader-auth.yaml

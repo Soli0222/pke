@@ -29,6 +29,9 @@ spec:
     - name: spotify-nowplaying
       targets:
       - https://spn.soli0222.com/status
+    - name: navidrome
+      targets:
+      - https://navidrome.pstr.space/ping
     prometheusRule:
       probeMetricsAbsent:
         annotations:
