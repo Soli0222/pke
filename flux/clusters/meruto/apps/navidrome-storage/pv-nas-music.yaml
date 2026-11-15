@@ -1,9 +1,10 @@
-# NAS の音楽（share/Music、share/Taichi）を読み取り専用でマウントする。
-# 選別アプリがここから選んだアルバムを navidrome-music にコピーする。Navidrome は直接読まない。
+# NAS の共有 share には音楽以外のファイルもあるため、音楽のディレクトリだけを source ごとに
+# 読み取り専用でマウントする。選別アプリがここから選んだアルバムを navidrome-music にコピーする。
+# Navidrome は直接読まない。
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: navidrome-nas-music
+  name: navidrome-nas-share-music
 spec:
   capacity:
     storage: 1Ti
@@ -13,7 +14,7 @@ spec:
   storageClassName: ""
   claimRef:
     namespace: navidrome
-    name: nas-music
+    name: nas-share-music
   mountOptions:
   - ro
   - uid=1000
@@ -24,9 +25,9 @@ spec:
     driver: smb.csi.k8s.io
     readOnly: true
     # クラスタ内で一意であればよい。
-    volumeHandle: 192.168.40.2/share#navidrome-nas-music
+    volumeHandle: 192.168.40.2/share/Music#navidrome-nas-share-music
     volumeAttributes:
-      source: //192.168.40.2/share
+      source: //192.168.40.2/share/Music
     nodeStageSecretRef:
       name: navidrome-nas-smb
       namespace: navidrome
@@ -34,13 +35,57 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nas-music
+  name: nas-share-music
   namespace: navidrome
 spec:
   accessModes:
   - ReadOnlyMany
   storageClassName: ""
-  volumeName: navidrome-nas-music
+  volumeName: navidrome-nas-share-music
+  resources:
+    requests:
+      storage: 1Ti
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: navidrome-nas-taichi-music
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+  - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: navidrome
+    name: nas-taichi-music
+  mountOptions:
+  - ro
+  - uid=1000
+  - gid=1000
+  - dir_mode=0555
+  - file_mode=0444
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: true
+    volumeHandle: 192.168.40.2/share/Taichi/Music#navidrome-nas-taichi-music
+    volumeAttributes:
+      source: //192.168.40.2/share/Taichi/Music
+    nodeStageSecretRef:
+      name: navidrome-nas-smb
+      namespace: navidrome
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nas-taichi-music
+  namespace: navidrome
+spec:
+  accessModes:
+  - ReadOnlyMany
+  storageClassName: ""
+  volumeName: navidrome-nas-taichi-music
   resources:
     requests:
       storage: 1Ti
