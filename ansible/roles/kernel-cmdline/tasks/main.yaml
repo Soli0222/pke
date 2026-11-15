@@ -1,0 +1,33 @@
+---
+- name: Configure extra kernel command line parameters for GRUB
+  ansible.builtin.template:
+    src: kernel-cmdline.cfg.j2
+    dest: "{{ kernel_cmdline_grub_dropin }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: kernel_cmdline_extra | length > 0
+  notify: Update GRUB configuration
+
+- name: Remove the GRUB drop-in when no extra parameters are set
+  ansible.builtin.file:
+    path: "{{ kernel_cmdline_grub_dropin }}"
+    state: absent
+  when: kernel_cmdline_extra | length == 0
+  notify: Update GRUB configuration
+
+- name: Read the running kernel command line
+  ansible.builtin.slurp:
+    src: /proc/cmdline
+  register: kernel_cmdline_running
+
+# 再起動はクラスタの停止を伴うため、この role では行わない。
+- name: Report parameters that need a reboot to take effect
+  ansible.builtin.debug:
+    msg: >-
+      再起動するまで反映されない引数: {{ kernel_cmdline_pending | join(' ') }}
+  vars:
+    kernel_cmdline_pending: >-
+      {{ kernel_cmdline_extra
+         | difference((kernel_cmdline_running.content | b64decode).split()) }}
+  when: kernel_cmdline_pending | length > 0

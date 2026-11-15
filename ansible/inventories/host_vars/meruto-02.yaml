@@ -22,6 +22,12 @@ ssh_agent_sudo_users:
     sudo_authorized_keys: true
     lock_password: true
 
+# 起動直後の clocksource watchdog が TSC を不安定と誤判定し、HPET に切り替える。
+# HPET は vDSO で読めず、時刻の取得がシステムコールになる。TSC は invariant で、
+# CPU 間の同期チェックも通るため、watchdog だけを止めて TSC を使う。
+kernel_cmdline_extra:
+  - tsc=nowatchdog
+
 # group_vars の既定に加えて次を無効にする。
 # - local-storage: 既定の StorageClass は Flux の TopoLVM にする
 # - gateway-api-crd: Gateway API の CRD は Flux の Traefik が管理する

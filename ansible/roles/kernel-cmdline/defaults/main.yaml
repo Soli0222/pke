@@ -1,0 +1,6 @@
+---
+# GRUB でカーネルに追加する引数。空なら drop-in を置かない。
+# 反映には再起動が必要で、この role は再起動しない。
+kernel_cmdline_extra: []
+
+kernel_cmdline_grub_dropin: /etc/default/grub.d/90-pke-kernel-cmdline.cfg
