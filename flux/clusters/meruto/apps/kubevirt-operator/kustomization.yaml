@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# upstream は Helm chart を配布しないため、Release の manifest を直接参照する。
+# version は Renovate（renovate.json5 の customManagers）が追跡する。
+resources:
+- https://github.com/kubevirt/kubevirt/releases/download/v1.9.1/kubevirt-operator.yaml
+# CRD か Namespace が消えると、KubeVirt の CR と配下の VM・ディスクもまとめて消える。
+# manifest から外れたり Kustomization を消したりしても、Flux に prune させない。
+patches:
+- target:
+    kind: (CustomResourceDefinition|Namespace)
+  patch: |
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: unused
+      annotations:
+        kustomize.toolkit.fluxcd.io/prune: disabled

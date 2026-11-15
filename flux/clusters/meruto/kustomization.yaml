@@ -18,6 +18,10 @@ resources:
 - kustomizations/navidrome.yaml
 - kustomizations/metallb.yaml
 - kustomizations/metallb-config.yaml
+- kustomizations/kubevirt-operator.yaml
+- kustomizations/kubevirt.yaml
+- kustomizations/cdi-operator.yaml
+- kustomizations/cdi.yaml
 - kustomizations/mf-account-reloader-auth.yaml
 - kustomizations/mf-account-reloader.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml

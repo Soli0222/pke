@@ -169,6 +169,16 @@ LAN だけに公開する Ingress は、IngressClass `traefik-local` の [Traefi
 ホスト名は `*.home.str08.net` の下に置きます。external-dns は `traefik-local` の Ingress にも、status のアドレス（`192.168.50.201`）で A を登録します。LAN の端末は公開 DNS で名前を引けます。
 証明書は cert-manager の `letsencrypt-dns01` で発行します。
 
+### meruto の KubeVirt
+
+meruto は [KubeVirt](flux/clusters/meruto/apps/kubevirt/) で VM を動かし、[CDI](flux/clusters/meruto/apps/cdi/) で VM のディスクを PVC に取り込みます。
+どちらも upstream が Helm chart を配布しないため、`kubevirt-operator` / `cdi-operator` の Kustomization が GitHub Release の operator manifest を URL で参照します。version は Renovate の `custom.regex` が URL の tag で追跡します。
+operator を入れる Kustomization と CR の Kustomization を分け、CR 側は `dependsOn` で operator を待ちます。CR は Ready condition を持たないため、`healthCheckExprs` で `status.phase` と `Available` condition を確認します。
+
+CRD か Namespace が消えると CR と配下の VM・ディスクが消えるため、両 operator の CRD と Namespace には `kustomize.toolkit.fluxcd.io/prune: disabled` を付けます。CR は `uninstallStrategy: BlockUninstallIfWorkloadsExist` で、VM や DataVolume が残っている間の削除を拒否します。
+ノードが1台で live migration ができないため、`workloadUpdateMethods` は空にします。KubeVirt を更新しても動いている VM は止まらず、次に再起動したときに新しい virt-launcher で起動します。
+VM のディスクは既定の StorageClass の `topolvm`（WaitForFirstConsumer）に置き、CDI は `HonorWaitForFirstConsumer` で import 先の PVC を VM と同じノードに作ります。
+
 lune-02 にもホストの Alloy と Falco を入れ、`cluster: meruto` として監視します。
 HAProxy の指標（組み込みの exporter、`127.0.0.1:8405`）と、WireGuard の handshake と転送量（`pke-wireguard-metrics.timer` が textfile に書き出す。meruto-02 も同じ）を収集し、`pke.edge` のルールで評価します。
 lune-02 はコンテナを動かさないため、Falco の K3s 用の再起動 unit（`falco_cri_socket_restart_enabled: false`）と、container plugin の監視（`containerlessHosts`）から外します。
