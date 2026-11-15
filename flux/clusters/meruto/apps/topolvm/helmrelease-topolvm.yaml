@@ -47,3 +47,13 @@ spec:
         allowVolumeExpansion: true
         additionalParameters:
           topolvm.io/device-class: topolvm
+    # PVC を消しても LV を残す。Navidrome の DB と音楽など、作り直しに手間がかかるデータに使う。
+    - name: topolvm-retain
+      storageClass:
+        fsType: ext4
+        reclaimPolicy: Retain
+        isDefaultClass: false
+        volumeBindingMode: WaitForFirstConsumer
+        allowVolumeExpansion: true
+        additionalParameters:
+          topolvm.io/device-class: topolvm

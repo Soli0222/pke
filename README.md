@@ -121,7 +121,7 @@ meruto-02 の IPv6 のノード IP は LAN ではなく WireGuard の ULA（`fd0
 
 meruto-02 は public interface を持たず、LAN（`192.168.50.0/24`）に IPv4 / IPv6 のデフォルトルートを置きません。
 外への通信は IPv4 / IPv6 とも WireGuard（`wg0`）から lune-02 を通ります。wg0 が落ちると外への経路がなくなり、LAN から直接は出ません。
-LAN の経路は、接続済みのサブネット（DNS の `192.168.50.1` を含む）、lune-02 の endpoint への host route、作業端末のセグメント（`192.168.20.0/24`）だけです。
+LAN の経路は、接続済みのサブネット（DNS の `192.168.50.1` を含む）、lune-02 の endpoint への host route、自宅の他のセグメント（`192.168.0.0/16`。作業端末の `192.168.20.0/24` と NAS の `192.168.40.2` を含む）だけです。
 Service の CIDR（`10.2.0.0/16`）は、送信元を `192.168.50.2` にして LAN 側で引かせます。
 wg0 側の経路を引くと、ノード自身（hostNetwork の Pod を含む）から ClusterIP への接続の送信元が `10.99.0.2` になります。
 転送先がノード自身の Service（`kubernetes` → `192.168.50.2:6443`）だと、NAT を戻した応答（送信元 ClusterIP → 宛先 `10.99.0.2`）が `lo` から入り直し、wg-quick のなりすまし防止のルール（`iifname != "wg0" ip daddr 10.99.0.2 fib saddr type != local drop`）で捨てられます。
