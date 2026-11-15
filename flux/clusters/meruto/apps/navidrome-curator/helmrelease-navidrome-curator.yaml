@@ -1,0 +1,87 @@
+# NAS から選んだアルバムを navidrome-music にコピーする。
+# library の名前とディレクトリは Navidrome のライブラリ（/music/<name>）と同じにする。
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: navidrome-curator
+  namespace: navidrome
+spec:
+  interval: 10m
+  releaseName: navidrome-curator
+  targetNamespace: navidrome
+  install:
+    createNamespace: false
+  chart:
+    spec:
+      chart: navidrome-curator
+      version: 0.1.0
+      sourceRef:
+        kind: HelmRepository
+        name: navidrome-curator-repo
+        namespace: navidrome
+      interval: 1h
+  values:
+    config:
+      sources:
+      # //192.168.40.2/share/Music
+      - name: music
+        path: /source/music
+        defaultLibraries: [share]
+        allowedLibraries: [share, Hajime, soli]
+      # //192.168.40.2/share/Taichi/Music
+      - name: taichi
+        path: /source/taichi
+        defaultLibraries: [Taichi]
+        allowedLibraries: [Taichi]
+      libraryRoot: /library
+      # soli は Navidrome の musicFolder（ライブラリ ID 1）。ディレクトリを作らせるためにも定義する。
+      libraries:
+      - name: share
+        path: /library/share
+      - name: Taichi
+        path: /library/Taichi
+      - name: Hajime
+        path: /library/Hajime
+      - name: soli
+        path: /library/soli
+      # Navidrome のどのライブラリの外にも置く。Navidrome はドットのディレクトリも読まない。
+      workDir: /library/.curator
+      auth:
+        mode: basic
+        basic:
+          username: soli
+          passwordFile: /etc/navidrome-curator/auth/password
+    auth:
+      existingSecret: navidrome-curator-auth
+      passwordKey: password
+    persistence:
+      sources:
+      - name: music
+        existingClaim: nas-share-music
+      - name: taichi
+        existingClaim: nas-taichi-music
+      library:
+        existingClaim: navidrome-music
+    # LAN 内だけで使う。traefik-local が受ける。
+    ingress:
+      enabled: true
+      className: traefik-local
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-dns01
+      hosts:
+      - host: navidrome-curator.home.str08.net
+        paths:
+        - path: /
+          pathType: Prefix
+      tls:
+      - secretName: navidrome-curator-tls
+        hosts:
+        - navidrome-curator.home.str08.net
+    serviceMonitor:
+      enabled: true
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        memory: 1Gi

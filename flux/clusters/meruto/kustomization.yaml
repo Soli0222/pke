@@ -14,6 +14,7 @@ resources:
 - kustomizations/topolvm.yaml
 - kustomizations/csi-driver-smb.yaml
 - kustomizations/navidrome-storage.yaml
+- kustomizations/navidrome-curator.yaml
 - kustomizations/metallb.yaml
 - kustomizations/metallb-config.yaml
 - kustomizations/mf-account-reloader-auth.yaml
