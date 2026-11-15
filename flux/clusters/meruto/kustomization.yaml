@@ -9,6 +9,10 @@ resources:
 - kustomizations/cert-manager-config.yaml
 - kustomizations/cnpg.yaml
 - kustomizations/cnpg-backup-config.yaml
+- kustomizations/mimir.yaml
+- kustomizations/loki.yaml
+- kustomizations/tempo.yaml
+- kustomizations/grafana.yaml
 - kustomizations/external-dns.yaml
 - kustomizations/external-dns-config.yaml
 - kustomizations/kube-state-metrics.yaml
