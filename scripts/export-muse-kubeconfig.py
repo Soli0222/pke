@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""適用済みの muse-observer の期限なしトークンを専用 kubeconfig に保存する。
+"""適用済みの muse-operator の期限なしトークンを専用 kubeconfig に保存する。
 
 Python 3.9 以降と kubectl が必要。秘密値と kubectl の応答本文は表示しない。
 """
@@ -14,8 +14,8 @@ from urllib.parse import urlsplit
 
 
 NAMESPACE = 'muse-system'
-ACCOUNT = 'muse-observer'
-TOKEN_SECRET = 'muse-observer-token'
+ACCOUNT = 'muse-operator'
+TOKEN_SECRET = 'muse-operator-token'
 REPOSITORY = Path(__file__).resolve().parent.parent
 
 
@@ -51,7 +51,7 @@ def make_config(cluster_name, source_cluster, secret, account, server=None, tls_
     payload = token.split('.')[1]
     claims = json.loads(base64.urlsafe_b64decode(payload + '=' * (-len(payload) % 4)))
     if 'exp' in claims or claims.get('sub') != f'system:serviceaccount:{NAMESPACE}:{ACCOUNT}':
-        raise ValueError('muse-observer の期限なしトークンではありません')
+        raise ValueError('muse-operator の期限なしトークンではありません')
     cluster = {'server': endpoint, 'certificate-authority-data': ca}
     tls_name = tls_name or source_cluster.get('tls-server-name')
     if tls_name:
