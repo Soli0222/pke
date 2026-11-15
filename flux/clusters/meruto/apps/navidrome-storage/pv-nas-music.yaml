@@ -1,0 +1,46 @@
+# NAS の音楽（share/Music、share/Taichi）を読み取り専用でマウントする。
+# 選別アプリがここから選んだアルバムを navidrome-music にコピーする。Navidrome は直接読まない。
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: navidrome-nas-music
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+  - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: navidrome
+    name: nas-music
+  mountOptions:
+  - ro
+  - uid=1000
+  - gid=1000
+  - dir_mode=0555
+  - file_mode=0444
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: true
+    # クラスタ内で一意であればよい。
+    volumeHandle: 192.168.40.2/share#navidrome-nas-music
+    volumeAttributes:
+      source: //192.168.40.2/share
+    nodeStageSecretRef:
+      name: navidrome-nas-smb
+      namespace: navidrome
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nas-music
+  namespace: navidrome
+spec:
+  accessModes:
+  - ReadOnlyMany
+  storageClassName: ""
+  volumeName: navidrome-nas-music
+  resources:
+    requests:
+      storage: 1Ti

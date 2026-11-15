@@ -82,8 +82,9 @@ network_netplan:
       # lune-02 の WireGuard endpoint。暗号化した通信だけが LAN から出る。
       - to: 133.18.187.207/32
         via: 192.168.50.1
-      # 作業端末のセグメント。SSH と kubectl の戻りを wg0 に流さない。
-      - to: 192.168.20.0/24
+      # 自宅の他のセグメント（作業端末の 192.168.20.0/24、NAS の 192.168.40.2 など）。
+      # SSH と kubectl の戻り、NAS への SMB を wg0 に流さない。
+      - to: 192.168.0.0/16
         via: 192.168.50.1
       # K3s の Service の CIDR（IPv4）。ノード自身（hostNetwork の Pod を含む）から ClusterIP に
       # 繋ぐとき wg0 側の経路を引くと送信元が 10.99.0.2 になる。転送先がノード自身の Service

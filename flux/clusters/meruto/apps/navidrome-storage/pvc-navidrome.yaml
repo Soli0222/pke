@@ -1,0 +1,27 @@
+# Navidrome の音楽と DB。chart には作らせず、HelmRelease を消しても残るようにする。
+# TopoLVM は WaitForFirstConsumer のため、使う Pod ができるまで Pending になる。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: navidrome-music
+  namespace: navidrome
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: topolvm-retain
+  resources:
+    requests:
+      storage: 400Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: navidrome-data
+  namespace: navidrome
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: topolvm-retain
+  resources:
+    requests:
+      storage: 10Gi
