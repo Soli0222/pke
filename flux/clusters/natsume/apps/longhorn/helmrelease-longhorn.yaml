@@ -55,14 +55,3 @@ spec:
     metrics:
       serviceMonitor:
         enabled: true
-    ingress:
-      enabled: true
-      ingressClassName: traefik
-      host: longhorn.str08.net
-      tls: true
-      tlsSecret: longhorn.str08.net-dns01
-      path: /
-      pathType: Prefix
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
-        traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
