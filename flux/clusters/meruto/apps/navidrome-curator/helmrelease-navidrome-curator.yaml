@@ -27,14 +27,13 @@ spec:
       - name: music
         path: /source/music
         defaultLibraries: [share]
-        allowedLibraries: [share, Hajime, soli]
+        allowedLibraries: [share, Hajime]
       # //192.168.40.2/share/Taichi/Music
       - name: taichi
         path: /source/taichi
         defaultLibraries: [Taichi]
         allowedLibraries: [Taichi]
       libraryRoot: /library
-      # soli は Navidrome の musicFolder（ライブラリ ID 1）。ディレクトリを作らせるためにも定義する。
       libraries:
       - name: share
         path: /library/share
@@ -42,9 +41,7 @@ spec:
         path: /library/Taichi
       - name: Hajime
         path: /library/Hajime
-      - name: soli
-        path: /library/soli
-      # Navidrome のどのライブラリの外にも置く。Navidrome はドットのディレクトリも読まない。
+      # Navidrome はドットのディレクトリを読まない。
       workDir: /library/.curator
       # LAN 内だけに公開するため認証しない。chart の既定の basic は消す。
       auth:

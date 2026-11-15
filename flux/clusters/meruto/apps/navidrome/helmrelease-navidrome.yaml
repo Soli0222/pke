@@ -1,0 +1,84 @@
+# NAS から navidrome-curator が選んでコピーしたアルバムだけを配信する。
+# navidrome-music の配下は share / Taichi / Hajime の各ライブラリと、curator の .curator。
+# ライブラリ 1 は musicFolder（/music）で、ライブラリ 2 以降（/music/<name>）を含む。旧構成と同じ。
+# ライブラリ 2 以降のパスは DB（navidrome-data）が持つ。
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: navidrome
+  namespace: navidrome
+spec:
+  interval: 10m
+  releaseName: navidrome
+  targetNamespace: navidrome
+  install:
+    createNamespace: false
+  chart:
+    spec:
+      chart: ./charts/navidrome
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 1h
+  values:
+    replicaCount: 1
+    # SQLite の DB を2つの Pod が同時に開かないようにする。
+    strategy:
+      type: Recreate
+    # navidrome-data と navidrome-curator が書くファイルは uid / gid 1000。
+    podSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+      fsGroup: 1000
+      fsGroupChangePolicy: OnRootMismatch
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    persistence:
+      data:
+        existingClaim: navidrome-data
+      music:
+        existingClaim: navidrome-music
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        memory: 2Gi
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-dns01
+      blockedPaths:
+      - path: /metrics
+        pathType: Prefix
+      hosts:
+      - host: navidrome.pstr.space
+        paths:
+        - path: /
+          pathType: ImplementationSpecific
+      tls:
+      - secretName: navidrome-tls
+        hosts:
+        - navidrome.pstr.space
+    serviceMonitor:
+      enabled: true
+    config:
+      musicFolder: /music
+      enableInsightsCollector: false
+      scanner:
+        # curator のコピーは watcher で取り込む。取りこぼしは 1 時間ごとのスキャンで拾う。
+        schedule: "@every 1h"
+        watcherWait: 5s
+        ignoreDotFolders: true
+        # curator から消したアルバムの再生記録を残し、同じパスに戻したときに引き継ぐ。
+        purgeMissing: never
+      deezer:
+        language: ja

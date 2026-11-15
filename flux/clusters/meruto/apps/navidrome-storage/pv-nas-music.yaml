@@ -21,6 +21,9 @@ spec:
   - gid=1000
   - dir_mode=0555
   - file_mode=0444
+  # NAS 側でフォルダのファイル ID が変わると、serverino ではルートが ESTALE のままになり、
+  # Pod を作り直すまで読めない。inode 番号は使わないので、サーバーの ID と照合しない。
+  - noserverino
   csi:
     driver: smb.csi.k8s.io
     readOnly: true
@@ -66,6 +69,9 @@ spec:
   - gid=1000
   - dir_mode=0555
   - file_mode=0444
+  # NAS 側でフォルダのファイル ID が変わると、serverino ではルートが ESTALE のままになり、
+  # Pod を作り直すまで読めない。inode 番号は使わないので、サーバーの ID と照合しない。
+  - noserverino
   csi:
     driver: smb.csi.k8s.io
     readOnly: true

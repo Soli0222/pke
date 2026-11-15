@@ -40,6 +40,9 @@ securityContext: {}
 
 # Deployment configuration
 replicaCount: 1
+# -- Deployment strategy. Use Recreate so that two pods never open the SQLite database at once.
+strategy: {}
+  # type: Recreate
 
 # Service configuration
 service:
