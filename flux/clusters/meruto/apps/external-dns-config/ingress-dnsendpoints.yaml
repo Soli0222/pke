@@ -16,3 +16,18 @@ spec:
     recordType: AAAA
     targets:
     - 2406:8c00:0:3476:133:18:187:207
+---
+# LAN だけに公開する Ingress（IngressClass traefik-local）のホスト名。
+# LAN の端末から引けるよう、公開 DNS に traefik-local の LAN のアドレスを登録する。
+# external-dns は ingress-class: traefik だけを見るため、traefik-local の Ingress からはレコードを作らない。
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: meruto-lan-ingress-records
+  namespace: external-dns
+spec:
+  endpoints:
+  - dnsName: "*.home.str08.net"
+    recordType: A
+    targets:
+    - 192.168.50.201

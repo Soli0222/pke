@@ -164,6 +164,12 @@ Traefik は `lune` pool の dual-stack の LoadBalancer で、status は lune-02
 [DNSEndpoint](flux/clusters/meruto/apps/external-dns-config/ingress-dnsendpoints.yaml) は natsume と同じく、入口の名前 `meruto.pstr.space` を登録します。
 lune-02 のアドレスを変えるときは、lune-02 の host_vars、`lune` pool、この DNSEndpoint をそろえます。
 
+LAN だけに公開する Ingress は、IngressClass `traefik-local` の [Traefik](flux/clusters/meruto/apps/traefik-local/) が受けます。
+`lan` pool の `192.168.50.201` に固定し、NodePort は作りません（`allocateLoadBalancerNodePorts: false`）。
+ホスト名は `*.home.str08.net` の下に置きます。同じファイルの DNSEndpoint で `*.home.str08.net` の A を `192.168.50.201` にしているため、LAN の端末は公開 DNS で名前を引けます。
+external-dns は `ingress-class: traefik` の Ingress だけからレコードを作るため、`traefik-local` の Ingress はレコードを増やしません。
+証明書は cert-manager の `letsencrypt-dns01` で発行します。
+
 lune-02 にもホストの Alloy と Falco を入れ、`cluster: meruto` として監視します。
 HAProxy の指標（組み込みの exporter、`127.0.0.1:8405`）と、WireGuard の handshake と転送量（`pke-wireguard-metrics.timer` が textfile に書き出す。meruto-02 も同じ）を収集し、`pke.edge` のルールで評価します。
 lune-02 はコンテナを動かさないため、Falco の K3s 用の再起動 unit（`falco_cri_socket_restart_enabled: false`）と、container plugin の監視（`containerlessHosts`）から外します。

@@ -20,6 +20,7 @@ resources:
 - kustomizations/mf-account-reloader.yaml
 - kustomizations/prometheus-blackbox-exporter.yaml
 - kustomizations/traefik.yaml
+- kustomizations/traefik-local.yaml
 - kustomizations/flux-monitoring.yaml
 - kustomizations/coredns-monitoring.yaml
 - kustomizations/monitoring-rules.yaml
