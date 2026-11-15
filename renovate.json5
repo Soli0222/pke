@@ -105,6 +105,12 @@
       automerge: false,
     },
     {
+      matchManagers: ['custom.regex'],
+      matchDepNames: ['kubevirt/kubevirt', 'kubevirt/containerized-data-importer'],
+      commitMessageTopic: 'Flux {{depName}}',
+      addLabels: ['manager:flux'],
+    },
+    {
       matchManagers: [
         'terraform',
       ],
@@ -224,6 +230,17 @@
       datasourceTemplate: 'github-releases',
       versioningTemplate: 'semver',
       extractVersionTemplate: '^(?<version>\\d+\\.\\d+\\.\\d+)-alpine-18$',
+    },
+    // KubeVirt と CDI は Helm chart を配布しないため、Kustomization から
+    // GitHub Release の manifest を URL で参照している。その URL の tag を追跡する。
+    {
+      customType: 'regex',
+      managerFilePatterns: ['/^flux/clusters/.+/apps/.+/kustomization\\.yaml$/'],
+      matchStrings: [
+        'https://github\\.com/(?<depName>kubevirt/(?:kubevirt|containerized-data-importer))/releases/download/(?<currentValue>v\\d+\\.\\d+\\.\\d+)/',
+      ],
+      datasourceTemplate: 'github-releases',
+      versioningTemplate: 'semver',
     },
     // charts/*/values.yaml の `repository:` + `tag:` の組。helm-values だけでは
     // 拾えない書き方を補う。helm-charts から移植。

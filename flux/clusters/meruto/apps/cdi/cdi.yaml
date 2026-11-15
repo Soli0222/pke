@@ -1,0 +1,19 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: CDI
+metadata:
+  name: cdi
+spec:
+  # DataVolume が残っている間は CDI の削除を拒否する。
+  uninstallStrategy: BlockUninstallIfWorkloadsExist
+  config:
+    # 既定の StorageClass の topolvm は WaitForFirstConsumer のため、
+    # import 先の PVC を VM の Pod と同じノードに作らせる。
+    featureGates:
+    - HonorWaitForFirstConsumer
+  imagePullPolicy: IfNotPresent
+  infra:
+    nodeSelector:
+      kubernetes.io/os: linux
+  workload:
+    nodeSelector:
+      kubernetes.io/os: linux

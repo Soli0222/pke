@@ -1,0 +1,19 @@
+apiVersion: kubevirt.io/v1
+kind: KubeVirt
+metadata:
+  name: kubevirt
+  namespace: kubevirt
+spec:
+  # VM が残っている間は KubeVirt の削除を拒否する。
+  uninstallStrategy: BlockUninstallIfWorkloadsExist
+  certificateRotateStrategy: {}
+  configuration:
+    developerConfiguration:
+      featureGates: []
+  imagePullPolicy: IfNotPresent
+  customizeComponents: {}
+  # meruto はノードが1台で live migration できない。
+  # 空のリストは自動更新をしない設定で、KubeVirt を更新しても動いている VM は止めない。
+  # VM は次に再起動したときに新しい virt-launcher で起動する。
+  workloadUpdateStrategy:
+    workloadUpdateMethods: []
