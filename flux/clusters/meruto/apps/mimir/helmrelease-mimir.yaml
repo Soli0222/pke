@@ -39,6 +39,11 @@ spec:
         blocks_storage:
           s3:
             bucket_name: mimir-blocks
+          # 単一 Pod では、ingester の PVC を失うと直近のデータは R2 のブロックにしかない。
+          # 既定では直近10時間のブロックを store-gateway が読まず、直近12時間を
+          # store-gateway に問い合わせないため、その間のデータが見えなくなる。
+          bucket_store:
+            ignore_blocks_within: 0s
           tsdb:
             dir: /data/tsdb
             head_compaction_interval: 15m
@@ -82,6 +87,10 @@ spec:
             replication_factor: {{ .Values.replicaCount }}
             kvstore:
               store: memberlist
+
+        querier:
+          # 直近の範囲も store-gateway に問い合わせる。ingester と重なる分は重複排除される。
+          query_store_after: 0s
 
         frontend:
           # 単一Podではクエリ分割による待ち行列の急増を避ける。
