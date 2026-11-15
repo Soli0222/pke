@@ -15,7 +15,7 @@ mTLS ingressを変更せず、PR preview画像の自動投稿も無効にする�
 | 設定 | 値 |
 |---|---|
 | Name | `pke-grafana-git-sync`（重複時は接尾辞を追加） |
-| Homepage URL | `https://grafana.str08.net` |
+| Homepage URL | `https://grafana.pstr.space` |
 | Webhook / Active | OFF |
 | Contents | Read and write |
 | Pull requests | Read and write |

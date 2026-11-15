@@ -18,8 +18,8 @@ Ansible でノードを構成し、Helmfile で基盤を導入した後、Flux C
 
 | クラスタ | ノード | 役割 | kubectl context |
 |---|---|---|---|
-| natsume | `natsume-03`、`natsume-08` | 本番アプリ、DB、監視基盤 | `soli.natsume` |
-| meruto | `meruto-02` | 単一ノードのアプリ・外形監視 | `soli.meruto` |
+| natsume | `natsume-03`、`natsume-08` | 外部公開のアプリと DB | `soli.natsume` |
+| meruto | `meruto-02` | 監視基盤などの基盤管理、外形監視、アプリ | `soli.meruto` |
 
 `natsume-03` と `meruto-02` が各クラスタの K3s server と external etcd を持ち、`natsume-08` は K3s agent です。
 各クラスタの etcd は単一 member です。
@@ -32,8 +32,8 @@ K3s クラスタ名は host_vars の `cluster`、Helmfile environment、Flux の
 |---|---|
 | [ansible/](ansible/) | OS、ネットワーク、etcd、K3s、ストレージ、ホストの Alloy・Falco |
 | [helmfile/](helmfile/) | Cilium、1Password Connect / Operator、Flux Operator の導入 |
-| [flux/clusters/natsume/](flux/clusters/natsume/) | natsume のアプリと監視基盤 |
-| [flux/clusters/meruto/](flux/clusters/meruto/) | meruto のアプリと外形監視 |
+| [flux/clusters/natsume/](flux/clusters/natsume/) | natsume のアプリ |
+| [flux/clusters/meruto/](flux/clusters/meruto/) | meruto の監視基盤、外形監視、アプリ |
 | [charts/](charts/) | PKE 内で管理する Helm chart |
 | [terraform/tailscale/](terraform/tailscale/) | Tailscale ACL |
 | [terraform/github/](terraform/github/README.md) | GitHub リポジトリ設定と Actions secrets |

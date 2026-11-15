@@ -33,7 +33,7 @@ def verify(url):
     # evaluation and URL escaping are tested independently below.
     url = re.sub(r"\{\{.*?\}\}", "sample", url)
     parsed = urlsplit(url)
-    if parsed.netloc != "grafana.str08.net" or not parsed.path.startswith("/d/"):
+    if parsed.netloc != "grafana.pstr.space" or not parsed.path.startswith("/d/"):
         return
     uid = parsed.path.split("/")[2]
     assert uid in dashboards, (uid, "unknown dashboard")
@@ -172,14 +172,14 @@ for name, link in links["groups"].items():
             if name == "longhorn":
                 params["volume"] = "$__all"
         url = (
-            "https://grafana.str08.net/d/"
+            "https://grafana.pstr.space/d/"
             + link["uid"]
             + "?"
             + link["query"]
             + "&from=now-6h&to=now"
         )
         want = (
-            "https://grafana.str08.net/d/"
+            "https://grafana.pstr.space/d/"
             + link["uid"]
             + "?"
             + "&".join("var-" + k + "=" + quote_plus(v) for k, v in params.items())

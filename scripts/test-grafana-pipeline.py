@@ -35,14 +35,14 @@ def main():
 
     up = [metric('up', dict(cluster=c, **labels), '1+0x10') for c, _, labels in targets]
     remote = [metric('prometheus_remote_storage_queue_highest_sent_timestamp_seconds', dict(cluster=c, **labels), '0+60x10') for c, _, labels in paths]
-    rule = [metric('cortex_prometheus_rule_group_last_evaluation_timestamp_seconds', {'cluster': 'natsume', 'job': 'mimir', 'rule_group': f'data-ruler/anonymous/{c}%2F{ns}%2F{resource}%2Fuid;{group}'}, '0+60x10') for c, ns, resource, group in groups]
+    rule = [metric('cortex_prometheus_rule_group_last_evaluation_timestamp_seconds', {'cluster': 'meruto', 'job': 'mimir', 'rule_group': f'data-ruler/anonymous/{c}%2F{ns}%2F{resource}%2Fuid;{group}'}, '0+60x10') for c, ns, resource, group in groups]
     healthy = up + remote + rule
     tests = []
 
     def case(name, inputs, checks):
         tests.append({'name': name, 'interval': '1m', 'input_series': inputs, 'promql_expr_test': checks})
 
-    case('healthy groups for BOTH clusters evaluated on natsume', healthy,
+    case('healthy groups for BOTH clusters evaluated on meruto', healthy,
          [check(i, 0, c) for c in hosts for i in [2, 3, 4, 5]] +
          [check(21, sum(g[0] == c for g in groups), c, wrapper='count(({expr}) >= 0)') for c in hosts])
     case('all series absent keeps every expected entity', [],
@@ -71,8 +71,8 @@ def main():
     stalled_rule[len(up) + len(remote) + missing_index]['values'] = '0+0x10'
     case('rule telemetry present but evaluation stopped', stalled_rule, [check(5, 1, 'meruto', time='10m'), check(5, 0, 'natsume', time='10m')])
     case('historical slack traffic and webhook reset are not current sends', [
-        metric('cortex_alertmanager_notifications_total', {'cluster': 'natsume', 'job': 'mimir', 'integration': 'slack'}, '10+100x5'),
-        metric('cortex_alertmanager_notifications_total', {'cluster': 'natsume', 'job': 'mimir', 'integration': 'webhook'}, '100 100 0 0 0 0'),
+        metric('cortex_alertmanager_notifications_total', {'cluster': 'meruto', 'job': 'mimir', 'integration': 'slack'}, '10+100x5'),
+        metric('cortex_alertmanager_notifications_total', {'cluster': 'meruto', 'job': 'mimir', 'integration': 'webhook'}, '100 100 0 0 0 0'),
     ], [check(37, 0, 'natsume'), check(37, 0, 'meruto')])
     case('missing notification counters are not successful zero', [], [check(36, None), check(37, None), check(38, None)])
     payload = yaml.safe_dump({'rule_files': [], 'evaluation_interval': '1m', 'tests': tests})

@@ -1,10 +1,10 @@
 # 監視基盤の運用
 
 
-日常確認は [PKE / Overview](https://grafana.str08.net/d/pke-overview) を入口にし、要確認・未確認の分野から詳細画面へ進む。
-収集・評価・通知経路は [Monitoring Pipeline](https://grafana.str08.net/d/pke-monitoring-pipeline) で確認する。
+日常確認は [PKE / Overview](https://grafana.pstr.space/d/pke-overview) を入口にし、要確認・未確認の分野から詳細画面へ進む。
+収集・評価・通知経路は [Monitoring Pipeline](https://grafana.pstr.space/d/pke-monitoring-pipeline) で確認する。
 ntfyの共通ルール通知はGrafanaの対象パネルとRunbookへのリンクを含む。表示の読み方と制約は [ダッシュボード運用](grafana/README.md#overviewと調査リンク) を参照する。
-両クラスタとホストのメトリクス・ログを、natsume の Mimir / Loki に集約する。
+両クラスタとホストのメトリクス・ログ・トレースを、meruto の Mimir / Loki / Tempo に集約する。Grafana も meruto に置く。
 アラートは Mimir Ruler が評価し、同じ Mimir の Alertmanager から ntfy へ送る。
 本番では合成通知や障害注入を行わず、設定・収集・評価・ラベルを確認する。
 
@@ -28,15 +28,16 @@ flowchart LR
 | Kubernetes の収集・ルール同期 | [natsume Alloy](flux/clusters/natsume/apps/alloy/alloy-config.yaml)、[meruto Alloy](flux/clusters/meruto/apps/alloy/alloy-config.yaml) |
 | ホストの収集 | [install-alloy role](ansible/roles/install-alloy/)、[host_vars](ansible/inventories/host_vars/) |
 | Grafanaダッシュボード | [Git管理・検証・移行手順](grafana/README.md) |
-| Mimir / Ruler / Alertmanager | [Mimir HelmRelease](flux/clusters/natsume/apps/mimir/helmrelease-mimir.yaml) |
+| Mimir / Ruler / Alertmanager | [Mimir HelmRelease](flux/clusters/meruto/apps/mimir/helmrelease-mimir.yaml) |
 | 共通アラート | [monitoring-rules chart](charts/monitoring-rules/README.md)、各クラスタの `apps/monitoring-rules/` |
 | アプリ固有のアラート・収集 | 各アプリの PrometheusRule / ServiceMonitor / PodMonitor / Probe |
-| 通知経路と抑制 | natsume Alloy の `mimir.alerts.kubernetes.global_config` |
+| 通知経路と抑制 | meruto Alloy の `mimir.alerts.kubernetes.global_config` |
 | ntfy の表示・認証・ACL | [ntfy HelmRelease](flux/clusters/natsume/apps/ntfy/helmrelease-ntfy.yaml) |
 
-ホストと meruto は mTLS で `https://mimir.pstr.space/api/v1/push` と `https://loki.pstr.space/loki/api/v1/push` に送信する。
+ホストと natsume は mTLS で `https://mimir.pstr.space/api/v1/push`、`https://loki.pstr.space/loki/api/v1/push`、`https://tempo.pstr.space/v1/traces` に送信する。
+これらは lune-02 を経由して meruto の Traefik で受け、natsume の CA でクライアント証明書を検証する。meruto の Alloy はクラスタ内の Service に送る。
 Mimir は単一 tenant `anonymous` を使い、Ruler の通知先は `http://mimir.mimir:8080/alertmanager`。
-通知先は ntfy のみで、外部 heartbeat 監視はない。natsume / Mimir 全断時の通知はこの構成ではできない。
+通知先は natsume の ntfy のみで、外部 heartbeat 監視はない。meruto・lune-02・自宅回線のいずれかが止まると、評価も通知も止まり、その停止自体は通知されない。natsume の全断は meruto で評価できるが、通知先の ntfy も natsume にあるため届かない。
 
 ## ラベルとルールの管理
 
@@ -56,14 +57,13 @@ DB 単位の検索・集計・join に `cluster` を流用しない。
 Mimir の保存先は `natsume/<namespace>/<resource>/<uid>` または `meruto/<namespace>/<resource>/<uid>`。
 `extra_query_matchers` が入力を自クラスタに限定し、`external_labels` が評価結果にも同じ `cluster` を付ける。
 複数クラスタを横断する式はこの同期対象に入れない。
-meruto が停止しても、同期済みルールは natsume の Ruler で評価され続ける。
+natsume の Alloy は lune-02 経由で meruto の Ruler にルールを同期する。
 
 共通ルールの閾値・待機時間・調査手順は [chart README](charts/monitoring-rules/README.md) を参照する。
 クラスタ別の hosts / units / networkDevices と databases は、Ansible inventory・netplan と CNPG manifest から `python3 scripts/sync-monitoring-inventory.py` で生成する。
 HelmRelease の生成ブロックは直接編集しない。CI の `--check` で生成漏れを検出する。
 欠測や DB の運用ポリシーは期待値の recording metrics と照合し、アラート式に対象名を列挙しない。
 Probe も `applications` から期待値を生成し、結果系列の消失を `ProbeMetricsAbsent` で監視する。
-meruto の CNPG DB グループは無効にする。
 
 ## ntfy の通知と認証
 
@@ -155,7 +155,7 @@ kubectl --context soli.natsume -n ntfy rollout status deployment/ntfy --timeout=
 Mimir に port-forward し、保存ルールと評価状態を確認する。
 
 ```sh
-kubectl --context soli.natsume -n mimir port-forward svc/mimir 18080:8080
+kubectl --context soli.meruto -n mimir port-forward svc/mimir 18080:8080
 ```
 
 別ターミナルで評価状態を取得する。
@@ -230,7 +230,7 @@ URI を捨てるため、non-resource request のパスや exec のコマンド�
 ```
 
 ホスト Alloy は root で生ログを読み、既存の mTLS 経路で Loki に送る。
-Loki の保持期間は [HelmRelease](flux/clusters/natsume/apps/loki/helmrelease-loki.yaml) の14日。監査専用のアクセス分離や長期保管をこの pipeline だけで提供するものではない。
+Loki の保持期間は [HelmRelease](flux/clusters/meruto/apps/loki/helmrelease-loki.yaml) の14日。監査専用のアクセス分離や長期保管をこの pipeline だけで提供するものではない。
 収集位置は Alloy の storage path に保存される。停止中にローテーションされた過去ファイルは自動収集対象外なので、欠測時は保持中の生ログを権限のある管理者が調べる。
 生ログをそのまま Loki に再投入しない。
 
@@ -294,7 +294,7 @@ Operator の `flux_resource_info` は値1と ready / suspended ラベルで状�
 CoreDNSは両クラスタの`apps/coredns-monitoring/`にあるServiceMonitorから、K3s管理の`kube-dns` Serviceのmetricsポートを収集する。
 natsume の replicas と配置は監視設定から分離し、`apps/k3s-workload-placement/` で管理する。
 jobは`coredns`、clusterはAlloyの共通relabelで付ける。K3sのCorefile / Deployment / Serviceは監視用に上書きしない。
-[CoreDNS画面](https://grafana.str08.net/d/wY4blRMGz)は現行の`coredns_proxy_*{proxy_name="forward"}`を使う。DNSSEC DO-bit別の指標は公開されていないため対象外とし、古いDNSSEC専用cache系列も使用しない。
+[CoreDNS画面](https://grafana.pstr.space/d/wY4blRMGz)は現行の`coredns_proxy_*{proxy_name="forward"}`を使う。DNSSEC DO-bit別の指標は公開されていないため対象外とし、古いDNSSEC専用cache系列も使用しない。
 
 remote_write は失敗・再試行 counter の増分、pending、最新送信時刻を合わせて確認する。
 pending は WAL 全体の未送信量ではない。送信経路が止まると自己監視指標も欠測する。
@@ -377,7 +377,7 @@ ansible-playbook -i inventories/hosts.yaml configure-falco.yaml --limit natsume-
 ### 通知から調査する
 
 通知の Grafana リンクは対象ホストの service 状態を開く。
-[Grafana Explore](https://grafana.str08.net/explore) で Loki を選び、通知の cluster・hostname・rule_name を入れる。
+[Grafana Explore](https://grafana.pstr.space/explore) で Loki を選び、通知の cluster・hostname・rule_name を入れる。
 
 ```logql
 {cluster="natsume", hostname="natsume-08", syslog_identifier="falco"}

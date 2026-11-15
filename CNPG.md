@@ -7,22 +7,28 @@ PKE の CloudNativePG（CNPG）は、natsume のアプリ用 PostgreSQL を管�
 
 ## DB の構成
 
-CNPG operator は両クラスタに導入するが、恒久運用の DB の `Cluster` は natsume のみ。
+CNPG operator は両クラスタに導入する。アプリ用の DB は natsume、Grafana の DB は meruto に置く。
 すべて `instances: 1`、StorageClass は `topolvm` で、ノード障害時の自動フェイルオーバー用 replica はない。
-すべての Cluster は `natsume-08` に固定する。Pod の配置先と既存 PV の node affinity を一致させ、nodeSelector の変更だけで DB を移動しない。
+natsume の Cluster はすべて `natsume-08` に固定する。Pod の配置先と既存 PV の node affinity を一致させ、nodeSelector の変更だけで DB を移動しない。
+meruto はノードが1台のため、Cluster に配置先を指定しない。
 Pooler は使わず、アプリは CNPG の Service に直接接続する。
 
 | Namespace | Cluster | DB / Owner | 容量 | バックアップ | 実行時刻（JST） |
 |---|---|---|---|---|---|
 | misskey | `misskey-cluster-restored` | `misskey` | 150Gi | base backup + WAL archive | 毎日 01:30 |
-| grafana | `grafana-cluster-restored` | `grafana` | 10Gi | base backup + WAL archive | 日曜 03:00 |
 | sui | `sui-cluster-restored` | `sui` | 5Gi | base backup + WAL archive | 日曜 03:15 |
 | spotify-reblend | `reblend-cluster-restored` | `reblend` | 5Gi | base backup + WAL archive | 日曜 03:30 |
 | spotify-nowplaying | `spn-cluster-restored` | `spn` | 5Gi | base backup + WAL archive | 日曜 03:45 |
 | ntfy | `ntfy-cluster` | `ntfy` | 5Gi | base backup + WAL archive | 日曜 04:00 |
 | keycloak | `keycloak-cluster` | `keycloak` | 5Gi | base backup + WAL archive | 日曜 04:15 |
 
-定義は [natsume の各アプリ](flux/clusters/natsume/apps/) の `cluster.yaml` にある。
+meruto の DB は次のとおり。
+
+| Namespace | Cluster | DB / Owner | 容量 | バックアップ | 実行時刻（JST） |
+|---|---|---|---|---|---|
+| grafana | `grafana-db` | `grafana` | 10Gi | base backup + WAL archive | 日曜 03:00 |
+
+定義は [natsume の各アプリ](flux/clusters/natsume/apps/) と [meruto の Grafana](flux/clusters/meruto/apps/grafana/) の `cluster.yaml` にある。
 operator / Barman Cloud plugin のバージョンは [cnpg](flux/clusters/natsume/apps/cnpg/)、DB image と PostgreSQL 設定は各 Cluster を参照する。
 Misskey の image には PGroonga が必要で、復元先にも同じ拡張と対応する PostgreSQL major version を用意する。
 Misskey は `pgroonga_wal_resource_manager` を preload し、`pgroonga.enable_wal_resource_manager=on` で PostgreSQL の WAL に PGroonga の更新を記録する。
@@ -109,9 +115,9 @@ WAL archive の成功だけで base backup の成功を判断しない。
 対象に合わせて namespace と Cluster 名を置き換える。
 
 ```sh
-kubectl cnpg backup grafana-cluster-restored --context soli.natsume -n grafana \
+kubectl cnpg backup grafana-db --context soli.meruto -n grafana \
   --method=plugin --plugin-name=barman-cloud.cloudnative-pg.io
-kubectl --context soli.natsume -n grafana get backups -w
+kubectl --context soli.meruto -n grafana get backups -w
 ```
 
 Backup の `status.phase=completed` と R2 への保存を確認する。
@@ -327,7 +333,7 @@ pg_dump は dump 作成時点への復元で、PITR はできない。
      "s3://cnpg-backup/grafana-cluster/<dump-file>" ./restore.dump
    ```
 
-2. [Grafana の Cluster 定義](flux/clusters/natsume/apps/grafana/cluster.yaml)を基に、`metadata.name` を `grafana-recovery` とした空の Cluster を作る。
+2. [Grafana の Cluster 定義](flux/clusters/meruto/apps/grafana/cluster.yaml)を基に、`metadata.name` を `grafana-recovery` とした空の Cluster を作る。
    DB / owner は `grafana` にそろえ、復元元と互換性のある PostgreSQL image を明示する。
    `bootstrap` は `initdb` に替え、DB / owner を指定する。`spec.plugins` と `spec.externalClusters` はコピーせず、元の archive に書き込まない。運用開始時に復元先専用の保存先で設定する。
    配置先の空き容量を確認し、Ready と新しい `grafana-recovery-app` Secret の生成を待つ。
@@ -335,7 +341,7 @@ pg_dump は dump 作成時点への復元で、PITR はできない。
 3. 復元先への port-forward を別ターミナルで維持する。
 
    ```sh
-   kubectl --context soli.natsume -n grafana port-forward \
+   kubectl --context soli.meruto -n grafana port-forward \
      svc/grafana-recovery-rw 15432:5432
    ```
 
@@ -343,9 +349,9 @@ pg_dump は dump 作成時点への復元で、PITR はできない。
    以下は復元先 Secret を環境変数へ読み込み、値を出力せずに使う。
 
    ```sh
-   PGUSER="$(kubectl --context soli.natsume -n grafana get secret grafana-recovery-app -o jsonpath='{.data.username}' | base64 -d)"
-   PGPASSWORD="$(kubectl --context soli.natsume -n grafana get secret grafana-recovery-app -o jsonpath='{.data.password}' | base64 -d)"
-   PGDATABASE="$(kubectl --context soli.natsume -n grafana get secret grafana-recovery-app -o jsonpath='{.data.dbname}' | base64 -d)"
+   PGUSER="$(kubectl --context soli.meruto -n grafana get secret grafana-recovery-app -o jsonpath='{.data.username}' | base64 -d)"
+   PGPASSWORD="$(kubectl --context soli.meruto -n grafana get secret grafana-recovery-app -o jsonpath='{.data.password}' | base64 -d)"
+   PGDATABASE="$(kubectl --context soli.meruto -n grafana get secret grafana-recovery-app -o jsonpath='{.data.dbname}' | base64 -d)"
    export PGUSER PGPASSWORD PGDATABASE
    pg_restore -h 127.0.0.1 -p 15432 --no-owner --no-privileges \
      --exit-on-error -j 4 ./restore.dump

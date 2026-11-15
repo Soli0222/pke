@@ -14,3 +14,6 @@ spec:
     name: flux-system
   dependsOn:
   - name: prometheus-operator-crd
+  - name: loki
+  - name: mimir
+  - name: tempo

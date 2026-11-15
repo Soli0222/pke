@@ -4,7 +4,7 @@ metadata:
   name: tempo
   namespace: tempo
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-http01
+    cert-manager.io/cluster-issuer: letsencrypt-dns01
     traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
 spec:
   ingressClassName: traefik
@@ -12,6 +12,14 @@ spec:
   - host: tempo.pstr.space
     http:
       paths:
+      # natsume の Alloy が OTLP/HTTP でトレースを送る。
+      - path: /v1/traces
+        pathType: Prefix
+        backend:
+          service:
+            name: tempo
+            port:
+              number: 4318
       - path: /
         pathType: Prefix
         backend:
@@ -22,4 +30,4 @@ spec:
   tls:
   - hosts:
     - tempo.pstr.space
-    secretName: tempo.pstr.space-http01
+    secretName: tempo.pstr.space-dns01

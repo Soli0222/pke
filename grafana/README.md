@@ -112,7 +112,7 @@ UIで変更する場合はGit Syncのブランチ経由でPRを作り、同じ�
 
 ## Keycloak
 
-[PKE / Keycloak](https://grafana.str08.net/d/pke-keycloak) は Platform フォルダに置く。
+[PKE / Keycloak](https://grafana.pstr.space/d/pke-keycloak) は Platform フォルダに置く。
 natsume の Keycloak ServiceMonitor が取得する HTTP・JVM・Agroal・ワーカープールのメトリクスと、Loki の認証拒否イベントを表示する。
 HTTP の route ラベルは realm 名を含まないため、master と pke を合算する。HTTP要求数やscrape成功をログイン成功数として扱わない。
 HTTPヒストグラムと認証成功counterは未収集のため、応答時間は平均値、認証失敗の理由はイベントログで確認する。
@@ -175,7 +175,7 @@ ntfyのpublish counterは全用途合算の受付実績で、topic別・アラ�
 
 ## Overviewと調査リンク
 
-[PKE / Overview](https://grafana.str08.net/d/pke-overview) は同期ルートの運用入口で、初期clusterはnatsume、期間は6時間、更新は1分とする。
+[PKE / Overview](https://grafana.pstr.space/d/pke-overview) は同期ルートの運用入口で、初期clusterはnatsume、期間は6時間、更新は1分とする。
 12分野の現在値を「要確認」と「未確認」に分け、詳細画面へclusterと表示期間を引き継ぐ。
 異常状態の件数であり、アラートの閾値・for・除外条件を再現した発火件数ではない。
 

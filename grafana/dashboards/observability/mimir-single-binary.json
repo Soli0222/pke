@@ -86,7 +86,7 @@
         },
         "targets": [
           {
-            "expr": "min(up{cluster=\"natsume\",namespace=\"mimir\", job=\"mimir\"})",
+            "expr": "min(up{cluster=\"meruto\",namespace=\"mimir\", job=\"mimir\"})",
             "instant": true,
             "legendFormat": "up",
             "range": false,
@@ -139,7 +139,7 @@
         },
         "targets": [
           {
-            "expr": "sum(rate(cortex_distributor_received_samples_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_distributor_received_samples_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "instant": true,
             "legendFormat": "samples/sec",
             "range": false,
@@ -192,7 +192,7 @@
         },
         "targets": [
           {
-            "expr": "sum(cortex_ingester_memory_series{cluster=\"natsume\",namespace=\"mimir\"})",
+            "expr": "sum(cortex_ingester_memory_series{cluster=\"meruto\",namespace=\"mimir\"})",
             "instant": true,
             "legendFormat": "series",
             "range": false,
@@ -249,7 +249,7 @@
         },
         "targets": [
           {
-            "expr": "sum(rate(thanos_objstore_bucket_operation_failures_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(thanos_objstore_bucket_operation_failures_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "instant": true,
             "legendFormat": "failures/sec",
             "range": false,
@@ -334,17 +334,17 @@
         },
         "targets": [
           {
-            "expr": "sum(rate(cortex_distributor_received_samples_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_distributor_received_samples_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "distributor received",
             "refId": "A"
           },
           {
-            "expr": "sum(rate(cortex_ingester_ingested_samples_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_ingester_ingested_samples_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "ingester accepted",
             "refId": "B"
           },
           {
-            "expr": "sum(rate(cortex_ingester_ingested_samples_failures_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_ingester_ingested_samples_failures_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "ingester failures",
             "refId": "C"
           }
@@ -427,17 +427,17 @@
         },
         "targets": [
           {
-            "expr": "sum(rate(cortex_distributor_received_requests_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_distributor_received_requests_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "received requests/sec",
             "refId": "A"
           },
           {
-            "expr": "sum(rate(cortex_distributor_instance_rejected_requests_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_distributor_instance_rejected_requests_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "rejected requests/sec",
             "refId": "B"
           },
           {
-            "expr": "sum(cortex_distributor_inflight_push_requests{cluster=\"natsume\",namespace=\"mimir\"})",
+            "expr": "sum(cortex_distributor_inflight_push_requests{cluster=\"meruto\",namespace=\"mimir\"})",
             "legendFormat": "inflight push requests",
             "refId": "C"
           }
@@ -528,17 +528,17 @@
         },
         "targets": [
           {
-            "expr": "histogram_quantile(0.50, sum by (le) (rate(cortex_request_duration_seconds_bucket{cluster=\"natsume\",namespace=\"mimir\"}[5m])))",
+            "expr": "histogram_quantile(0.50, sum by (le) (rate(cortex_request_duration_seconds_bucket{cluster=\"meruto\",namespace=\"mimir\"}[5m])))",
             "legendFormat": "p50 all routes",
             "refId": "A"
           },
           {
-            "expr": "histogram_quantile(0.95, sum by (le) (rate(cortex_request_duration_seconds_bucket{cluster=\"natsume\",namespace=\"mimir\"}[5m])))",
+            "expr": "histogram_quantile(0.95, sum by (le) (rate(cortex_request_duration_seconds_bucket{cluster=\"meruto\",namespace=\"mimir\"}[5m])))",
             "legendFormat": "p95 all routes",
             "refId": "B"
           },
           {
-            "expr": "histogram_quantile(0.99, sum by (le) (rate(cortex_request_duration_seconds_bucket{cluster=\"natsume\",namespace=\"mimir\"}[5m])))",
+            "expr": "histogram_quantile(0.99, sum by (le) (rate(cortex_request_duration_seconds_bucket{cluster=\"meruto\",namespace=\"mimir\"}[5m])))",
             "legendFormat": "p99 all routes",
             "refId": "C"
           }
@@ -621,22 +621,22 @@
         },
         "targets": [
           {
-            "expr": "sum(rate(cortex_request_duration_seconds_count{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_request_duration_seconds_count{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "requests/sec",
             "refId": "A"
           },
           {
-            "expr": "sum(rate(cortex_query_frontend_queries_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_query_frontend_queries_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "frontend queries/sec",
             "refId": "B"
           },
           {
-            "expr": "sum(rate(cortex_query_samples_processed_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_query_samples_processed_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "samples processed/sec",
             "refId": "C"
           },
           {
-            "expr": "sum(cortex_query_frontend_queries_in_progress{cluster=\"natsume\",namespace=\"mimir\"})",
+            "expr": "sum(cortex_query_frontend_queries_in_progress{cluster=\"meruto\",namespace=\"mimir\"})",
             "legendFormat": "queries in progress",
             "refId": "D"
           }
@@ -719,17 +719,17 @@
         },
         "targets": [
           {
-            "expr": "sum(cortex_ingester_memory_series{cluster=\"natsume\",namespace=\"mimir\"})",
+            "expr": "sum(cortex_ingester_memory_series{cluster=\"meruto\",namespace=\"mimir\"})",
             "legendFormat": "memory series",
             "refId": "A"
           },
           {
-            "expr": "sum(cortex_ingester_tsdb_head_chunks{cluster=\"natsume\",namespace=\"mimir\"})",
+            "expr": "sum(cortex_ingester_tsdb_head_chunks{cluster=\"meruto\",namespace=\"mimir\"})",
             "legendFormat": "head chunks",
             "refId": "B"
           },
           {
-            "expr": "sum(cortex_ingester_tsdb_blocks_loaded{cluster=\"natsume\",namespace=\"mimir\"})",
+            "expr": "sum(cortex_ingester_tsdb_blocks_loaded{cluster=\"meruto\",namespace=\"mimir\"})",
             "legendFormat": "blocks loaded",
             "refId": "C"
           }
@@ -812,22 +812,22 @@
         },
         "targets": [
           {
-            "expr": "sum(rate(cortex_ingester_shipper_uploads_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_ingester_shipper_uploads_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "shipper uploads/sec",
             "refId": "A"
           },
           {
-            "expr": "sum(rate(cortex_ingester_shipper_upload_failures_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_ingester_shipper_upload_failures_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "shipper failures/sec",
             "refId": "B"
           },
           {
-            "expr": "sum(rate(cortex_compactor_runs_completed_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_compactor_runs_completed_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "compactor completed/sec",
             "refId": "C"
           },
           {
-            "expr": "sum(rate(cortex_compactor_runs_failed_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum(rate(cortex_compactor_runs_failed_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "compactor failures/sec",
             "refId": "D"
           }
@@ -910,12 +910,12 @@
         },
         "targets": [
           {
-            "expr": "sum by (operation) (rate(thanos_objstore_bucket_operations_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum by (operation) (rate(thanos_objstore_bucket_operations_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "{{operation}} ops/sec",
             "refId": "A"
           },
           {
-            "expr": "sum by (operation) (rate(thanos_objstore_bucket_operation_failures_total{cluster=\"natsume\",namespace=\"mimir\"}[5m]))",
+            "expr": "sum by (operation) (rate(thanos_objstore_bucket_operation_failures_total{cluster=\"meruto\",namespace=\"mimir\"}[5m]))",
             "legendFormat": "{{operation}} failures/sec",
             "refId": "B"
           }
@@ -998,7 +998,7 @@
         },
         "targets": [
           {
-            "expr": "sum by (pod, container) (rate(container_cpu_usage_seconds_total{cluster=\"natsume\",namespace=\"mimir\", container!=\"\", container!=\"POD\"}[5m]))",
+            "expr": "sum by (pod, container) (rate(container_cpu_usage_seconds_total{cluster=\"meruto\",namespace=\"mimir\", container!=\"\", container!=\"POD\"}[5m]))",
             "legendFormat": "{{pod}}/{{container}}",
             "refId": "A"
           }
@@ -1089,7 +1089,7 @@
         },
         "targets": [
           {
-            "expr": "sum by (pod, container) (container_memory_working_set_bytes{cluster=\"natsume\",namespace=\"mimir\", container!=\"\", container!=\"POD\"})",
+            "expr": "sum by (pod, container) (container_memory_working_set_bytes{cluster=\"meruto\",namespace=\"mimir\", container!=\"\", container!=\"POD\"})",
             "legendFormat": "{{pod}}/{{container}}",
             "refId": "A"
           }

@@ -9,9 +9,21 @@ data:
     // Endpoints
     // ============================================================
 
+    // 監視基盤は meruto にある。lune-02 経由で mTLS を使って送る。
+    remote.kubernetes.secret "mtls" {
+      namespace = "alloy"
+      name      = "pke-natsume-mtls"
+    }
+
     loki.write "default" {
       endpoint {
-        url = "http://loki.loki:3100/loki/api/v1/push"
+        url = "https://loki.pstr.space/loki/api/v1/push"
+
+        tls_config {
+          cert_pem = convert.nonsensitive(remote.kubernetes.secret.mtls.data["tls.crt"])
+          key_pem  = remote.kubernetes.secret.mtls.data["tls.key"]
+        }
+
         headers = {
           "X-Scope-OrgID" = "fake",
         }
@@ -36,7 +48,13 @@ data:
 
     prometheus.remote_write "default" {
       endpoint {
-        url = "http://mimir.mimir:8080/api/v1/push"
+        url = "https://mimir.pstr.space/api/v1/push"
+
+        tls_config {
+          cert_pem = convert.nonsensitive(remote.kubernetes.secret.mtls.data["tls.crt"])
+          key_pem  = remote.kubernetes.secret.mtls.data["tls.key"]
+        }
+
         headers = {
           "X-Scope-OrgID" = "anonymous",
         }
@@ -83,7 +101,7 @@ data:
       output {
         metrics = [otelcol.processor.deltatocumulative.otlp.input]
         logs    = [otelcol.exporter.loki.otlp.input]
-        traces  = [otelcol.exporter.otlp.tempo.input]
+        traces  = [otelcol.exporter.otlphttp.tempo.input]
       }
     }
 
@@ -111,21 +129,22 @@ data:
       forward_to = [loki.write.default.receiver]
     }
 
-    otelcol.exporter.otlp "tempo" {
+    otelcol.exporter.otlphttp "tempo" {
       client {
-        endpoint = "tempo.tempo:4317"
+        endpoint = "https://tempo.pstr.space"
         tls {
-          insecure = true
+          cert_pem = convert.nonsensitive(remote.kubernetes.secret.mtls.data["tls.crt"])
+          key_pem  = remote.kubernetes.secret.mtls.data["tls.key"]
         }
       }
     }
 
     // ============================================================
-    // Mimir Rules & Alerts
+    // Mimir Rules
     // ============================================================
 
     mimir.rules.kubernetes "default" {
-      address = "http://mimir.mimir:8080"
+      address = "https://mimir.pstr.space"
       tenant_id = "anonymous"
       // namespace と入力系列・評価結果を natsume に統一する。
       mimir_namespace_prefix = "natsume"
@@ -139,265 +158,14 @@ data:
       external_labels = {
         cluster = "natsume",
       }
+      tls_config {
+        cert_pem = convert.nonsensitive(remote.kubernetes.secret.mtls.data["tls.crt"])
+        key_pem  = remote.kubernetes.secret.mtls.data["tls.key"]
+      }
       rule_selector { match_labels = {} }
       rule_namespace_selector { match_labels = {} }
     }
 
-    remote.kubernetes.secret "ntfy_publish" {
-      namespace      = "alloy"
-      name           = "ntfy-alertmanager"
-      poll_frequency = "1m"
-    }
-
-    mimir.alerts.kubernetes "default" {
-      address = "http://mimir.mimir:8080"
-      http_headers = {
-        "X-Scope-OrgID" = ["anonymous"],
-      }
-      global_config = `
-        global:
-          resolve_timeout: 5m
-        route:
-          receiver: ntfy_pke_default
-          group_by:
-          - cluster
-          - alertname
-          - namespace
-          - severity
-          group_wait: 30s
-          group_interval: 5m
-          repeat_interval: 12h
-          routes:
-          - receiver: ntfy_natsume_default
-            matchers:
-            - cluster="natsume"
-            routes:
-            - receiver: ntfy_natsume_critical
-              matchers:
-              - severity="critical"
-              repeat_interval: 1h
-            - receiver: ntfy_natsume_warning
-              matchers:
-              - severity="warning"
-              repeat_interval: 12h
-          - receiver: ntfy_meruto_default
-            matchers:
-            - cluster="meruto"
-            routes:
-            - receiver: ntfy_meruto_critical
-              matchers:
-              - severity="critical"
-              repeat_interval: 1h
-            - receiver: ntfy_meruto_warning
-              matchers:
-              - severity="warning"
-              repeat_interval: 12h
-          - receiver: ntfy_pke_critical
-            matchers:
-            - severity="critical"
-            repeat_interval: 1h
-          - receiver: ntfy_pke_warning
-            matchers:
-            - severity="warning"
-            repeat_interval: 12h
-        inhibit_rules:
-        - source_matchers:
-          - alertname="KubePersistentVolumeSpaceCritical"
-          - severity="critical"
-          - cluster=~".+"
-          - namespace=~".+"
-          - persistentvolumeclaim=~".+"
-          target_matchers:
-          - alertname="KubePersistentVolumeSpaceLow"
-          - severity="warning"
-          - cluster=~".+"
-          - namespace=~".+"
-          - persistentvolumeclaim=~".+"
-          equal:
-          - cluster
-          - namespace
-          - persistentvolumeclaim
-        - source_matchers:
-          - alertname="HostFilesystemSpaceCritical"
-          - severity="critical"
-          - cluster=~".+"
-          - instance=~".+"
-          - mountpoint=~".+"
-          - device=~".+"
-          target_matchers:
-          - alertname="HostFilesystemSpaceLow"
-          - severity="warning"
-          - cluster=~".+"
-          - instance=~".+"
-          - mountpoint=~".+"
-          - device=~".+"
-          equal:
-          - cluster
-          - instance
-          - mountpoint
-          - device
-        - source_matchers:
-          - alertname="LonghornNodeSpaceCritical"
-          - severity="critical"
-          - cluster=~".+"
-          - node=~".+"
-          target_matchers:
-          - alertname="LonghornNodeSpaceLow"
-          - severity="warning"
-          - cluster=~".+"
-          - node=~".+"
-          equal:
-          - cluster
-          - node
-        - source_matchers:
-          - alertname="LonghornDiskSpaceCritical"
-          - severity="critical"
-          - cluster=~".+"
-          - node=~".+"
-          - disk=~".+"
-          target_matchers:
-          - alertname="LonghornDiskSpaceLow"
-          - severity="warning"
-          - cluster=~".+"
-          - node=~".+"
-          - disk=~".+"
-          equal:
-          - cluster
-          - node
-          - disk
-        - source_matchers:
-          - alertname="CertExpiryCritical"
-          - severity="critical"
-          - cluster=~".+"
-          - namespace=~".+"
-          - name=~".+"
-          target_matchers:
-          - alertname="CertExpiringSoon"
-          - severity="warning"
-          - cluster=~".+"
-          - namespace=~".+"
-          - name=~".+"
-          equal:
-          - cluster
-          - namespace
-          - name
-        - source_matchers:
-          - alertname="SSLCertExpiryCritical"
-          - severity="critical"
-          - cluster=~".+"
-          - namespace=~".+"
-          - job=~".+"
-          - instance=~".+"
-          target_matchers:
-          - alertname="SSLCertExpiringSoon"
-          - severity="warning"
-          - cluster=~".+"
-          - namespace=~".+"
-          - job=~".+"
-          - instance=~".+"
-          equal:
-          - cluster
-          - namespace
-          - job
-          - instance
-        - source_matchers:
-          - alertname="EndpointDown"
-          - severity="critical"
-          - cluster=~".+"
-          - namespace=~".+"
-          - job=~".+"
-          - instance=~".+"
-          - job="http-get"
-          target_matchers:
-          - alertname="HTTPStatusCodeError"
-          - severity="warning"
-          - cluster=~".+"
-          - namespace=~".+"
-          - job=~".+"
-          - instance=~".+"
-          - job="http-get"
-          equal:
-          - cluster
-          - namespace
-          - job
-          - instance
-        receivers:
-        - name: ntfy_natsume_critical
-          webhook_configs:
-          - url: https://ntfy.pstr.space/natsume-alerts?template=alertmanager&tags=rotating_light
-            send_resolved: true
-            http_config:
-              authorization:
-                type: Bearer
-                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-        - name: ntfy_natsume_warning
-          webhook_configs:
-          - url: https://ntfy.pstr.space/natsume-alerts?template=alertmanager&tags=warning
-            send_resolved: true
-            http_config:
-              authorization:
-                type: Bearer
-                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-        - name: ntfy_natsume_default
-          webhook_configs:
-          - url: https://ntfy.pstr.space/natsume-alerts?template=alertmanager&tags=information_source
-            send_resolved: true
-            http_config:
-              authorization:
-                type: Bearer
-                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-        - name: ntfy_meruto_critical
-          webhook_configs:
-          - url: https://ntfy.pstr.space/meruto-alerts?template=alertmanager&tags=rotating_light
-            send_resolved: true
-            http_config:
-              authorization:
-                type: Bearer
-                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-        - name: ntfy_meruto_warning
-          webhook_configs:
-          - url: https://ntfy.pstr.space/meruto-alerts?template=alertmanager&tags=warning
-            send_resolved: true
-            http_config:
-              authorization:
-                type: Bearer
-                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-        - name: ntfy_meruto_default
-          webhook_configs:
-          - url: https://ntfy.pstr.space/meruto-alerts?template=alertmanager&tags=information_source
-            send_resolved: true
-            http_config:
-              authorization:
-                type: Bearer
-                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-        - name: ntfy_pke_critical
-          webhook_configs:
-          - url: https://ntfy.pstr.space/pke-alerts?template=alertmanager&tags=rotating_light
-            send_resolved: true
-            http_config:
-              authorization:
-                type: Bearer
-                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-        - name: ntfy_pke_warning
-          webhook_configs:
-          - url: https://ntfy.pstr.space/pke-alerts?template=alertmanager&tags=warning
-            send_resolved: true
-            http_config:
-              authorization:
-                type: Bearer
-                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-        - name: ntfy_pke_default
-          webhook_configs:
-          - url: https://ntfy.pstr.space/pke-alerts?template=alertmanager&tags=information_source
-            send_resolved: true
-            http_config:
-              authorization:
-                type: Bearer
-                credentials: ` + remote.kubernetes.secret.ntfy_publish.data["token"] + `
-        `
-      alertmanagerconfig_selector { match_labels = {} }
-      alertmanagerconfig_namespace_selector { match_labels = {} }
-    }
 
     // ============================================================
     // Discovery

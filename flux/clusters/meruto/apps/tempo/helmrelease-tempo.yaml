@@ -22,8 +22,6 @@ spec:
         namespace: tempo
       interval: 1h
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-08
     serviceMonitor:
       enabled: true
     persistence:

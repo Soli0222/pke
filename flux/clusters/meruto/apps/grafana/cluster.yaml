@@ -1,16 +1,13 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: grafana-cluster-restored
+  name: grafana-db
   namespace: grafana
 spec:
   instances: 1
   imageName: ghcr.io/cloudnative-pg/postgresql:18.6-system-trixie
   primaryUpdateMethod: switchover
   smartShutdownTimeout: 60
-  affinity:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-08
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true
@@ -25,12 +22,10 @@ spec:
       source: origin
       database: grafana
       owner: grafana
-      recoveryTarget:
-        backupID: 20261003T180000
   externalClusters:
   - name: origin
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: grafana-backup-store-restore
-        serverName: grafana-cluster
+        serverName: grafana-cluster-restored

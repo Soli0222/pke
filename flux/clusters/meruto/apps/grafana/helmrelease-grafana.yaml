@@ -19,8 +19,6 @@ spec:
         namespace: grafana
       interval: 1h
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-08
     replicas: 1
 
     admin:
@@ -33,7 +31,7 @@ spec:
 
     env:
       GF_DATABASE_TYPE: postgres
-      GF_DATABASE_HOST: grafana-cluster-restored-rw.grafana.svc.cluster.local:5432
+      GF_DATABASE_HOST: grafana-db-rw.grafana.svc.cluster.local:5432
       GF_DATABASE_NAME: grafana
       GF_DATABASE_USER: grafana
       GF_DATABASE_SSL_MODE: disable
@@ -41,15 +39,13 @@ spec:
     envValueFrom:
       GF_DATABASE_PASSWORD:
         secretKeyRef:
-          name: grafana-cluster-restored-app
+          name: grafana-db-app
           key: password
 
     serviceMonitor:
       enabled: true
 
     imageRenderer:
-      nodeSelector:
-        kubernetes.io/hostname: natsume-08
       enabled: true
       image:
         tag: v5.8.11
@@ -76,14 +72,14 @@ spec:
       enabled: true
       ingressClassName: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-http01
+        cert-manager.io/cluster-issuer: letsencrypt-dns01
         traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
       hosts:
-        - grafana.str08.net
+        - grafana.pstr.space
       tls:
-        - secretName: grafana.str08.net-http01
+        - secretName: grafana.pstr.space-dns01
           hosts:
-            - grafana.str08.net
+            - grafana.pstr.space
 
     grafana.ini:
       feature_toggles:
