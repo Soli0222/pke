@@ -1,0 +1,21 @@
+# natsume の cert-manager が発行する mTLS の CA で、クライアント証明書を検証する。
+# CA の秘密鍵は natsume にだけ置く。ここでは 1Password の item に含まれる ca.crt を使う。
+# Ingress からは natsume と同じ cert-manager-pke-natsume-mtls@kubernetescrd で参照する。
+apiVersion: onepassword.com/v1
+kind: OnePasswordItem
+metadata:
+  name: pke-natsume-mtls-ca
+  namespace: cert-manager
+spec:
+  itemPath: "vaults/Kubernetes/items/pke_natsume_mtls"
+---
+apiVersion: traefik.io/v1alpha1
+kind: TLSOption
+metadata:
+  name: pke-natsume-mtls
+  namespace: cert-manager
+spec:
+  clientAuth:
+    secretNames:
+      - pke-natsume-mtls-ca
+    clientAuthType: RequireAndVerifyClientCert
