@@ -94,6 +94,7 @@ state は Cloudflare R2 の S3 互換 backend に保存します。
 | ホスト Alloy の監視設定更新 | `update-alloy-monitoring.yaml`。[反映手順](MONITORING.md#ホスト-alloy-の設定) |
 | ホスト Falco の設定 | `configure-falco.yaml`。パッケージ更新なしで設定を1台ずつ反映。[検知通知と例外](MONITORING.md#falco) |
 | ホスト Falco の更新 | `update-falco.yaml`。APT の最新版と設定を1台ずつ反映 |
+| カーネル引数の設定 | `configure-kernel-cmdline.yaml`。host_vars の `kernel_cmdline_extra` を GRUB に反映する。再起動はしないので、反映には手動の再起動が必要 |
 
 Falco の更新は `k3s_cluster` が対象です。
 `update-falco` ロールは `install-falco` を再利用し、パッケージまたは設定が変わった場合に Falco を再起動します。

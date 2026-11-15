@@ -1,0 +1,2 @@
+# Ansible の kernel-cmdline role が管理する。直接編集しない。
+GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX {{ kernel_cmdline_extra | join(' ') }}"
