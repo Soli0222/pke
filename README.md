@@ -147,6 +147,9 @@ Tailscale が作る table を残すため、`flush ruleset` と nftables.service
 WireGuard を通る TCP の MSS は lune-02 の forward で両方向とも、IPv4 は `edge_gateway_tcp_mss`、IPv6 は `edge_gateway_tcp_mss_ipv6` 以下に下げます。
 
 meruto の Traefik は web / websecure の両方で `10.99.0.1` からの PROXY protocol だけを信頼します。
+クライアント証明書を要求する Ingress は、natsume と同じ TLSOption（`cert-manager-pke-natsume-mtls@kubernetescrd`）を参照します。
+meruto の TLSOption は、natsume の CA で発行した証明書を、1Password の `pke_natsume_mtls` にある `ca.crt` で検証します。CA の秘密鍵は natsume にだけあります。
+
 ### meruto の LoadBalancer
 
 meruto は K3s の servicelb を無効にし、[MetalLB](flux/clusters/meruto/apps/metallb-config/) で LoadBalancer の IP を割り当てます。
