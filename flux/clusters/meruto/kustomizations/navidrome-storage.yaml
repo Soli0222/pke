@@ -25,5 +25,9 @@ spec:
     namespace: navidrome
   - apiVersion: v1
     kind: PersistentVolumeClaim
-    name: nas-music
+    name: nas-share-music
+    namespace: navidrome
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: nas-taichi-music
     namespace: navidrome
