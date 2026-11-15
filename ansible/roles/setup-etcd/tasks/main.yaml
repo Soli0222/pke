@@ -1,8 +1,19 @@
 ---
-- name: Set etcd leader host
+# play は複数クラスタの etcd を含み得るため、run_once ではなくクラスタごとに1台で実行する。
+# etcd_cluster_runner はこの play に含まれる同じクラスタの最初の etcd ホスト。
+- name: Set etcd leader host for this cluster
   ansible.builtin.set_fact:
     etcd_leader_host: "{{ groups[cluster + '_etcd'][0] }}"
-  run_once: true
+    etcd_cluster_runner: "{{ groups[cluster + '_etcd'] | intersect(ansible_play_hosts_all) | first }}"
+    etcd_cluster_k3s_servers: >-
+      {{
+        (groups['k3s_server'] | default([]))
+        | map('extract', hostvars)
+        | selectattr('cluster', 'defined')
+        | selectattr('cluster', 'equalto', cluster)
+        | map(attribute='inventory_hostname')
+        | list
+      }}
 
 - name: Build etcd private IPv4 address list from netplan
   ansible.builtin.set_fact:
@@ -96,33 +107,33 @@
   args:
     creates: "{{ etcd_pki_dir }}/ca.crt"
   delegate_to: "{{ etcd_leader_host }}"
-  run_once: true
+  when: inventory_hostname == etcd_cluster_runner
 
 - name: Read etcd CA certificate from leader
   ansible.builtin.slurp:
     src: "{{ etcd_pki_dir }}/ca.crt"
   register: etcd_ca_crt_raw
   delegate_to: "{{ etcd_leader_host }}"
-  run_once: true
+  when: inventory_hostname == etcd_cluster_runner
 
 - name: Read etcd CA key from leader
   ansible.builtin.slurp:
     src: "{{ etcd_pki_dir }}/ca.key"
   register: etcd_ca_key_raw
   delegate_to: "{{ etcd_leader_host }}"
-  run_once: true
+  when: inventory_hostname == etcd_cluster_runner
   no_log: true
 
 - name: Store decoded etcd CA material
   ansible.builtin.set_fact:
     etcd_ca_crt: "{{ etcd_ca_crt_raw.content | b64decode }}"
     etcd_ca_key: "{{ etcd_ca_key_raw.content | b64decode }}"
-  run_once: true
+  when: inventory_hostname == etcd_cluster_runner
   no_log: true
 
 - name: Distribute etcd CA certificate
   ansible.builtin.copy:
-    content: "{{ hostvars[etcd_leader_host].etcd_ca_crt }}"
+    content: "{{ hostvars[etcd_cluster_runner].etcd_ca_crt }}"
     dest: "{{ etcd_pki_dir }}/ca.crt"
     owner: root
     group: root
@@ -130,7 +141,7 @@
 
 - name: Distribute etcd CA key
   ansible.builtin.copy:
-    content: "{{ hostvars[etcd_leader_host].etcd_ca_key }}"
+    content: "{{ hostvars[etcd_cluster_runner].etcd_ca_key }}"
     dest: "{{ etcd_pki_dir }}/ca.key"
     owner: root
     group: root
@@ -193,7 +204,7 @@
     group: root
     mode: "0644"
   delegate_to: "{{ etcd_leader_host }}"
-  run_once: true
+  when: inventory_hostname == etcd_cluster_runner
 
 - name: Generate k3s etcd client certificate and key on leader
   ansible.builtin.shell: |
@@ -205,7 +216,7 @@
     creates: "{{ etcd_pki_dir }}/k3s-etcd-client.crt"
     executable: /bin/bash
   delegate_to: "{{ etcd_leader_host }}"
-  run_once: true
+  when: inventory_hostname == etcd_cluster_runner
 
 - name: Read k3s etcd client certificate from leader
   ansible.builtin.slurp:
@@ -216,7 +227,7 @@
     - "{{ etcd_pki_dir }}/k3s-etcd-client.crt"
     - "{{ etcd_pki_dir }}/k3s-etcd-client.key"
   delegate_to: "{{ etcd_leader_host }}"
-  run_once: true
+  when: inventory_hostname == etcd_cluster_runner
   no_log: true
 
 - name: Ensure etcd pki directory exists on k3s servers
@@ -226,11 +237,11 @@
     owner: root
     group: root
     mode: "0700"
-  loop: "{{ groups['k3s_server'] | default([]) }}"
+  loop: "{{ etcd_cluster_k3s_servers }}"
   loop_control:
     loop_var: k3s_server_host
   delegate_to: "{{ k3s_server_host }}"
-  run_once: true
+  when: inventory_hostname == etcd_cluster_runner
 
 - name: Distribute k3s etcd client material to k3s servers
   ansible.builtin.copy:
@@ -239,9 +250,9 @@
     owner: root
     group: root
     mode: "{{ '0600' if item.1.source.endswith('.key') else '0644' }}"
-  loop: "{{ (groups['k3s_server'] | default([])) | product(k3s_etcd_client_material.results) | list }}"
+  loop: "{{ etcd_cluster_k3s_servers | product(k3s_etcd_client_material.results) | list }}"
   delegate_to: "{{ item.0 }}"
-  run_once: true
+  when: inventory_hostname == etcd_cluster_runner
   no_log: true
 
 - name: Deploy etcd systemd service
