@@ -6,3 +6,4 @@ resources:
 - token.yaml
 - clusterrole.yaml
 - clusterrolebinding.yaml
+- validatingadmissionpolicy.yaml

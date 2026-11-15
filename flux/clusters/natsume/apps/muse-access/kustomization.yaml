@@ -7,7 +7,7 @@ patches:
     group: rbac.authorization.k8s.io
     version: v1
     kind: ClusterRole
-    name: muse-observer
+    name: muse-operator
   patch: |-
     - op: add
       path: /rules/-

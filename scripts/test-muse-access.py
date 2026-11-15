@@ -19,7 +19,7 @@ SPEC.loader.exec_module(EXPORT)
 
 
 def fake_token(**extra):
-    claims = {'sub': 'system:serviceaccount:muse-system:muse-observer', **extra}
+    claims = {'sub': 'system:serviceaccount:muse-system:muse-operator', **extra}
     payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).decode().rstrip('=')
     return base64.b64encode(f'header.{payload}.signature'.encode()).decode()
 
@@ -36,9 +36,9 @@ class KubeconfigTests(unittest.TestCase):
         self.secret = {
             'type': 'kubernetes.io/service-account-token',
             'metadata': {
-                'name': 'muse-observer-token', 'namespace': 'muse-system',
+                'name': 'muse-operator-token', 'namespace': 'muse-system',
                 'annotations': {
-                    'kubernetes.io/service-account.name': 'muse-observer',
+                    'kubernetes.io/service-account.name': 'muse-operator',
                     'kubernetes.io/service-account.uid': 'test-uid',
                 },
             },
@@ -48,7 +48,7 @@ class KubeconfigTests(unittest.TestCase):
     def config(self, **kwargs):
         return EXPORT.make_config('meruto', self.source, self.secret, self.account, **kwargs)
 
-    def test_only_observer_credentials_and_verified_transport_are_exported(self):
+    def test_only_operator_credentials_and_verified_transport_are_exported(self):
         config = self.config(server='https://100.64.0.1:6443', tls_name='192.0.2.1')
         self.assertEqual(config['clusters'][0]['cluster'], {
             'server': 'https://100.64.0.1:6443',
@@ -80,7 +80,7 @@ class KubeconfigTests(unittest.TestCase):
             self.config()
 
     def test_auto_generated_token_classification_is_rejected(self):
-        self.account['secrets'] = [{'name': 'muse-observer-token'}]
+        self.account['secrets'] = [{'name': 'muse-operator-token'}]
         with self.assertRaises(ValueError):
             self.config()
 
@@ -106,21 +106,49 @@ class KubeconfigTests(unittest.TestCase):
             EXPORT.output_path(str(ROOT / 'muse-config-must-not-exist'))
 
 
+READ_VERBS = {'get', 'list', 'watch'}
+# 読み取り以外で許可する操作。patch の範囲は ValidatingAdmissionPolicy で注釈と replicas に絞る。
+WRITE_RULES = {
+    ('', 'pods'): {'delete'},
+    ('apps', 'deployments'): {'patch'},
+    ('apps', 'statefulsets'): {'patch'},
+    ('apps', 'daemonsets'): {'patch'},
+    ('apps', 'deployments/scale'): {'get', 'patch', 'update'},
+    ('apps', 'statefulsets/scale'): {'get', 'patch', 'update'},
+    ('batch', 'jobs'): {'delete'},
+    **{('source.toolkit.fluxcd.io', r): {'patch'} for r in
+       ['gitrepositories', 'helmrepositories', 'helmcharts', 'ocirepositories', 'buckets']},
+    ('kustomize.toolkit.fluxcd.io', 'kustomizations'): {'patch'},
+    ('helm.toolkit.fluxcd.io', 'helmreleases'): {'patch'},
+}
+OPERATOR = 'system:serviceaccount:muse-system:muse-operator'
+
+
 class RBACTests(unittest.TestCase):
+    def render(self, cluster):
+        result = subprocess.run(
+            ['kustomize', 'build', str(ROOT / f'flux/clusters/{cluster}/apps/muse-access')],
+            capture_output=True, text=True, check=True,
+        )
+        return list(yaml.safe_load_all(result.stdout))
+
     def test_rendered_permissions_for_both_clusters(self):
         for cluster in ['natsume', 'meruto']:
             with self.subTest(cluster=cluster):
-                result = subprocess.run(
-                    ['kustomize', 'build', str(ROOT / f'flux/clusters/{cluster}/apps/muse-access')],
-                    capture_output=True, text=True, check=True,
-                )
-                docs = list(yaml.safe_load_all(result.stdout))
+                docs = self.render(cluster)
                 role = next(d for d in docs if d['kind'] == 'ClusterRole')
                 self.assertNotIn('aggregationRule', role)
                 for rule in role['rules']:
-                    self.assertLessEqual(set(rule['verbs']), {'get', 'list', 'watch'})
                     for field in ['apiGroups', 'resources', 'nonResourceURLs']:
                         self.assertTrue(all('*' not in value for value in rule.get(field, [])))
+                    write = set(rule['verbs']) - READ_VERBS
+                    for group in rule.get('apiGroups', []):
+                        for resource in rule.get('resources', []):
+                            allowed = WRITE_RULES.get((group, resource), set())
+                            self.assertLessEqual(write, allowed,
+                                                 f'{group}/{resource}')
+                    if 'nonResourceURLs' in rule:
+                        self.assertFalse(write)
                     if '' in rule.get('apiGroups', []):
                         self.assertFalse(set(rule['resources']) & {
                             'secrets', 'configmaps', 'pods/exec', 'pods/attach',
@@ -139,8 +167,31 @@ class RBACTests(unittest.TestCase):
                 binding = next(d for d in docs if d['kind'] == 'ClusterRoleBinding')
                 self.assertEqual(binding['roleRef']['name'], role['metadata']['name'])
                 self.assertEqual(binding['subjects'], [{
-                    'kind': 'ServiceAccount', 'name': 'muse-observer', 'namespace': 'muse-system',
+                    'kind': 'ServiceAccount', 'name': 'muse-operator', 'namespace': 'muse-system',
                 }])
+
+    def test_every_patchable_resource_is_guarded_by_a_policy(self):
+        for cluster in ['natsume', 'meruto']:
+            with self.subTest(cluster=cluster):
+                docs = self.render(cluster)
+                policies = {d['metadata']['name']: d for d in docs
+                            if d['kind'] == 'ValidatingAdmissionPolicy'}
+                bindings = {d['spec']['policyName']: d for d in docs
+                            if d['kind'] == 'ValidatingAdmissionPolicyBinding'}
+                self.assertEqual(set(policies), set(bindings))
+                guarded = set()
+                for name, policy in policies.items():
+                    spec = policy['spec']
+                    self.assertEqual(spec['failurePolicy'], 'Fail')
+                    self.assertEqual(bindings[name]['spec']['validationActions'], ['Deny'])
+                    self.assertNotIn('matchResources', bindings[name]['spec'])
+                    self.assertTrue(any(OPERATOR in c['expression'] for c in spec['matchConditions']))
+                    for rule in spec['matchConstraints']['resourceRules']:
+                        self.assertIn('UPDATE', rule['operations'])
+                        guarded |= {(g, r) for g in rule['apiGroups'] for r in rule['resources']}
+                patchable = {key for key, verbs in WRITE_RULES.items()
+                             if 'patch' in verbs and '/' not in key[1]}
+                self.assertLessEqual(patchable, guarded)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,128 @@
+# muse-operator の patch を運用操作に限定する。
+# RBAC だけでは Pod テンプレートや Flux の spec を書き換えられ、実質 cluster-admin になるため、
+# rollout restart の注釈、replicas、Flux の reconcile 注釈以外の変更を拒否する。
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: muse-operator-workloads
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [apps]
+      apiVersions: ["*"]
+      operations: [UPDATE]
+      resources: [deployments, statefulsets, daemonsets]
+  matchConditions:
+  - name: muse-operator
+    expression: request.userInfo.username == 'system:serviceaccount:muse-system:muse-operator'
+  variables:
+  - name: newAnnotations
+    expression: object.spec.template.?metadata.?annotations.orValue({})
+  - name: oldAnnotations
+    expression: oldObject.spec.template.?metadata.?annotations.orValue({})
+  validations:
+  - expression: object.spec.template.spec == oldObject.spec.template.spec
+    message: muse-operator は Pod テンプレートの spec を変更できません
+  - expression: >-
+      object.spec.template.?metadata.?labels.orValue({}) ==
+      oldObject.spec.template.?metadata.?labels.orValue({})
+    message: muse-operator は Pod テンプレートのラベルを変更できません
+  - expression: >-
+      variables.newAnnotations.all(k, k == 'kubectl.kubernetes.io/restartedAt' ||
+      (k in variables.oldAnnotations && variables.oldAnnotations[k] == variables.newAnnotations[k])) &&
+      variables.oldAnnotations.all(k, k == 'kubectl.kubernetes.io/restartedAt' || k in variables.newAnnotations)
+    message: muse-operator が変更できる Pod テンプレートの注釈は kubectl.kubernetes.io/restartedAt だけです
+---
+# StatefulSet の PVC 保持設定を Delete に変えてから縮退すると PVC が消えるため、変更を拒否する。
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: muse-operator-statefulsets
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [apps]
+      apiVersions: ["*"]
+      operations: [UPDATE]
+      resources: [statefulsets]
+  matchConditions:
+  - name: muse-operator
+    expression: request.userInfo.username == 'system:serviceaccount:muse-system:muse-operator'
+  validations:
+  - expression: >-
+      has(object.spec.persistentVolumeClaimRetentionPolicy) == has(oldObject.spec.persistentVolumeClaimRetentionPolicy) &&
+      (!has(object.spec.persistentVolumeClaimRetentionPolicy) ||
+      object.spec.persistentVolumeClaimRetentionPolicy == oldObject.spec.persistentVolumeClaimRetentionPolicy)
+    message: muse-operator は StatefulSet の PVC 保持設定を変更できません
+  - expression: object.spec.?volumeClaimTemplates.orValue([]) == oldObject.spec.?volumeClaimTemplates.orValue([])
+    message: muse-operator は StatefulSet の volumeClaimTemplates を変更できません
+---
+# Flux の CR は spec を変えず、reconcile 系の注釈だけを変更できる。
+# spec.suspend だけを許す条件は CEL で安全に書けないため、suspend / resume は管理者が行う。
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: muse-operator-flux
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [source.toolkit.fluxcd.io]
+      apiVersions: ["*"]
+      operations: [UPDATE]
+      resources: [gitrepositories, helmrepositories, helmcharts, ocirepositories, buckets]
+    - apiGroups: [kustomize.toolkit.fluxcd.io]
+      apiVersions: ["*"]
+      operations: [UPDATE]
+      resources: [kustomizations]
+    - apiGroups: [helm.toolkit.fluxcd.io]
+      apiVersions: ["*"]
+      operations: [UPDATE]
+      resources: [helmreleases]
+  matchConditions:
+  - name: muse-operator
+    expression: request.userInfo.username == 'system:serviceaccount:muse-system:muse-operator'
+  variables:
+  - name: allowed
+    expression: >-
+      ['reconcile.fluxcd.io/requestedAt', 'reconcile.fluxcd.io/forceAt', 'reconcile.fluxcd.io/resetAt']
+  - name: newAnnotations
+    expression: object.metadata.?annotations.orValue({})
+  - name: oldAnnotations
+    expression: oldObject.metadata.?annotations.orValue({})
+  validations:
+  - expression: object.spec == oldObject.spec
+    message: muse-operator は Flux の spec を変更できません（suspend / resume を含む）
+  - expression: object.metadata.?labels.orValue({}) == oldObject.metadata.?labels.orValue({})
+    message: muse-operator は Flux のラベルを変更できません
+  - expression: >-
+      variables.newAnnotations.all(k, k in variables.allowed ||
+      (k in variables.oldAnnotations && variables.oldAnnotations[k] == variables.newAnnotations[k])) &&
+      variables.oldAnnotations.all(k, k in variables.allowed || k in variables.newAnnotations)
+    message: muse-operator が変更できる Flux の注釈は reconcile.fluxcd.io/requestedAt・forceAt・resetAt だけです
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: muse-operator-workloads
+spec:
+  policyName: muse-operator-workloads
+  validationActions: [Deny]
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: muse-operator-statefulsets
+spec:
+  policyName: muse-operator-statefulsets
+  validationActions: [Deny]
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: muse-operator-flux
+spec:
+  policyName: muse-operator-flux
+  validationActions: [Deny]
