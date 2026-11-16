@@ -81,7 +81,7 @@
         },
         "options": {
           "mode": "markdown",
-          "content": "`alloy`: Kubernetes / `alloy-host`: ホスト。namespaceのないホストも対象です。重複収集の`prometheus.scrape.alloy_metrics`は除外。 component状態と評価待ち・評価時間を確認します。"
+          "content": "`alloy`: Kubernetes / `alloy-host`: ホスト。namespaceのないホストも対象です。component状態と評価待ち・評価時間を確認します。"
         }
       },
       {

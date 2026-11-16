@@ -436,7 +436,7 @@ data:
 
     prometheus.scrape "kubernetes_api" {
       targets         = discovery.relabel.kubernetes_api.output
-      forward_to      = [prometheus.relabel.cluster_labels.receiver]
+      forward_to      = [prometheus.relabel.kubernetes_api.receiver]
       scrape_interval = "30s"
       metrics_path    = "/metrics"
       scheme          = "https"
@@ -445,6 +445,19 @@ data:
         ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
       }
       clustering { enabled = true }
+    }
+
+    // ルールとダッシュボードが参照しない大きい histogram の bucket を落とす。
+    // _sum / _count は平均を出せるように残す。
+    // apiserver_request_duration_seconds と etcd_request_duration_seconds の bucket は遅延の調査に使うため残す。
+    prometheus.relabel "kubernetes_api" {
+      forward_to = [prometheus.relabel.cluster_labels.receiver]
+
+      rule {
+        action        = "drop"
+        source_labels = ["__name__"]
+        regex         = "apiserver_(request_sli_duration_seconds|request_body_size_bytes|response_sizes|watch_events_sizes|watch_events_dispatch_duration_seconds|watch_list_duration_seconds|watch_cache_read_wait_seconds|watch_cache_initialization_duration_seconds|storage_list_duration_seconds)_bucket"
+      }
     }
 
     // ============================================================
@@ -473,9 +486,23 @@ data:
       }
     }
 
+    // k3s は apiserver と kubelet を1プロセスで動かし、同じ registry を apiserver の /metrics と
+    // kubelet の :10250/metrics の両方に出す。server ノードの二重取得を避けるため、kubelet の取得は
+    // kubelet のメトリクスに絞り、apiserver・etcd・workqueue・process などは kubernetes_api の job にだけ残す。
+    // up と scrape_* もこの relabel を通るため、keep に含める。
+    prometheus.relabel "kubelet" {
+      forward_to = [prometheus.relabel.cluster_labels.receiver]
+
+      rule {
+        action        = "keep"
+        source_labels = ["__name__"]
+        regex         = "up|scrape_.+|kubelet_.+|volume_manager_.+|volume_operation_.+|storage_operation_.+|csi_operations_.+|plugin_manager_.+|reconstruct_volume_.+|force_cleaned_failed_volume_.+|dra_.+"
+      }
+    }
+
     prometheus.scrape "kubernetes_nodes" {
       targets         = discovery.relabel.kubelet_targets.output
-      forward_to      = [prometheus.relabel.cluster_labels.receiver]
+      forward_to      = [prometheus.relabel.kubelet.receiver]
       scrape_interval = "30s"
       metrics_path    = "/metrics"
       scheme          = "https"
@@ -520,17 +547,7 @@ data:
       clustering { enabled = true }
     }
 
-    // ============================================================
-    // Metrics: Alloy self-monitoring
-    // ============================================================
-
-    prometheus.scrape "alloy_metrics" {
-      targets         = [{"__address__" = "localhost:12345"}]
-      forward_to      = [prometheus.relabel.cluster_labels.receiver]
-      scrape_interval = "15s"
-      metrics_path    = "/metrics"
-      clustering { enabled = true }
-    }
+    // Alloy 自身のメトリクスは chart の ServiceMonitor（job="alloy"）で取得する。
 
     // ============================================================
     // Logs: Pod logs with node label
