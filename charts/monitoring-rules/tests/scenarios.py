@@ -390,6 +390,33 @@ def scenarios():
             ],
             "not Bound",
         )
+        # Block モードでは kubelet が available を常に0と報告する。
+        quiet(
+            alert,
+            volume
+            + [
+                s("kubelet_volume_stats_available_bytes", "0x45", V),
+                s("kubelet_volume_stats_capacity_bytes", "100x45", V),
+                s("kube_persistentvolumeclaim_info", "1x45", V, volumemode="Block"),
+            ],
+            "block volume reports no free space",
+        )
+        add(
+            alert,
+            volume
+            + [
+                s("kubelet_volume_stats_available_bytes", "50x4 3x20 50x15", V),
+                s("kubelet_volume_stats_capacity_bytes", "100x45", V),
+                s(
+                    "kube_persistentvolumeclaim_info",
+                    "1x45",
+                    V,
+                    volumemode="Filesystem",
+                ),
+            ],
+            V,
+            "filesystem volume with PVC info",
+        )
     mounted = [
         s(
             "kube_pod_spec_volumes_persistentvolumeclaims_info",
@@ -453,6 +480,13 @@ def scenarios():
         ],
         "insufficient history",
         when="90m",
+    )
+    quiet(
+        "KubePersistentVolumeFillingUp",
+        predict
+        + [s("kube_persistentvolumeclaim_info", "1x400", V, volumemode="Block")],
+        "block volume is not forecast",
+        when="390m",
     )
     for alert, metric, denom, bad in [
         (
