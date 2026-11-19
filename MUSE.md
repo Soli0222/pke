@@ -8,7 +8,7 @@ muse が Claude Code から PR マージ後の更新を確認し、詰まった�
 ## 権限の範囲
 
 両クラスタに `muse-system/muse-operator` ServiceAccount を作成する。
-RBAC は [共通定義](flux/bases/muse-access/clusterrole.yaml) で管理し、natsume だけに [CNPG の読み取り権限](flux/clusters/natsume/apps/muse-access/kustomization.yaml) を追加する。
+RBAC は [共通定義](flux/bases/muse-access/clusterrole.yaml) で管理し、natsume だけに [CNPG の読み取り権限](flux/clusters/natsume/apps/muse-access/kustomization.yaml)、meruto だけに [KubeVirt・CDI の読み取り権限](flux/clusters/meruto/apps/muse-access/kustomization.yaml) を追加する。
 対象 namespace は限定せず、扱えるリソースの種類と操作を列挙する。
 
 | 読み取りを許可するもの | 用途 |
@@ -18,6 +18,7 @@ RBAC は [共通定義](flux/bases/muse-access/clusterrole.yaml) で管理し、
 | Node、Service、Ingress、volume、metrics など | 基盤・ネットワーク・ストレージの状態確認 |
 | 証明書・監視・Longhorn・TopoLVM の指定した CR | 各 controller の反映状況確認 |
 | CNPG の Cluster、Backup、ScheduledBackup、Pooler | natsume の DB・バックアップ状態確認 |
+| KubeVirt の VM・VMI・移行・snapshot・export・backup・pool・instancetype と CDI の指定した CR | meruto の VM・ディスク・バックアップ状態確認（get/list/watch のみ） |
 
 | 許可する操作 | コマンドの例 |
 |---|---|
