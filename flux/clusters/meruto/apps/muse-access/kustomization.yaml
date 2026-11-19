@@ -2,3 +2,58 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - ../../../../bases/muse-access
+patches:
+- target:
+    group: rbac.authorization.k8s.io
+    version: v1
+    kind: ClusterRole
+    name: muse-operator
+  patch: |-
+    - op: add
+      path: /rules/-
+      value:
+        apiGroups: [kubevirt.io]
+        resources: [kubevirts, virtualmachines, virtualmachineinstances, virtualmachineinstancemigrations, virtualmachineinstancereplicasets, virtualmachineinstancepresets]
+        verbs: [get, list, watch]
+    - op: add
+      path: /rules/-
+      value:
+        apiGroups: [snapshot.kubevirt.io]
+        resources: [virtualmachinesnapshots, virtualmachinesnapshotcontents, virtualmachinerestores]
+        verbs: [get, list, watch]
+    - op: add
+      path: /rules/-
+      value:
+        apiGroups: [export.kubevirt.io]
+        resources: [virtualmachineexports]
+        verbs: [get, list, watch]
+    - op: add
+      path: /rules/-
+      value:
+        apiGroups: [backup.kubevirt.io]
+        resources: [virtualmachinebackups, virtualmachinebackuptrackers]
+        verbs: [get, list, watch]
+    - op: add
+      path: /rules/-
+      value:
+        apiGroups: [pool.kubevirt.io]
+        resources: [virtualmachinepools]
+        verbs: [get, list, watch]
+    - op: add
+      path: /rules/-
+      value:
+        apiGroups: [instancetype.kubevirt.io]
+        resources: [virtualmachineinstancetypes, virtualmachineclusterinstancetypes, virtualmachinepreferences, virtualmachineclusterpreferences]
+        verbs: [get, list, watch]
+    - op: add
+      path: /rules/-
+      value:
+        apiGroups: [migrations.kubevirt.io]
+        resources: [migrationpolicies]
+        verbs: [get, list, watch]
+    - op: add
+      path: /rules/-
+      value:
+        apiGroups: [cdi.kubevirt.io]
+        resources: [cdis, cdiconfigs, datavolumes, dataimportcrons, datasources, storageprofiles, objecttransfers, volumeclonesources, volumeimportsources, volumeuploadsources]
+        verbs: [get, list, watch]
