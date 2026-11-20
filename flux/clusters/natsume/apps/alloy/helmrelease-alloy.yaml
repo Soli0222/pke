@@ -41,7 +41,5 @@ spec:
         protocol: TCP
     controller:
       type: deployment
-      nodeSelector:
-        kubernetes.io/hostname: natsume-03
     serviceMonitor:
       enabled: true

@@ -22,8 +22,6 @@ spec:
         namespace: spotify-reblend
       interval: 1h
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-03
     resources:
       requests:
         memory: 256Mi

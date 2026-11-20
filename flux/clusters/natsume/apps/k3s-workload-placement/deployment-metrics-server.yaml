@@ -1,3 +1,5 @@
+# K3s の manifest と同じ nodeSelector を残す。kustomize-controller が所有しているため、
+# 消すと SSA で live からも外れる。
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,4 +19,3 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/os: linux
-        kubernetes.io/hostname: natsume-03

@@ -40,13 +40,13 @@ def main():
         common = yaml.safe_load((ROOT / 'ansible/inventories/group_vars/all.yaml').read_text())
         env = Environment(undefined=StrictUndefined)
         env.filters['regex_escape'] = re.escape
-        for host in ('natsume-03', 'natsume-08', 'meruto-02', 'lune-02'):
+        for host in ('natsume-03', 'meruto-02', 'lune-02'):
             values = defaults | common | yaml.safe_load((ROOT / f'ansible/inventories/host_vars/{host}.yaml').read_text())
             values['ansible_hostname'] = host
             for enabled in (True, False):
                 values['falco'] = dict(values['falco'], enabled=enabled)
                 rendered = env.from_string((ROOT / 'ansible/roles/install-alloy/templates/prometheus.alloy.j2').read_text()).render(**values)
-                if host not in ('natsume-08', 'lune-02'):  # etcd を持つホストだけ
+                if host != 'lune-02':  # etcd を持つホストだけ
                     rendered += '\n' + env.from_string((ROOT / 'ansible/roles/install-alloy/templates/etcd.alloy.j2').read_text()).render(**values)
                 (out / f'{host}-{enabled}.alloy').write_text(rendered)
                 host_configs[host] = (values['cluster'], rendered)

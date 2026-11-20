@@ -9,9 +9,8 @@ PKE の CloudNativePG（CNPG）は、natsume のアプリ用 PostgreSQL を管�
 
 CNPG operator は両クラスタに導入する。アプリ用の DB は natsume、Grafana・Keycloak・ntfy の DB は meruto に置く。
 すべて `instances: 1`、StorageClass は `topolvm` で、ノード障害時の自動フェイルオーバー用 replica はない。
-natsume の Cluster は `affinity.nodeSelector` で PV のあるノードに固定する。Pod の配置先と既存 PV の node affinity を一致させ、nodeSelector の変更だけで DB を移動しない。
-別のノードへ移すときは、新しい名前の Cluster をバックアップから復元して切り替える。
-meruto はノードが1台のため、Cluster に配置先を指定しない。
+両クラスタともノードが1台のため、Cluster に配置先を指定しない。
+TopoLVM の PV は作成したノードから動かない。ノードを追加して DB を別のノードへ移すときは、新しい名前の Cluster をバックアップから復元して切り替える。
 Pooler は使わず、アプリは CNPG の Service に直接接続する。
 
 | Namespace | Cluster | DB / Owner | 容量 | バックアップ | 実行時刻（JST） |

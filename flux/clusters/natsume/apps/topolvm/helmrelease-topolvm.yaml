@@ -25,9 +25,7 @@ spec:
     scheduler:
       enabled: false
     controller:
-      nodeSelector:
-        kubernetes.io/hostname: natsume-03
-      # 固定ノードでは required podAntiAffinity により新旧 Pod が同居できない。
+      # 1ノードでは required podAntiAffinity により新旧 Pod が同居できない。
       updateStrategy:
         type: Recreate
       replicaCount: 1

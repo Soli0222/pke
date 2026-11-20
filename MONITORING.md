@@ -190,8 +190,8 @@ K3s ノードに加え、外部ゲートウェイ（inventory の `edge_gateway`
 ```sh
 cd ansible
 ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --syntax-check
-ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --limit natsume-08 --check --diff
-ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --limit natsume-08 --diff
+ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --limit natsume-03 --check --diff
+ansible-playbook -i inventories/hosts.yaml update-alloy-monitoring.yaml --limit natsume-03 --diff
 ```
 
 1台ずつ反映し、収集を確認して次へ進む。
@@ -207,7 +207,7 @@ node・Falco・対象ホストの etcd の収集も維持されていること�
 ### Kubernetes API
 
 server グループの `k3s_audit_enabled` で API 監査とホスト Alloy の専用収集を有効にする。
-対象は natsume-03 と meruto-02。agent の natsume-08 には API 監査ファイルを作らない。
+対象は natsume-03 と meruto-02。agent には API 監査ファイルを作らない。
 [audit policy](ansible/roles/install-k3s/files/audit-policy.yaml) は全リクエストを Metadata で記録し、RequestReceived の重複段階と request/response 本文を省く。
 長時間接続の ResponseStarted と完了段階は同じ audit ID で対応付ける。
 
@@ -365,8 +365,8 @@ Kubernetes の対応先は natsume が `soli.natsume`、meruto が `soli.meruto`
 ```sh
 uv run --no-project --with pyyaml --with jinja2 python scripts/validate-falco.py
 cd ansible
-ansible-playbook -i inventories/hosts.yaml configure-falco.yaml --limit natsume-08 --check --diff
-ansible-playbook -i inventories/hosts.yaml configure-falco.yaml --limit natsume-08
+ansible-playbook -i inventories/hosts.yaml configure-falco.yaml --limit natsume-03 --check --diff
+ansible-playbook -i inventories/hosts.yaml configure-falco.yaml --limit natsume-03
 ```
 
 反映後は Falco service、設定・ルールの読み込み、`StandardOutput=journal` / `StandardError=journal`、Mimir の起動時刻・検知 counter・欠測・drop、通常イベントの JSON を確認する。
@@ -379,7 +379,7 @@ ansible-playbook -i inventories/hosts.yaml configure-falco.yaml --limit natsume-
 [Grafana Explore](https://grafana.pstr.space/explore) で Loki を選び、通知の cluster・hostname・rule_name を入れる。
 
 ```logql
-{cluster="natsume", hostname="natsume-08", syslog_identifier="falco"}
+{cluster="natsume", hostname="natsume-03", syslog_identifier="falco"}
 | json
 | rule="Read sensitive file untrusted"
 ```

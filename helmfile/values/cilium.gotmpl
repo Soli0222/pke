@@ -40,7 +40,3 @@ ipMasqAgent:
 
 operator:
   replicas: 1
-  {{- with .Values | get "bootstrapNode" "" }}
-  nodeSelector:
-    kubernetes.io/hostname: {{ . | quote }}
-  {{- end }}

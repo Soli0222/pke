@@ -1,6 +1,5 @@
 cluster: natsume
 kubeContext: soli.natsume
-bootstrapNode: natsume-03
 
 cilium:
   clusterPoolIPv4PodCIDRList:

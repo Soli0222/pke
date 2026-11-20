@@ -69,7 +69,7 @@ def main():
         out = Path(temp)
         out.chmod(0o755)
         for host, cluster, is_server in [('natsume-03', 'natsume', True),
-                                         ('natsume-08', 'natsume', False),
+                                         ('natsume-agent', 'natsume', False),  # agent の分岐を確かめる架空のホスト
                                          ('meruto-02', 'meruto', True)]:
             values = defaults | {'cluster': cluster, 'ansible_hostname': host,
                                  'tls_cert_path': '/unused/crt', 'tls_key_path': '/unused/key'}

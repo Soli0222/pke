@@ -28,8 +28,6 @@ spec:
     valuesKey: values.yaml
     optional: false
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-03
     ingress:
       enabled: true
       className: traefik
