@@ -7,7 +7,7 @@ PKE の CloudNativePG（CNPG）は、natsume のアプリ用 PostgreSQL を管�
 
 ## DB の構成
 
-CNPG operator は両クラスタに導入する。アプリ用の DB は natsume、Grafana の DB は meruto に置く。
+CNPG operator は両クラスタに導入する。アプリ用の DB は natsume、Grafana と Keycloak の DB は meruto に置く。
 すべて `instances: 1`、StorageClass は `topolvm` で、ノード障害時の自動フェイルオーバー用 replica はない。
 natsume の Cluster はすべて `natsume-08` に固定する。Pod の配置先と既存 PV の node affinity を一致させ、nodeSelector の変更だけで DB を移動しない。
 meruto はノードが1台のため、Cluster に配置先を指定しない。
@@ -20,15 +20,15 @@ Pooler は使わず、アプリは CNPG の Service に直接接続する。
 | spotify-reblend | `reblend-cluster-restored` | `reblend` | 5Gi | base backup + WAL archive | 日曜 03:30 |
 | spotify-nowplaying | `spn-cluster-restored` | `spn` | 5Gi | base backup + WAL archive | 日曜 03:45 |
 | ntfy | `ntfy-cluster` | `ntfy` | 5Gi | base backup + WAL archive | 日曜 04:00 |
-| keycloak | `keycloak-cluster` | `keycloak` | 5Gi | base backup + WAL archive | 日曜 04:15 |
 
 meruto の DB は次のとおり。
 
 | Namespace | Cluster | DB / Owner | 容量 | バックアップ | 実行時刻（JST） |
 |---|---|---|---|---|---|
 | grafana | `grafana-db` | `grafana` | 10Gi | base backup + WAL archive | 日曜 03:00 |
+| keycloak | `keycloak-db` | `keycloak` | 5Gi | base backup + WAL archive | 日曜 04:15 |
 
-定義は [natsume の各アプリ](flux/clusters/natsume/apps/) と [meruto の Grafana](flux/clusters/meruto/apps/grafana/) の `cluster.yaml` にある。
+定義は [natsume の各アプリ](flux/clusters/natsume/apps/) と meruto の [Grafana](flux/clusters/meruto/apps/grafana/)・[Keycloak](flux/clusters/meruto/apps/keycloak/) の `cluster.yaml` にある。
 operator / Barman Cloud plugin のバージョンは [cnpg](flux/clusters/natsume/apps/cnpg/)、DB image と PostgreSQL 設定は各 Cluster を参照する。
 Misskey の image には PGroonga が必要で、復元先にも同じ拡張と対応する PostgreSQL major version を用意する。
 Misskey は `pgroonga_wal_resource_manager` を preload し、`pgroonga.enable_wal_resource_manager=on` で PostgreSQL の WAL に PGroonga の更新を記録する。
@@ -365,7 +365,7 @@ pg_dump は dump 作成時点への復元で、PITR はできない。
 ## アラートからの調査
 
 `cluster` は Kubernetes クラスタ、`cnpg_cluster` は DB 名。
-meruto に恒久運用の DB はなく、operator の監視と DB の監視を区別する。
+operator の監視と DB の監視を区別する。
 
 | アラート | 確認するもの |
 |---|---|

@@ -20,8 +20,6 @@ spec:
         namespace: keycloak
       interval: 1h
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-08
     nameOverride: keycloak
     fullnameOverride: keycloak
     # StatefulSet の単一 Pod を順に置き換え、DB schema 更新時に旧版を並行稼働させない。
@@ -54,10 +52,10 @@ spec:
         memory: 2Gi
     database:
       vendor: postgres
-      hostname: keycloak-cluster-rw
+      hostname: keycloak-db-rw
       port: 5432
       database: keycloak
-      existingSecret: keycloak-cluster-app
+      existingSecret: keycloak-db-app
       existingSecretKey: password
     proxy:
       enabled: true
@@ -77,7 +75,7 @@ spec:
       - name: KC_DB_USERNAME
         valueFrom:
           secretKeyRef:
-            name: keycloak-cluster-app
+            name: keycloak-db-app
             key: username
       - name: KC_HOSTNAME
         # Terraform 未適用の master realm も管理ホスト内で認証を完結させる。
@@ -114,7 +112,7 @@ spec:
       enabled: true
       ingressClassName: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-http01
+        cert-manager.io/cluster-issuer: letsencrypt-dns01
       rules:
         - host: keycloak.pstr.space
           # /admin と /realms/master は公開しない。DCR は専用 Ingress で制限する。
@@ -134,13 +132,13 @@ spec:
             - path: /resources/
               pathType: Prefix
       tls:
-        - secretName: keycloak.pstr.space-http01
+        - secretName: keycloak.pstr.space-dns01
           hosts: [keycloak.pstr.space]
       console:
         enabled: true
         ingressClassName: traefik
         annotations:
-          cert-manager.io/cluster-issuer: letsencrypt-http01
+          cert-manager.io/cluster-issuer: letsencrypt-dns01
           traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
         rules:
           - host: admin.keycloak.pstr.space
@@ -149,7 +147,7 @@ spec:
               - path: /
                 pathType: Prefix
         tls:
-          - secretName: admin.keycloak.pstr.space-http01
+          - secretName: admin.keycloak.pstr.space-dns01
             hosts: [admin.keycloak.pstr.space]
     serviceMonitor:
       enabled: true
@@ -190,7 +188,7 @@ spec:
           ingressClassName: traefik
           tls:
             # 通常の公開 Ingress が管理する既存証明書を共用する。
-            - secretName: keycloak.pstr.space-http01
+            - secretName: keycloak.pstr.space-dns01
               hosts: [keycloak.pstr.space]
           rules:
             - host: keycloak.pstr.space

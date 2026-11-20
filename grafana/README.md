@@ -113,11 +113,11 @@ UIで変更する場合はGit Syncのブランチ経由でPRを作り、同じ�
 ## Keycloak
 
 [PKE / Keycloak](https://grafana.pstr.space/d/pke-keycloak) は Platform フォルダに置く。
-natsume の Keycloak ServiceMonitor が取得する HTTP・JVM・Agroal・ワーカープールのメトリクスと、Loki の認証拒否イベントを表示する。
+meruto の Keycloak ServiceMonitor が取得する HTTP・JVM・Agroal・ワーカープールのメトリクスと、Loki の認証拒否イベントを表示する。
 HTTP の route ラベルは realm 名を含まないため、master と pke を合算する。HTTP要求数やscrape成功をログイン成功数として扱わない。
 HTTPヒストグラムと認証成功counterは未収集のため、応答時間は平均値、認証失敗の理由はイベントログで確認する。
 収集状態は120秒以内の `up` を使い、欠測を正常0へ補完しない。平均遅延は対象区間に要求がない経路を表示せず、拒否ログが空の場合も認証成功を意味しない。
-DB接続待ちが続く場合は画面上部の CloudNativePG リンクから `keycloak-cluster` を確認する。
+DB接続待ちが続く場合は画面上部の CloudNativePG リンクから `keycloak-db` を確認する。
 
 ## ホストとsystemdの期待対象
 

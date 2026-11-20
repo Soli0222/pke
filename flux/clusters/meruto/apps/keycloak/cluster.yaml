@@ -1,16 +1,13 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: keycloak-cluster
+  name: keycloak-db
   namespace: keycloak
 spec:
   instances: 1
   imageName: ghcr.io/cloudnative-pg/postgresql:18.6-system-trixie
   primaryUpdateMethod: switchover
   smartShutdownTimeout: 60
-  affinity:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-08
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true
@@ -21,6 +18,14 @@ spec:
     size: 5Gi
     resizeInUseVolumes: false
   bootstrap:
-    initdb:
+    recovery:
+      source: origin
       database: keycloak
       owner: keycloak
+  externalClusters:
+  - name: origin
+    plugin:
+      name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: keycloak-backup-store-restore
+        serverName: keycloak-cluster

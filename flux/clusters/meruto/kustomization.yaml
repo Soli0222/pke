@@ -35,3 +35,4 @@ resources:
 - kustomizations/flux-monitoring.yaml
 - kustomizations/coredns-monitoring.yaml
 - kustomizations/monitoring-rules.yaml
+- kustomizations/keycloak.yaml

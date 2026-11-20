@@ -1,7 +1,7 @@
 # Keycloak の共通認証基盤
 
-Flux は natsume の Keycloak・CNPG・Ingress・監視を、Terraform は共通 realm・ユーザー・管理権限・OIDC クライアント・MCP の scope と CIMD policy を管理する。
-定義は [Flux アプリ](../../flux/clusters/natsume/apps/keycloak/) とこのディレクトリに置く。バージョンは HelmRelease と `versions.tf` が正本である。
+Flux は meruto の Keycloak・CNPG・Ingress・監視を、Terraform は共通 realm・ユーザー・管理権限・OIDC クライアント・MCP の scope と CIMD policy を管理する。
+定義は [Flux アプリ](../../flux/clusters/meruto/apps/keycloak/) とこのディレクトリに置く。バージョンは HelmRelease と `versions.tf` が正本である。
 Keycloak 本体・Service・公開 / 管理 Ingress・ServiceMonitor は codecentric の [keycloakx chart](https://github.com/codecentric/helm-charts/tree/master/charts/keycloakx) を HelmRelease から管理する。
 CNPG・バックアップ・1PasswordItem は既存アプリと同じ Flux 構成とし、NetworkPolicy はポート別の接続元制限を表すため別マニフェストで管理する。
 
@@ -107,14 +107,16 @@ Terraform 出力から更新する場合は、この定義を apply して state
 Ready に加えて revision / generation、ログインとバックアップ成功を確認する。
 
 ```sh
-kubectl --context soli.natsume -n flux-system get kustomization keycloak sui
-kubectl --context soli.natsume -n keycloak get helmrelease,statefulset,ingress,clusters.postgresql.cnpg.io,backups
+kubectl --context soli.meruto -n flux-system get kustomization keycloak
+kubectl --context soli.meruto -n keycloak get helmrelease,statefulset,ingress,clusters.postgresql.cnpg.io,backups
+kubectl --context soli.natsume -n flux-system get kustomization sui
 kubectl --context soli.natsume -n sui get helmrelease sui
 curl --fail https://keycloak.pstr.space/realms/pke/.well-known/openid-configuration
 curl --fail https://keycloak.pstr.space/.well-known/oauth-authorization-server/realms/pke
 ```
 
 公開ホストの `/admin/` と `/realms/master/` が到達不能で、管理ホストが証明書なしの接続を拒否することも確認する。
+Keycloak は meruto、sui は natsume で動く。meruto が止まると sui の新規ログインと OAuth の MCP が使えなくなる。発行済みの UI セッションと sui の API トークンは使える。
 DB は単一 instance。Keycloak も StatefulSet の単一 Pod を置き換えるため、更新時に認証が一時停止する。週次 backup + WAL archive と復元は [CNPG.md](../../CNPG.md) を参照する。
 
 運用状況は [PKE / Keycloak](https://grafana.pstr.space/d/pke-keycloak) で確認する。HTTP・DCR/token・JVM・DB接続プールと認証拒否ログを表示し、DB本体の詳細は CloudNativePG へ移動する。保存定義と表示上の制約は [Grafanaの運用](../../grafana/README.md#keycloak) を参照する。

@@ -5,12 +5,12 @@ metadata:
     cnpg.io/operatorVersion: 1.29.0
   labels:
     app.kubernetes.io/component: database
-    app.kubernetes.io/instance: keycloak-cluster
+    app.kubernetes.io/instance: keycloak-db
     app.kubernetes.io/managed-by: cloudnative-pg
     app.kubernetes.io/name: postgresql
     app.kubernetes.io/version: "18"
-    cnpg.io/cluster: keycloak-cluster
-  name: keycloak-cluster
+    cnpg.io/cluster: keycloak-db
+  name: keycloak-db
   namespace: keycloak
 spec:
   podMetricsEndpoints:
@@ -20,5 +20,5 @@ spec:
       targetLabel: cnpg_cluster
   selector:
     matchLabels:
-      cnpg.io/cluster: keycloak-cluster
+      cnpg.io/cluster: keycloak-db
       cnpg.io/podRole: instance

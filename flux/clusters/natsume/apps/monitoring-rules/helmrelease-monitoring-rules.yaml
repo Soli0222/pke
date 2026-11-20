@@ -34,11 +34,6 @@ spec:
       - ens3
       - ens4
     databases:
-    - namespace: keycloak
-      name: keycloak-cluster
-      archive: true
-      replication: false
-      baseBackupMaxAgeSeconds: 648000
     - namespace: misskey
       name: misskey-cluster-restored
       archive: true
