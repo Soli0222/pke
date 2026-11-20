@@ -23,8 +23,8 @@ spec:
       interval: 1h
   values:
     nodeSelector:
-      kubernetes.io/hostname: natsume-08
-    # RWO ボリュームをノード間で付け替えるため、旧 Pod の停止を待つ。
+      kubernetes.io/hostname: natsume-03
+    # RWO ボリュームを使うため、旧 Pod の停止を待つ。
     deploymentStrategy: Recreate
     extraEnv:
       - name: TZ
@@ -47,8 +47,7 @@ spec:
       enabled: false
     persistence:
       enabled: true
-      size: 10Gi
-      storageClass: ''
+      existingClaim: misskey-valkey-data
     metrics:
       enabled: true
       serviceMonitor:
