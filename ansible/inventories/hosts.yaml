@@ -16,6 +16,7 @@ all:
         natsume-08:
     topolvm_storage:
       hosts:
+        natsume-03:
         natsume-08:
         meruto-02:
     k3s_cluster:
