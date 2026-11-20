@@ -1,16 +1,13 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: ntfy-cluster
+  name: ntfy-db
   namespace: ntfy
 spec:
   instances: 1
   imageName: ghcr.io/cloudnative-pg/postgresql:18.6-system-trixie
   primaryUpdateMethod: switchover
   smartShutdownTimeout: 60
-  affinity:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-08
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true
@@ -21,6 +18,14 @@ spec:
     size: 5Gi
     resizeInUseVolumes: false
   bootstrap:
-    initdb:
+    recovery:
+      source: origin
       database: ntfy
       owner: ntfy
+  externalClusters:
+  - name: origin
+    plugin:
+      name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: ntfy-backup-store-restore
+        serverName: ntfy-cluster

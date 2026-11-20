@@ -6,6 +6,7 @@ resources:
 - onepassworditem-cnpg-backup.yaml
 - cluster.yaml
 - objectstore.yaml
+- objectstore-restore.yaml
 - scheduledbackup.yaml
 - podmonitor.yaml
 - helmrelease-ntfy.yaml

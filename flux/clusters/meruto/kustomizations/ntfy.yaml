@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: "./flux/clusters/natsume/apps/ntfy"
+  path: "./flux/clusters/meruto/apps/ntfy"
   prune: true
   wait: true
   timeout: 10m
@@ -20,6 +20,6 @@ spec:
   - name: cert-manager-config
   - name: cnpg
   - name: cnpg-backup-config
-  - name: longhorn
   - name: prometheus-operator-crd
   - name: traefik
+  - name: topolvm

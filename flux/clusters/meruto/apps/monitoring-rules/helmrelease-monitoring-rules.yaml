@@ -48,6 +48,11 @@ spec:
       archive: true
       replication: false
       baseBackupMaxAgeSeconds: 648000
+    - namespace: ntfy
+      name: ntfy-db
+      archive: true
+      replication: false
+      baseBackupMaxAgeSeconds: 648000
     containerlessHosts:
     - lune-02
     # END generated monitoring inventory

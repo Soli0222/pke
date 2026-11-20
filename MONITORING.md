@@ -32,12 +32,13 @@ flowchart LR
 | 共通アラート | [monitoring-rules chart](charts/monitoring-rules/README.md)、各クラスタの `apps/monitoring-rules/` |
 | アプリ固有のアラート・収集 | 各アプリの PrometheusRule / ServiceMonitor / PodMonitor / Probe |
 | 通知経路と抑制 | meruto Alloy の `mimir.alerts.kubernetes.global_config` |
-| ntfy の表示・認証・ACL | [ntfy HelmRelease](flux/clusters/natsume/apps/ntfy/helmrelease-ntfy.yaml) |
+| ntfy の表示・認証・ACL | [ntfy HelmRelease](flux/clusters/meruto/apps/ntfy/helmrelease-ntfy.yaml) |
 
 ホストと natsume は mTLS で `https://mimir.pstr.space/api/v1/push`、`https://loki.pstr.space/loki/api/v1/push`、`https://tempo.pstr.space/v1/traces` に送信する。
 これらは lune-02 を経由して meruto の Traefik で受け、natsume の CA でクライアント証明書を検証する。meruto の Alloy はクラスタ内の Service に送る。
 Mimir は単一 tenant `anonymous` を使い、Ruler の通知先は `http://mimir.mimir:8080/alertmanager`。
-通知先は natsume の ntfy のみで、外部 heartbeat 監視はない。meruto・lune-02・自宅回線のいずれかが止まると、評価も通知も止まり、その停止自体は通知されない。natsume の全断は meruto で評価できるが、通知先の ntfy も natsume にあるため届かない。
+通知先は meruto の ntfy のみで、外部 heartbeat 監視はない。meruto・lune-02・自宅回線のいずれかが止まると、評価も通知も止まり、その停止自体は通知されない。natsume の全断は meruto で評価し、ntfy へ通知する。
+Alertmanager は公開 URL の `https://ntfy.pstr.space` に送るため、通知は meruto から lune-02 を経由して meruto の Traefik に戻る。
 
 ## ラベルとルールの管理
 
@@ -114,9 +115,9 @@ Alloy は Secret を1分ごとに取得し、再起動なしで再評価する�
 Mimir Alertmanager が保存済み設定を取り込む間隔は5分なので、保存成功と有効設定への反映には時間差がある。
 通常の取得待ちを同期失敗と判断して Alloy を再起動しない。
 ntfy は単一 Pod / Recreate のため、再起動中は配信先が一時停止する。
-通知履歴・ユーザー・ACL・token は CNPG の `ntfy-cluster` に保存する。
-DB 接続には CNPG が生成する `ntfy-cluster-app` Secret の `uri` を使い、ユーザー・token は引き続き 1Password から宣言する。
-添付ファイルは Longhorn の `ntfy` PVC に保存し、DB のバックアップには含まれない。
+通知履歴・ユーザー・ACL・token は meruto の CNPG の `ntfy-db` に保存する。
+DB 接続には CNPG が生成する `ntfy-db-app` Secret の `uri` を使い、ユーザー・token は引き続き 1Password から宣言する。
+添付ファイルは TopoLVM の `ntfy` PVC に保存し、DB のバックアップには含まれない。
 DB の構成・バックアップ操作は [CNPG.md](CNPG.md) を参照する。
 
 SQLite からの切り替えは新規 DB への接続として行い、既存の通知履歴は取り込まない。
@@ -149,7 +150,7 @@ kubectl --context soli.natsume -n flux-system get kustomizations
 kubectl --context soli.meruto -n flux-system get kustomizations
 kubectl --context soli.natsume -n monitoring-rules get helmrelease,prometheusrule
 kubectl --context soli.meruto -n monitoring-rules get helmrelease,prometheusrule
-kubectl --context soli.natsume -n ntfy rollout status deployment/ntfy --timeout=5m
+kubectl --context soli.meruto -n ntfy rollout status deployment/ntfy --timeout=5m
 ```
 
 Mimir に port-forward し、保存ルールと評価状態を確認する。
