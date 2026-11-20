@@ -110,10 +110,11 @@ ansible-playbook -i inventories/hosts.yaml update-falco.yaml --limit 'natsume-03
 ## ストレージとネットワーク
 
 natsume は Longhorn と TopoLVM、meruto は TopoLVM を使います。
+両クラスタとも既定の StorageClass は `topolvm`（WaitForFirstConsumer）です。natsume の Longhorn は、既存のボリュームを TopoLVM へ移すまで残しています。
 Longhorn の既定 replica 数は1です。CNPG も全 DB が1 instance のため、バックアップと復元手順を含めて運用します。
 
 - `natsume-08`: Ansible が `/dev/vda4` に TopoLVM、`/dev/vda5` に Longhorn の領域を構成します。
-- `natsume-03`: Longhorn 600GB と TopoLVM 200GB が存在しますが、Ansible の storage role 対象には含めません。
+- `natsume-03`: Ansible が `/dev/vda5`（200G）に TopoLVM の VG を構成します。`/dev/vda4`（598G）は Longhorn の VG `longhorn` で、Ansible の Longhorn role の対象には含めません。
 - `meruto-02`: Ansible が T500（`/dev/disk/by-id/nvme-CT1000T500SSD8_2409474C8886`）の1パーティションに TopoLVM の VG を構成します。`ubuntu-vg` には `/var/lib/rancher`（150G）と `/var/lib/kubelet`（100G）の LV を K3s の導入前に作ります。TopoLVM を既定の StorageClass にするため、K3s の `local-storage` は無効にします。
 
 両クラスタとも dual-stack です。
