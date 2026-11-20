@@ -35,10 +35,6 @@ spec:
       - ens4
     databases:
     - namespace: misskey
-      name: misskey-cluster-restored
-      archive: true
-      replication: false
-    - namespace: misskey
       name: misskey-db
       archive: true
       replication: false
