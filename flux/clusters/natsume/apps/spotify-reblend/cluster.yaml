@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: reblend-cluster-restored
+  name: reblend-db
   namespace: spotify-reblend
 spec:
   instances: 1
@@ -10,7 +10,7 @@ spec:
   smartShutdownTimeout: 60
   affinity:
     nodeSelector:
-      kubernetes.io/hostname: natsume-08
+      kubernetes.io/hostname: natsume-03
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true
@@ -26,11 +26,11 @@ spec:
       database: reblend
       owner: reblend
       recoveryTarget:
-        backupID: 20261003T183000
+        backupID: 20261120T141147
   externalClusters:
   - name: origin
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: reblend-backup-store-restore
-        serverName: reblend-cluster
+        serverName: reblend-cluster-restored

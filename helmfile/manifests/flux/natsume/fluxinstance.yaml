@@ -45,4 +45,4 @@ spec:
         patch: |
           - op: add
             path: /spec/template/spec/nodeSelector/kubernetes.io~1hostname
-            value: natsume-08
+            value: natsume-03

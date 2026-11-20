@@ -5,6 +5,7 @@ resources:
 - helmrepository-sui-repo.yaml
 - helmrelease-sui.yaml
 - cluster.yaml
+- cluster-old.yaml
 - onepassworditem-cnpg-backup.yaml
 - objectstore.yaml
 - objectstore-restore.yaml
