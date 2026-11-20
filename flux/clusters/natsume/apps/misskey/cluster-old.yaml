@@ -1,0 +1,100 @@
+# 移行前の Cluster。misskey-db の切り替えを確認した後、PVC とあわせて削除する。
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: misskey-cluster-restored
+  namespace: misskey
+spec:
+  instances: 1
+  imageName: ghcr.io/soli0222/pgroonga-cnpg/4.1.0-alpine:18
+  primaryUpdateMethod: switchover
+  smartShutdownTimeout: 60
+  affinity:
+    nodeSelector:
+      kubernetes.io/hostname: natsume-08
+  resources:
+    requests:
+      cpu: 500m
+      memory: 4Gi
+    limits:
+      cpu: "3"
+      memory: 6Gi
+  postgresql:
+    shared_preload_libraries:
+    - pgroonga_wal_resource_manager
+    parameters:
+      pgroonga.enable_wal_resource_manager: "on"
+      pgroonga.enable_wal: "off"
+      pgroonga.enable_crash_safe: "off"
+      max_connections: "100"
+      shared_buffers: 1GB
+      effective_cache_size: 4GB
+      maintenance_work_mem: 256MB
+      work_mem: 8MB
+      random_page_cost: "1.1"
+      effective_io_concurrency: "200"
+      min_wal_size: 1GB
+      max_wal_size: 4GB
+      wal_compression: "on"
+      track_io_timing: "on"
+      track_wal_io_timing: "on"
+      max_worker_processes: "6"
+      max_parallel_workers: "4"
+      max_parallel_workers_per_gather: "2"
+      max_parallel_maintenance_workers: "2"
+      autovacuum_max_workers: "4"
+      autovacuum_work_mem: 256MB
+      autovacuum_vacuum_threshold: "1000"
+      autovacuum_vacuum_scale_factor: "0.02"
+      autovacuum_analyze_threshold: "1000"
+      autovacuum_analyze_scale_factor: "0.01"
+      timezone: Asia/Tokyo
+      log_timezone: Asia/Tokyo
+  plugins:
+  - name: barman-cloud.cloudnative-pg.io
+    isWALArchiver: true
+    parameters:
+      barmanObjectName: misskey-backup-store
+  storage:
+    storageClass: topolvm
+    size: 150Gi
+    resizeInUseVolumes: false
+  bootstrap:
+    recovery:
+      source: origin
+      database: misskey
+      owner: misskey
+      recoveryTarget:
+        backupID: 20261005T163000
+  externalClusters:
+  - name: origin
+    plugin:
+      name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: misskey-backup-store-restore
+        serverName: misskey-cluster
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  annotations:
+    cnpg.io/operatorVersion: 1.29.0
+  labels:
+    app.kubernetes.io/component: database
+    app.kubernetes.io/instance: misskey-cluster-restored
+    app.kubernetes.io/managed-by: cloudnative-pg
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: "18"
+    cnpg.io/cluster: misskey-cluster-restored
+  name: misskey-cluster-restored
+  namespace: misskey
+spec:
+  podMetricsEndpoints:
+  - port: metrics
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_pod_label_cnpg_io_cluster]
+      targetLabel: cnpg_cluster
+  selector:
+    matchLabels:
+      cnpg.io/cluster: misskey-cluster-restored
+      cnpg.io/podRole: instance

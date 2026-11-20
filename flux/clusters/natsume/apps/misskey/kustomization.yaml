@@ -6,6 +6,7 @@ resources:
 - pvc-misskey-valkey.yaml
 - helmrelease-misskey-valkey.yaml
 - cluster.yaml
+- cluster-old.yaml
 - objectstore.yaml
 - objectstore-restore.yaml
 - scheduledbackup.yaml

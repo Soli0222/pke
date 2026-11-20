@@ -38,6 +38,10 @@ spec:
       name: misskey-cluster-restored
       archive: true
       replication: false
+    - namespace: misskey
+      name: misskey-db
+      archive: true
+      replication: false
       baseBackupMaxAgeSeconds: 108000
     - namespace: spotify-nowplaying
       name: spn-db
