@@ -46,7 +46,7 @@ K3s クラスタ名は host_vars の `cluster`、Helmfile environment、Flux の
 ### natsume の Pod 配置と再起動
 
 アプリの固定先は各 HelmRelease の `nodeSelector`、DB は CNPG Cluster の `affinity.nodeSelector` で管理します。
-Misskey の Web・migration Job・DB・Valkey と Summaly は同じノードに配置します。
+Misskey の Web・migration Job・DB と Summaly は同じノードに配置します。Misskey の Valkey は natsume-03 の TopoLVM の volume を使うため natsume-03 に置きます。
 bootstrap の固定先は Helmfile environment の `bootstrapNode`、Flux controller は [FluxInstance](helmfile/manifests/flux/natsume/fluxinstance.yaml) の patch で指定します。
 DaemonSet は両ノードで稼働させ、Longhorn が生成する CSI controller・instance-manager の配置は Longhorn に任せます。
 
@@ -57,7 +57,7 @@ K3s 更新後にも CoreDNS が両ノードで Ready になっていることを
 固定はノード停止時の別ノードへの移動を防ぎますが、可用性を保証するものではありません。
 唯一の server / etcd の停止中は新規スケジューリングができず、DB の配置ノードが停止すると1 instance の DB も停止します。
 Longhorn の Pod 配置とデータ replica の配置は別です。`best-effort` の data locality は同居を保証しないため、移動後は Pod の Ready に加え、volume の `healthy`、attach 先、稼働中 replica の `spec.nodeID` が意図したノードであることを確認してから元ノードを再起動します。
-Misskey Valkey は RWO volume の付け替えに `Recreate` を使うため、反映時に短時間の停止が発生します。データ replica が移動しない場合は、元ノードを停止せず Longhorn の空き容量・scheduling 条件を確認します。
+Misskey Valkey は RWO volume を使うため `Recreate` で更新し、反映時に短時間の停止が発生します。
 
 ## 構築する
 
