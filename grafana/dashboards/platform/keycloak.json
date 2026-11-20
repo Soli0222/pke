@@ -27,15 +27,15 @@
           "name": "cluster",
           "label": "Cluster",
           "type": "custom",
-          "query": "natsume",
+          "query": "meruto",
           "current": {
-            "text": "natsume",
-            "value": "natsume"
+            "text": "meruto",
+            "value": "meruto"
           },
           "options": [
             {
-              "text": "natsume",
-              "value": "natsume",
+              "text": "meruto",
+              "value": "meruto",
               "selected": true
             }
           ],
@@ -79,7 +79,7 @@
       {
         "type": "link",
         "title": "Keycloak PostgreSQL",
-        "url": "/d/cloudnative-pg?var-cluster=${cluster}&var-namespace=keycloak&var-cnpg_cluster=keycloak-cluster",
+        "url": "/d/cloudnative-pg?var-cluster=${cluster}&var-namespace=keycloak&var-cnpg_cluster=keycloak-db",
         "includeVars": false,
         "keepTime": true,
         "targetBlank": true

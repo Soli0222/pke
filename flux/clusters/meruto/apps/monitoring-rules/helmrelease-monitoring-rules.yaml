@@ -43,6 +43,11 @@ spec:
       archive: true
       replication: false
       baseBackupMaxAgeSeconds: 648000
+    - namespace: keycloak
+      name: keycloak-db
+      archive: true
+      replication: false
+      baseBackupMaxAgeSeconds: 648000
     containerlessHosts:
     - lune-02
     # END generated monitoring inventory

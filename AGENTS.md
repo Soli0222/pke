@@ -74,7 +74,7 @@ natsume の node DNS は `flux/clusters/natsume/apps/external-dns-config/node-dn
 
 ## DB と監視の変更
 
-CNPG の DB はアプリ用を natsume、Grafana 用を meruto に置き、すべて1 instance。
+CNPG の DB はアプリ用を natsume、Grafana と Keycloak 用を meruto に置き、すべて1 instance。
 DB を追加・変更するときはバックアップ、PodMonitor、`cnpg_cluster` ラベルをそろえ、監視の期待対象を再生成する。あわせて[CNPG.md](CNPG.md) を更新する。
 operator の存在だけで DB の存在を判断しない。
 

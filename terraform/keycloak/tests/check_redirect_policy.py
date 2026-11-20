@@ -57,7 +57,7 @@ def open_local(opener, request):
 
 
 repo = Path(__file__).resolve().parents[3]
-helm_values = (repo / 'flux/clusters/natsume/apps/keycloak/helmrelease-keycloak.yaml').read_text()
+helm_values = (repo / 'flux/clusters/meruto/apps/keycloak/helmrelease-keycloak.yaml').read_text()
 image_match = re.search(r'^    image:\n      repository: ([^\n]+)\n      tag: "([^"]+)"', helm_values, re.M)
 assert image_match, 'Cannot locate Keycloak image in Helm values'
 image = image_match[1] + ':' + image_match[2]
