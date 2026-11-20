@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: reblend-cluster-restored-weekly-backup
+  name: reblend-db-weekly-backup
   namespace: spotify-reblend
 spec:
   # 日曜 03:30 JST（土曜 18:30 UTC）
@@ -9,7 +9,7 @@ spec:
   immediate: true
   backupOwnerReference: self
   cluster:
-    name: reblend-cluster-restored
+    name: reblend-db
   method: plugin
   pluginConfiguration:
     name: barman-cloud.cloudnative-pg.io

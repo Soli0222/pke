@@ -42,6 +42,6 @@ spec:
     controller:
       type: deployment
       nodeSelector:
-        kubernetes.io/hostname: natsume-08
+        kubernetes.io/hostname: natsume-03
     serviceMonitor:
       enabled: true

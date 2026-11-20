@@ -23,7 +23,7 @@ spec:
       interval: 1h
   values:
     nodeSelector:
-      kubernetes.io/hostname: natsume-08
+      kubernetes.io/hostname: natsume-03
     ingress:
       enabled: true
       className: traefik
@@ -53,10 +53,10 @@ spec:
     postgres:
       enabled: false
     externalPostgres:
-      host: spn-cluster-restored-rw
+      host: spn-db-rw
       port: 5432
       username: spn
       database: spn
       auth:
-        existingSecret: spn-cluster-restored-app
+        existingSecret: spn-db-app
         secretKey: password

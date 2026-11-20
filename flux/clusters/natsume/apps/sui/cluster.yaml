@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: sui-cluster-restored
+  name: sui-db
   namespace: sui
 spec:
   instances: 1
@@ -10,7 +10,7 @@ spec:
   smartShutdownTimeout: 60
   affinity:
     nodeSelector:
-      kubernetes.io/hostname: natsume-08
+      kubernetes.io/hostname: natsume-03
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true
@@ -26,11 +26,11 @@ spec:
       database: sui
       owner: sui
       recoveryTarget:
-        backupID: 20261003T181500
+        backupID: 20261114T181500
   externalClusters:
   - name: origin
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: sui-backup-store-restore
-        serverName: sui-cluster
+        serverName: sui-cluster-restored

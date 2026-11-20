@@ -23,7 +23,7 @@ spec:
       interval: 1h
   values:
     nodeSelector:
-      kubernetes.io/hostname: natsume-08
+      kubernetes.io/hostname: natsume-03
     onePassword:
       enabled: true
       itemPath: vaults/Kubernetes/items/mk-stream-secret

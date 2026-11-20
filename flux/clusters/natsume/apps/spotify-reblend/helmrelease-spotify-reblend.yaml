@@ -23,7 +23,7 @@ spec:
       interval: 1h
   values:
     nodeSelector:
-      kubernetes.io/hostname: natsume-08
+      kubernetes.io/hostname: natsume-03
     resources:
       requests:
         memory: 256Mi
@@ -61,10 +61,10 @@ spec:
     postgres:
       enabled: false
     externalPostgres:
-      host: reblend-cluster-restored-rw
+      host: reblend-db-rw
       port: 5432
       username: reblend
       database: reblend
       auth:
-        existingSecret: reblend-cluster-restored-app
+        existingSecret: reblend-db-app
         secretKey: password

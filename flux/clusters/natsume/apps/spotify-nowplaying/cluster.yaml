@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: spn-cluster-restored
+  name: spn-db
   namespace: spotify-nowplaying
 spec:
   instances: 1
@@ -10,7 +10,7 @@ spec:
   smartShutdownTimeout: 60
   affinity:
     nodeSelector:
-      kubernetes.io/hostname: natsume-08
+      kubernetes.io/hostname: natsume-03
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true
@@ -26,11 +26,11 @@ spec:
       database: spn
       owner: spn
       recoveryTarget:
-        backupID: 20261003T184500
+        backupID: 20261114T184500
   externalClusters:
   - name: origin
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: spn-backup-store-restore
-        serverName: spn-cluster
+        serverName: spn-cluster-restored
