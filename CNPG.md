@@ -313,6 +313,8 @@ PostgreSQL の復元、PGroonga の再構築、検索・更新の確認までを
    DB / Groonga ログの decode・merge・flush 等のエラー、Pod・PVC と空き容量を確認する。
    アプリ用 Secret の username / dbname が復元元の DB / owner と一致することを、値を公開せずに確認する。
    運用に切り替える際は復元元と異なる archive prefix へバックアップを設定し、Service / Secret の参照と実アプリ接続を確認してから再開する。
+   Misskey の migration Job は Helm の pre-upgrade hook で、更新前の `misskey-config` の接続先と、更新後の Secret のパスワードを使う。
+   接続先の Cluster を変える upgrade では、先に `misskey-config` の host を新しい `-rw` Service に合わせておく。合わせないと migration が旧 DB で認証に失敗する。
 
 `VACUUM FULL` は復元時の既定操作に含めない。
 大きなテーブル膨張があり、テーブルの書き直しと WAL に十分な一時容量を確保できる場合だけ検討する。
