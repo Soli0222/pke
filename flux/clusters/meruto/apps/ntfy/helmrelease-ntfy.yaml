@@ -18,13 +18,11 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-03
     env:
       - name: NTFY_DATABASE_URL
         valueFrom:
           secretKeyRef:
-            name: ntfy-cluster-app
+            name: ntfy-db-app
             key: uri
       - name: NTFY_AUTH_USERS
         valueFrom:
@@ -76,14 +74,14 @@ spec:
         upstream-base-url: "https://ntfy.sh"
 
     persistence:
-      storageClass: longhorn
+      storageClass: topolvm
       size: 10Gi
 
     ingress:
       enabled: true
       className: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-http01
+        cert-manager.io/cluster-issuer: letsencrypt-dns01
       hosts:
         - host: ntfy.pstr.space
           paths:
@@ -92,7 +90,7 @@ spec:
       tls:
         - hosts:
             - ntfy.pstr.space
-          secretName: ntfy.pstr.space-http01
+          secretName: ntfy.pstr.space-dns01
 
     serviceMonitor:
       enabled: true

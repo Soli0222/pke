@@ -46,7 +46,7 @@ def main():
         out = Path(temp)
         out.chmod(0o755)  # amtool の非 root ユーザーにもダミー設定を公開する。
         hr = yaml.safe_load(
-            (ROOT / "flux/clusters/natsume/apps/ntfy/helmrelease-ntfy.yaml").read_text()
+            (ROOT / "flux/clusters/meruto/apps/ntfy/helmrelease-ntfy.yaml").read_text()
         )
         (out / "values.yaml").write_text(yaml.safe_dump(hr["spec"]["values"]))
         print(run("helm", "lint", "charts/ntfy", "-f", str(out / "values.yaml")))
@@ -69,7 +69,7 @@ def main():
             assert "value" not in entry and "secretKeyRef" in entry["valueFrom"]
         database_env = next(e for e in env if e["name"] == "NTFY_DATABASE_URL")
         assert database_env["valueFrom"]["secretKeyRef"] == {
-            "name": "ntfy-cluster-app", "key": "uri"
+            "name": "ntfy-db-app", "key": "uri"
         }
         assert not any(d and d["kind"] == "Secret" for d in docs)
         config = yaml.safe_load(

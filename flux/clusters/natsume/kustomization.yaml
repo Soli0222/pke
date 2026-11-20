@@ -20,7 +20,6 @@ resources:
 - kustomizations/emoji-service.yaml
 - kustomizations/mc-mirror-cronjob.yaml
 - kustomizations/mk-stream.yaml
-- kustomizations/ntfy.yaml
 - kustomizations/registry.yaml
 - kustomizations/rss-fetcher.yaml
 - kustomizations/spotify-nowplaying.yaml

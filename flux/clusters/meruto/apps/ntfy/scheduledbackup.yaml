@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: ntfy-cluster-weekly-backup
+  name: ntfy-db-weekly-backup
   namespace: ntfy
 spec:
   # 日曜 04:00 JST（土曜 19:00 UTC）
@@ -9,7 +9,7 @@ spec:
   immediate: true
   backupOwnerReference: self
   cluster:
-    name: ntfy-cluster
+    name: ntfy-db
   method: plugin
   pluginConfiguration:
     name: barman-cloud.cloudnative-pg.io

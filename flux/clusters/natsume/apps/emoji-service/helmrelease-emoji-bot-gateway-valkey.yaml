@@ -45,7 +45,7 @@ spec:
     persistence:
       enabled: true
       size: 1Gi
-      storageClass: ''
+      storageClass: topolvm
     metrics:
       enabled: true
       serviceMonitor:

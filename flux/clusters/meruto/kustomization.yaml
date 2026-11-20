@@ -36,3 +36,4 @@ resources:
 - kustomizations/coredns-monitoring.yaml
 - kustomizations/monitoring-rules.yaml
 - kustomizations/keycloak.yaml
+- kustomizations/ntfy.yaml
