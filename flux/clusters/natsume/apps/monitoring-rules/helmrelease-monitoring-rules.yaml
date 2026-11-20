@@ -40,27 +40,15 @@ spec:
       replication: false
       baseBackupMaxAgeSeconds: 108000
     - namespace: spotify-nowplaying
-      name: spn-cluster-restored
-      archive: true
-      replication: false
-    - namespace: spotify-nowplaying
       name: spn-db
       archive: true
       replication: false
       baseBackupMaxAgeSeconds: 648000
     - namespace: spotify-reblend
-      name: reblend-cluster-restored
-      archive: true
-      replication: false
-    - namespace: spotify-reblend
       name: reblend-db
       archive: true
       replication: false
       baseBackupMaxAgeSeconds: 648000
-    - namespace: sui
-      name: sui-cluster-restored
-      archive: true
-      replication: false
     - namespace: sui
       name: sui-db
       archive: true
