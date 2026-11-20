@@ -48,7 +48,7 @@ K3s クラスタ名は host_vars の `cluster`、Helmfile environment、Flux の
 アプリの固定先は各 HelmRelease の `nodeSelector`、DB は CNPG Cluster の `affinity.nodeSelector` で管理します。
 Misskey の Web・migration Job・DB と Summaly は同じノードに配置します。Misskey の Valkey は natsume-03 の TopoLVM の volume を使うため natsume-03 に置きます。
 bootstrap の固定先は Helmfile environment の `bootstrapNode`、Flux controller は [FluxInstance](helmfile/manifests/flux/natsume/fluxinstance.yaml) の patch で指定します。
-DaemonSet は両ノードで稼働させ、Longhorn が生成する CSI controller・instance-manager の配置は Longhorn に任せます。
+DaemonSet は両ノードで稼働させます。
 
 [k3s-workload-placement](flux/clusters/natsume/apps/k3s-workload-placement/) は K3s 管理の既存 Deployment に、CoreDNS の2 replicas・ノード間分散と metrics-server の固定先だけを SSA で追加します。
 image・Corefile・Service・RBAC は K3s の管理を維持します。これらの Deployment は Flux の prune 対象にしません。
@@ -56,7 +56,7 @@ K3s 更新後にも CoreDNS が両ノードで Ready になっていることを
 
 固定はノード停止時の別ノードへの移動を防ぎますが、可用性を保証するものではありません。
 唯一の server / etcd の停止中は新規スケジューリングができず、DB の配置ノードが停止すると1 instance の DB も停止します。
-Longhorn の Pod 配置とデータ replica の配置は別です。`best-effort` の data locality は同居を保証しないため、移動後は Pod の Ready に加え、volume の `healthy`、attach 先、稼働中 replica の `spec.nodeID` が意図したノードであることを確認してから元ノードを再起動します。
+TopoLVM のボリュームは作成したノードから動かないため、PVC を使う Pod の固定先はボリュームのノードと一致させます。
 Misskey Valkey は RWO volume を使うため `Recreate` で更新し、反映時に短時間の停止が発生します。
 
 ## 構築する
@@ -109,12 +109,11 @@ ansible-playbook -i inventories/hosts.yaml update-falco.yaml --limit 'natsume-03
 
 ## ストレージとネットワーク
 
-natsume は Longhorn と TopoLVM、meruto は TopoLVM を使います。
-両クラスタとも既定の StorageClass は `topolvm`（WaitForFirstConsumer）です。natsume の Longhorn は、既存のボリュームを TopoLVM へ移すまで残しています。
-Longhorn の既定 replica 数は1です。CNPG も全 DB が1 instance のため、バックアップと復元手順を含めて運用します。
+両クラスタとも TopoLVM を使い、既定の StorageClass は `topolvm`（WaitForFirstConsumer）です。
+TopoLVM のボリュームはノードのローカルディスクにあり、ノード間で複製しません。CNPG も全 DB が1 instance のため、バックアップと復元手順を含めて運用します。
 
-- `natsume-08`: Ansible が `/dev/vda4` に TopoLVM、`/dev/vda5` に Longhorn の領域を構成します。
-- `natsume-03`: Ansible が `/dev/vda5`（200G）に TopoLVM の VG を構成します。`/dev/vda4`（598G）は Longhorn の VG `longhorn` で、Ansible の Longhorn role の対象には含めません。
+- `natsume-08`: Ansible が `/dev/vda4` に TopoLVM の VG を構成します。`/dev/vda5` は使いません。
+- `natsume-03`: Ansible が `/dev/vda5`（200G）と `/dev/vda4`（598G）で TopoLVM の VG を構成します。パーティションを作るのは `/dev/vda5` だけです。
 - `meruto-02`: Ansible が T500（`/dev/disk/by-id/nvme-CT1000T500SSD8_2409474C8886`）の1パーティションに TopoLVM の VG を構成します。`ubuntu-vg` には `/var/lib/rancher`（150G）と `/var/lib/kubelet`（100G）の LV を K3s の導入前に作ります。TopoLVM を既定の StorageClass にするため、K3s の `local-storage` は無効にします。
 
 両クラスタとも dual-stack です。

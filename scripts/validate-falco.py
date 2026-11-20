@@ -123,33 +123,10 @@ def validate_exception_boundaries(rules):
         ):
             assert not exception_matches(dracut, sample | {field: value}), (field, value)
 
-    rpc = exceptions["pke_longhorn_instance_manager_rpc"]
-    daemon = {
-        "k8s.ns.name": "longhorn-system", "container.name": "instance-manager",
-        "container.image.repository": "docker.io/longhornio/longhorn-instance-manager",
-        "proc.name": "longhorn-instan", "proc.pname": "longhorn-instan",
-        "proc.exepath": "/usr/local/bin/longhorn-instance-manager",
-        "proc.cmdline": "longhorn-instan --debug daemon --listen :8500",
-        "user.uid": 0, "proc.tty": 0, "evt.type": "dup3",
-        "fd.l4proto": "tcp", "fd.is_server": True, "fd.lport": 8501,
-    }
-    for executable in ("/tini", "/usr/local/bin/longhorn-instance-manager"):
-        for port in (8500, 8501, 8503):
-            sample = daemon | {"proc.exepath": executable, "fd.lport": port}
-            assert exception_matches(rpc, sample)
-            for field, value in (
-                ("fd.is_server", False), ("fd.lport", 4444), ("fd.l4proto", "udp"),
-                ("evt.type", "connect"), ("proc.exepath", "/bin/sh"),
-                ("proc.cmdline", daemon["proc.cmdline"] + "; sh"),
-                ("proc.pname", "bash"), ("proc.tty", 34816), ("user.uid", 1000),
-                ("container.name", "untrusted"), ("k8s.ns.name", "default"),
-                ("container.image.repository", "example.com/untrusted"),
-            ):
-                assert not exception_matches(rpc, sample | {field: value}), (field, value)
-    for exception, sample in ((dracut, reader), (rpc, daemon)):
+    for exception, sample in ((dracut, reader),):
         for field in exception["fields"]:
             assert not exception_matches(exception, {k: v for k, v in sample.items() if k != field}), field
-    print("dracut / Longhorn exception tables: allowed cases / neighboring denials / missing fields OK")
+    print("dracut exception table: allowed cases / neighboring denials / missing fields OK")
 
 
 def main():

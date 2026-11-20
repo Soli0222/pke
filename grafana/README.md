@@ -176,7 +176,7 @@ ntfyのpublish counterは全用途合算の受付実績で、topic別・アラ�
 ## Overviewと調査リンク
 
 [PKE / Overview](https://grafana.pstr.space/d/pke-overview) は同期ルートの運用入口で、初期clusterはnatsume、期間は6時間、更新は1分とする。
-12分野の現在値を「要確認」と「未確認」に分け、詳細画面へclusterと表示期間を引き継ぐ。
+11分野の現在値を「要確認」と「未確認」に分け、詳細画面へclusterと表示期間を引き継ぐ。
 異常状態の件数であり、アラートの閾値・for・除外条件を再現した発火件数ではない。
 
 期待するNode、etcd、DB、probeはinventoryとクラスタ設定から生成する。
@@ -188,7 +188,6 @@ KSM/証明書collectorの異常・欠測は各分野の確認項目にも含む�
 DBのないclusterと、HTTP probeの設定がない観測元は対象外とする。
 base backupの鮮度には監視設定のDB別 `baseBackupMaxAgeSeconds` を使う。Misskeyは30時間、週次の4DBは7日12時間。
 Barman pluginのbase backup成功時刻が未取得・0の場合は未確認であり、WAL成功をその代わりにしない。
-Longhornのunknown/detachedと、期待PVに状態指標がない場合も未確認へ残す。
 
 ```sh
 python3 scripts/sync-grafana-overview.py

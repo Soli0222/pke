@@ -56,6 +56,3 @@ spec:
     containerlessHosts:
     - lune-02
     # END generated monitoring inventory
-    groups:
-      longhorn:
-        enabled: false

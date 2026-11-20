@@ -84,7 +84,7 @@ grouping は `cluster / alertname / namespace / severity`、初回待機は30秒
 アイコンは tags に統一し、タイトルに絵文字を加えない。
 priority と本文は ntfy のカスタム `alertmanager` template で設定する。
 
-抑制は、同じ対象の critical → warning（PVC・ホスト filesystem・Longhorn node / disk・証明書期限）と、`http-get` の EndpointDown → HTTPStatusCodeError に限定する。
+抑制は、同じ対象の critical → warning（PVC・ホスト filesystem・証明書期限）と、`http-get` の EndpointDown → HTTPStatusCodeError に限定する。
 対象を識別するラベルは双方に必要で、欠落同士を一致させない。
 ホスト停止や欠測だけを理由に、Pod・PVC の通知をまとめて抑制しない。
 
@@ -289,7 +289,7 @@ kubectl --context soli.natsume -n alloy port-forward deployment/alloy 18345:1234
 
 `http://127.0.0.1:18345` の UI で対象 component の URL・health・last_error を確認する。
 API scrape は HTTPS・ServiceAccount token・CA 検証が必要。
-NetworkPolicy では、Longhorn manager の9500/TCP、Grafana renderer の8081/TCP に Alloy から到達できることを確認する。
+NetworkPolicy では、Grafana renderer の8081/TCP に Alloy から到達できることを確認する。
 Flux controller / Operator は `apps/flux-monitoring/` の PodMonitor で収集する。
 Operator の `flux_resource_info` は値1と ready / suspended ラベルで状態を表し、対象 namespace は `exported_namespace`。状態更新は scrape より遅れるため、実リソースとも照合する。
 CoreDNSは両クラスタの`apps/coredns-monitoring/`にあるServiceMonitorから、K3s管理の`kube-dns` Serviceのmetricsポートを収集する。
@@ -323,7 +323,7 @@ Loki は JSON イベントの調査に使う。Loki のルール評価には依�
 `install-falco` は systemd の `10-journal.conf` drop-in で標準出力・標準エラーを journal に送る。
 Falco の JSON イベントをホスト Alloy が journal から読み、Loki に転送する。
 container plugin は、Falco の起動時に K3s の containerd socket がないと、コンテナ・Pod のメタデータを取得しない。
-メタデータがないと例外が成立せず、CNPG や Longhorn の通常動作も検知される。
+メタデータがないと例外が成立せず、CNPG の通常動作も検知される。
 `install-falco` は `falco-cri-socket-restart.path` で socket の出現を待ち、起動ごとに1回 Falco を再起動する。
 再起動の前に起きたイベントと、K3s の起動を待つ間に起きたイベントは、メタデータなしで評価される。
 
@@ -350,8 +350,6 @@ container plugin は、Falco の起動時に K3s の containerd socket がない
 
 - CNPG: `app.kubernetes.io/managed-by=cloudnative-pg` と `cnpg.io/podRole=instance`、postgres コンテナ、イメージの配布元・系列、postgres 親プロセス、非対話実行、WAL アーカイブの完全なコマンド形式を照合する。PGroonga のイメージパス内のリリース番号と PostgreSQL の実行パス内の major version は数値パターンで照合する。通常のバージョン更新や DB 名・Pod 名の変更では例外の更新を必要としない。任意のシェル実行やコマンド末尾の追加実行は除外しない。
 - dracut: ホストの root が実行する `/usr/bin/grep` の `grep ^root: /etc/shadow` に限定する。親の dracut と、dpkg の postinst または kernel hook のプロセス系列を照合する。別コマンド・別ファイル・任意の親からの読み取りは対象外。
-- Longhorn manager: longhorn-system 内の manager が実行する `longhorn backup cleanup-all-mounts` に限定する。
-- Longhorn instance-manager: 既知のイメージ、daemon の完全なコマンドと親プロセス、root・非対話実行を照合する。`dup3` による TCP の受信側 socket、制御用の8500 / 8501 / 8503だけを除外する。外向き接続・別ポート・任意のシェルは検知対象に残す。
 
 systemd の正規の資格情報読み取りには upstream の例外を使う。
 `cat /etc/shadow` を含む任意の機密ファイル読み取りは通知対象に残す。

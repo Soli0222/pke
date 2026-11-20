@@ -16,7 +16,7 @@ RBAC は [共通定義](flux/bases/muse-access/clusterrole.yaml) で管理し、
 | Flux の source、Kustomization、HelmRelease、FluxInstance など | revision、Ready、同期失敗の確認 |
 | workload、Pod、Events、Pod ログ | rollout と失敗原因の確認 |
 | Node、Service、Ingress、volume、metrics など | 基盤・ネットワーク・ストレージの状態確認 |
-| 証明書・監視・Longhorn・TopoLVM の指定した CR | 各 controller の反映状況確認 |
+| 証明書・監視・TopoLVM の指定した CR | 各 controller の反映状況確認 |
 | CNPG の Cluster、Backup、ScheduledBackup、Pooler | natsume の DB・バックアップ状態確認 |
 | KubeVirt の VM・VMI・移行・snapshot・export・backup・pool・instancetype と CDI の指定した CR | meruto の VM・ディスク・バックアップ状態確認（get/list/watch のみ） |
 
@@ -43,7 +43,7 @@ exec、attach、port-forward、proxy、リソースの作成、workload と Flux
 Pod 定義・HelmRelease の values・ログなど、許可したリソースに直接書かれた秘密値は見えるため、出力を無条件に PR へ貼らない。
 
 Pod の削除と再起動はサービスを止めうる。
-CNPG の DB は1 instance のため、Pod を消すと再作成まで DB が止まる。Longhorn の instance-manager などストレージの Pod は削除しない。
+CNPG の DB は1 instance のため、Pod を消すと再作成まで DB が止まる。TopoLVM などストレージの Pod は削除しない。
 
 GitHub のマージ権限は kubeconfig とは別に管理する。
 RBAC や ValidatingAdmissionPolicy を変更する PR もマージできる場合、Flux 経由でこの制限を変更できる。

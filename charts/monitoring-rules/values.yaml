@@ -366,43 +366,6 @@ groups:
         for: 15m
         severity: warning
         annotations: {}
-  longhorn:
-    enabled: true
-    rules:
-      LonghornVolumeFaulted:
-        enabled: true
-        for: 5m
-        severity: critical
-        annotations: {}
-      LonghornVolumeDegraded:
-        enabled: true
-        for: 15m
-        severity: warning
-        annotations: {}
-      LonghornNodeSpaceLow:
-        enabled: true
-        for: 15m
-        severity: warning
-        threshold: 0.1
-        annotations: {}
-      LonghornNodeSpaceCritical:
-        enabled: true
-        for: 15m
-        severity: critical
-        threshold: 0.05
-        annotations: {}
-      LonghornDiskSpaceLow:
-        enabled: true
-        for: 15m
-        severity: warning
-        threshold: 0.1
-        annotations: {}
-      LonghornDiskSpaceCritical:
-        enabled: true
-        for: 15m
-        severity: critical
-        threshold: 0.05
-        annotations: {}
   flux:
     enabled: true
     rules:

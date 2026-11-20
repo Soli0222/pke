@@ -28,13 +28,13 @@ rules:
   expr: |-
     (node_filesystem_avail_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} / node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} < {{ .Values.groups.host.rules.HostFilesystemSpaceLow.threshold }}) and (node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} > 0) and (node_filesystem_readonly{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} == 0)
   summary: filesystem 空き容量低下 {{ $labels.instance }} {{ $labels.mountpoint }}
-  description: OS filesystem の空き率です。PVC / Longhorn の健全性とは別に調査してください。
+  description: OS filesystem の空き率です。PVC の健全性とは別に調査してください。
   family: host-filesystem
 - alert: HostFilesystemSpaceCritical
   expr: |-
     (node_filesystem_avail_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} / node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} < {{ .Values.groups.host.rules.HostFilesystemSpaceCritical.threshold }}) and (node_filesystem_size_bytes{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} > 0) and (node_filesystem_readonly{job="integrations/unix",instance!~"{{ .Values.exclusions.hosts }}",fstype!~"{{ .Values.exclusions.filesystems }}",mountpoint!~"{{ .Values.exclusions.mountpoints }}"} == 0)
   summary: filesystem 空き容量低下 {{ $labels.instance }} {{ $labels.mountpoint }}
-  description: OS filesystem の空き率です。PVC / Longhorn の健全性とは別に調査してください。
+  description: OS filesystem の空き率です。PVC の健全性とは別に調査してください。
   family: host-filesystem
 - alert: HostFilesystemFillingUp
   expr: |-
