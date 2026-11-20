@@ -1,1 +1,0 @@
-{{- include "monitoring-rules.group" (dict "root" . "name" "longhorn") }}

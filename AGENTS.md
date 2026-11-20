@@ -30,11 +30,11 @@ Ubuntu 26.04 の既定の sudo は sudo-rs で、パスワードを入力する 
 ホストの Alloy と Falco の playbook（`install-alloy` / `update-alloy-monitoring` / `configure-falco` / `update-falco`）は `k3s_cluster:edge_gateway` を対象にする。
 
 ストレージの対象を実ディスクの存在だけで拡張しない。
-`natsume-03` は TopoLVM が `/dev/vda5`（`topolvm_storage`）、Longhorn が `/dev/vda4`。Longhorn の領域は inventory の `longhorn_storage` に加えない。
-`natsume-08` は TopoLVM が `/dev/vda4`、Longhorn が `/dev/vda5`。
+`natsume-03` は TopoLVM が `/dev/vda5` と `/dev/vda4`（`topolvm_storage`）。パーティションを作るのは `/dev/vda5` だけ。
+`natsume-08` は TopoLVM が `/dev/vda4`。`/dev/vda5` は使わない。
 TopoLVM のパーティションと PV はノードごとに異なるため、host_vars に書く。
 natsume / meruto とも既定の StorageClass は `topolvm`。
-`meruto-02` は Longhorn を使わない。TopoLVM は T500 を by-id で指定し、`/var/lib/rancher` と `/var/lib/kubelet` は `ubuntu-vg` の LV（`k3s_data_volumes`）にする。
+`meruto-02` の TopoLVM は T500 を by-id で指定し、`/var/lib/rancher` と `/var/lib/kubelet` は `ubuntu-vg` の LV（`k3s_data_volumes`）にする。
 
 ネットワークは host_vars の `network_netplan` に定義する。
 meruto は public interface を持たない。外への通信は IPv4 / IPv6 とも `wg0` から lune-02 を通り、LAN にはデフォルトルートを置かない。K3s の 6443 は `k3s_bind_all_interfaces: false`、SSH は `sshd_listen_addresses` で LAN のアドレスだけで待ち受ける。UFW は適用のたびに reset して一時的に無効になるため、UFW だけに頼らず待ち受けも絞る。

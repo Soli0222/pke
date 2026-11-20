@@ -188,22 +188,6 @@ case(
     check(3, 0, 0),
 )
 case(
-    "PV persists while Longhorn status disappears",
-    [
-        ksm(),
-        metric(
-            "kube_persistentvolume_info",
-            {
-                "cluster": "natsume",
-                "persistentvolume": "v",
-                "csi_driver": "driver.longhorn.io",
-                "csi_volume_handle": "v",
-            },
-        ),
-    ],
-    check(6, 0, 1),
-)
-case(
     "misskey base backup zero is not a success",
     [
         metric(

@@ -11,9 +11,6 @@ all:
       children:
         natsume_etcd:
         meruto_etcd:
-    longhorn_storage:
-      hosts:
-        natsume-08:
     topolvm_storage:
       hosts:
         natsume-03:

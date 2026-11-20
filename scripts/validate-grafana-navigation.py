@@ -131,7 +131,6 @@ expected = {
         "Container": "$__all",
     },
     "flux": {"cluster": "meruto", "namespace": "flux-system"},
-    "longhorn": {"cluster": "meruto", "volume": "pvc/a"},
     "etcd": {"cluster": "meruto", "instance": "host:123"},
     "certificates": {"cluster": "meruto", "namespace": "team a"},
     "cnpg": {
@@ -169,8 +168,6 @@ for name, link in links["groups"].items():
                 params["Node"] = "$__all"
             if name in ["workload", "cnpg"]:
                 params["Pod" if name == "workload" else "pod"] = "$__all"
-            if name == "longhorn":
-                params["volume"] = "$__all"
         url = (
             "https://grafana.pstr.space/d/"
             + link["uid"]

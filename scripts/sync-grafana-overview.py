@@ -147,24 +147,6 @@ def expected_queries(root=ROOT):
             f"count({states}) or vector(0)",
             f"absent({fresh(flux)}) or vector(0)",
         ]
-        pv = f'max by(cluster,volume) (label_replace({m("kube_persistentvolume_info", csi_driver="driver.longhorn.io")}, "volume", "$1", "csi_volume_handle", "(.+)"))'
-        cap = f"max by(cluster,volume) ({m('longhorn_volume_capacity_bytes')})"
-        anchor = joined([pv, f"({cap}) > bool 0"])
-        health = f"max by(cluster,volume) ({m('longhorn_volume_robustness', state='healthy')})"
-        fault = f"max by(cluster,volume) ({m('longhorn_volume_robustness', state='faulted')})"
-        degraded = f"max by(cluster,volume) ({m('longhorn_volume_robustness', state='degraded')})"
-        attached = (
-            f"max by(cluster,volume) ({m('longhorn_volume_state', state='attached')})"
-        )
-        known = f"(({fault}) == 1) or ((({degraded}) == 1) and on(cluster,volume) (({attached}) == 1)) or (((({health}) == 1) and on(cluster,volume) (({attached}) == 1)) * 0)"
-        queries[6] = counts(
-            joined(
-                [
-                    provider("kube-state-metrics"),
-                    observed(known, anchor, "cluster,volume"),
-                ]
-            )
-        )
         dbs = values.get("databases", [])
         dbparts = []
         backups = []
@@ -250,7 +232,7 @@ def expected_queries(root=ROOT):
     # Select a branch using a cluster-labelled constant; no other cluster can
     # satisfy a missing target, including the not-applicable branches.
     result = {}
-    for panel in range(1, 13):
+    for panel in sorted(next(iter(all_queries.values()))):
         result[panel] = []
         for i in range(2):
             result[panel].append(
@@ -293,7 +275,7 @@ def main():
         raise SystemExit("Overview stale: run scripts/sync-grafana-overview.py")
     if not args.check:
         path.write_text(rendered)
-    print("Overview: 12 domains; expectations synchronized")
+    print("Overview: 11 domains; expectations synchronized")
 
 
 if __name__ == "__main__":

@@ -974,68 +974,6 @@ def scenarios():
         ],
         "unconfigured DB and unrelated cluster do not affect backup health",
     )
-    L = {**N, "volume": "vol-a", "pvc_namespace": "app", "pvc": "data"}
-    add(
-        "LonghornVolumeFaulted",
-        [s("longhorn_volume_robustness", BAD, L, state="faulted")],
-        L,
-    )
-    add(
-        "LonghornVolumeFaulted",
-        [
-            s(
-                "longhorn_volume_robustness",
-                BAD,
-                {**N, "volume": "unmapped"},
-                state="faulted",
-            )
-        ],
-        {**N, "volume": "unmapped"},
-        "PVC mapping missing still alerts",
-    )
-    add(
-        "LonghornVolumeDegraded",
-        [
-            s("longhorn_volume_robustness", BAD, L, state="degraded"),
-            s("longhorn_volume_state", "1x45", L, state="attached"),
-        ],
-        L,
-        "single replica and attached degraded",
-    )
-    quiet(
-        "LonghornVolumeDegraded",
-        [
-            s("longhorn_volume_robustness", "1x45", L, state="degraded"),
-            s("longhorn_volume_state", "0x45", L, state="attached"),
-        ],
-        "intentionally detached",
-    )
-    quiet(
-        "LonghornVolumeDegraded",
-        [
-            s("longhorn_volume_robustness", "0x4 1x5 0x40", L, state="degraded"),
-            s("longhorn_volume_state", "1x50", L, state="attached"),
-        ],
-        "brief rebuild",
-    )
-    for kind in ("Node", "Disk"):
-        entity = {
-            **N,
-            "node": "node-a",
-            **({"disk": "disk-a"} if kind == "Disk" else {}),
-        }
-        prefix = "longhorn_node_storage_" if kind == "Node" else "longhorn_disk_"
-        for level in ("Low", "Critical"):
-            add(
-                f"Longhorn{kind}Space{level}",
-                [
-                    s(prefix + "capacity_bytes", "100x45", entity),
-                    s(prefix + "reservation_bytes", "20x45", entity),
-                    s(prefix + "usage_bytes", "20x4 78x20 20x15", entity),
-                ],
-                entity,
-                "reserve is subtracted from capacity",
-            )
     FL = {**N, "kind": "HelmRelease", "exported_namespace": "app", "name": "workload"}
     FLO = {**FL, "namespace": "app"}
     for alert, state in [
@@ -1132,15 +1070,6 @@ def scenarios():
             "same PVC name in different namespace and cluster",
             checks=[("24m", [V])],
         )
-    quiet(
-        "LonghornVolumeFaulted",
-        [s("longhorn_volume_robustness", "0x45", L, state="faulted")],
-        "healthy volume",
-    )
-    quiet(
-        "LonghornVolumeFaulted", [], "missing volume metrics are not a healthy sample"
-    )
-    quiet("LonghornVolumeDegraded", [], "missing volume state")
     add(
         "FluxReconciliationFailed",
         [

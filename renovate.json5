@@ -81,12 +81,6 @@
     {
       matchManagers: ['flux'],
       matchDatasources: ['helm'],
-      matchPackageNames: ['longhorn'],
-      registryUrls: ['https://charts.longhorn.io'],
-    },
-    {
-      matchManagers: ['flux'],
-      matchDatasources: ['helm'],
       matchPackageNames: ['topolvm'],
       registryUrls: ['https://topolvm.github.io/topolvm'],
     },

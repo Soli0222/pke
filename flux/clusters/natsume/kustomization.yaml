@@ -11,8 +11,6 @@ resources:
 - kustomizations/external-dns.yaml
 - kustomizations/external-dns-config.yaml
 - kustomizations/kube-state-metrics.yaml
-- kustomizations/longhorn.yaml
-- kustomizations/longhorn-config.yaml
 - kustomizations/topolvm.yaml
 - kustomizations/misskey.yaml
 - kustomizations/traefik.yaml

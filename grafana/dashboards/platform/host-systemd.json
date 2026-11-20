@@ -741,7 +741,7 @@
         "timeFrom": "24h",
         "title": "Filesystem 使用率",
         "type": "timeseries",
-        "description": "監視ルールと同じOS filesystem範囲。PVCやLonghornの状態は別画面で確認。"
+        "description": "監視ルールと同じOS filesystem範囲。PVCの状態は別画面で確認。"
       }
     ],
     "templating": {
