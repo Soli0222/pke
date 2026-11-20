@@ -25,14 +25,6 @@ spec:
       networkDevices:
       - ens3
       - ens4
-    - name: natsume-08
-      units:
-      - alloy.service
-      - k3s-agent.service
-      - falco-modern-bpf.service
-      networkDevices:
-      - ens3
-      - ens4
     databases:
     - namespace: misskey
       name: misskey-db

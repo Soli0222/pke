@@ -22,8 +22,6 @@ spec:
         namespace: kube-state-metrics
       interval: 1h
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-03
     prometheus:
       monitor:
         enabled: true

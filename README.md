@@ -18,10 +18,10 @@ Ansible でノードを構成し、Helmfile で基盤を導入した後、Flux C
 
 | クラスタ | ノード | 役割 | kubectl context |
 |---|---|---|---|
-| natsume | `natsume-03`、`natsume-08` | 外部公開のアプリと DB | `soli.natsume` |
+| natsume | `natsume-03` | 外部公開のアプリと DB | `soli.natsume` |
 | meruto | `meruto-02` | 監視基盤・通知（ntfy）・認証基盤（Keycloak）などの基盤管理、外形監視、アプリ | `soli.meruto` |
 
-`natsume-03` と `meruto-02` が各クラスタの K3s server と external etcd を持ち、`natsume-08` は K3s agent です。
+両クラスタとも1台構成で、`natsume-03` と `meruto-02` が各クラスタの K3s server と external etcd を持ちます。K3s agent はありません。
 各クラスタの etcd は単一 member です。
 ノードの所属と接続先は [inventory](ansible/inventories/hosts.yaml) と [host_vars](ansible/inventories/host_vars/) に定義します。
 K3s クラスタ名は host_vars の `cluster`、Helmfile environment、Flux のディレクトリ名でそろえます。
@@ -45,18 +45,13 @@ K3s クラスタ名は host_vars の `cluster`、Helmfile environment、Flux の
 
 ### natsume の Pod 配置と再起動
 
-アプリの固定先は各 HelmRelease の `nodeSelector`、DB は CNPG Cluster の `affinity.nodeSelector` で管理します。
-Misskey の Web・migration Job・DB と Summaly は同じノードに配置します。Misskey の Valkey は natsume-03 の TopoLVM の volume を使うため natsume-03 に置きます。
-bootstrap の固定先は Helmfile environment の `bootstrapNode`、Flux controller は [FluxInstance](helmfile/manifests/flux/natsume/fluxinstance.yaml) の patch で指定します。
-DaemonSet は両ノードで稼働させます。
+natsume は `natsume-03` の1台構成のため、HelmRelease・CNPG Cluster・bootstrap の chart・Flux controller に配置先を指定しません。
 
-[k3s-workload-placement](flux/clusters/natsume/apps/k3s-workload-placement/) は K3s 管理の既存 Deployment に、CoreDNS の2 replicas・ノード間分散と metrics-server の固定先だけを SSA で追加します。
+[k3s-workload-placement](flux/clusters/natsume/apps/k3s-workload-placement/) は K3s 管理の既存 Deployment の配置だけを SSA で補完します。CoreDNS は1 replica で、podAntiAffinity を付けません。
 image・Corefile・Service・RBAC は K3s の管理を維持します。これらの Deployment は Flux の prune 対象にしません。
-K3s 更新後にも CoreDNS が両ノードで Ready になっていることを確認します。
 
-固定はノード停止時の別ノードへの移動を防ぎますが、可用性を保証するものではありません。
-唯一の server / etcd の停止中は新規スケジューリングができず、DB の配置ノードが停止すると1 instance の DB も停止します。
-TopoLVM のボリュームは作成したノードから動かないため、PVC を使う Pod の固定先はボリュームのノードと一致させます。
+唯一の server / etcd が停止している間は新規スケジューリングができず、1 instance の DB も止まります。
+TopoLVM のボリュームは作成したノードから動きません。ノードを追加するときは、PVC を使う Pod の配置先をボリュームのノードとそろえます。
 Misskey Valkey は RWO volume を使うため `Recreate` で更新し、反映時に短時間の停止が発生します。
 
 ## 構築する
@@ -70,8 +65,8 @@ Helmfile は environment に指定した 1Password item から Connect の認証
 
 ```sh
 cd ansible
-ansible-playbook -i inventories/hosts.yaml prepare-k3s-nodes.yaml --limit 'natsume-03,natsume-08'
-ansible-playbook -i inventories/hosts.yaml site-k3s.yaml --limit 'natsume-03,natsume-08'
+ansible-playbook -i inventories/hosts.yaml prepare-k3s-nodes.yaml --limit natsume-03
+ansible-playbook -i inventories/hosts.yaml site-k3s.yaml --limit natsume-03
 cd ../helmfile
 helmfile -e natsume apply
 ```
@@ -103,8 +98,8 @@ Falco の更新は `k3s_cluster` が対象です。
 この操作は SSH 経由で実行し、kubectl context は使いません。
 
 ```sh
-ansible-playbook -i inventories/hosts.yaml update-falco.yaml --limit 'natsume-03,natsume-08' --check --diff
-ansible-playbook -i inventories/hosts.yaml update-falco.yaml --limit 'natsume-03,natsume-08'
+ansible-playbook -i inventories/hosts.yaml update-falco.yaml --limit natsume-03 --check --diff
+ansible-playbook -i inventories/hosts.yaml update-falco.yaml --limit natsume-03
 ```
 
 ## ストレージとネットワーク
@@ -112,7 +107,6 @@ ansible-playbook -i inventories/hosts.yaml update-falco.yaml --limit 'natsume-03
 両クラスタとも TopoLVM を使い、既定の StorageClass は `topolvm`（WaitForFirstConsumer）です。
 TopoLVM のボリュームはノードのローカルディスクにあり、ノード間で複製しません。CNPG も全 DB が1 instance のため、バックアップと復元手順を含めて運用します。
 
-- `natsume-08`: Ansible が `/dev/vda4` に TopoLVM の VG を構成します。`/dev/vda5` は使いません。
 - `natsume-03`: Ansible が `/dev/vda5`（200G）と `/dev/vda4`（598G）で TopoLVM の VG を構成します。パーティションを作るのは `/dev/vda5` だけです。
 - `meruto-02`: Ansible が T500（`/dev/disk/by-id/nvme-CT1000T500SSD8_2409474C8886`）の1パーティションに TopoLVM の VG を構成します。`ubuntu-vg` には `/var/lib/rancher`（150G）と `/var/lib/kubelet`（100G）の LV を K3s の導入前に作ります。TopoLVM を既定の StorageClass にするため、K3s の `local-storage` は無効にします。
 

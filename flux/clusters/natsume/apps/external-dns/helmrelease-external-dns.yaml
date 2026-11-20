@@ -22,8 +22,6 @@ spec:
         namespace: external-dns
       interval: 1h
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-03
     env:
     - name: CF_API_TOKEN
       valueFrom:

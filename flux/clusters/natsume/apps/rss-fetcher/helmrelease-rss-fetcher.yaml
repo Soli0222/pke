@@ -22,8 +22,6 @@ spec:
         namespace: rss-fetcher
       interval: 1h
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-03
     config:
       feeds:
       - name: "natsume-kurusu-yt"

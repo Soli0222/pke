@@ -20,9 +20,9 @@ K3s ノードの host_vars に `cluster: <name>` を必ず指定し、etcd は `
 `setup-etcd` と `k3s_datastore_endpoint` は `groups[cluster + '_etcd']` を参照する。
 クラスタ固有値は host_vars、group_vars、クラスタ別グループで管理する。
 
-natsume は `natsume-03` が server / etcd、`natsume-08` が agent。
+natsume は `natsume-03` が server / etcd の1台構成。
 meruto は `meruto-02` が server / etcd。
-agent の join 先は `ansible/inventories/group_vars/k3s_agent.yaml` に定義する。
+現在 agent はないが、`k3s_agent` グループと join 先の `ansible/inventories/group_vars/k3s_agent.yaml` は追加に備えて残す。
 Ubuntu 26.04 の既定の sudo は sudo-rs で、パスワードを入力する become（`-K`）では Ansible がプロンプトを検出できず待ち続ける。
 `ssh-agent-sudo` を入れる前の初回だけ `-K -e ansible_become_exe=sudo.ws` を付け、host_vars には書かない。
 `sudo.ws` は Falco の信頼済みプログラムに含まれず、実行のたびに `Read sensitive file untrusted` を検知させる。
@@ -31,7 +31,6 @@ Ubuntu 26.04 の既定の sudo は sudo-rs で、パスワードを入力する 
 
 ストレージの対象を実ディスクの存在だけで拡張しない。
 `natsume-03` は TopoLVM が `/dev/vda5` と `/dev/vda4`（`topolvm_storage`）。パーティションを作るのは `/dev/vda5` だけ。
-`natsume-08` は TopoLVM が `/dev/vda4`。`/dev/vda5` は使わない。
 TopoLVM のパーティションと PV はノードごとに異なるため、host_vars に書く。
 natsume / meruto とも既定の StorageClass は `topolvm`。
 `meruto-02` の TopoLVM は T500 を by-id で指定し、`/var/lib/rancher` と `/var/lib/kubelet` は `ubuntu-vg` の LV（`k3s_data_volumes`）にする。

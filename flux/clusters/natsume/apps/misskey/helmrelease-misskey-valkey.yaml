@@ -22,8 +22,6 @@ spec:
         namespace: misskey
       interval: 1h
   values:
-    nodeSelector:
-      kubernetes.io/hostname: natsume-03
     # RWO ボリュームを使うため、旧 Pod の停止を待つ。
     deploymentStrategy: Recreate
     extraEnv:
