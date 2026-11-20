@@ -57,7 +57,7 @@ spec:
 
     web:
       nodeSelector:
-        kubernetes.io/hostname: natsume-08
+        kubernetes.io/hostname: natsume-03
       replicaCount: 1
 
       extraEnv:
@@ -79,11 +79,11 @@ spec:
       enabled: false
 
     externalPostgresql:
-      host: "misskey-cluster-restored-rw"
+      host: "misskey-db-rw"
       port: 5432
       database: misskey
       username: misskey
-      existingSecret: "misskey-cluster-restored-app"
+      existingSecret: "misskey-db-app"
       existingSecretKey: "password"
 
     redis:

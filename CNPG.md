@@ -16,7 +16,7 @@ Pooler は使わず、アプリは CNPG の Service に直接接続する。
 
 | Namespace | Cluster | DB / Owner | 容量 | バックアップ | 実行時刻（JST） |
 |---|---|---|---|---|---|
-| misskey | `misskey-cluster-restored` | `misskey` | 150Gi | base backup + WAL archive | 毎日 01:30 |
+| misskey | `misskey-db` | `misskey` | 150Gi | base backup + WAL archive | 毎日 01:30 |
 | sui | `sui-db` | `sui` | 5Gi | base backup + WAL archive | 日曜 03:15 |
 | spotify-reblend | `reblend-db` | `reblend` | 5Gi | base backup + WAL archive | 日曜 03:30 |
 | spotify-nowplaying | `spn-db` | `spn` | 5Gi | base backup + WAL archive | 日曜 03:45 |
@@ -172,7 +172,7 @@ spec:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: misskey-backup-store-restore
-        serverName: misskey-cluster-restored
+        serverName: misskey-db
 ```
 
 placeholder を実際の値へ置き換え、対象 backup の DONE、データ本体と目標までの WAL を確認してから作成する。

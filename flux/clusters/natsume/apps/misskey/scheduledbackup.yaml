@@ -1,13 +1,13 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: misskey-cluster-restored-daily-backup
+  name: misskey-db-daily-backup
   namespace: misskey
 spec:
   schedule: "0 30 16 * * *"
   backupOwnerReference: self
   cluster:
-    name: misskey-cluster-restored
+    name: misskey-db
   method: plugin
   pluginConfiguration:
     name: barman-cloud.cloudnative-pg.io

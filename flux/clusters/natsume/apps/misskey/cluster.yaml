@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: misskey-cluster-restored
+  name: misskey-db
   namespace: misskey
 spec:
   instances: 1
@@ -10,7 +10,7 @@ spec:
   smartShutdownTimeout: 60
   affinity:
     nodeSelector:
-      kubernetes.io/hostname: natsume-08
+      kubernetes.io/hostname: natsume-03
   resources:
     requests:
       cpu: 500m
@@ -64,11 +64,11 @@ spec:
       database: misskey
       owner: misskey
       recoveryTarget:
-        backupID: 20261005T163000
+        backupID: 20261119T163000
   externalClusters:
   - name: origin
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: misskey-backup-store-restore
-        serverName: misskey-cluster
+        serverName: misskey-cluster-restored
