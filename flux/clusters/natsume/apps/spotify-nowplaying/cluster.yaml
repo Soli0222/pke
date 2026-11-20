@@ -26,7 +26,7 @@ spec:
       database: spn
       owner: spn
       recoveryTarget:
-        backupID: 20261114T184500
+        backupID: 20261120T141147
   externalClusters:
   - name: origin
     plugin:
