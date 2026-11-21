@@ -16,4 +16,3 @@ spec:
   - name: traefik
   - name: metallb-config
   - name: prometheus-operator-crd
-  - name: cert-manager-config
