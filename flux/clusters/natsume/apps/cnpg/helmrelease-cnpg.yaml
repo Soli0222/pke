@@ -22,5 +22,9 @@ spec:
         namespace: cnpg-system
       interval: 1h
   values:
+    config:
+      data:
+        # operator の更新で PostgreSQL の Pod を作り直さず、instance manager だけを差し替える。
+        ENABLE_INSTANCE_MANAGER_INPLACE_UPDATES: "true"
     monitoring:
       podMonitorEnabled: true

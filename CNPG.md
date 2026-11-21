@@ -38,6 +38,27 @@ Misskey の物理復元は、[通常の PITR と PGroonga の再構築](#misskey
 容量回収のための `VACUUM FULL` は、テーブルの膨張と一時容量を確認して対象を選ぶ。
 定期バックアップの復元確認には、この手順を別名 Cluster で実行する。
 
+## operator の更新と DB の再起動
+
+operator は `ENABLE_INSTANCE_MANAGER_INPLACE_UPDATES` を有効にしている。
+operator を更新しても DB の Pod は作り直さず、instance manager だけを差し替える。PostgreSQL は再起動しない。
+差し替え後も Pod の init container image は更新前の版のまま残るため、Pod spec の image から instance manager の版を判断しない。
+この設定は chart の `config.data` から ConfigMap `cnpg-controller-manager-config` に入る。
+chart は ConfigMap が変わっても operator を再起動しないため、値を変えたら対象の context で operator を作り直す。
+
+```sh
+kubectl --context soli.natsume -n cnpg-system rollout restart deployment/cnpg-cloudnative-pg
+```
+
+DB image の変更や、再起動を必要とするパラメータの変更では PostgreSQL が再起動する。
+1 instance の DB は再起動のあいだ接続できない。
+アプリは接続プールで接続を保持し続けるため、smart shutdown は上限時間まで終わらず、そのあいだ新しい接続も拒否される。
+そこで全 Cluster を `smartShutdownTimeout: 0` とし、smart shutdown を待たずに fast shutdown へ進める。
+この値は instance manager が停止時に Cluster から読むため、変更しても Pod は作り直されない。
+
+operator の更新では misskey-web を止めなくてよい。
+PGroonga の image を更新するときは、次節の手順に従って Misskey の書き込みを止める。
+
 ## Misskey の PGroonga image を更新する
 
 Renovate は `pgroonga-cnpg` の公開済み GitHub Release から PostgreSQL 18 / Alpine の更新を検出し、

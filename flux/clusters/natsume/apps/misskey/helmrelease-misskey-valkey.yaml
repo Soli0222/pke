@@ -22,7 +22,7 @@ spec:
         namespace: misskey
       interval: 1h
   values:
-    # RWO ボリュームを使うため、旧 Pod の停止を待つ。
+    # 同じノードで新旧の Valkey が同じデータディレクトリを使わないよう、旧 Pod の停止を待つ。
     deploymentStrategy: Recreate
     extraEnv:
       - name: TZ
