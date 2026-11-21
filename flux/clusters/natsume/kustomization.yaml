@@ -16,6 +16,7 @@ resources:
 - kustomizations/traefik.yaml
 - kustomizations/daypassed-bot.yaml
 - kustomizations/emoji-service.yaml
+- kustomizations/hokan.yaml
 - kustomizations/mc-mirror-cronjob.yaml
 - kustomizations/mk-stream.yaml
 - kustomizations/registry.yaml

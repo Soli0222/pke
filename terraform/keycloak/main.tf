@@ -135,3 +135,26 @@ resource "keycloak_openid_client_optional_scopes" "sui_web" {
   client_id       = keycloak_openid_client.sui_web.id
   optional_scopes = []
 }
+
+resource "keycloak_openid_client" "hokan" {
+  realm_id                     = keycloak_realm.pke.id
+  client_id                    = "hokan"
+  name                         = "hokan Web"
+  access_type                  = "PUBLIC"
+  standard_flow_enabled        = true
+  implicit_flow_enabled        = false
+  direct_access_grants_enabled = false
+  pkce_code_challenge_method   = "S256"
+  valid_redirect_uris          = ["https://hokan.pstr.space/api/auth/callback"]
+  full_scope_allowed           = false
+}
+resource "keycloak_openid_client_default_scopes" "hokan" {
+  realm_id       = keycloak_realm.pke.id
+  client_id      = keycloak_openid_client.hokan.id
+  default_scopes = ["basic", "profile", "email"]
+}
+resource "keycloak_openid_client_optional_scopes" "hokan" {
+  realm_id        = keycloak_realm.pke.id
+  client_id       = keycloak_openid_client.hokan.id
+  optional_scopes = []
+}

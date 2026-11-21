@@ -1,0 +1,61 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: hokan
+  namespace: hokan
+spec:
+  interval: 10m
+  releaseName: hokan
+  targetNamespace: hokan
+  install:
+    createNamespace: false
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: hokan
+      version: 0.2.2
+      sourceRef:
+        kind: HelmRepository
+        name: hokan-repo
+        namespace: hokan
+      interval: 1h
+  # Terraform の出力を同期して初めて切り替える。Secret 未作成時は旧 release が稼働を続ける。
+  valuesFrom:
+  - kind: Secret
+    name: hokan-keycloak
+    valuesKey: values.yaml
+    optional: false
+  values:
+    ingress:
+      enabled: true
+      className: traefik
+      hosts:
+      - host: hokan.pstr.space
+        paths:
+        - path: "/"
+          pathType: Prefix
+    auth:
+      oidc:
+        issuer: "https://keycloak.pstr.space/realms/pke"
+        clientId: "hokan"
+        redirectUri: "https://hokan.pstr.space/api/auth/callback"
+        # allowedSubjects は hokan-keycloak/values.yaml から取得。イメージは chart の appVersion に従う。
+        allowedEmails: []
+      cookieSecure: "true"
+    mcp:
+      maxSessionsPerToken: "50"
+      oauth:
+        resourceUrl: "https://hokan.pstr.space/mcp"
+    tracing:
+      tracesEndpoint: "http://alloy-otlp.alloy.svc.cluster.local:4318/v1/traces"
+    postgresql:
+      enabled: false
+    externalPostgres:
+      host: hokan-db-rw
+      port: 5432
+      database: hokan
+      user: hokan
+      existingSecret: hokan-db-app
+      existingSecretKey: password
