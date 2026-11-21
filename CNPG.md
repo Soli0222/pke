@@ -83,13 +83,19 @@ image を切り替えただけで、DB 内の拡張定義まで更新された�
 WAL は継続保存し、base backup は上表の頻度で取得する。
 `ObjectStore` は稼働 DB の archive 用と復元元の読み取り用を分ける。
 `objectstore-restore.yaml` に保持期限は設定せず、`Cluster.spec.externalClusters` の `serverName` で復元元 prefix を指定する。
-稼働 DB の archive は現在の Cluster 名を prefix に使うため、復元元を上書きしない。
+稼働 DB の archive は現在の Cluster 名を prefix に使う。
 各アプリの `ObjectStore` は WAL / base backup を gzip 圧縮し、`ScheduledBackup` は UTC の6フィールド cron を使う。
 週次のDBは `immediate: true` により ScheduledBackup 作成時にも初回バックアップを取得する。
 初回は定期実行の時刻分散が効かないため、導入時の負荷と完了状態を確認する。
 plugin の追加は sidecar を含む DB Pod の更新を伴う。単一 instance のため、更新時の接続断を見込む。
 初回 Backup が失敗した場合は原因を解消して手動で再取得し、週次の次回実行を待たない。
-base backup と WAL からの復元を確認するまでは、保管済みの dump を残す。
+
+各 Cluster の `bootstrap.recovery` は、自身の prefix を復元元とし、archive の末尾まで戻す。
+bootstrap は Cluster の作成時だけ使われ、稼働中の DB には影響しない。
+Cluster が削除されて Flux が作り直すと、自身のバックアップから最新の状態に復元される。
+`initdb` には戻さない。作り直したときに空の DB ができ、アプリがそこへ書き込みを始めるため。
+復元した Cluster は空でない自身の prefix に WAL を archive できず、WALArchiveFailing で検知される。
+Misskey は PGroonga の再構築の前にアプリが接続するため、作り直しを検知したら[PGroonga を再構築](#misskey-は-pitr-後に-pgroonga-を再構築する)する。
 
 R2 の bucket は `cnpg-backup`、`retentionPolicy: 7d` は7日間の復元可能期間を表す。
 その期間の起点より前の base backup と必要な WAL も保持するため、7日を超えるオブジェクトが残る。
@@ -99,6 +105,14 @@ R2 の bucket は `cnpg-backup`、`retentionPolicy: 7d` は7日間の復元可�
 ```text
 s3://cnpg-backup/<cluster>/base/<backup-id>/
 s3://cnpg-backup/<cluster>/wals/
+```
+
+保持期限は稼働中の Cluster が自身の prefix に適用する。
+Cluster を削除しても R2 の prefix は残り、保持期限も効かなくなる。
+不要になった prefix は、どの Cluster の `externalClusters` からも参照されていないことを確かめてから手で削除する。
+
+```sh
+aws s3 rm --endpoint-url "$AWS_ENDPOINT_URL" --recursive "s3://cnpg-backup/<cluster>/"
 ```
 
 | 1Password item | 同期先とキー |
@@ -337,50 +351,6 @@ PostgreSQL の復元、PGroonga の再構築、検索・更新の確認までを
 大きなテーブル膨張があり、テーブルの書き直しと WAL に十分な一時容量を確保できる場合だけ検討する。
 `note` に FULL を行う場合は同じ操作で index も再構築されるため、上の独立した REINDEX を重ねて実行しない。
 旧内部オブジェクト整理と検索検証は、どちらの再構築方法でも行う。
-
-## 保管済みの pg_dump から復元する
-
-R2 に保管済みの `<cluster>/<cluster>-YYYYMMDD-HHMMSS.dump` がある場合に使う。
-新規の定期 dump は取得しない。Barman の保持設定はこれらの dump を削除しないため、base backup からの復元確認後に保存要否を判断する。
-pg_dump は dump 作成時点への復元で、PITR はできない。
-以下は Grafana を別名 `grafana-recovery` に復元する例。
-
-1. R2 の対象 dump を選び、ローカルに取得する。
-
-   ```sh
-   aws s3 ls --endpoint-url "$AWS_ENDPOINT_URL" s3://cnpg-backup/grafana-cluster/
-   aws s3 cp --endpoint-url "$AWS_ENDPOINT_URL" \
-     "s3://cnpg-backup/grafana-cluster/<dump-file>" ./restore.dump
-   ```
-
-2. [Grafana の Cluster 定義](flux/clusters/meruto/apps/grafana/cluster.yaml)を基に、`metadata.name` を `grafana-recovery` とした空の Cluster を作る。
-   DB / owner は `grafana` にそろえ、復元元と互換性のある PostgreSQL image を明示する。
-   `bootstrap` は `initdb` に替え、DB / owner を指定する。`spec.plugins` と `spec.externalClusters` はコピーせず、元の archive に書き込まない。運用開始時に復元先専用の保存先で設定する。
-   配置先の空き容量を確認し、Ready と新しい `grafana-recovery-app` Secret の生成を待つ。
-
-3. 復元先への port-forward を別ターミナルで維持する。
-
-   ```sh
-   kubectl --context soli.meruto -n grafana port-forward \
-     svc/grafana-recovery-rw 15432:5432
-   ```
-
-4. dump を作成した PostgreSQL と互換性のある `pg_restore` で投入する。
-   以下は復元先 Secret を環境変数へ読み込み、値を出力せずに使う。
-
-   ```sh
-   PGUSER="$(kubectl --context soli.meruto -n grafana get secret grafana-recovery-app -o jsonpath='{.data.username}' | base64 -d)"
-   PGPASSWORD="$(kubectl --context soli.meruto -n grafana get secret grafana-recovery-app -o jsonpath='{.data.password}' | base64 -d)"
-   PGDATABASE="$(kubectl --context soli.meruto -n grafana get secret grafana-recovery-app -o jsonpath='{.data.dbname}' | base64 -d)"
-   export PGUSER PGPASSWORD PGDATABASE
-   pg_restore -h 127.0.0.1 -p 15432 --no-owner --no-privileges \
-     --exit-on-error -j 4 ./restore.dump
-   unset PGUSER PGPASSWORD PGDATABASE
-   ```
-
-復元後はテーブル・拡張・データとアプリ接続を確認する。
-接続先 Service と Secret を Git のアプリ定義で変更し、ObjectStore、ScheduledBackup、PodMonitor、監視対象 DB 名もそろえる。
-切替時はアプリの書き込みを止める時点と復元対象を決め、確認用の古い dump のまま運用を再開しない。
 
 ## アラートからの調査
 

@@ -60,12 +60,10 @@ spec:
       source: origin
       database: misskey
       owner: misskey
-      recoveryTarget:
-        backupID: 20261119T163000
   externalClusters:
   - name: origin
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: misskey-backup-store-restore
-        serverName: misskey-cluster-restored
+        serverName: misskey-db

@@ -28,4 +28,4 @@ spec:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: keycloak-backup-store-restore
-        serverName: keycloak-cluster
+        serverName: keycloak-db

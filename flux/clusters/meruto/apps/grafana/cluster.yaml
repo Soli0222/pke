@@ -28,4 +28,4 @@ spec:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: grafana-backup-store-restore
-        serverName: grafana-cluster-restored
+        serverName: grafana-db
