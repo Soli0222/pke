@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
 - clusterissuer.yaml
 - pke-natsume-mtls.yaml
+- wildcard-certificates.yaml

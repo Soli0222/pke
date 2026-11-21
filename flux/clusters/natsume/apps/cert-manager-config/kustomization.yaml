@@ -4,3 +4,4 @@ resources:
 - clusterissuer.yaml
 - pke-natsume-mtls-ca.yaml
 - pke-natsume-mtls-client-cert.yaml
+- wildcard-certificates.yaml
