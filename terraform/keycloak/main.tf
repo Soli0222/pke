@@ -92,11 +92,6 @@ resource "keycloak_user" "soli" {
 
 # 新しいアプリや CIMD クライアントへ管理ロールを既定で渡さない。
 # 既存の組み込み管理コンソールには元の client scopes が残る。
-# apply 後に削除可。
-import {
-  to = keycloak_client_scope_assignments.pke
-  id = "realm/${keycloak_realm.pke.id}"
-}
 # DCR の scope 省略時にも、この optional scopes が付く。他アプリの scope は個別に割り当てる。
 resource "keycloak_client_scope_assignments" "pke" {
   realm_id       = keycloak_realm.pke.id
