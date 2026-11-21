@@ -54,8 +54,6 @@ spec:
     ingress:
       enabled: true
       className: traefik
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
       blockedPaths:
       - path: /metrics
         pathType: Prefix
@@ -64,10 +62,6 @@ spec:
         paths:
         - path: /
           pathType: ImplementationSpecific
-      tls:
-      - secretName: navidrome-tls
-        hosts:
-        - navidrome.pstr.space
     serviceMonitor:
       enabled: true
     config:

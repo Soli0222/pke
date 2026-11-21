@@ -45,17 +45,12 @@ spec:
       enabled: true
       className: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-http01
         external-dns.kubernetes.io/cloudflare-proxied: 'true'
       hosts:
       - host: reblend.pstr.space
         paths:
         - path: "/"
           pathType: ImplementationSpecific
-      tls:
-      - secretName: reblend.pstr.space-http01
-        hosts:
-        - reblend.pstr.space
     postgres:
       enabled: false
     externalPostgres:

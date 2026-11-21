@@ -127,15 +127,10 @@ spec:
       enabled: true
       className: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
         traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
       ingressClassName: traefik
       hosts:
         - loki.pstr.space
-      tls:
-        - hosts:
-            - loki.pstr.space
-          secretName: loki.pstr.space-dns01
 
     gateway:
       enabled: false

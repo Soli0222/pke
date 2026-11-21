@@ -72,14 +72,9 @@ spec:
       enabled: true
       ingressClassName: traefik
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
         traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
       hosts:
         - grafana.pstr.space
-      tls:
-        - secretName: grafana.pstr.space-dns01
-          hosts:
-            - grafana.pstr.space
 
     grafana.ini:
       feature_toggles:
