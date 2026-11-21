@@ -44,12 +44,12 @@ master と pke の両方に、次のブラウザ認証フローを設定する�
 公開 Ingress は `/admin/`、`/realms/master/` をルーティングしない。
 認可サーバー discovery は従来の `/realms/pke/.well-known/` に加え、RFC 8414 の `/.well-known/oauth-authorization-server/realms/pke` を完全一致で公開する。パスを含む issuer を扱う MCP クライアントはこの標準 URL を先に探索する。Keycloak が返す metadata をそのまま配信し、書き換えやリダイレクトは行わない。`/.well-known/` 全体や master の metadata は公開しない。
 匿名 DCR は専用 Ingress で `/realms/pke/clients-registrations/openid-connect` とその配下だけを公開する。作成は匿名、個別クライアントの取得・更新・削除には Keycloak が Registration Access Token 等を要求する。`default` / `install` / `saml2-entity-descriptor` の登録 API は公開しない。
-専用 Ingress と RateLimit Middleware は keycloakx chart の `extraManifests` で管理し、通常の公開 Ingress の TLS 証明書を共用する。DCR 経路だけに平均10要求/分・burst 5の制限を設ける。公開ホスト単位で集計し、カウンターは Traefik インスタンスごとに独立する。ログイン・token・discovery はこの制限の対象外。
+専用 Ingress と RateLimit Middleware は keycloakx chart の `extraManifests` で管理する。DCR 経路だけに平均10要求/分・burst 5の制限を設ける。公開ホスト単位で集計し、カウンターは Traefik インスタンスごとに独立する。ログイン・token・discovery はこの制限の対象外。
 この Ingress を公開する前に、DCR 登録ポリシーの Terraform apply を完了する。ポリシー未適用のまま公開する PR を先行マージしない。停止する場合は DCR 用 Ingress と Middleware を Git から除去する。既存クライアントの認証と token 更新は継続できる。
 Helm の `KC_HOSTNAME` と `KC_HOSTNAME_ADMIN` は管理ホストに固定する。Terraform 未適用の初回起動から master のログインと Cookie 確認 iframe が管理ホスト内で完結する。
 Terraform は master の `frontendUrl` に同じ管理 URL を、pke の `frontendUrl` に公開 URL を設定する。
 NetworkPolicy で HTTP は Traefik、management port は Alloy に接続元を制限する。Keycloak は Traefik の転送ヘッダーを信頼する。
-DNS は既存の ExternalDNS、証明書は cert-manager の HTTP-01 で管理し、Cloudflare は DNS-only で使う。
+DNS は既存の ExternalDNS で管理し、Cloudflare は DNS-only で使う。公開ホストの証明書は Traefik の default TLSStore にある `*.pstr.space` の wildcard を使う。管理ホスト（`admin.keycloak.pstr.space`）は wildcard で覆えないため、cert-manager の `letsencrypt-dns01` で個別に発行する。
 
 ## 先に用意するもの
 
