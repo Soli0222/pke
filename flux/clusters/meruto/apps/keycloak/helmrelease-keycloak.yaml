@@ -111,8 +111,6 @@ spec:
     ingress:
       enabled: true
       ingressClassName: traefik
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
       rules:
         - host: keycloak.pstr.space
           # /admin と /realms/master は公開しない。DCR は専用 Ingress で制限する。
@@ -131,15 +129,13 @@ spec:
               pathType: Prefix
             - path: /resources/
               pathType: Prefix
-      tls:
-        - secretName: keycloak.pstr.space-dns01
-          hosts: [keycloak.pstr.space]
       console:
         enabled: true
         ingressClassName: traefik
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-dns01
           traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
+        # admin.keycloak.pstr.space は Traefik の wildcard（*.pstr.space）で覆えないため、個別に発行する。
         rules:
           - host: admin.keycloak.pstr.space
             # 管理 UI に加え、master realm のログインも mTLS 内で提供する。
@@ -186,10 +182,6 @@ spec:
             traefik.ingress.kubernetes.io/router.middlewares: '{{ .Release.Namespace }}-{{ include "keycloak.fullname" . }}-dcr-ratelimit@kubernetescrd'
         spec:
           ingressClassName: traefik
-          tls:
-            # 通常の公開 Ingress が管理する既存証明書を共用する。
-            - secretName: keycloak.pstr.space-dns01
-              hosts: [keycloak.pstr.space]
           rules:
             - host: keycloak.pstr.space
               http:

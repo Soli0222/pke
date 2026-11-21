@@ -59,17 +59,11 @@ spec:
     ingress:
       enabled: true
       className: traefik-local
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
       hosts:
       - host: navidrome-curator.home.str08.net
         paths:
         - path: /
           pathType: Prefix
-      tls:
-      - secretName: navidrome-curator-tls
-        hosts:
-        - navidrome-curator.home.str08.net
     serviceMonitor:
       enabled: true
     resources:

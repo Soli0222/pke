@@ -95,14 +95,9 @@ spec:
       enabled: true
       className: "traefik"
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-http01
         external-dns.kubernetes.io/cloudflare-proxied: 'true'
       hosts:
       - host: mi.soli0222.com
         paths:
         - path: /
           pathType: Prefix
-      tls:
-      - secretName: mi.soli0222.com-http01
-        hosts:
-        - mi.soli0222.com

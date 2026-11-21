@@ -80,17 +80,11 @@ spec:
     ingress:
       enabled: true
       className: traefik
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-dns01
       hosts:
         - host: ntfy.pstr.space
           paths:
             - path: /
               pathType: Prefix
-      tls:
-        - hosts:
-            - ntfy.pstr.space
-          secretName: ntfy.pstr.space-dns01
 
     serviceMonitor:
       enabled: true

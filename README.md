@@ -127,6 +127,13 @@ IPv6 は LAN にアドレスがなく同じ手が使えないため、IPv6 で�
 K3s built-in の Traefik と Helm controller は無効化し、Ingress とアプリの Helm release は Flux で管理します。
 meruto は K3s 同梱の `gateway-api-crd` も無効にし、Gateway API の CRD は Flux の Traefik に任せます。
 
+Ingress の証明書は、ドメインごとの wildcard を Traefik の default TLSStore に載せて共用します。
+cert-manager が `letsencrypt-dns01` で `traefik` namespace に発行し、[TLSStore](flux/clusters/natsume/apps/cert-manager-config/wildcard-certificates.yaml) が読み込みます。
+両クラスタとも `*.soli0222.com` / `*.str08.net` / `*.pstr.space` を、meruto はさらに `*.home.str08.net` を載せます。TLSStore は IngressClass で絞られないため、meruto の traefik と traefik-local の両方が読みます。
+Traefik は SNI で store から証明書を選び、websecure は entrypoint で TLS が有効です。そのため Ingress には `spec.tls` も `cert-manager.io/cluster-issuer` も書きません。
+wildcard は1階層だけを覆います。`admin.keycloak.pstr.space` のように深いホスト名は、アプリの Ingress で個別に発行します。SNI の完全一致の証明書は wildcard より優先されます。
+クライアント証明書を要求する Ingress は、`spec.tls` がなくても `traefik.ingress.kubernetes.io/router.tls.options` の annotation で TLSOption を指定できます。
+
 ### 外部ゲートウェイ（lune-02）
 
 `lune-02` は inventory の `edge_gateway` グループに属する VPS で、K3s ノードではありません。
@@ -165,7 +172,7 @@ lune-02 のアドレスを変えるときは、lune-02 の host_vars、`lune` po
 LAN だけに公開する Ingress は、IngressClass `traefik-local` の [Traefik](flux/clusters/meruto/apps/traefik-local/) が受けます。
 `lan` pool の `192.168.50.201` に固定し、NodePort は作りません（`allocateLoadBalancerNodePorts: false`）。
 ホスト名は `*.home.str08.net` の下に置きます。external-dns は `traefik-local` の Ingress にも、status のアドレス（`192.168.50.201`）で A を登録します。LAN の端末は公開 DNS で名前を引けます。
-証明書は cert-manager の `letsencrypt-dns01` で発行します。
+証明書は TLSStore の `*.home.str08.net` を使います。
 
 ### meruto の KubeVirt
 

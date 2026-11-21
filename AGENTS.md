@@ -46,6 +46,7 @@ K3s の external IP と TLS SAN は host_vars の設定を尊重する。
 追加時は `kustomizations/<app>.yaml` と root `kustomization.yaml` への登録をそろえ、CRD や Secret などの依存を `dependsOn` で表す。
 Helmfile は Cilium、1Password Connect / Operator、Flux Operator の bootstrap を担当する。
 その後のアプリは Flux で管理する。
+Ingress の証明書は Traefik の default TLSStore の wildcard を使い、Ingress に `spec.tls` と `cert-manager.io/cluster-issuer` を書かない。wildcard で覆えない深いホスト名だけ個別に発行する。
 
 | chart の種類 | 参照元 |
 |---|---|

@@ -4,7 +4,6 @@ metadata:
   name: tempo
   namespace: tempo
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-dns01
     traefik.ingress.kubernetes.io/router.tls.options: cert-manager-pke-natsume-mtls@kubernetescrd
 spec:
   ingressClassName: traefik
@@ -27,7 +26,3 @@ spec:
             name: tempo
             port:
               number: 3200
-  tls:
-  - hosts:
-    - tempo.pstr.space
-    secretName: tempo.pstr.space-dns01
