@@ -125,14 +125,15 @@ resource "keycloak_openid_client" "sui_web" {
   valid_redirect_uris          = ["https://sui.str08.net/api/auth/callback"]
   full_scope_allowed           = false
 }
-resource "keycloak_openid_client_default_scopes" "sui_web" {
-  realm_id       = keycloak_realm.pke.id
-  client_id      = keycloak_openid_client.sui_web.id
-  default_scopes = ["basic", "profile", "email"]
+# apply 後に削除可。
+import {
+  to = keycloak_client_scope_assignments.sui_web
+  id = "client/${keycloak_realm.pke.id}/${keycloak_openid_client.sui_web.id}"
 }
-resource "keycloak_openid_client_optional_scopes" "sui_web" {
+resource "keycloak_client_scope_assignments" "sui_web" {
   realm_id        = keycloak_realm.pke.id
   client_id       = keycloak_openid_client.sui_web.id
+  default_scopes  = ["basic", "profile", "email"]
   optional_scopes = []
 }
 
@@ -148,13 +149,14 @@ resource "keycloak_openid_client" "hokan" {
   valid_redirect_uris          = ["https://hokan.pstr.space/api/auth/callback"]
   full_scope_allowed           = false
 }
-resource "keycloak_openid_client_default_scopes" "hokan" {
-  realm_id       = keycloak_realm.pke.id
-  client_id      = keycloak_openid_client.hokan.id
-  default_scopes = ["basic", "profile", "email"]
+# apply 後に削除可。
+import {
+  to = keycloak_client_scope_assignments.hokan
+  id = "client/${keycloak_realm.pke.id}/${keycloak_openid_client.hokan.id}"
 }
-resource "keycloak_openid_client_optional_scopes" "hokan" {
+resource "keycloak_client_scope_assignments" "hokan" {
   realm_id        = keycloak_realm.pke.id
   client_id       = keycloak_openid_client.hokan.id
+  default_scopes  = ["basic", "profile", "email"]
   optional_scopes = []
 }
