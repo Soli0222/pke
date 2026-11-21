@@ -22,12 +22,10 @@ spec:
       source: origin
       database: reblend
       owner: reblend
-      recoveryTarget:
-        backupID: 20261120T141147
   externalClusters:
   - name: origin
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: reblend-backup-store-restore
-        serverName: reblend-cluster-restored
+        serverName: reblend-db

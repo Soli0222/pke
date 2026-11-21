@@ -22,12 +22,10 @@ spec:
       source: origin
       database: sui
       owner: sui
-      recoveryTarget:
-        backupID: 20261120T141147
   externalClusters:
   - name: origin
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: sui-backup-store-restore
-        serverName: sui-cluster-restored
+        serverName: sui-db

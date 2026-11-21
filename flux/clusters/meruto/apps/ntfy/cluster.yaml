@@ -28,4 +28,4 @@ spec:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: ntfy-backup-store-restore
-        serverName: ntfy-cluster
+        serverName: ntfy-db

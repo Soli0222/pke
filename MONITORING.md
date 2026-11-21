@@ -45,7 +45,7 @@ Alertmanager は公開 URL の `https://ntfy.pstr.space` に送るため、通�
 | ラベル | 意味 |
 |---|---|
 | `cluster` | Kubernetes は `natsume` / `meruto`。ホストは inventory の `cluster` に従う |
-| `cnpg_cluster` | CNPG の DB 名。例: `misskey-cluster-restored` |
+| `cnpg_cluster` | CNPG の DB 名。例: `misskey-db` |
 | `hostname` | ホストの Alloy が収集するノード名 |
 | `job` | 収集対象。Alloy 自己監視は Kubernetes が `alloy`、ホストが `alloy-host` |
 
