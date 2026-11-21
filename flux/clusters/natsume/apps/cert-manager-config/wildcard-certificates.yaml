@@ -2,7 +2,7 @@
 # Traefik は SNI で store から証明書を選ぶため、Ingress には spec.tls を書かない。
 # websecure は entrypoint で TLS が有効（chart の既定）なので、spec.tls がなくても HTTPS になる。
 # TLSStore の default はクラスタに1つだけ置ける。Secret は TLSStore と同じ namespace に置く。
-# wildcard は1階層だけを覆う。深いホスト名を使うときは dnsNames を足す。
+# wildcard は1階層だけを覆う。より深いホスト名（admin.keycloak.pstr.space など）は、アプリの Ingress で個別に発行する。
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:

@@ -4,3 +4,4 @@ resources:
 - namespace.yaml
 - helmrepository-traefik-repo.yaml
 - helmrelease-traefik-local.yaml
+- wildcard-certificate.yaml

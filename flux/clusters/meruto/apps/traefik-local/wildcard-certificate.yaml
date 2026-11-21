@@ -1,0 +1,29 @@
+# *.home.str08.net の wildcard は traefik-local だけに読ませる。
+# default TLSStore は traefik も読むため、IngressClass で絞れる IngressRoute の tls から読み込ませる。
+# routes は空にしてルーターを作らない。Host のルールがないため external-dns もレコードを作らない。
+# Ingress には spec.tls を書かず、Traefik が SNI で store から証明書を選ぶ。
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-home-str08-net
+  namespace: traefik-local
+spec:
+  secretName: wildcard-home-str08-net-tls
+  dnsNames:
+  - "*.home.str08.net"
+  issuerRef:
+    name: letsencrypt-dns01
+    kind: ClusterIssuer
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: wildcard-home-str08-net
+  namespace: traefik-local
+spec:
+  ingressClassName: traefik-local
+  entryPoints:
+  - websecure
+  routes: []
+  tls:
+    secretName: wildcard-home-str08-net-tls
