@@ -1,0 +1,69 @@
+# Ingress の証明書は、ドメインごとの wildcard を Traefik の default TLSStore に載せて共用する。
+# Traefik は SNI で store から証明書を選ぶため、Ingress には spec.tls を書かない。
+# websecure は entrypoint で TLS が有効（chart の既定）なので、spec.tls がなくても HTTPS になる。
+# TLSStore の default はクラスタに1つだけ置ける。Secret は TLSStore と同じ namespace に置く。
+# TLSStore は IngressClass で絞られないため、traefik と traefik-local の両方が読む。
+# wildcard は1階層だけを覆う。より深いホスト名（admin.keycloak.pstr.space など）は、アプリの Ingress で個別に発行する。
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-soli0222-com
+  namespace: traefik
+spec:
+  secretName: wildcard-soli0222-com-tls
+  dnsNames:
+  - "*.soli0222.com"
+  issuerRef:
+    name: letsencrypt-dns01
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-str08-net
+  namespace: traefik
+spec:
+  secretName: wildcard-str08-net-tls
+  dnsNames:
+  - "*.str08.net"
+  issuerRef:
+    name: letsencrypt-dns01
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-pstr-space
+  namespace: traefik
+spec:
+  secretName: wildcard-pstr-space-tls
+  dnsNames:
+  - "*.pstr.space"
+  issuerRef:
+    name: letsencrypt-dns01
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-home-str08-net
+  namespace: traefik
+spec:
+  secretName: wildcard-home-str08-net-tls
+  dnsNames:
+  - "*.home.str08.net"
+  issuerRef:
+    name: letsencrypt-dns01
+    kind: ClusterIssuer
+---
+apiVersion: traefik.io/v1alpha1
+kind: TLSStore
+metadata:
+  name: default
+  namespace: traefik
+spec:
+  certificates:
+  - secretName: wildcard-soli0222-com-tls
+  - secretName: wildcard-str08-net-tls
+  - secretName: wildcard-pstr-space-tls
+  - secretName: wildcard-home-str08-net-tls
