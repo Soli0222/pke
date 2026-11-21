@@ -2,6 +2,7 @@ locals {
   dcr_allowed_scopes = concat(
     ["openid", "basic", "profile", "email", "offline_access"],
     [for scope in keycloak_openid_client_scope.sui : scope.name],
+    [for scope in keycloak_openid_client_scope.hokan : scope.name],
   )
   # realm 作成時に Keycloak が自動生成する匿名登録ポリシーを取り込む。
   dcr_registration_policies = {
