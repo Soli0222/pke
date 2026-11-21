@@ -69,6 +69,10 @@ repositories:
     topics: []
     secret_sets:
     - renovate
+  hokan:
+    state: active
+    secret_sets:
+    - renovate
   homebrew-exiforge:
     state: active
     topics: []

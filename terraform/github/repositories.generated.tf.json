@@ -6,11 +6,11 @@
     "inventory_sha256": {
       "precondition": [
         {
-          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"cbe7730714cb90de1158d8f059a62b672fd401a105db9c0fe9231285c9a85b87\"}",
+          "condition": "${filesha256(\"${path.module}/repositories.yaml\") == \"f482860c8053ead8c800c489c7effede5e11332434fef8c3349dfa0648a4d512\"}",
           "error_message": "Inventory changed: run python3 manage.py generate before planning."
         }
       ],
-      "value": "cbe7730714cb90de1158d8f059a62b672fd401a105db9c0fe9231285c9a85b87"
+      "value": "f482860c8053ead8c800c489c7effede5e11332434fef8c3349dfa0648a4d512"
     },
     "managed_repositories": {
       "value": [
@@ -22,6 +22,7 @@
         "emoji-bot-gateway",
         "emoji-renderer",
         "exiforge",
+        "hokan",
         "homebrew-exiforge",
         "keymap",
         "kubecon-schedule",
@@ -254,6 +255,12 @@
         "branch": "main",
         "rename": false,
         "repository": "${github_repository.repo_exiforge.name}",
+        "wait_for_rename": false
+      },
+      "repo_hokan": {
+        "branch": "main",
+        "rename": false,
+        "repository": "${github_repository.repo_hokan.name}",
         "wait_for_rename": false
       },
       "repo_homebrew-exiforge": {
@@ -789,6 +796,60 @@
         "squash_merge_commit_message": "COMMIT_MESSAGES",
         "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
         "topics": [],
+        "visibility": "public",
+        "web_commit_signoff_required": false
+      },
+      "repo_hokan": {
+        "allow_auto_merge": false,
+        "allow_forking": true,
+        "allow_merge_commit": false,
+        "allow_rebase_merge": false,
+        "allow_squash_merge": true,
+        "allow_update_branch": false,
+        "archive_on_destroy": false,
+        "archived": false,
+        "auto_init": true,
+        "delete_branch_on_merge": true,
+        "description": "",
+        "has_discussions": false,
+        "has_issues": true,
+        "has_projects": true,
+        "has_wiki": true,
+        "homepage_url": "",
+        "is_template": false,
+        "lifecycle": {
+          "ignore_changes": [
+            "auto_init",
+            "gitignore_template",
+            "has_downloads",
+            "ignore_vulnerability_alerts_during_read",
+            "license_template",
+            "vulnerability_alerts"
+          ],
+          "prevent_destroy": true
+        },
+        "merge_commit_message": "PR_TITLE",
+        "merge_commit_title": "MERGE_MESSAGE",
+        "name": "hokan",
+        "security_and_analysis": [
+          {
+            "secret_scanning": [
+              {
+                "status": "enabled"
+              }
+            ],
+            "secret_scanning_push_protection": [
+              {
+                "status": "enabled"
+              }
+            ]
+          }
+        ],
+        "squash_merge_commit_message": "COMMIT_MESSAGES",
+        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
+        "topics": [
+          "renovate"
+        ],
         "visibility": "public",
         "web_commit_signoff_required": false
       },
