@@ -44,11 +44,8 @@ operator は `ENABLE_INSTANCE_MANAGER_INPLACE_UPDATES` を有効にしている�
 operator を更新しても DB の Pod は作り直さず、instance manager だけを差し替える。PostgreSQL は再起動しない。
 差し替え後も Pod の init container image は更新前の版のまま残るため、Pod spec の image から instance manager の版を判断しない。
 この設定は chart の `config.data` から ConfigMap `cnpg-controller-manager-config` に入る。
-chart は ConfigMap が変わっても operator を再起動しないため、値を変えたら対象の context で operator を作り直す。
-
-```sh
-kubectl --context soli.natsume -n cnpg-system rollout restart deployment/cnpg-cloudnative-pg
-```
+chart は ConfigMap の内容を operator の Pod template の `checksum/config` に入れるため、値を変えると Flux の反映で operator が作り直される。
+operator は起動時のログに `enableInstanceManagerInplaceUpdates` の値を出す。
 
 DB image の変更や、再起動を必要とするパラメータの変更では PostgreSQL が再起動する。
 1 instance の DB は再起動のあいだ接続できない。
