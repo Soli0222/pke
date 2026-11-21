@@ -92,9 +92,20 @@ resource "keycloak_user" "soli" {
 
 # 新しいアプリや CIMD クライアントへ管理ロールを既定で渡さない。
 # 既存の組み込み管理コンソールには元の client scopes が残る。
-resource "keycloak_realm_default_client_scopes" "pke" {
+# apply 後に削除可。
+import {
+  to = keycloak_client_scope_assignments.pke
+  id = "realm/${keycloak_realm.pke.id}"
+}
+# DCR の scope 省略時にも、この optional scopes が付く。他アプリの scope は個別に割り当てる。
+resource "keycloak_client_scope_assignments" "pke" {
   realm_id       = keycloak_realm.pke.id
   default_scopes = ["basic", "profile", "email"]
+  optional_scopes = concat(
+    ["offline_access"],
+    [for scope in keycloak_openid_client_scope.sui : scope.name],
+    [for scope in keycloak_openid_client_scope.hokan : scope.name],
+  )
 }
 
 data "keycloak_openid_client" "realm_management" {
@@ -125,11 +136,6 @@ resource "keycloak_openid_client" "sui_web" {
   valid_redirect_uris          = ["https://sui.str08.net/api/auth/callback"]
   full_scope_allowed           = false
 }
-# apply 後に削除可。
-import {
-  to = keycloak_client_scope_assignments.sui_web
-  id = "client/${keycloak_realm.pke.id}/${keycloak_openid_client.sui_web.id}"
-}
 resource "keycloak_client_scope_assignments" "sui_web" {
   realm_id        = keycloak_realm.pke.id
   client_id       = keycloak_openid_client.sui_web.id
@@ -148,11 +154,6 @@ resource "keycloak_openid_client" "hokan" {
   pkce_code_challenge_method   = "S256"
   valid_redirect_uris          = ["https://hokan.pstr.space/api/auth/callback"]
   full_scope_allowed           = false
-}
-# apply 後に削除可。
-import {
-  to = keycloak_client_scope_assignments.hokan
-  id = "client/${keycloak_realm.pke.id}/${keycloak_openid_client.hokan.id}"
 }
 resource "keycloak_client_scope_assignments" "hokan" {
   realm_id        = keycloak_realm.pke.id

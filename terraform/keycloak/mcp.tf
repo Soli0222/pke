@@ -66,15 +66,7 @@ resource "keycloak_openid_audience_protocol_mapper" "sui" {
   add_to_access_token      = true
 }
 # CIMD / DCR で新規作成されるクライアントが、要求した権限だけを取得できるようにする。
-# DCR の scope 省略時にも、この optional scopes が付く。他アプリの scope は個別に割り当てる。
-resource "keycloak_realm_optional_client_scopes" "pke" {
-  realm_id = keycloak_realm.pke.id
-  optional_scopes = concat(
-    ["offline_access"],
-    [for scope in keycloak_openid_client_scope.sui : scope.name],
-    [for scope in keycloak_openid_client_scope.hokan : scope.name],
-  )
-}
+# realm の既定 default / optional scopes は main.tf の keycloak_client_scope_assignments.pke で管理する。
 resource "keycloak_realm_client_policy_profile" "mcp" {
   realm_id = keycloak_realm.pke.id
   name     = "sui-mcp-cimd"
@@ -117,8 +109,7 @@ resource "keycloak_realm_client_policy_profile_policy" "mcp" {
     }
   }
   depends_on = [
-    keycloak_realm_optional_client_scopes.pke,
-    keycloak_realm_default_client_scopes.pke,
+    keycloak_client_scope_assignments.pke,
   ]
 }
 
@@ -143,11 +134,6 @@ resource "keycloak_openid_client" "chatgpt" {
     "jwks.url"                        = "https://chatgpt.com/oauth/jwks.json"
     "token.endpoint.auth.signing.alg" = "RS256"
   }
-}
-# apply 後に削除可。
-import {
-  to = keycloak_client_scope_assignments.chatgpt
-  id = "client/${keycloak_realm.pke.id}/${keycloak_openid_client.chatgpt.id}"
 }
 resource "keycloak_client_scope_assignments" "chatgpt" {
   realm_id        = keycloak_realm.pke.id

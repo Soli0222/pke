@@ -138,7 +138,10 @@ try:
             'terraform': {'required_providers': {'keycloak': {'source': 'keycloak/keycloak', 'version': provider_version}}},
             'provider': {'keycloak': {'url': base, 'realm': 'master', 'client_id': 'admin-cli', 'username': 'repro-admin', 'password': password}},
             'resource': {'keycloak_realm': {'pke': {'realm': 'repro', 'enabled': True, 'ssl_required': 'none'}},
-                'keycloak_realm_default_client_scopes': {'pke': {'realm_id': '${keycloak_realm.pke.id}', 'default_scopes': ['basic', 'profile', 'email']}}}
+                # main.tf の keycloak_client_scope_assignments.pke と同じ内容。
+                'keycloak_client_scope_assignments': {'pke': {'realm_id': '${keycloak_realm.pke.id}',
+                    'default_scopes': ['basic', 'profile', 'email'],
+                    'optional_scopes': '${concat(["offline_access"], [for scope in keycloak_openid_client_scope.sui : scope.name], [for scope in keycloak_openid_client_scope.hokan : scope.name])}'}}}
         }))
         env = {k:v for k,v in os.environ.items() if not k.startswith(('TF_', 'KEYCLOAK_'))}
         for args in [['init', '-backend=false', '-input=false'], ['import', '-input=false', 'keycloak_realm.pke', 'repro'],

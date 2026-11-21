@@ -53,8 +53,7 @@ resource "keycloak_realm_client_registration_policy" "dcr" {
   sub_type    = "anonymous"
   config      = each.value.config
   depends_on = [
-    keycloak_realm_default_client_scopes.pke,
-    keycloak_realm_optional_client_scopes.pke,
+    keycloak_client_scope_assignments.pke,
   ]
 }
 
