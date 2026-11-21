@@ -1,5 +1,6 @@
 locals {
-  mcp_resource = "https://sui.str08.net/mcp"
+  mcp_resource       = "https://sui.str08.net/mcp"
+  hokan_mcp_resource = "https://hokan.pstr.space/mcp"
 }
 resource "keycloak_openid_client" "sui_mcp" {
   realm_id           = keycloak_realm.pke.id
@@ -10,6 +11,37 @@ resource "keycloak_openid_client" "sui_mcp" {
   extra_config = {
     resource_url = local.mcp_resource
   }
+}
+resource "keycloak_openid_client" "hokan_mcp" {
+  realm_id           = keycloak_realm.pke.id
+  client_id          = "hokan-mcp"
+  name               = "hokan MCP resource"
+  access_type        = "BEARER-ONLY"
+  full_scope_allowed = false
+  extra_config = {
+    resource_url = local.hokan_mcp_resource
+  }
+}
+resource "keycloak_openid_client_scope" "hokan" {
+  for_each = {
+    "read:hokan"  = "hokan の資産台帳を読み取る"
+    "write:hokan" = "hokan の資産台帳を更新する"
+  }
+  realm_id                            = keycloak_realm.pke.id
+  name                                = each.key
+  description                         = each.value
+  consent_screen_text                 = each.value
+  include_in_token_scope              = true
+  include_in_openid_provider_metadata = true
+}
+resource "keycloak_openid_audience_protocol_mapper" "hokan" {
+  for_each        = keycloak_openid_client_scope.hokan
+  realm_id        = keycloak_realm.pke.id
+  client_scope_id = each.value.id
+  name            = "hokan MCP audience"
+  included_custom_audience = local.hokan_mcp_resource
+  add_to_id_token          = false
+  add_to_access_token      = true
 }
 resource "keycloak_openid_client_scope" "sui" {
   for_each = {
@@ -36,8 +68,12 @@ resource "keycloak_openid_audience_protocol_mapper" "sui" {
 # CIMD / DCR で新規作成されるクライアントが、要求した権限だけを取得できるようにする。
 # DCR の scope 省略時にも、この optional scopes が付く。他アプリの scope は個別に割り当てる。
 resource "keycloak_realm_optional_client_scopes" "pke" {
-  realm_id        = keycloak_realm.pke.id
-  optional_scopes = concat(["offline_access"], [for scope in keycloak_openid_client_scope.sui : scope.name])
+  realm_id = keycloak_realm.pke.id
+  optional_scopes = concat(
+    ["offline_access"],
+    [for scope in keycloak_openid_client_scope.sui : scope.name],
+    [for scope in keycloak_openid_client_scope.hokan : scope.name],
+  )
 }
 resource "keycloak_realm_client_policy_profile" "mcp" {
   realm_id = keycloak_realm.pke.id

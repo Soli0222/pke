@@ -16,6 +16,7 @@ Pooler は使わず、アプリは CNPG の Service に直接接続する。
 | Namespace | Cluster | DB / Owner | 容量 | バックアップ | 実行時刻（JST） |
 |---|---|---|---|---|---|
 | misskey | `misskey-db` | `misskey` | 150Gi | base backup + WAL archive | 毎日 01:30 |
+| hokan | `hokan-db` | `hokan` | 5Gi | base backup + WAL archive | 日曜 04:45 |
 | sui | `sui-db` | `sui` | 5Gi | base backup + WAL archive | 日曜 03:15 |
 | spotify-reblend | `reblend-db` | `reblend` | 5Gi | base backup + WAL archive | 日曜 03:30 |
 | spotify-nowplaying | `spn-db` | `spn` | 5Gi | base backup + WAL archive | 日曜 03:45 |

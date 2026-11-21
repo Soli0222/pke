@@ -1,0 +1,15 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: hokan-db-weekly-backup
+  namespace: hokan
+spec:
+  # 日曜 04:45 JST（土曜 19:45 UTC）
+  schedule: "0 45 19 * * 6"
+  immediate: true
+  backupOwnerReference: self
+  cluster:
+    name: hokan-db
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

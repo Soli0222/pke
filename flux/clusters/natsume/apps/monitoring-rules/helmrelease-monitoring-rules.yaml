@@ -26,6 +26,11 @@ spec:
       - ens3
       - ens4
     databases:
+    - namespace: hokan
+      name: hokan-db
+      archive: true
+      replication: false
+      baseBackupMaxAgeSeconds: 648000
     - namespace: misskey
       name: misskey-db
       archive: true
