@@ -35,10 +35,10 @@ resource "keycloak_openid_client_scope" "hokan" {
   include_in_openid_provider_metadata = true
 }
 resource "keycloak_openid_audience_protocol_mapper" "hokan" {
-  for_each        = keycloak_openid_client_scope.hokan
-  realm_id        = keycloak_realm.pke.id
-  client_scope_id = each.value.id
-  name            = "hokan MCP audience"
+  for_each                 = keycloak_openid_client_scope.hokan
+  realm_id                 = keycloak_realm.pke.id
+  client_scope_id          = each.value.id
+  name                     = "hokan MCP audience"
   included_custom_audience = local.hokan_mcp_resource
   add_to_id_token          = false
   add_to_access_token      = true
@@ -144,13 +144,14 @@ resource "keycloak_openid_client" "chatgpt" {
     "token.endpoint.auth.signing.alg" = "RS256"
   }
 }
-resource "keycloak_openid_client_default_scopes" "chatgpt" {
-  realm_id       = keycloak_realm.pke.id
-  client_id      = keycloak_openid_client.chatgpt.id
-  default_scopes = ["basic", "profile", "email"]
+# apply 後に削除可。
+import {
+  to = keycloak_client_scope_assignments.chatgpt
+  id = "client/${keycloak_realm.pke.id}/${keycloak_openid_client.chatgpt.id}"
 }
-resource "keycloak_openid_client_optional_scopes" "chatgpt" {
+resource "keycloak_client_scope_assignments" "chatgpt" {
   realm_id        = keycloak_realm.pke.id
   client_id       = keycloak_openid_client.chatgpt.id
+  default_scopes  = ["basic", "profile", "email"]
   optional_scopes = concat(["offline_access"], [for scope in keycloak_openid_client_scope.sui : scope.name])
 }

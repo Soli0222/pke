@@ -145,7 +145,11 @@ try:
                      ['plan', '-input=false', '-out=plan'], ['apply', '-input=false', 'plan']]:
             if args[0] == 'plan':
                 for filename in ['dcr.tf', 'mcp.tf']:
-                    shutil.copy(repo / 'terraform/keycloak' / filename, work / filename)
+                    source = (repo / 'terraform/keycloak' / filename).read_text()
+                    # 同一 apply で作るクライアントの UUID を参照する移行用 import ブロックは
+                    # 新規環境では plan できないため除外する。
+                    source = re.sub(r'import \{\s*to = keycloak_client_scope_assignments\..*?\n\}\n*', '', source, flags=re.S)
+                    (work / filename).write_text(source)
             result = subprocess.run(['terraform', *args], cwd=work, env=env, text=True, capture_output=True)
             if result.returncode:
                 raise RuntimeError('Isolated Terraform ' + args[0] + ' failed: ' + result.stderr[-3000:])

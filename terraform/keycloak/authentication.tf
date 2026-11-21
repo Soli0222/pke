@@ -121,7 +121,7 @@ resource "keycloak_authentication_bindings" "browser" {
     keycloak_authentication_execution.deny_direct_grant,
     keycloak_required_action.otp,
     keycloak_required_action.passkey,
-    keycloak_openid_client_default_scopes.terraform,
+    keycloak_client_scope_assignments.terraform,
     keycloak_openid_client_service_account_realm_role.terraform_admin,
   ]
 }
