@@ -157,6 +157,10 @@ class RBACTests(unittest.TestCase):
                         })
                 cnpg = any('postgresql.cnpg.io' in rule.get('apiGroups', []) for rule in role['rules'])
                 self.assertEqual(cnpg, cluster == 'natsume')
+                traefik = [rule for rule in role['rules'] if 'traefik.io' in rule.get('apiGroups', [])]
+                self.assertEqual(len(traefik), 1)
+                self.assertEqual(set(traefik[0]['resources']), {'tlsoptions', 'middlewares'})
+                self.assertEqual(set(traefik[0]['verbs']), {'get', 'list'})
                 self.assertTrue(any('pods/log' in rule.get('resources', []) for rule in role['rules']))
                 secret = next(d for d in docs if d['kind'] == 'Secret')
                 self.assertNotIn('data', secret)
