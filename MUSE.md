@@ -16,6 +16,7 @@ RBAC は [共通定義](flux/bases/muse-access/clusterrole.yaml) で管理し、
 | Flux の source、Kustomization、HelmRelease、FluxInstance など | revision、Ready、同期失敗の確認 |
 | workload、Pod、Events、Pod ログ | rollout と失敗原因の確認 |
 | Node、Service、Ingress、volume、metrics など | 基盤・ネットワーク・ストレージの状態確認 |
+| Traefik の TLSOption、Middleware | 両クラスタの Ingress が参照する TLS 設定とミドルウェアの確認（get/list のみ） |
 | 証明書・監視・TopoLVM の指定した CR | 各 controller の反映状況確認 |
 | CNPG の Cluster、Backup、ScheduledBackup、Pooler | natsume の DB・バックアップ状態確認 |
 | KubeVirt の VM・VMI・移行・snapshot・export・backup・pool・instancetype と CDI の指定した CR | meruto の VM・ディスク・バックアップ状態確認（get/list/watch のみ） |
